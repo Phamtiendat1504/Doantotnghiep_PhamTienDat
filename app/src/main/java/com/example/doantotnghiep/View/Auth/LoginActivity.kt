@@ -13,6 +13,7 @@ import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.example.doantotnghiep.MainActivity
 
 class LoginActivity : AppCompatActivity() {
 
@@ -29,7 +30,14 @@ class LoginActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
-
+        // Kiểm tra nếu đã đăng nhập → vào thẳng MainActivity
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            val intent = Intent(this, MainActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            return
+        }
         tilEmail = findViewById(R.id.tilEmail)
         tilPassword = findViewById(R.id.tilPassword)
         edtEmail = findViewById(R.id.edtEmail)
@@ -48,7 +56,9 @@ class LoginActivity : AppCompatActivity() {
 
         viewModel.loginResult.observe(this) { success ->
             if (success) {
-                Toast.makeText(this, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
+                val intent = Intent(this, MainActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
             }
         }
 
@@ -81,7 +91,7 @@ class LoginActivity : AppCompatActivity() {
         }
 
         tvForgotPassword.setOnClickListener {
-            Toast.makeText(this, "Chức năng đang phát triển", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(this, ForgotPasswordActivity::class.java))
         }
     }
 

@@ -26,10 +26,31 @@
             android:name=".View.Auth.RegisterActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
-
+        <activity
+            android:name=".View.Auth.ForgotPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".MainActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".View.Auth.VerifyOtpActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+
+        <activity
+            android:name=".View.Auth.ResetPasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".View.Auth.PersonalInfoActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".View.Auth.ChangePasswordActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
 
     </application>
 

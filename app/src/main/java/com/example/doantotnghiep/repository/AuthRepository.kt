@@ -60,4 +60,47 @@ class AuthRepository {
                 onFailure("Đăng nhập thất bại: ${e.message}")
             }
     }
+    // Tìm email theo số điện thoại từ Firestore
+    fun findEmailByPhone(
+        phone: String,
+        onSuccess: (String) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        db.collection("users")
+            .whereEqualTo("phone", phone)
+            .get()
+            .addOnSuccessListener { documents ->
+                if (!documents.isEmpty) {
+                    val email = documents.documents[0].getString("email") ?: ""
+                    onSuccess(email)
+                } else {
+                    onFailure("Số điện thoại chưa được đăng ký")
+                }
+            }
+            .addOnFailureListener { e ->
+                onFailure("Lỗi: ${e.message}")
+            }
+    }
+
+    // Đổi mật khẩu sau khi xác thực OTP
+    fun updatePasswordAfterOtp(
+        email: String,
+        newPassword: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val user = auth.currentUser
+        if (user != null) {
+            user.updatePassword(newPassword)
+                .addOnSuccessListener {
+                    auth.signOut()
+                    onSuccess()
+                }
+                .addOnFailureListener { e ->
+                    onFailure("Đổi mật khẩu thất bại: ${e.message}")
+                }
+        } else {
+            onFailure("Không tìm thấy người dùng")
+        }
+    }
 }

@@ -50,9 +50,9 @@ class AuthViewModel : ViewModel() {
     fun register(fullName: String, email: String, phone: String, password: String, confirmPassword: String) {
         if (fullName.isEmpty()) { errorMessage.value = "Vui lòng nhập họ và tên"; return }
         if (email.isEmpty()) { errorMessage.value = "Vui lòng nhập email"; return }
-        if (!isValidEmail(email)) { errorMessage.value = "Email phải có đuôi @gmail.com"; return }
+        if (!isValidEmail(email)) { errorMessage.value = "Nhập đúng định dạng email"; return }
         if (phone.isEmpty()) { errorMessage.value = "Vui lòng nhập số điện thoại"; return }
-        if (!isValidPhone(phone)) { errorMessage.value = "Số điện thoại phải có 10 số và bắt đầu bằng số 0"; return }
+        if (!isValidPhone(phone)) { errorMessage.value = "Vui lòng nhập đúng định dạng và số lượng số"; return }
         if (password.isEmpty()) { errorMessage.value = "Vui lòng nhập mật khẩu"; return }
         if (!isValidPassword(password)) {
             errorMessage.value = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
