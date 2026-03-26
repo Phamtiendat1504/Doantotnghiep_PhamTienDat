@@ -148,11 +148,7 @@ class PersonalInfoActivity : AppCompatActivity() {
 
             val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@setOnClickListener
 
-            if (email != originalEmail) {
-                showPasswordDialogToUpdateEmail(email, fullName, phone, address, birthday, gender, occupation, uid)
-            } else {
-                updateFirestore(uid, fullName, email, phone, address, birthday, gender, occupation)
-            }
+            updateFirestore(uid, fullName, email, phone, address, birthday, gender, occupation)
         }
 
         btnBack.setOnClickListener { finish() }
@@ -160,7 +156,7 @@ class PersonalInfoActivity : AppCompatActivity() {
 
     private fun enableEditing(enabled: Boolean) {
         edtFullName.isEnabled = enabled
-        edtEmail.isEnabled = enabled
+        edtEmail.isEnabled = false
         edtPhone.isEnabled = enabled
         edtAddress.isEnabled = enabled
         edtOccupation.isEnabled = enabled

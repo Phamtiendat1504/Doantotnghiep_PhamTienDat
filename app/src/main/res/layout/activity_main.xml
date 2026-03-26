@@ -25,11 +25,42 @@
         app:itemActiveIndicatorStyle="@null"
         app:itemIconTint="@color/bottom_nav_color"
         app:itemTextColor="@color/bottom_nav_color"
-        app:itemTextAppearanceActive="@style/TextAppearance.AppCompat.Caption"
-        app:itemTextAppearanceInactive="@style/TextAppearance.AppCompat.Caption"
+        app:labelVisibilityMode="labeled"
         app:menu="@menu/bottom_nav_menu"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent" />
+
+    <!-- Nút AI nổi ở giữa -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAI"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/ic_ai"
+        app:tint="#FFFFFF"
+        app:backgroundTint="#1976D2"
+        app:fabCustomSize="56dp"
+        app:maxImageSize="28dp"
+        app:elevation="8dp"
+        app:borderWidth="0dp"
+        app:layout_constraintBottom_toTopOf="@id/bottomNav"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="-26dp"
+        android:contentDescription="Chatbox AI" />
+
+    <!-- Text "AI" dưới nút -->
+    <TextView
+        android:id="@+id/tvAILabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="AI"
+        android:textSize="10sp"
+        android:textColor="#1976D2"
+        android:textStyle="bold"
+        app:layout_constraintTop_toBottomOf="@id/fabAI"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginTop="2dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

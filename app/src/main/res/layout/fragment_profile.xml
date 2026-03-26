@@ -5,339 +5,435 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#E3F2FD">
+    android:background="#F0F4F8">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:paddingBottom="24dp">
 
-        <!-- ===== HEADER: Chuông thông báo ===== -->
-        <RelativeLayout
+        <!-- ===== HEADER XANH + AVATAR NỔI ===== -->
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="16dp">
+            android:layout_height="wrap_content">
 
-            <!-- Chuông thông báo góc phải -->
-            <ImageView
-                android:id="@+id/btnNotification"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:src="@drawable/ic_notification"
-                app:tint="#1976D2"
-                android:padding="6dp"
-                android:contentDescription="Thông báo" />
+            <!-- Nền xanh header -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="180dp"
+                android:background="#1976D2"
+                android:orientation="vertical"
+                android:gravity="end|top"
+                android:padding="16dp">
 
-        </RelativeLayout>
+                <!-- Chuông thông báo góc phải -->
+                <ImageView
+                    android:id="@+id/btnNotification"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:layout_gravity="end"
+                    android:src="@drawable/ic_notification"
+                    app:tint="#FFFFFF"
+                    android:padding="6dp"
+                    android:contentDescription="Thông báo" />
 
-        <!-- ===== PHẦN AVATAR VÀ TÊN ===== -->
+            </LinearLayout>
+
+            <!-- Card avatar + tên nổi đè lên header -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="120dp"
+                android:layout_marginStart="20dp"
+                android:layout_marginEnd="20dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="6dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:gravity="center_horizontal"
+                    android:paddingTop="50dp"
+                    android:paddingBottom="20dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp">
+
+                    <!-- Tên người dùng -->
+                    <TextView
+                        android:id="@+id/tvUserName"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Đang tải..."
+                        android:textSize="20sp"
+                        android:textStyle="bold"
+                        android:textColor="#1A1A2E" />
+
+                    <!-- Email -->
+                    <TextView
+                        android:id="@+id/tvUserEmail"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=""
+                        android:textSize="13sp"
+                        android:textColor="#999999"
+                        android:layout_marginTop="4dp" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Avatar tròn nổi lên trên card -->
+            <FrameLayout
+                android:layout_width="110dp"
+                android:layout_height="110dp"
+                android:layout_gravity="top|center_horizontal"
+                android:layout_marginTop="68dp">
+
+                <androidx.cardview.widget.CardView
+                    android:layout_width="100dp"
+                    android:layout_height="100dp"
+                    android:layout_gravity="center"
+                    app:cardCornerRadius="50dp"
+                    app:cardElevation="6dp"
+                    app:cardBackgroundColor="#FFFFFF">
+
+                    <ImageView
+                        android:id="@+id/imgAvatar"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:scaleType="centerCrop"
+                        android:src="@drawable/ic_person"
+                        app:tint="#1976D2"
+                        android:background="#FFFFFF"
+                        android:padding="18dp"
+                        android:contentDescription="Ảnh đại diện" />
+
+                </androidx.cardview.widget.CardView>
+
+                <!-- Nút camera -->
+                <androidx.cardview.widget.CardView
+                    android:id="@+id/btnChangeAvatar"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_gravity="bottom|end"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="4dp"
+                    app:cardBackgroundColor="#1976D2">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_camera"
+                        app:tint="#FFFFFF"
+                        android:contentDescription="Đổi ảnh" />
+
+                </androidx.cardview.widget.CardView>
+
+            </FrameLayout>
+
+        </FrameLayout>
+
+        <!-- ===== MENU CHỨC NĂNG ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal"
-            android:paddingTop="8dp"
-            android:paddingBottom="24dp">
+            android:paddingStart="20dp"
+            android:paddingEnd="20dp"
+            android:layout_marginTop="16dp">
 
-            <FrameLayout
-            android:layout_width="120dp"
-            android:layout_height="120dp">
-
-            <androidx.cardview.widget.CardView
-                android:layout_width="110dp"
-                android:layout_height="110dp"
-                android:layout_gravity="center"
-                app:cardCornerRadius="55dp"
-                app:cardElevation="4dp">
-
-                <ImageView
-                    android:id="@+id/imgAvatar"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:scaleType="centerCrop"
-                    android:src="@drawable/ic_person"
-                    app:tint="#1976D2"
-                    android:background="#FFFFFF"
-                    android:padding="20dp"
-                    android:contentDescription="Ảnh đại diện" />
-
-            </androidx.cardview.widget.CardView>
-
-            <!-- Nút camera để đổi ảnh -->
-            <androidx.cardview.widget.CardView
-                android:id="@+id/btnChangeAvatar"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:layout_gravity="bottom|end"
-                app:cardCornerRadius="18dp"
-                app:cardElevation="4dp"
-                app:cardBackgroundColor="#1976D2">
-
-                <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
-                    android:layout_gravity="center"
-                    android:src="@drawable/ic_camera"
-                    app:tint="#FFFFFF"
-                    android:contentDescription="Đổi ảnh" />
-
-            </androidx.cardview.widget.CardView>
-
-        </FrameLayout>
-
-            <!-- Tên người dùng -->
+            <!-- Tiêu đề -->
             <TextView
-                android:id="@+id/tvUserName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Đang tải..."
-                android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A2E"
-                android:layout_marginTop="12dp" />
-
-            <!-- Email -->
-            <TextView
-                android:id="@+id/tvUserEmail"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=""
+                android:text="Tài khoản"
                 android:textSize="14sp"
-                android:textColor="#5A5A5A"
-                android:layout_marginTop="4dp" />
+                android:textStyle="bold"
+                android:textColor="#999999"
+                android:layout_marginBottom="8dp"
+                android:letterSpacing="0.05" />
 
-        </LinearLayout>
-
-        <!-- ===== CÁC MỤC CHỨC NĂNG ===== -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#FFFFFF">
-
-            <LinearLayout
+            <!-- Thông tin cá nhân -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="8dp">
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
-                <!-- Thông tin cá nhân -->
                 <LinearLayout
                     android:id="@+id/btnPersonalInfo"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="60dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_person"
-                        app:tint="#1976D2"
-                        android:contentDescription="Thông tin cá nhân" />
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#E3F2FD">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_person"
+                            app:tint="#1976D2" />
+
+                    </androidx.cardview.widget.CardView>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Thông tin cá nhân"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="#1A1A2E"
-                        android:layout_marginStart="16dp" />
+                        android:layout_marginStart="14dp" />
 
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#CCCCCC" />
 
                 </LinearLayout>
 
-                <!-- Đường kẻ -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#F0F0F0"
-                    android:layout_marginStart="56dp" />
+            </androidx.cardview.widget.CardView>
 
-                <!-- Đường kẻ -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#F0F0F0"
-                    android:layout_marginStart="56dp" />
+            <!-- Đổi mật khẩu -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
-                <!-- Đổi mật khẩu -->
                 <LinearLayout
                     android:id="@+id/btnChangePassword"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="60dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_lock"
-                        app:tint="#1976D2"
-                        android:contentDescription="Đổi mật khẩu" />
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#FFF3E0">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_lock"
+                            app:tint="#E65100" />
+
+                    </androidx.cardview.widget.CardView>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Đổi mật khẩu"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="#1A1A2E"
-                        android:layout_marginStart="16dp" />
+                        android:layout_marginStart="14dp" />
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#CCCCCC" />
 
                 </LinearLayout>
 
-                <!-- Đường kẻ -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#F0F0F0"
-                    android:layout_marginStart="56dp" />
+            </androidx.cardview.widget.CardView>
 
-                <!-- Đường kẻ -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#F0F0F0"
-                    android:layout_marginStart="56dp" />
+            <!-- Tiêu đề -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hoạt động"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#999999"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"
+                android:letterSpacing="0.05" />
 
-                <!-- Bài viết đã lưu -->
+            <!-- Bài viết đã lưu -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
                 <LinearLayout
                     android:id="@+id/btnSavedPosts"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="60dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_bookmark"
-                        app:tint="#1976D2"
-                        android:contentDescription="Bài viết đã lưu" />
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#E8F5E9">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_bookmark"
+                            app:tint="#2E7D32" />
+
+                    </androidx.cardview.widget.CardView>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Bài viết đã lưu"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="#1A1A2E"
-                        android:layout_marginStart="16dp" />
+                        android:layout_marginStart="14dp" />
 
-
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#CCCCCC" />
 
                 </LinearLayout>
 
-                <!-- Đường kẻ -->
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:background="#F0F0F0"
-                    android:layout_marginStart="56dp" />
+            </androidx.cardview.widget.CardView>
 
-                <!-- Lịch hẹn xem phòng -->
+            <!-- Lịch hẹn xem phòng -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
                 <LinearLayout
                     android:id="@+id/btnAppointments"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="60dp"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true">
 
-                    <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:src="@drawable/ic_calendar"
-                        app:tint="#1976D2"
-                        android:contentDescription="Lịch hẹn" />
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#EDE7F6">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_calendar"
+                            app:tint="#5E35B1" />
+
+                    </androidx.cardview.widget.CardView>
 
                     <TextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Lịch hẹn xem phòng"
-                        android:textSize="16sp"
+                        android:textSize="15sp"
                         android:textColor="#1A1A2E"
-                        android:layout_marginStart="16dp" />
+                        android:layout_marginStart="14dp" />
 
-
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#CCCCCC" />
 
                 </LinearLayout>
 
-            </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
-        </androidx.cardview.widget.CardView>
-
-        <!-- ===== NÚT ĐĂNG XUẤT ===== -->
-        <androidx.cardview.widget.CardView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginTop="16dp"
-            android:layout_marginBottom="24dp"
-            app:cardCornerRadius="16dp"
-            app:cardElevation="4dp"
-            app:cardBackgroundColor="#FFFFFF">
-
-            <LinearLayout
-                android:id="@+id/btnLogout"
+            <!-- ===== ĐĂNG XUẤT ===== -->
+            <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:background="?attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true">
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
 
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_logout"
-                    app:tint="#D32F2F"
-                    android:contentDescription="Đăng xuất" />
+                <LinearLayout
+                    android:id="@+id/btnLogout"
+                    android:layout_width="match_parent"
+                    android:layout_height="56dp"
+                    android:orientation="horizontal"
+                    android:gravity="center"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
 
-                <TextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:text="Đăng xuất"
-                    android:textSize="16sp"
-                    android:textColor="#D32F2F"
-                    android:textStyle="bold"
-                    android:layout_marginStart="16dp" />
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_logout"
+                        app:tint="#D32F2F" />
 
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Đăng xuất"
+                        android:textSize="15sp"
+                        android:textColor="#D32F2F"
+                        android:textStyle="bold"
+                        android:layout_marginStart="10dp" />
 
-        </androidx.cardview.widget.CardView>
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+        </LinearLayout>
 
     </LinearLayout>
 

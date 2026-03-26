@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.RadioGroup
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.Fragment
@@ -23,6 +24,7 @@ class SearchFragment : Fragment() {
     private lateinit var chipXa: Chip
     private lateinit var spinnerArea: Spinner
     private lateinit var edtAddress: EditText
+    private lateinit var chipGroupPrice: ChipGroup
     private lateinit var chipPriceCustom: Chip
     private lateinit var edtCustomPrice: EditText
     private lateinit var edtRoomArea: EditText
@@ -33,10 +35,8 @@ class SearchFragment : Fragment() {
     private lateinit var edtWifiPrice: EditText
     private lateinit var edtElectricPrice: EditText
     private lateinit var edtWaterPrice: EditText
-    private lateinit var chipCurfewCustom: Chip
+    private lateinit var rgCurfew: RadioGroup
     private lateinit var edtCurfewTime: EditText
-    private lateinit var chipGroupCurfew: ChipGroup
-    private lateinit var chipGroupPrice: ChipGroup
     private lateinit var btnSearch: MaterialButton
 
     override fun onCreateView(
@@ -64,15 +64,14 @@ class SearchFragment : Fragment() {
         edtWifiPrice = view.findViewById(R.id.edtWifiPrice)
         edtElectricPrice = view.findViewById(R.id.edtElectricPrice)
         edtWaterPrice = view.findViewById(R.id.edtWaterPrice)
-        chipCurfewCustom = view.findViewById(R.id.chipCurfewCustom)
+        rgCurfew = view.findViewById(R.id.rgCurfew)
         edtCurfewTime = view.findViewById(R.id.edtCurfewTime)
-        chipGroupCurfew = view.findViewById(R.id.chipGroupCurfew)
         btnSearch = view.findViewById(R.id.btnSearch)
 
-        // Mặc định hiển thị danh sách Phường
+        // Mặc định hiển thị Phường
         loadAreaSpinner(AddressData.phuongList)
 
-        // Chuyển đổi Phường / Xã
+        // Chuyển Phường / Xã
         chipPhuong.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) loadAreaSpinner(AddressData.phuongList)
         }
@@ -80,41 +79,41 @@ class SearchFragment : Fragment() {
             if (isChecked) loadAreaSpinner(AddressData.xaList)
         }
 
-        // Giá thuê: chọn "Tùy chọn" → hiện ô nhập giá
-        chipGroupPrice.setOnCheckedStateChangeListener { _, checkedIds ->
-            edtCustomPrice.visibility = if (checkedIds.contains(R.id.chipPriceCustom)) View.VISIBLE else View.GONE
+        // Tùy chọn giá → hiện/ẩn ô nhập
+        chipPriceCustom.setOnCheckedChangeListener { _, isChecked ->
+            edtCustomPrice.visibility = if (isChecked) View.VISIBLE else View.GONE
+            // Bỏ chọn các chip giá khác khi chọn tùy chọn
+            if (isChecked) {
+                chipGroupPrice.clearCheck()
+            }
         }
 
-        // Tự động format số khi nhập giá
+        // Format giá tiền
         NumberFormatUtils.addFormatWatcher(edtCustomPrice)
         NumberFormatUtils.addFormatWatcher(edtWifiPrice)
         NumberFormatUtils.addFormatWatcher(edtElectricPrice)
         NumberFormatUtils.addFormatWatcher(edtWaterPrice)
 
-        // Khi tick Wifi → bật ô nhập giá
+        // Checkbox tiện ích
         cbWifi.setOnCheckedChangeListener { _, isChecked ->
             edtWifiPrice.isEnabled = isChecked
             if (!isChecked) edtWifiPrice.text?.clear()
         }
-
-        // Khi tick Điện → bật ô nhập giá
         cbElectric.setOnCheckedChangeListener { _, isChecked ->
             edtElectricPrice.isEnabled = isChecked
             if (!isChecked) edtElectricPrice.text?.clear()
         }
-
-        // Khi tick Nước → bật ô nhập giá
         cbWater.setOnCheckedChangeListener { _, isChecked ->
             edtWaterPrice.isEnabled = isChecked
             if (!isChecked) edtWaterPrice.text?.clear()
         }
 
-        // Giờ khóa cửa: chọn "Có giờ giấc" → hiện ô nhập giờ
-        chipGroupCurfew.setOnCheckedStateChangeListener { _, checkedIds ->
-            edtCurfewTime.visibility = if (checkedIds.contains(R.id.chipCurfewCustom)) View.VISIBLE else View.GONE
+        // Giờ giấc
+        rgCurfew.setOnCheckedChangeListener { _, checkedId ->
+            edtCurfewTime.visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
         }
 
-        // Nút Tìm kiếm
+        // Nút tìm kiếm
         btnSearch.setOnClickListener {
             Toast.makeText(requireContext(), "Chức năng tìm kiếm đang phát triển", Toast.LENGTH_SHORT).show()
         }
