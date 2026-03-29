@@ -27,7 +27,6 @@
                 android:gravity="end|top"
                 android:padding="16dp">
 
-                <!-- Chuông thông báo góc phải -->
                 <ImageView
                     android:id="@+id/btnNotification"
                     android:layout_width="40dp"
@@ -40,13 +39,13 @@
 
             </LinearLayout>
 
-            <!-- Card avatar + tên nổi đè lên header -->
+            <!-- Card tên + email -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="120dp"
-                android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
+                android:layout_marginTop="140dp"
+                android:layout_marginStart="40dp"
+                android:layout_marginEnd="40dp"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="6dp"
                 app:cardBackgroundColor="#FFFFFF">
@@ -56,12 +55,11 @@
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
                     android:gravity="center_horizontal"
-                    android:paddingTop="50dp"
-                    android:paddingBottom="20dp"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp">
+                    android:paddingTop="60dp"
+                    android:paddingBottom="14dp"
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
-                    <!-- Tên người dùng -->
                     <TextView
                         android:id="@+id/tvUserName"
                         android:layout_width="wrap_content"
@@ -71,7 +69,6 @@
                         android:textStyle="bold"
                         android:textColor="#1A1A2E" />
 
-                    <!-- Email -->
                     <TextView
                         android:id="@+id/tvUserEmail"
                         android:layout_width="wrap_content"
@@ -80,24 +77,40 @@
                         android:textSize="13sp"
                         android:textColor="#999999"
                         android:layout_marginTop="4dp" />
+                    <!-- Badge vai trò -->
+                    <TextView
+                        android:id="@+id/tvRoleBadge"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Người thuê trọ"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#666666"
+                        android:background="@drawable/bg_badge_tenant"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:layout_marginTop="10dp" />
 
                 </LinearLayout>
 
             </androidx.cardview.widget.CardView>
 
-            <!-- Avatar tròn nổi lên trên card -->
+            <!-- Avatar tròn - NẰM SAU CARD ĐỂ VẼ ĐÈ LÊN -->
             <FrameLayout
                 android:layout_width="110dp"
                 android:layout_height="110dp"
                 android:layout_gravity="top|center_horizontal"
-                android:layout_marginTop="68dp">
+                android:layout_marginTop="80dp"
+                android:elevation="12dp">
 
                 <androidx.cardview.widget.CardView
                     android:layout_width="100dp"
                     android:layout_height="100dp"
                     android:layout_gravity="center"
                     app:cardCornerRadius="50dp"
-                    app:cardElevation="6dp"
+                    app:cardElevation="8dp"
                     app:cardBackgroundColor="#FFFFFF">
 
                     <ImageView
@@ -379,6 +392,64 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
                         android:text="Lịch hẹn xem phòng"
+                        android:textSize="15sp"
+                        android:textColor="#1A1A2E"
+                        android:layout_marginStart="14dp" />
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#CCCCCC" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <!-- Bài đăng của tôi (chỉ hiện cho chủ trọ) -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardMyPosts"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="#FFFFFF">
+
+                <LinearLayout
+                    android:id="@+id/btnMyPosts"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#E3F2FD">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_post"
+                            app:tint="#1976D2" />
+
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Bài đăng của tôi"
                         android:textSize="15sp"
                         android:textColor="#1A1A2E"
                         android:layout_marginStart="14dp" />

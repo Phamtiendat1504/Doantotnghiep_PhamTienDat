@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="32dp"
+    android:background="#F5F7FA">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Xác minh chủ trọ"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#1976D2"
+        android:layout_marginBottom="12dp" />
+
+    <TextView
+        android:id="@+id/tvVerifyStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Bạn cần xác minh là chủ trọ để có thể đăng bài cho thuê phòng trọ."
+        android:textSize="14sp"
+        android:textColor="#1976D2"
+        android:textAlignment="center"
+        android:lineSpacingExtra="4dp"
+        android:layout_marginBottom="32dp"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnStartVerify"
+        android:layout_width="wrap_content"
+        android:layout_height="48dp"
+        android:text="Xác minh ngay"
+        android:textSize="16sp"
+        android:textAllCaps="false"
+        android:paddingStart="32dp"
+        android:paddingEnd="32dp"
+        app:backgroundTint="#1976D2"
+        app:cornerRadius="12dp"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+</LinearLayout>

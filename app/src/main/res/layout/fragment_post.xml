@@ -1038,7 +1038,7 @@
 
                 </LinearLayout>
 
-                <!-- Chi tiết thú cưng (ẩn mặc định) -->
+                <!-- Chi tiết thú cưng - NGAY SAU PHẦN THÚ CƯNG -->
                 <LinearLayout
                     android:id="@+id/layoutPetDetail"
                     android:layout_width="match_parent"
@@ -1046,6 +1046,7 @@
                     android:orientation="horizontal"
                     android:visibility="gone"
                     android:layout_marginBottom="8dp"
+                    android:layout_marginStart="28dp"
                     android:layout_marginTop="4dp">
 
                     <EditText
@@ -1053,9 +1054,9 @@
                         android:layout_width="0dp"
                         android:layout_height="40dp"
                         android:layout_weight="2"
-                        android:hint="Tên thú cưng (VD: Chó, Mèo)"
+                        android:hint="VD: Chó, Mèo..."
                         android:textSize="13sp"
-                        android:paddingStart="10dp"
+                        android:paddingStart="15dp"
                         android:background="@drawable/bg_edit_post"
                         android:inputType="text"
                         android:layout_marginEnd="6dp" />
@@ -1070,6 +1071,288 @@
                         android:paddingStart="10dp"
                         android:background="@drawable/bg_edit_post"
                         android:inputType="number" />
+
+                </LinearLayout>
+
+
+                <!-- Vệ sinh -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:text="Vệ sinh"
+                        android:textSize="13sp"
+                        android:textColor="#444444" />
+
+                    <RadioGroup
+                        android:id="@+id/rgBathroom"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/rbBathroomShared"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Chung"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7" />
+
+                        <RadioButton
+                            android:id="@+id/rbBathroomPrivate"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Riêng"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:layout_marginStart="8dp" />
+
+                    </RadioGroup>
+
+                </LinearLayout>
+
+                <!-- Giới tính ưu tiên cho thuê -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <TextView
+                        android:layout_width="80dp"
+                        android:layout_height="wrap_content"
+                        android:text="Cho thuê"
+                        android:textSize="13sp"
+                        android:textColor="#444444" />
+
+                    <RadioGroup
+                        android:id="@+id/rgGenderPrefer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal">
+
+                        <RadioButton
+                            android:id="@+id/rbGenderMale"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Nam"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7" />
+
+                        <RadioButton
+                            android:id="@+id/rbGenderFemale"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Nữ"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:layout_marginStart="8dp" />
+
+                        <RadioButton
+                            android:id="@+id/rbGenderAll"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Tất cả"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:layout_marginStart="8dp" />
+
+                    </RadioGroup>
+
+                </LinearLayout>
+
+                <!-- Chỗ để xe -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:layout_marginBottom="8dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="6dp">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Chỗ để xe "
+                            android:textSize="13sp"
+                            android:textStyle="bold"
+                            android:textColor="#444444" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="(Tích chọn loại xe được gửi)"
+                            android:textSize="13sp"
+                            android:textColor="#D32F2F" />
+
+                    </LinearLayout>
+
+                    <!-- Xe máy -->
+                    <CheckBox
+                        android:id="@+id/cbMotorbike"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Xe máy"
+                        android:textSize="13sp"
+                        android:buttonTint="#0097A7" />
+
+                    <RadioGroup
+                        android:id="@+id/rgMotorbikeFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="28dp"
+                        android:visibility="gone"
+                        android:layout_marginBottom="4dp">
+
+                        <RadioButton
+                            android:id="@+id/rbMotorbikeFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Miễn phí"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:checked="true" />
+
+                        <RadioButton
+                            android:id="@+id/rbMotorbikePaid"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Tính phí"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:layout_marginStart="12dp" />
+
+                    </RadioGroup>
+
+                    <EditText
+                        android:id="@+id/edtMotorbikeFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:hint="Nhập phí gửi xe máy (VND/tháng)"
+                        android:textSize="13sp"
+                        android:inputType="number"
+                        android:paddingStart="10dp"
+                        android:background="@drawable/bg_edit_post"
+                        android:visibility="gone"
+                        android:layout_marginStart="28dp"
+                        android:layout_marginBottom="6dp" />
+
+                    <!-- Xe đạp điện -->
+                    <CheckBox
+                        android:id="@+id/cbEBike"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Xe đạp điện"
+                        android:textSize="13sp"
+                        android:buttonTint="#0097A7" />
+
+                    <RadioGroup
+                        android:id="@+id/rgEBikeFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="28dp"
+                        android:visibility="gone"
+                        android:layout_marginBottom="4dp">
+
+                        <RadioButton
+                            android:id="@+id/rbEBikeFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Miễn phí"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:checked="true" />
+
+                        <RadioButton
+                            android:id="@+id/rbEBikePaid"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Tính phí"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:layout_marginStart="12dp" />
+
+                    </RadioGroup>
+
+                    <EditText
+                        android:id="@+id/edtEBikeFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:hint="Nhập phí gửi xe đạp điện (VND/tháng)"
+                        android:textSize="13sp"
+                        android:inputType="number"
+                        android:paddingStart="10dp"
+                        android:background="@drawable/bg_edit_post"
+                        android:visibility="gone"
+                        android:layout_marginStart="28dp"
+                        android:layout_marginBottom="6dp" />
+
+                    <!-- Xe đạp -->
+                    <CheckBox
+                        android:id="@+id/cbBicycle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:text="Xe đạp"
+                        android:textSize="13sp"
+                        android:buttonTint="#0097A7" />
+
+                    <RadioGroup
+                        android:id="@+id/rgBicycleFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:paddingStart="28dp"
+                        android:visibility="gone"
+                        android:layout_marginBottom="4dp">
+
+                        <RadioButton
+                            android:id="@+id/rbBicycleFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Miễn phí"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:checked="true" />
+
+                        <RadioButton
+                            android:id="@+id/rbBicyclePaid"
+                            android:layout_width="wrap_content"
+                            android:layout_height="34dp"
+                            android:text="Tính phí"
+                            android:textSize="12sp"
+                            android:buttonTint="#0097A7"
+                            android:layout_marginStart="12dp" />
+
+                    </RadioGroup>
+
+                    <EditText
+                        android:id="@+id/edtBicycleFee"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:hint="Nhập phí gửi xe đạp (VND/tháng)"
+                        android:textSize="13sp"
+                        android:inputType="number"
+                        android:paddingStart="10dp"
+                        android:background="@drawable/bg_edit_post"
+                        android:visibility="gone"
+                        android:layout_marginStart="28dp" />
 
                 </LinearLayout>
 

@@ -24,6 +24,9 @@ import com.example.doantotnghiep.View.Auth.PersonalInfoActivity
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
+import com.example.doantotnghiep.View.Auth.MyPostsActivity
+
+
 
 class ProfileFragment : Fragment() {
 
@@ -37,6 +40,10 @@ class ProfileFragment : Fragment() {
     private lateinit var btnLogout: LinearLayout
     private lateinit var btnNotification: ImageView
     private lateinit var btnChangeAvatar: androidx.cardview.widget.CardView
+    private lateinit var cardMyPosts: androidx.cardview.widget.CardView
+    private lateinit var btnMyPosts: LinearLayout
+
+    private lateinit var tvRoleBadge: TextView
 
     // Chọn ảnh từ thư viện
     private val pickImageLauncher = registerForActivityResult(
@@ -70,6 +77,9 @@ class ProfileFragment : Fragment() {
         btnLogout = view.findViewById(R.id.btnLogout)
         btnNotification = view.findViewById(R.id.btnNotification)
         btnChangeAvatar = view.findViewById(R.id.btnChangeAvatar)
+        cardMyPosts = view.findViewById(R.id.cardMyPosts)
+        btnMyPosts = view.findViewById(R.id.btnMyPosts)
+        tvRoleBadge = view.findViewById(R.id.tvRoleBadge)
 
         loadUserInfo()
 
@@ -93,6 +103,11 @@ class ProfileFragment : Fragment() {
         // Bấm Bài viết đã lưu
         btnSavedPosts.setOnClickListener {
             Toast.makeText(requireContext(), "Chức năng đang phát triển", Toast.LENGTH_SHORT).show()
+        }
+
+        // Bấm Bài đăng của tôi
+        btnMyPosts.setOnClickListener {
+            startActivity(Intent(requireContext(), MyPostsActivity::class.java))
         }
 
         // Bấm Lịch hẹn xem phòng
@@ -119,7 +134,9 @@ class ProfileFragment : Fragment() {
                 .setNegativeButton("Hủy", null)
                 .show()
         }
+
     }
+
 
     private fun loadUserInfo() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -130,21 +147,43 @@ class ProfileFragment : Fragment() {
                     tvUserName.text = document.getString("fullName") ?: "Chưa cập nhật"
                     tvUserEmail.text = document.getString("email") ?: ""
 
-                    // Load ảnh đại diện từ Base64
-                    val avatarBase64 = document.getString("avatarUrl") ?: ""
-                    if (avatarBase64.isNotEmpty()) {
-                        try {
-                            val imageBytes = Base64.decode(avatarBase64, Base64.DEFAULT)
-                            val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-                            imgAvatar.setPadding(0, 0, 0, 0)
-                            imgAvatar.imageTintList = null
-                            Glide.with(requireContext())
-                                .load(bitmap)
-                                .circleCrop()
-                                .into(imgAvatar)
-                        } catch (e: Exception) {
-                            // Giữ ảnh mặc định nếu lỗi
+                    // Load ảnh đại diện từ Firebase Storage URL
+                    val avatarUrl = document.getString("avatarUrl") ?: ""
+                    if (avatarUrl.isNotEmpty() && avatarUrl.startsWith("http")) {
+                        imgAvatar.setPadding(0, 0, 0, 0)
+                        imgAvatar.imageTintList = null
+                        Glide.with(requireContext())
+                            .load(avatarUrl)
+                            .circleCrop()
+                            .placeholder(R.drawable.ic_person)
+                            .into(imgAvatar)
+                    }
+
+                    // Hiển thị badge vai trò
+                    val role = document.getString("role") ?: "tenant"
+                    val isVerified = document.getBoolean("isVerified") ?: false
+
+                    when {
+                        role == "landlord" && isVerified -> {
+                            tvRoleBadge.text = "✓ Chủ trọ đã xác minh"
+                            tvRoleBadge.setTextColor(0xFF2E7D32.toInt())
+                            tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_landlord)
                         }
+                        role == "admin" -> {
+                            tvRoleBadge.text = "★ Quản trị viên"
+                            tvRoleBadge.setTextColor(0xFF1976D2.toInt())
+                            tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+                        }
+                        else -> {
+                            // Kiểm tra trạng thái xác minh
+                            checkVerificationBadge(uid)
+                        }
+                    }
+                    // Hiện/ẩn mục "Bài đăng của tôi"
+                    if (role == "landlord" || role == "admin") {
+                        cardMyPosts.visibility = View.VISIBLE
+                    } else {
+                        cardMyPosts.visibility = View.GONE
                     }
                 }
             }
@@ -153,47 +192,76 @@ class ProfileFragment : Fragment() {
             }
     }
 
+    private fun checkVerificationBadge(uid: String) {
+        FirebaseFirestore.getInstance().collection("verifications").document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    when (doc.getString("status")) {
+                        "pending" -> {
+                            tvRoleBadge.text = "⏳ Đang chờ xác minh"
+                            tvRoleBadge.setTextColor(0xFFE65100.toInt())
+                            tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
+                        }
+                        "rejected" -> {
+                            tvRoleBadge.text = "✗ Xác minh bị từ chối"
+                            tvRoleBadge.setTextColor(0xFFD32F2F.toInt())
+                            tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
+                        }
+                        else -> {
+                            tvRoleBadge.text = "Người thuê trọ"
+                            tvRoleBadge.setTextColor(0xFF666666.toInt())
+                            tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+                        }
+                    }
+                } else {
+                    tvRoleBadge.text = "Người thuê trọ"
+                    tvRoleBadge.setTextColor(0xFF666666.toInt())
+                    tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+                }
+            }
+    }
+
     private fun uploadAvatar(imageUri: Uri) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         Toast.makeText(requireContext(), "Đang cập nhật ảnh...", Toast.LENGTH_SHORT).show()
 
-        try {
-            // Đọc ảnh và nén
-            val inputStream = requireContext().contentResolver.openInputStream(imageUri)
-            val originalBitmap = BitmapFactory.decodeStream(inputStream)
-            inputStream?.close()
+        // Upload ảnh lên Firebase Storage
+        val storageRef = com.google.firebase.storage.FirebaseStorage.getInstance()
+            .reference.child("avatars/$uid.jpg")
 
-            // Resize ảnh xuống 200x200 để tiết kiệm dung lượng
-            val resizedBitmap = Bitmap.createScaledBitmap(originalBitmap, 200, 200, true)
+        storageRef.putFile(imageUri)
+            .addOnSuccessListener {
+                // Lấy URL download
+                storageRef.downloadUrl.addOnSuccessListener { downloadUrl ->
+                    // Lưu URL vào Firestore
+                    FirebaseFirestore.getInstance().collection("users").document(uid)
+                        .update("avatarUrl", downloadUrl.toString())
+                        .addOnSuccessListener {
+                            Toast.makeText(requireContext(), "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show()
 
-            // Chuyển sang Base64
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            resizedBitmap.compress(Bitmap.CompressFormat.JPEG, 70, byteArrayOutputStream)
-            val imageBytes = byteArrayOutputStream.toByteArray()
-            val base64String = Base64.encodeToString(imageBytes, Base64.DEFAULT)
-
-            // Lưu vào Firestore
-            FirebaseFirestore.getInstance().collection("users").document(uid)
-                .update("avatarUrl", base64String)
-                .addOnSuccessListener {
-                    Toast.makeText(requireContext(), "Cập nhật ảnh đại diện thành công!", Toast.LENGTH_SHORT).show()
-
-                    // Hiển thị ảnh mới
-                    imgAvatar.setPadding(0, 0, 0, 0)
-                    imgAvatar.imageTintList = null
-                    Glide.with(requireContext())
-                        .load(resizedBitmap)
-                        .circleCrop()
-                        .into(imgAvatar)
+                            // Hiển thị ảnh mới
+                            imgAvatar.setPadding(0, 0, 0, 0)
+                            imgAvatar.imageTintList = null
+                            Glide.with(requireContext())
+                                .load(downloadUrl.toString())
+                                .circleCrop()
+                                .into(imgAvatar)
+                        }
+                        .addOnFailureListener { e ->
+                            Toast.makeText(requireContext(), "Lưu thông tin thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
                 }
-                .addOnFailureListener { e ->
-                    Toast.makeText(requireContext(), "Cập nhật thất bại: ${e.message}", Toast.LENGTH_LONG).show()
-                }
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Lỗi xử lý ảnh: ${e.message}", Toast.LENGTH_LONG).show()
-        }
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(requireContext(), "Upload ảnh thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+
     }
+
+
+
 
     override fun onResume() {
         super.onResume()
