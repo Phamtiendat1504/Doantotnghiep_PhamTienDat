@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -14,7 +13,7 @@
         android:background="#1976D2"
         android:paddingStart="20dp"
         android:paddingEnd="20dp"
-        android:paddingTop="16dp"
+        android:paddingTop="25dp"
         android:paddingBottom="16dp"
         android:orientation="horizontal"
         android:gravity="center_vertical">
@@ -28,91 +27,88 @@
             android:padding="6dp" />
 
         <TextView
+            android:id="@+id/tvTitle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Bài đăng của tôi"
+            android:text="Kết quả tìm kiếm"
             android:textSize="20sp"
+            android:paddingTop="25dp"
             android:textStyle="bold"
-            android:paddingTop="20dp"
             android:textColor="#FFFFFF"
             android:layout_marginStart="50dp" />
 
     </LinearLayout>
 
-    <!-- Tab lọc trạng thái -->
-    <HorizontalScrollView
+    <!-- Thanh khu vực + kết quả -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="none"
         android:background="#FFFFFF"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
         android:paddingTop="10dp"
         android:paddingBottom="10dp"
-        android:paddingStart="14dp">
+        android:orientation="vertical">
 
         <LinearLayout
-            android:id="@+id/layoutTabs"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal">
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAll"
+            <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tất cả"
+                android:text="Khu vực"
                 android:textSize="13sp"
-                android:checked="true"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
+                android:textColor="#999999" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipPending"
+            <TextView
+                android:id="@+id/tvSearchArea"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Chờ duyệt"
+                android:text=""
                 android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipApproved"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Đã duyệt"
-                android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
-
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipRejected"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Bị từ chối"
-                android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
+                android:textStyle="bold"
+                android:textColor="#1976D2"
+                android:background="@drawable/bg_badge_tenant"
+                android:paddingStart="12dp"
+                android:paddingEnd="12dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:layout_marginStart="8dp" />
 
         </LinearLayout>
 
-    </HorizontalScrollView>
+        <TextView
+            android:id="@+id/tvResultCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Kết quả tìm kiếm: 0 phòng"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#333333"
+            android:layout_marginTop="6dp" />
+
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
         android:background="#E0E0E0" />
 
-    <!-- Danh sách bài đăng -->
-    <ScrollView
+    <!-- Nội dung -->
+    <androidx.core.widget.NestedScrollView
+        android:id="@+id/scrollView"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
         <LinearLayout
-            android:id="@+id/layoutPosts"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="14dp">
+            android:padding="10dp">
 
             <ProgressBar
                 android:id="@+id/progressBar"
@@ -125,15 +121,32 @@
                 android:id="@+id/tvEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Chưa có bài đăng nào"
+                android:text="Không tìm thấy phòng trọ phù hợp"
                 android:textSize="14sp"
                 android:textColor="#999999"
                 android:gravity="center"
                 android:padding="40dp"
                 android:visibility="gone" />
 
+            <!-- Danh sách kết quả dạng lưới -->
+            <LinearLayout
+                android:id="@+id/layoutResults"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <!-- Phân trang -->
+            <LinearLayout
+                android:id="@+id/layoutPagination"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:paddingTop="14dp"
+                android:paddingBottom="20dp" />
+
         </LinearLayout>
 
-    </ScrollView>
+    </androidx.core.widget.NestedScrollView>
 
 </LinearLayout>

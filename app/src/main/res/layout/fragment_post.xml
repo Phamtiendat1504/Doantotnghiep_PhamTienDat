@@ -323,27 +323,6 @@
                     android:gravity="top"
                     android:layout_marginBottom="10dp" />
 
-                <!-- Số lượng phòng -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Số lượng phòng cho thuê *"
-                    android:textSize="13sp"
-                    android:textStyle="bold"
-                    android:textColor="#444444"
-                    android:layout_marginBottom="4dp" />
-
-                <EditText
-                    android:id="@+id/edtRoomCount"
-                    android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:hint="VD: 5"
-                    android:textSize="14sp"
-                    android:paddingStart="12dp"
-                    android:background="@drawable/bg_edit_post"
-                    android:inputType="number"
-                    android:layout_marginBottom="10dp" />
-
                 <!-- Ảnh phòng trọ -->
                 <LinearLayout
                     android:layout_width="match_parent"

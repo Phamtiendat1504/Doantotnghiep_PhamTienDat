@@ -58,6 +58,15 @@
         <activity
             android:name=".View.Auth.MyPostsActivity"
             android:exported="false" />
+        <activity
+            android:name=".View.Auth.SearchResultsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".View.Auth.RoomDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".View.Auth.SavedPostsActivity"
+            android:exported="false" />
 
     </application>
 

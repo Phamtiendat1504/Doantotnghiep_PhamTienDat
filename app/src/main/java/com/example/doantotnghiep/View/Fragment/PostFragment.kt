@@ -197,7 +197,6 @@ class PostFragment : Fragment() {
         val spinnerWard = view.findViewById<Spinner>(R.id.spinnerWard)
         val edtAddress = view.findViewById<EditText>(R.id.edtAddress)
         val edtDescription = view.findViewById<EditText>(R.id.edtDescription)
-        val edtRoomCount = view.findViewById<EditText>(R.id.edtRoomCount)
         val edtPrice = view.findViewById<EditText>(R.id.edtPrice)
         val edtArea = view.findViewById<EditText>(R.id.edtArea)
         val edtPeopleCount = view.findViewById<EditText>(R.id.edtPeopleCount)
@@ -355,7 +354,6 @@ class PostFragment : Fragment() {
                 district = districtName,
                 address = edtAddress.text.toString().trim(),
                 description = edtDescription.text.toString().trim(),
-                roomCount = edtRoomCount.text.toString().toIntOrNull() ?: 0,
                 price = NumberFormatUtils.getRawNumber(edtPrice).toLongOrNull() ?: 0,
                 area = edtArea.text.toString().toIntOrNull() ?: 0,
                 peopleCount = edtPeopleCount.text.toString().toIntOrNull() ?: 0,
@@ -491,7 +489,6 @@ class PostFragment : Fragment() {
         view.findViewById<EditText>(R.id.edtPrice)?.text?.clear()
         view.findViewById<EditText>(R.id.edtArea)?.text?.clear()
         view.findViewById<EditText>(R.id.edtPeopleCount)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtRoomCount)?.text?.clear()
         view.findViewById<EditText>(R.id.edtDepositMonths)?.text?.clear()
         view.findViewById<EditText>(R.id.edtDepositAmount)?.text?.clear()
         view.findViewById<EditText>(R.id.edtWifiPrice)?.text?.clear()

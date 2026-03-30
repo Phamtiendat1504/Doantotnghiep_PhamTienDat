@@ -1,5 +1,6 @@
 package com.example.doantotnghiep.View.Fragment
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -9,11 +10,11 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.RadioGroup
 import android.widget.Spinner
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.AddressData
 import com.example.doantotnghiep.Utils.NumberFormatUtils
+import com.example.doantotnghiep.View.Auth.SearchResultsActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -79,13 +80,10 @@ class SearchFragment : Fragment() {
             if (isChecked) loadAreaSpinner(AddressData.xaList)
         }
 
-        // Tùy chọn giá → hiện/ẩn ô nhập
+        // Tùy chọn giá
         chipPriceCustom.setOnCheckedChangeListener { _, isChecked ->
             edtCustomPrice.visibility = if (isChecked) View.VISIBLE else View.GONE
-            // Bỏ chọn các chip giá khác khi chọn tùy chọn
-            if (isChecked) {
-                chipGroupPrice.clearCheck()
-            }
+            if (isChecked) chipGroupPrice.clearCheck()
         }
 
         // Format giá tiền
@@ -110,12 +108,73 @@ class SearchFragment : Fragment() {
 
         // Giờ giấc
         rgCurfew.setOnCheckedChangeListener { _, checkedId ->
-            edtCurfewTime.visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
+            edtCurfewTime.visibility =
+                if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
         }
 
         // Nút tìm kiếm
         btnSearch.setOnClickListener {
-            Toast.makeText(requireContext(), "Chức năng tìm kiếm đang phát triển", Toast.LENGTH_SHORT).show()
+            val selectedWard = spinnerArea.selectedItem?.toString() ?: ""
+
+            if (selectedWard.isEmpty() || spinnerArea.selectedItemPosition == 0) {
+                androidx.appcompat.app.AlertDialog.Builder(requireContext())
+                    .setTitle("Chưa chọn khu vực")
+                    .setMessage("Vui lòng chọn khu vực bạn muốn tìm phòng trọ để bắt đầu tìm kiếm.")
+                    .setPositiveButton("Đã hiểu", null)
+                    .show()
+                return@setOnClickListener
+            }
+
+            val intent = Intent(requireContext(), SearchResultsActivity::class.java)
+            intent.putExtra("ward", selectedWard)
+
+            // Giá
+            var minPrice = 0L
+            var maxPrice = 0L
+
+            if (chipPriceCustom.isChecked && edtCustomPrice.text.isNotEmpty()) {
+                val customPrice = edtCustomPrice.text.toString()
+                    .replace(".", "").replace(",", "").toLongOrNull() ?: 0
+                minPrice = customPrice - 500000
+                maxPrice = customPrice + 500000
+            } else {
+                when (chipGroupPrice.checkedChipId) {
+                    R.id.chipPrice1 -> { minPrice = 1000000; maxPrice = 3000000 }
+                    R.id.chipPrice2 -> { minPrice = 3000000; maxPrice = 6000000 }
+                    R.id.chipPrice3 -> { minPrice = 6000000; maxPrice = 9000000 }
+                    R.id.chipPrice4 -> { minPrice = 9000000; maxPrice = 12000000 }
+                    R.id.chipPrice5 -> { minPrice = 12000000; maxPrice = 0 }
+                }
+            }
+            intent.putExtra("minPrice", minPrice)
+            intent.putExtra("maxPrice", maxPrice)
+
+            // Diện tích
+            val roomArea = edtRoomArea.text.toString().toIntOrNull() ?: 0
+            if (roomArea > 0) {
+                intent.putExtra("minArea", roomArea - 5)
+                intent.putExtra("maxArea", roomArea + 5)
+            } else {
+                intent.putExtra("minArea", 0)
+                intent.putExtra("maxArea", 0)
+            }
+
+            // Tiện ích
+            intent.putExtra("hasWifi", cbWifi.isChecked)
+            intent.putExtra("hasAirCon", false)
+            intent.putExtra("hasWaterHeater", false)
+            intent.putExtra("hasParking", false)
+
+            // Giờ giấc
+            val curfew = when (rgCurfew.checkedRadioButtonId) {
+                R.id.rbCurfewFree -> "Tự do"
+                R.id.rbCurfewCustom -> "Tùy chọn"
+                else -> ""
+            }
+            intent.putExtra("curfew", curfew)
+            intent.putExtra("genderPrefer", "")
+
+            startActivity(intent)
         }
     }
 

@@ -25,7 +25,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
 import com.example.doantotnghiep.View.Auth.MyPostsActivity
-
+import com.example.doantotnghiep.View.Auth.SavedPostsActivity
 
 
 class ProfileFragment : Fragment() {
@@ -102,7 +102,7 @@ class ProfileFragment : Fragment() {
 
         // Bấm Bài viết đã lưu
         btnSavedPosts.setOnClickListener {
-            Toast.makeText(requireContext(), "Chức năng đang phát triển", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(requireContext(), SavedPostsActivity::class.java))
         }
 
         // Bấm Bài đăng của tôi
@@ -134,10 +134,19 @@ class ProfileFragment : Fragment() {
                 .setNegativeButton("Hủy", null)
                 .show()
         }
-
+        // Ẩn bài viết đã lưu nếu là chủ trọ
+        val uidCheck = FirebaseAuth.getInstance().currentUser?.uid
+        if (uidCheck != null) {
+            FirebaseFirestore.getInstance().collection("users").document(uidCheck).get()
+                .addOnSuccessListener { doc ->
+                    if (!isAdded) return@addOnSuccessListener
+                    val role = doc.getString("role") ?: "tenant"
+                    if (role == "landlord" || role == "admin") {
+                        btnSavedPosts.visibility = View.GONE
+                    }
+                }
+        }
     }
-
-
     private fun loadUserInfo() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseFirestore.getInstance().collection("users").document(uid)
@@ -259,10 +268,6 @@ class ProfileFragment : Fragment() {
             }
 
     }
-
-
-
-
     override fun onResume() {
         super.onResume()
         loadUserInfo()
