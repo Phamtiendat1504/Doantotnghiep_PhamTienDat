@@ -60,7 +60,6 @@ class SavedPostsActivity : AppCompatActivity() {
 
         db.collection("savedPosts")
             .whereEqualTo("userId", uid)
-            .orderBy("savedAt", Query.Direction.DESCENDING)
             .get()
             .addOnSuccessListener { documents ->
                 progressBar.visibility = View.GONE

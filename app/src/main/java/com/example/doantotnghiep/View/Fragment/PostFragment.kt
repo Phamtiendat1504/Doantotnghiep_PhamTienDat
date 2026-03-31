@@ -32,6 +32,7 @@ class PostFragment : Fragment() {
     private val db = FirebaseFirestore.getInstance()
     private val imageUris = mutableListOf<Uri>()
     private val MAX_PHOTOS = 10
+    private var isFormSetup = false
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -136,7 +137,10 @@ class PostFragment : Fragment() {
     private fun showPostForm() {
         verifyRequiredView?.visibility = View.GONE
         postFormView?.visibility = View.VISIBLE
-        setupPostForm()
+        if (!isFormSetup) {
+            setupPostForm()
+            isFormSetup = true
+        }
     }
 
     private fun setupVerifyButton() {
@@ -327,6 +331,10 @@ class PostFragment : Fragment() {
         // ═══ NÚT ĐĂNG BÀI ═══
         btnPostRoom.setOnClickListener {
             val selectedWard = spinnerWard.selectedItem?.toString() ?: ""
+            if (spinnerWard.selectedItemPosition == 0) {
+                Toast.makeText(requireContext(), "Vui lòng chọn khu vực", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
             val wardName = if (selectedWard.contains("(")) selectedWard.substringBefore("(").trim() else selectedWard
             val districtName = if (selectedWard.contains("(")) selectedWard.substringAfter("(").replace(")", "").trim() else ""
 

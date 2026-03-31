@@ -67,6 +67,19 @@
         <activity
             android:name=".View.Auth.SavedPostsActivity"
             android:exported="false" />
+        <activity android:name=".View.Auth.BookingActivity" android:exported="false" />
+        <activity android:name=".View.Auth.MyAppointmentsActivity" android:exported="false" />
+        <activity
+            android:name=".View.Auth.ImageViewerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.NoActionBar" />
+        <activity
+            android:name=".View.Auth.EditPostActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".View.Auth.MyPostDetailActivity"
+            android:exported="false" />
 
     </application>
 

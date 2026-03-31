@@ -20,7 +20,8 @@ import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
+import android.content.Intent
+import com.example.doantotnghiep.View.Auth.MyPostDetailActivity
 class MyPostsActivity : AppCompatActivity() {
 
     private lateinit var layoutPosts: LinearLayout
@@ -303,9 +304,39 @@ class MyPostsActivity : AppCompatActivity() {
             rejectLayout.addView(tvReason)
 
             mainLayout.addView(rejectLayout)
-        }
 
+// ═══ Nút sửa bài đăng (chỉ hiện khi bị từ chối) ═══
+            val btnEdit = TextView(this)
+            btnEdit.text = "✏️ Sửa và đăng lại"
+            btnEdit.textSize = 14f
+            btnEdit.setTextColor(0xFFFFFFFF.toInt())
+            btnEdit.setTypeface(btnEdit.typeface, android.graphics.Typeface.BOLD)
+            btnEdit.gravity = android.view.Gravity.CENTER
+            btnEdit.setPadding(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
+            btnEdit.background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFF1976D2.toInt())
+                cornerRadius = dpToPx(10).toFloat()
+            }
+            val editParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            editParams.setMargins(dpToPx(12), 0, dpToPx(12), dpToPx(12))
+            btnEdit.layoutParams = editParams
+            btnEdit.setOnClickListener {
+                val intent = Intent(this, EditPostActivity::class.java)
+                intent.putExtra("roomId", docId)
+                startActivity(intent)
+            }
+            mainLayout.addView(btnEdit)
+        }
         card.addView(mainLayout)
+        // Bấm vào card mở chi tiết
+        card.setOnClickListener {
+            val intent = Intent(this, MyPostDetailActivity::class.java)
+            intent.putExtra("roomId", docId)
+            startActivity(intent)
+        }
         return card
     }
 

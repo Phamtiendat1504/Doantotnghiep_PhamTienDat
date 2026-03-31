@@ -26,8 +26,8 @@ import com.google.firebase.firestore.FirebaseFirestore
 import java.io.ByteArrayOutputStream
 import com.example.doantotnghiep.View.Auth.MyPostsActivity
 import com.example.doantotnghiep.View.Auth.SavedPostsActivity
-
-
+import com.example.doantotnghiep.View.Auth.MyAppointmentsActivity
+import com.example.doantotnghiep.View.Auth.ImageViewerActivity
 class ProfileFragment : Fragment() {
 
     private lateinit var imgAvatar: ImageView
@@ -112,7 +112,7 @@ class ProfileFragment : Fragment() {
 
         // Bấm Lịch hẹn xem phòng
         btnAppointments.setOnClickListener {
-            Toast.makeText(requireContext(), "Chức năng đang phát triển", Toast.LENGTH_SHORT).show()
+            startActivity(Intent(requireContext(), MyAppointmentsActivity::class.java))
         }
 
         // Bấm Thông báo
@@ -257,7 +257,16 @@ class ProfileFragment : Fragment() {
                                 .load(downloadUrl.toString())
                                 .circleCrop()
                                 .into(imgAvatar)
+                            imgAvatar.setOnClickListener {
+                                val avatarUrl = imgAvatar.tag as? String ?: ""
+                                if (avatarUrl.isNotEmpty()) {
+                                    val intent = Intent(requireContext(), ImageViewerActivity::class.java)
+                                    intent.putExtra("imageUrl", avatarUrl)
+                                    startActivity(intent)
+                                }
+                            }
                         }
+
                         .addOnFailureListener { e ->
                             Toast.makeText(requireContext(), "Lưu thông tin thất bại: ${e.message}", Toast.LENGTH_LONG).show()
                         }

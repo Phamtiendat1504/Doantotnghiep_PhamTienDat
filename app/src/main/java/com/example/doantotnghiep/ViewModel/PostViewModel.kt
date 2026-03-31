@@ -23,7 +23,7 @@ class PostViewModel : ViewModel() {
             errorMessage.value = "Số điện thoại phải có 10 số và bắt đầu bằng 0"; return
         }
         if (room.title.isEmpty()) { errorMessage.value = "Vui lòng nhập tiêu đề bài đăng"; return }
-        if (room.ward.isEmpty() || room.ward == "-- Chọn phường/xã --") {
+        if (room.ward.isEmpty() || room.ward == "-- Chọn phường/xã --" || room.ward == "-- Ch") {
             errorMessage.value = "Vui lòng chọn khu vực"; return
         }
         if (room.address.isEmpty()) { errorMessage.value = "Vui lòng nhập địa chỉ cụ thể"; return }
