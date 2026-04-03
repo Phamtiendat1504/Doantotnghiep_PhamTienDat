@@ -3,9 +3,9 @@ package com.example.doantotnghiep.View.Auth
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.repository.AuthRepository
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -92,7 +92,7 @@ class ResetPasswordActivity : AppCompatActivity() {
                 onFailure = { error ->
                     progressBar.visibility = View.GONE
                     btnResetPassword.isEnabled = true
-                    Toast.makeText(this, error, Toast.LENGTH_LONG).show()
+                    MessageUtils.showErrorDialog(this, "Đặt lại mật khẩu thất bại", error)
                 }
             )
         }

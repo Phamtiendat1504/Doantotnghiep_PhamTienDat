@@ -8,9 +8,9 @@ import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -24,6 +24,7 @@ class PersonalInfoActivity : AppCompatActivity() {
     private lateinit var tilFullName: TextInputLayout
     private lateinit var tilEmail: TextInputLayout
     private lateinit var tilPhone: TextInputLayout
+    private lateinit var edtSavedPassword: TextInputEditText
     private lateinit var tilAddress: TextInputLayout
     private lateinit var tilOccupation: TextInputLayout
     private lateinit var edtFullName: TextInputEditText
@@ -76,8 +77,10 @@ class PersonalInfoActivity : AppCompatActivity() {
         btnCancel = findViewById(R.id.btnCancel)
         progressBar = findViewById(R.id.progressBar)
         btnBack = findViewById(R.id.btnBack)
+        edtSavedPassword = findViewById(R.id.edtSavedPassword)
 
         loadUserInfo()
+        loadSavedPassword()
 
         // Bấm chọn ngày sinh
         tvBirthday.setOnClickListener {
@@ -239,7 +242,7 @@ class PersonalInfoActivity : AppCompatActivity() {
                     progressBar.visibility = View.GONE
                     btnSave.isEnabled = true
                     btnCancel.isEnabled = true
-                    Toast.makeText(this, "Vui lòng nhập mật khẩu", Toast.LENGTH_SHORT).show()
+                    MessageUtils.showInfoDialog(this, "Thông tin thiếu", "Vui lòng nhập mật khẩu để xác nhận.")
                     return@setPositiveButton
                 }
 
@@ -252,24 +255,24 @@ class PersonalInfoActivity : AppCompatActivity() {
                             .addOnSuccessListener {
                                 updateFirestore(uid, fullName, newEmail, phone, address, birthday, gender, occupation)
 
-                                androidx.appcompat.app.AlertDialog.Builder(this)
-                                    .setTitle("Xác nhận email mới")
-                                    .setMessage("Một email xác nhận đã được gửi đến $newEmail. Vui lòng kiểm tra hộp thư và xác nhận để hoàn tất đổi email.")
-                                    .setPositiveButton("OK", null)
-                                    .show()
+                                MessageUtils.showSuccessDialog(
+                                    this,
+                                    "Xác nhận email mới",
+                                    "Một email xác nhận đã được gửi đến $newEmail. Vui lòng kiểm tra hộp thư và xác nhận để hoàn tất đổi email."
+                                )
                             }
                             .addOnFailureListener { e ->
                                 progressBar.visibility = View.GONE
                                 btnSave.isEnabled = true
                                 btnCancel.isEnabled = true
-                                Toast.makeText(this, "Đổi email thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+                                MessageUtils.showErrorDialog(this, "Lỗi đổi email", e.message ?: "Không thể gửi yêu cầu đổi email.")
                             }
                     }
                     .addOnFailureListener {
                         progressBar.visibility = View.GONE
                         btnSave.isEnabled = true
                         btnCancel.isEnabled = true
-                        Toast.makeText(this, "Mật khẩu không đúng", Toast.LENGTH_SHORT).show()
+                        MessageUtils.showErrorDialog(this, "Xác thực thất bại", "Mật khẩu bạn nhập không chính xác.")
                     }
             }
             .setNegativeButton("Hủy") { _, _ ->
@@ -313,20 +316,17 @@ class PersonalInfoActivity : AppCompatActivity() {
 
                 enableEditing(false)
 
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Thành công")
-                    .setMessage("Thông tin cá nhân đã được cập nhật thành công!")
-                    .setPositiveButton("OK") { dialog, _ ->
-                        dialog.dismiss()
-                    }
-                    .setCancelable(false)
-                    .show()
+                MessageUtils.showSuccessDialog(
+                    this,
+                    "Cập nhật thành công",
+                    "Thông tin cá nhân của bạn đã được cập nhật trên hệ thống."
+                )
             }
             .addOnFailureListener { e ->
                 progressBar.visibility = View.GONE
                 btnSave.isEnabled = true
                 btnCancel.isEnabled = true
-                Toast.makeText(this, "Cập nhật thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+                MessageUtils.showErrorDialog(this, "Lỗi cập nhật", e.message ?: "Đã có lỗi xảy ra.")
             }
     }
 
@@ -366,7 +366,7 @@ class PersonalInfoActivity : AppCompatActivity() {
             }
             .addOnFailureListener {
                 progressBar.visibility = View.GONE
-                Toast.makeText(this, "Lỗi tải thông tin", Toast.LENGTH_SHORT).show()
+                MessageUtils.showErrorDialog(this, "Lỗi tải dữ liệu", "Không thể tải thông tin người dùng từ máy chủ.")
             }
     }
 
@@ -376,5 +376,14 @@ class PersonalInfoActivity : AppCompatActivity() {
         tilPhone.error = null
         tilAddress.error = null
         tilOccupation.error = null
+    }
+
+    private fun loadSavedPassword() {
+        val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
+        val isRemember = prefs.getBoolean("remember_password", false)
+        if (!isRemember) return
+        val email = prefs.getString("last_email", "") ?: return
+        val savedPwd = prefs.getString("pwd_$email", null) ?: return
+        edtSavedPassword.setText(savedPwd)
     }
 }

@@ -6,7 +6,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import com.bumptech.glide.Glide
@@ -21,7 +20,9 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.content.Intent
-import com.example.doantotnghiep.View.Auth.MyPostDetailActivity
+import com.example.doantotnghiep.repository.RoomRepository
+import com.example.doantotnghiep.Utils.MessageUtils
+
 class MyPostsActivity : AppCompatActivity() {
 
     private lateinit var layoutPosts: LinearLayout
@@ -34,6 +35,7 @@ class MyPostsActivity : AppCompatActivity() {
     private lateinit var chipRejected: Chip
 
     private val db = FirebaseFirestore.getInstance()
+    private val repository = RoomRepository()
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -54,6 +56,8 @@ class MyPostsActivity : AppCompatActivity() {
         chipRejected = findViewById(R.id.chipRejected)
 
         btnBack.setOnClickListener { finish() }
+
+        markPostsAsSeen()
 
         // Tab lọc
         chipAll.setOnClickListener { clearChips(); chipAll.isChecked = true; loadPosts("all") }
@@ -78,6 +82,7 @@ class MyPostsActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         tvEmpty.visibility = View.GONE
 
+        // Luôn lấy bài mới nhất lên đầu bằng orderBy("createdAt")
         var query = db.collection("rooms")
             .whereEqualTo("userId", uid)
             .orderBy("createdAt", Query.Direction.DESCENDING)
@@ -100,7 +105,24 @@ class MyPostsActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                for (doc in documents) {
+                // Chuyển sang List để có thể sắp xếp tùy chỉnh ở Client
+                val postList = documents.map { it }
+
+                // LOGIC SẮP XẾP ƯU TIÊN (Dành cho tab "Tất cả")
+                val sortedList = if (filter == "all") {
+                    postList.sortedWith(compareBy<com.google.firebase.firestore.DocumentSnapshot> {
+                        // Trọng số trạng thái: rejected(0) > pending(1) > approved(2)
+                        when (it.getString("status")) {
+                            "rejected" -> 0
+                            "pending" -> 1
+                            else -> 2
+                        }
+                    }.thenByDescending { it.getLong("createdAt") ?: 0 }) // Trong cùng trạng thái thì bài mới hơn lên đầu
+                } else {
+                    postList // Các tab khác đã được Firestore sort theo thời gian rồi
+                }
+
+                for (doc in sortedList) {
                     val title = doc.getString("title") ?: "Chưa có tiêu đề"
                     val price = doc.getLong("price") ?: 0
                     val ward = doc.getString("ward") ?: ""
@@ -197,7 +219,8 @@ class MyPostsActivity : AppCompatActivity() {
         infoLayout.addView(tvLocation)
 
         val tvArea = TextView(this)
-        tvArea.text = "${area}m²"
+        val areaText = if (area > 0) "${area}m²" else ""
+        tvArea.text = areaText
         tvArea.textSize = 12f
         tvArea.setTextColor(0xFF666666.toInt())
         tvArea.setPadding(0, dpToPx(2), 0, 0)
@@ -238,8 +261,12 @@ class MyPostsActivity : AppCompatActivity() {
             }
             "approved" -> {
                 tvStatus.text = "✓ Đã duyệt"
-                tvStatus.setTextColor(0xFF2E7D32.toInt())
-                tvStatus.setBackgroundResource(R.drawable.bg_badge_landlord)
+                tvStatus.setTextColor(0xFFFFFFFF.toInt())
+                // BUG FIX #6: Use color instead of missing drawable
+                tvStatus.background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0xFF2E7D32.toInt())
+                    cornerRadius = dpToPx(8).toFloat()
+                }
             }
             "rejected" -> {
                 tvStatus.text = "✗ Từ chối"
@@ -273,7 +300,7 @@ class MyPostsActivity : AppCompatActivity() {
         btnDelete.setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Xóa bài đăng")
-                .setMessage("Bạn có chắc chắn muốn xóa bài đăng này?")
+                .setMessage("Bạn có chắc chắn muốn xóa bài đăng này? Mọi thông tin và hình ảnh sẽ bị xóa hoàn toàn khỏi hệ thống.")
                 .setPositiveButton("Xóa") { _, _ ->
                     deletePost(docId)
                 }
@@ -305,7 +332,7 @@ class MyPostsActivity : AppCompatActivity() {
 
             mainLayout.addView(rejectLayout)
 
-// ═══ Nút sửa bài đăng (chỉ hiện khi bị từ chối) ═══
+            // ═══ Nút sửa bài đăng (chỉ hiện khi bị từ chối) ═══
             val btnEdit = TextView(this)
             btnEdit.text = "✏️ Sửa và đăng lại"
             btnEdit.textSize = 14f
@@ -341,20 +368,46 @@ class MyPostsActivity : AppCompatActivity() {
     }
 
     private fun deletePost(docId: String) {
-        db.collection("rooms").document(docId)
-            .delete()
-            .addOnSuccessListener {
-                Toast.makeText(this, "Đã xóa bài đăng", Toast.LENGTH_SHORT).show()
-                // Reload danh sách
-                when {
-                    chipPending.isChecked -> loadPosts("pending")
-                    chipApproved.isChecked -> loadPosts("approved")
-                    chipRejected.isChecked -> loadPosts("rejected")
-                    else -> loadPosts("all")
+        progressBar.visibility = View.VISIBLE
+        repository.deleteRoom(docId,
+            onSuccess = {
+                progressBar.visibility = View.GONE
+                MessageUtils.showSuccessDialog(
+                    this,
+                    "Đã xóa bài đăng",
+                    "Bài đăng của bạn và toàn bộ hình ảnh liên quan đã được xóa sạch khỏi hệ thống."
+                ) {
+                    refreshList()
                 }
+            },
+            onFailure = { error ->
+                progressBar.visibility = View.GONE
+                MessageUtils.showErrorDialog(this, "Lỗi xóa bài", error)
             }
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Xóa thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+        )
+    }
+
+    private fun refreshList() {
+        when {
+            chipPending.isChecked -> loadPosts("pending")
+            chipApproved.isChecked -> loadPosts("approved")
+            chipRejected.isChecked -> loadPosts("rejected")
+            else -> loadPosts("all")
+        }
+    }
+
+    private fun markPostsAsSeen() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val prefs = getSharedPreferences("post_seen_$uid", android.content.Context.MODE_PRIVATE)
+
+        db.collection("rooms")
+            .whereEqualTo("userId", uid)
+            .whereIn("status", listOf("approved", "rejected"))
+            .get()
+            .addOnSuccessListener { docs ->
+                val ids = docs.map { it.id }.toSet()
+                val existing = prefs.getStringSet("seen_ids", emptySet()) ?: emptySet()
+                prefs.edit().putStringSet("seen_ids", existing + ids).apply()
             }
     }
 

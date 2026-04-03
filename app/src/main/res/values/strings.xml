@@ -1,3 +1,133 @@
 <resources>
+    <!-- App name -->
     <string name="app_name">Tìm trọ 24/7</string>
+
+    <!-- Home Fragment -->
+    <string name="home_greeting_prefix">Xin chào,</string>
+    <string name="home_loading">Đang tải...</string>
+    <string name="home_notification">Thông báo</string>
+    <string name="home_featured_rooms">Phòng nổi bật</string>
+    <string name="home_new_rooms">Phòng mới đăng</string>
+    <string name="home_no_featured">Không có phòng nổi bật</string>
+    <string name="home_no_new">Không có phòng mới</string>
+
+    <!-- Auth - Login -->
+    <string name="login_title">Đăng Nhập</string>
+    <string name="login_description">Chào mừng bạn đến với Tìm Trọ 24/7!</string>
+    <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="login_no_account">Chưa có tài khoản?</string>
+    <string name="login_register_here">Đăng ký tại đây</string>
+    <string name="login_button">Đăng Nhập</string>
+
+    <!-- Auth - Register -->
+    <string name="register_title">Đăng Ký</string>
+    <string name="register_button">Đăng Ký</string>
+    <string name="register_have_account">Đã có tài khoản?</string>
+    <string name="register_login_here">Đăng nhập tại đây</string>
+    <string name="register_success">Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.</string>
+
+    <!-- Form Labels -->
+    <string name="label_full_name">Họ và Tên</string>
+    <string name="label_email">Email</string>
+    <string name="label_phone">Số Điện Thoại</string>
+    <string name="label_password">Mật Khẩu</string>
+    <string name="label_confirm_password">Xác Nhận Mật Khẩu</string>
+    <string name="label_address">Địa Chỉ</string>
+
+    <!-- Form Hints -->
+    <string name="hint_full_name">Nhập họ và tên của bạn</string>
+    <string name="hint_email">Nhập email của bạn</string>
+    <string name="hint_phone">Nhập số điện thoại</string>
+    <string name="hint_password">Nhập mật khẩu</string>
+    <string name="hint_confirm_password">Xác nhận mật khẩu</string>
+
+    <!-- Search -->
+    <string name="search_title">Tìm Kiếm</string>
+    <string name="search_button">Tìm Kiếm</string>
+    <string name="search_no_results">Không tìm thấy kết quả</string>
+    <string name="search_results_count">Kết quả tìm kiếm: %d phòng</string>
+
+    <!-- Post/Room Management -->
+    <string name="post_title">Đăng Bài</string>
+    <string name="post_button">Đăng Bài Cho Thuê</string>
+    <string name="post_update_button">Cập Nhật Bài Viết</string>
+    <string name="post_success">Đăng bài thành công! Bài đăng của bạn đã được gửi và đang chờ admin phê duyệt.</string>
+    <string name="post_error">Lỗi đăng bài</string>
+
+    <!-- Room Details -->
+    <string name="room_detail_title">Chi Tiết Phòng</string>
+    <string name="room_save_post">Lưu bài viết</string>
+    <string name="room_saved_post">✓ Đã lưu</string>
+    <string name="room_booking">Đặt Lịch Hẹn</string>
+    <string name="room_area">Diện tích</string>
+    <string name="room_price">Giá thuê</string>
+    <string name="room_owner">Chủ Trọ</string>
+
+    <!-- My Posts -->
+    <string name="my_posts_title">Bài Đăng Của Tôi</string>
+    <string name="my_posts_pending">⏳ Chờ duyệt</string>
+    <string name="my_posts_approved">✓ Đã duyệt</string>
+    <string name="my_posts_rejected">✗ Từ chối</string>
+    <string name="my_posts_delete">Xóa</string>
+    <string name="my_posts_edit">✏️ Sửa và đăng lại</string>
+
+    <!-- Booking -->
+    <string name="booking_title">Đặt Lịch Hẹn</string>
+    <string name="booking_submit">Gửi Yêu Cầu</string>
+    <string name="booking_success">Đặt lịch thành công</string>
+    <string name="booking_success_msg">Yêu cầu của bạn đã được gửi tới chủ trọ.</string>
+    <string name="booking_select_date">Chọn ngày</string>
+    <string name="booking_select_time">Chọn giờ</string>
+
+    <!-- Profile -->
+    <string name="profile_title">Cá Nhân</string>
+    <string name="profile_personal_info">Thông Tin Cá Nhân</string>
+    <string name="profile_change_password">Đổi Mật Khẩu</string>
+    <string name="profile_saved_posts">Bài Đã Lưu</string>
+    <string name="profile_my_posts">Bài Đăng Của Tôi</string>
+    <string name="profile_my_appointments">Lịch Hẹn Của Tôi</string>
+    <string name="profile_logout">Đăng Xuất</string>
+    <string name="profile_logout_confirm">Bạn có chắc chắn muốn đăng xuất?</string>
+    <string name="profile_change_avatar">Thay Đổi Ảnh Đại Diện</string>
+
+    <!-- Status & Messages -->
+    <string name="status_pending">⏳ Chờ xác nhận</string>
+    <string name="status_confirmed">✓ Đã xác nhận</string>
+    <string name="status_rejected">✗ Đã từ chối</string>
+    <string name="status_approved">✓ Đã duyệt</string>
+
+    <!-- Common Actions -->
+    <string name="action_yes">Có</string>
+    <string name="action_no">Không</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_edit">Sửa</string>
+    <string name="action_save">Lưu</string>
+    <string name="action_close">Đóng</string>
+    <string name="action_back">Quay Lại</string>
+
+    <!-- Errors -->
+    <string name="error_network">Lỗi mạng, vui lòng kiểm tra kết nối</string>
+    <string name="error_loading_data">Lỗi tải dữ liệu</string>
+    <string name="error_empty_field">Vui lòng điền đầy đủ thông tin</string>
+    <string name="error_invalid_email">Email không hợp lệ</string>
+    <string name="error_invalid_phone">Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng 0)</string>
+    <string name="error_weak_password">Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt</string>
+    <string name="error_password_mismatch">Mật khẩu xác nhận không khớp</string>
+
+    <!-- Accessibility -->
+    <string name="notification_icon_desc">Biểu tượng thông báo</string>
+    <string name="back_button_desc">Nút quay lại</string>
+    <string name="settings_button_desc">Nút cài đặt</string>
+    <string name="menu_home">Trang Chủ</string>
+    <string name="menu_search">Tìm Kiếm</string>
+    <string name="menu_post">Đăng Bài</string>
+    <string name="menu_profile">Cá Nhân</string>
+    <string name="menu_ai">AI Chat</string>
+
+    <!-- Loading/Progress -->
+    <string name="loading_text">Đang tải...</string>
+    <string name="uploading_images">Đang tải ảnh: %d%%</string>
+    <string name="processing">Đang xử lý dữ liệu...</string>
 </resources>

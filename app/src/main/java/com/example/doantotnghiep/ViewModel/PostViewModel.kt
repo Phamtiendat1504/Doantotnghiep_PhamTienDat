@@ -16,19 +16,26 @@ class PostViewModel : ViewModel() {
     val uploadProgress = MutableLiveData<Int>()
 
     fun postRoom(room: Room, imageUris: List<Uri>) {
-        // Validate
-        if (room.ownerName.isEmpty()) { errorMessage.value = "Vui lòng nhập họ tên chủ trọ"; return }
-        if (room.ownerPhone.isEmpty()) { errorMessage.value = "Vui lòng nhập số điện thoại"; return }
-        if (room.ownerPhone.length != 10 || !room.ownerPhone.startsWith("0")) {
-            errorMessage.value = "Số điện thoại phải có 10 số và bắt đầu bằng 0"; return
+        // Validate dữ liệu đầu vào
+        if (room.ownerName.isBlank()) { errorMessage.value = "Vui lòng nhập họ tên chủ trọ"; return }
+        if (room.ownerPhone.isBlank()) { errorMessage.value = "Vui lòng nhập số điện thoại"; return }
+        if (room.ownerPhone.length < 10) {
+            errorMessage.value = "Số điện thoại không hợp lệ"; return
         }
-        if (room.title.isEmpty()) { errorMessage.value = "Vui lòng nhập tiêu đề bài đăng"; return }
-        if (room.ward.isEmpty() || room.ward == "-- Chọn phường/xã --" || room.ward == "-- Ch") {
-            errorMessage.value = "Vui lòng chọn khu vực"; return
+        if (room.title.isBlank()) { errorMessage.value = "Vui lòng nhập tiêu đề bài đăng"; return }
+        
+        // Sửa lỗi so sánh chuỗi bị cắt cụt
+        if (room.ward.isBlank() || room.ward.contains("Chọn phường/xã")) {
+            errorMessage.value = "Vui lòng chọn khu vực (Phường/Xã)"; return
         }
-        if (room.address.isEmpty()) { errorMessage.value = "Vui lòng nhập địa chỉ cụ thể"; return }
-        if (room.price <= 0) { errorMessage.value = "Vui lòng nhập giá thuê"; return }
-        if (room.area <= 0) { errorMessage.value = "Vui lòng nhập diện tích"; return }
+        
+        if (room.address.isBlank()) { errorMessage.value = "Vui lòng nhập địa chỉ cụ thể"; return }
+        if (room.price <= 0) { errorMessage.value = "Vui lòng nhập giá thuê hợp lệ"; return }
+        if (room.area <= 0) { errorMessage.value = "Vui lòng nhập diện tích hợp lệ"; return }
+        
+        if (imageUris.isEmpty()) {
+            errorMessage.value = "Vui lòng thêm ít nhất 1 ảnh phòng trọ"; return
+        }
 
         isLoading.value = true
 

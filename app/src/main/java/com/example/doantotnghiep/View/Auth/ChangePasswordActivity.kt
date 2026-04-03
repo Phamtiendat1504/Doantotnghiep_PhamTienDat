@@ -4,9 +4,9 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -92,19 +92,14 @@ class ChangePasswordActivity : AppCompatActivity() {
                             progressBar.visibility = View.GONE
                             btnChangePassword.isEnabled = true
 
-                            androidx.appcompat.app.AlertDialog.Builder(this)
-                                .setTitle("Thành công")
-                                .setMessage("Mật khẩu đã được đổi thành công!")
-                                .setPositiveButton("OK") { _, _ ->
-                                    finish()
-                                }
-                                .setCancelable(false)
-                                .show()
+                            MessageUtils.showSuccessDialog(this, "Thành công", "Mật khẩu của bạn đã được thay đổi thành công!") {
+                                finish()
+                            }
                         }
                         .addOnFailureListener { e ->
                             progressBar.visibility = View.GONE
                             btnChangePassword.isEnabled = true
-                            Toast.makeText(this, "Đổi mật khẩu thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+                            MessageUtils.showErrorDialog(this, "Lỗi đổi mật khẩu", e.message ?: "Không thể cập nhật mật khẩu mới.")
                         }
                 }
                 ?.addOnFailureListener {

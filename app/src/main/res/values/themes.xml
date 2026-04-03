@@ -2,20 +2,102 @@
 <resources>
 
     <style name="Theme.Doantotnghiep" parent="Theme.MaterialComponents.Light.NoActionBar">
-        <item name="colorPrimary">#1976D2</item>
-        <item name="colorPrimaryVariant">#1565C0</item>
-        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
     </style>
 
+    <!-- Input Styles -->
     <style name="OutlinedBoxRounded" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
-        <item name="boxStrokeColor">#000000</item>
-        <item name="boxStrokeWidth">1.5dp</item>
-        <item name="boxCornerRadiusTopStart">12dp</item>
-        <item name="boxCornerRadiusTopEnd">12dp</item>
-        <item name="boxCornerRadiusBottomStart">12dp</item>
-        <item name="boxCornerRadiusBottomEnd">12dp</item>
-        <item name="boxStrokeErrorColor">#000000</item>
+        <item name="boxStrokeColor">@color/black</item>
+        <item name="boxStrokeWidth">@dimen/stroke_1_5</item>
+        <item name="boxCornerRadiusTopStart">@dimen/corner_radius_12</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/corner_radius_12</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/corner_radius_12</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/corner_radius_12</item>
+        <item name="boxStrokeErrorColor">@color/black</item>
         <item name="errorIconDrawable">@null</item>
+    </style>
+
+    <!-- Text Styles - Heading -->
+    <style name="TextHeading1">
+        <item name="android:textSize">@dimen/text_size_28</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <style name="TextHeading2">
+        <item name="android:textSize">@dimen/text_size_20</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="TextHeading3">
+        <item name="android:textSize">@dimen/text_size_18</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Text Styles - Body -->
+    <style name="TextBody1">
+        <item name="android:textSize">@dimen/text_size_16</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="TextBody2">
+        <item name="android:textSize">@dimen/text_size_14</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Text Styles - Caption -->
+    <style name="TextCaption">
+        <item name="android:textSize">@dimen/text_size_12</item>
+        <item name="android:textColor">@color/text_hint</item>
+    </style>
+
+    <style name="TextCaptionSmall">
+        <item name="android:textSize">@dimen/text_size_10</item>
+        <item name="android:textColor">@color/text_hint</item>
+    </style>
+
+    <!-- Badge Styles -->
+    <style name="BadgeStyle">
+        <item name="android:textSize">@dimen/text_size_12</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">@dimen/spacing_12</item>
+        <item name="android:paddingEnd">@dimen/spacing_12</item>
+        <item name="android:paddingTop">@dimen/spacing_4</item>
+        <item name="android:paddingBottom">@dimen/spacing_4</item>
+    </style>
+
+    <style name="BadgePending" parent="BadgeStyle">
+        <item name="android:textColor">#E65100</item>
+        <item name="android:background">@drawable/bg_badge_pending</item>
+    </style>
+
+    <style name="BadgeApproved" parent="BadgeStyle">
+        <item name="android:textColor">@color/on_primary</item>
+        <item name="android:background">@drawable/bg_badge_landlord</item>
+    </style>
+
+    <style name="BadgeTenant" parent="BadgeStyle">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:background">@drawable/bg_badge_tenant</item>
+    </style>
+
+    <!-- ShapeableImageView rounded corners -->
+    <style name="RoundedImage" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="ButtonPrimary" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/on_primary</item>
+        <item name="android:textSize">@dimen/text_size_14</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">@dimen/corner_radius_8</item>
+        <item name="backgroundTint">@color/primary</item>
     </style>
 
 </resources>

@@ -14,6 +14,7 @@ data class Room(
     val gender: String = "",
     val peopleCount: Int = 0,
     val roomCount: Int = 0,
+    val rentedCount: Int = 0, // Số phòng đã cho thuê
     val hasWifi: Boolean = false,
     val hasAirCon: Boolean = false,
     val hasWaterHeater: Boolean = false,

@@ -5,10 +5,10 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -60,14 +60,13 @@ class RegisterActivity : AppCompatActivity() {
 
         viewModel.registerResult.observe(this) { success ->
             if (success) {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Thành công")
-                    .setMessage("Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.")
-                    .setPositiveButton("Đăng nhập ngay") { _, _ ->
-                        finish()
-                    }
-                    .setCancelable(false)
-                    .show()
+                MessageUtils.showSuccessDialog(
+                    this,
+                    "Thành công",
+                    "Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục."
+                ) {
+                    finish()
+                }
             }
         }
 
@@ -79,7 +78,7 @@ class RegisterActivity : AppCompatActivity() {
                 message.contains("điện thoại", ignoreCase = true) -> tilPhone.error = message
                 message.contains("xác nhận", ignoreCase = true) -> tilConfirmPassword.error = message
                 message.contains("mật khẩu", ignoreCase = true) -> tilPassword.error = message
-                else -> Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                else -> MessageUtils.showErrorDialog(this, "Lỗi đăng ký", message)
             }
         }
 

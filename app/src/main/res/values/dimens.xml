@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing -->
+    <dimen name="spacing_0">0dp</dimen>
+    <dimen name="spacing_2">2dp</dimen>
+    <dimen name="spacing_4">4dp</dimen>
+    <dimen name="spacing_6">6dp</dimen>
+    <dimen name="spacing_8">8dp</dimen>
+    <dimen name="spacing_10">10dp</dimen>
+    <dimen name="spacing_12">12dp</dimen>
+    <dimen name="spacing_14">14dp</dimen>
+    <dimen name="spacing_16">16dp</dimen>
+    <dimen name="spacing_18">18dp</dimen>
+    <dimen name="spacing_20">20dp</dimen>
+    <dimen name="spacing_24">24dp</dimen>
+    <dimen name="spacing_28">28dp</dimen>
+    <dimen name="spacing_32">32dp</dimen>
+
+    <!-- Corner Radius -->
+    <dimen name="corner_radius_0">0dp</dimen>
+    <dimen name="corner_radius_4">4dp</dimen>
+    <dimen name="corner_radius_8">8dp</dimen>
+    <dimen name="corner_radius_10">10dp</dimen>
+    <dimen name="corner_radius_12">12dp</dimen>
+    <dimen name="corner_radius_16">16dp</dimen>
+    <dimen name="corner_radius_20">20dp</dimen>
+
+    <!-- Text Size -->
+    <dimen name="text_size_10">10sp</dimen>
+    <dimen name="text_size_11">11sp</dimen>
+    <dimen name="text_size_12">12sp</dimen>
+    <dimen name="text_size_13">13sp</dimen>
+    <dimen name="text_size_14">14sp</dimen>
+    <dimen name="text_size_15">15sp</dimen>
+    <dimen name="text_size_16">16sp</dimen>
+    <dimen name="text_size_18">18sp</dimen>
+    <dimen name="text_size_20">20sp</dimen>
+    <dimen name="text_size_24">24sp</dimen>
+    <dimen name="text_size_28">28sp</dimen>
+
+    <!-- Image Sizes -->
+    <dimen name="image_size_28">28dp</dimen>
+    <dimen name="image_size_32">32dp</dimen>
+    <dimen name="image_size_40">40dp</dimen>
+    <dimen name="image_size_56">56dp</dimen>
+    <dimen name="image_size_85">85dp</dimen>
+    <dimen name="image_size_90">90dp</dimen>
+    <dimen name="image_size_100">100dp</dimen>
+    <dimen name="image_size_120">120dp</dimen>
+    <dimen name="image_size_130">130dp</dimen>
+    <dimen name="image_size_200">200dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="elevation_2">2dp</dimen>
+    <dimen name="elevation_3">3dp</dimen>
+    <dimen name="elevation_4">4dp</dimen>
+    <dimen name="elevation_6">6dp</dimen>
+    <dimen name="elevation_8">8dp</dimen>
+
+    <!-- Stroke Width -->
+    <dimen name="stroke_1">1dp</dimen>
+    <dimen name="stroke_1_5">1.5dp</dimen>
+    <dimen name="stroke_2">2dp</dimen>
+
+    <!-- Padding/Margin Presets -->
+    <dimen name="padding_small">8dp</dimen>
+    <dimen name="padding_medium">12dp</dimen>
+    <dimen name="padding_large">16dp</dimen>
+    <dimen name="padding_xlarge">20dp</dimen>
+
+    <!-- Container Sizes -->
+    <dimen name="container_width_card">200dp</dimen>
+    <dimen name="container_width_featured">200dp</dimen>
+
+    <!-- Layout Dimensions -->
+    <dimen name="fab_size">56dp</dimen>
+    <dimen name="bottom_nav_height">56dp</dimen>
+    <dimen name="header_height">200dp</dimen>
+</resources>
+

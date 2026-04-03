@@ -5,26 +5,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#F5F7FA">
+    android:background="@color/bg_light"
+    android:overScrollMode="never">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="20dp">
+        android:paddingBottom="24dp">
 
-        <!-- ===== HEADER ===== -->
+        <!-- ===== HEADER với bo góc dưới ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#1976D2"
+            android:background="@drawable/bg_header_wave"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="20dp">
+            android:paddingTop="20dp"
+            android:paddingBottom="28dp">
 
-            <!-- Chào + Chuông -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -41,8 +41,8 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="Xin chào,"
-                        android:textSize="14sp"
-                        android:textColor="#B3DEFF" />
+                        android:textSize="13sp"
+                        android:textColor="@color/primary_light" />
 
                     <TextView
                         android:id="@+id/tvGreeting"
@@ -51,31 +51,32 @@
                         android:text="Đang tải..."
                         android:textSize="20sp"
                         android:textStyle="bold"
-                        android:textColor="#FFFFFF"
+                        android:textColor="@color/on_primary"
                         android:layout_marginTop="2dp" />
 
                 </LinearLayout>
 
                 <ImageView
                     android:id="@+id/btnNotification"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
                     android:src="@drawable/ic_notification"
-                    app:tint="#FFFFFF"
-                    android:padding="6dp"
+                    app:tint="@color/on_primary"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Thông báo" />
 
             </LinearLayout>
 
         </LinearLayout>
 
-        <!-- ===== BANNER ===== -->
+        <!-- ===== BANNER mẹo ===== -->
         <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:scrollbars="none"
-            android:layout_marginTop="14dp"
-            android:paddingStart="14dp">
+            android:layout_marginTop="16dp"
+            android:paddingStart="16dp">
 
             <LinearLayout
                 android:id="@+id/layoutBanners"
@@ -85,110 +86,95 @@
 
                 <!-- Banner 1 -->
                 <androidx.cardview.widget.CardView
-                    android:layout_width="300dp"
+                    android:layout_width="290dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
                     app:cardCornerRadius="14dp"
-                    app:cardElevation="3dp"
+                    app:cardElevation="2dp"
                     app:cardBackgroundColor="#E3F2FD">
-
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
-
+                        android:padding="14dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Mẹo tìm phòng trọ an toàn"
-                            android:textSize="16sp"
+                            android:text="🔒 Mẹo tìm phòng an toàn"
+                            android:textSize="14sp"
                             android:textStyle="bold"
                             android:textColor="#0D47A1" />
-
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Kiểm tra kỹ hợp đồng, xem phòng trực tiếp, hỏi rõ chi phí phát sinh trước khi đặt cọc."
+                            android:text="Kiểm tra kỹ hợp đồng, xem phòng trực tiếp trước khi đặt cọc."
                             android:textSize="12sp"
                             android:textColor="#1565C0"
-                            android:layout_marginTop="6dp"
+                            android:layout_marginTop="5dp"
                             android:lineSpacingExtra="3dp" />
-
                     </LinearLayout>
-
                 </androidx.cardview.widget.CardView>
 
                 <!-- Banner 2 -->
                 <androidx.cardview.widget.CardView
-                    android:layout_width="300dp"
+                    android:layout_width="290dp"
                     android:layout_height="wrap_content"
                     android:layout_marginEnd="10dp"
                     app:cardCornerRadius="14dp"
-                    app:cardElevation="3dp"
-                    app:cardBackgroundColor="#FFF3E0">
-
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/bg_warning">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
-
+                        android:padding="14dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Top khu vực giá rẻ Hà Nội"
-                            android:textSize="16sp"
+                            android:text="💰 Top khu vực giá rẻ"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="#E65100" />
-
+                            android:textColor="@color/warning" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Thanh Trì, Hoài Đức, Đông Anh là những khu vực có giá phòng trọ thấp nhất hiện nay."
+                            android:text="Thanh Trì, Hoài Đức, Đông Anh — giá phòng thấp nhất hiện nay."
                             android:textSize="12sp"
                             android:textColor="#BF360C"
-                            android:layout_marginTop="6dp"
+                            android:layout_marginTop="5dp"
                             android:lineSpacingExtra="3dp" />
-
                     </LinearLayout>
-
                 </androidx.cardview.widget.CardView>
 
                 <!-- Banner 3 -->
                 <androidx.cardview.widget.CardView
-                    android:layout_width="300dp"
+                    android:layout_width="290dp"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="14dp"
+                    android:layout_marginEnd="16dp"
                     app:cardCornerRadius="14dp"
-                    app:cardElevation="3dp"
-                    app:cardBackgroundColor="#E8F5E9">
-
+                    app:cardElevation="2dp"
+                    app:cardBackgroundColor="@color/bg_success">
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
-                        android:padding="16dp">
-
+                        android:padding="14dp">
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tiết kiệm chi phí thuê trọ"
-                            android:textSize="16sp"
+                            android:text="🤝 Tiết kiệm chi phí"
+                            android:textSize="14sp"
                             android:textStyle="bold"
-                            android:textColor="#1B5E20" />
-
+                            android:textColor="@color/success" />
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Ở ghép với bạn bè, chọn phòng chung chủ, hoặc thuê xa trung tâm để giảm chi phí."
+                            android:text="Ở ghép, chọn phòng chung chủ hoặc thuê xa trung tâm."
                             android:textSize="12sp"
                             android:textColor="#2E7D32"
-                            android:layout_marginTop="6dp"
+                            android:layout_marginTop="5dp"
                             android:lineSpacingExtra="3dp" />
-
                     </LinearLayout>
-
                 </androidx.cardview.widget.CardView>
 
             </LinearLayout>
@@ -200,11 +186,11 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Khu vực phổ biến"
-            android:textSize="17sp"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:textColor="#1A1A2E"
+            android:textColor="@color/text_primary"
             android:paddingStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="18dp"
             android:layout_marginBottom="10dp" />
 
         <HorizontalScrollView
@@ -212,17 +198,14 @@
             android:layout_height="wrap_content"
             android:scrollbars="none"
             android:paddingStart="14dp">
-
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupPopularAreas"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:singleLine="true">
-
-            </com.google.android.material.chip.ChipGroup>
-
+                app:singleLine="true" />
         </HorizontalScrollView>
-        <!-- ===== PHÒNG TRỌ NỔI BẬT ===== -->
+
+        <!-- ===== PHÒNG NỔI BẬT ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -230,42 +213,73 @@
             android:gravity="center_vertical"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="20dp"
             android:layout_marginBottom="10dp">
+
+            <View
+                android:layout_width="4dp"
+                android:layout_height="20dp"
+                android:background="@color/primary"
+                android:layout_marginEnd="8dp" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Phòng trọ nổi bật"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#1A1A2E" />
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/tvSeeAllFeatured"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Xem tất cả"
+                android:text="Xem tất cả →"
                 android:textSize="13sp"
-                android:textColor="#1976D2"
+                android:textColor="@color/primary"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
-        <HorizontalScrollView
+        <!-- Skeleton phòng nổi bật (hiện khi đang tải) -->
+        <LinearLayout
+            android:id="@+id/skeletonFeatured"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:scrollbars="none"
-            android:paddingStart="14dp">
+            android:orientation="horizontal"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:visibility="visible">
 
-            <LinearLayout
-                android:id="@+id/layoutFeaturedRooms"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal" />
+            <androidx.cardview.widget.CardView
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_marginEnd="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/gray_200" />
 
-        </HorizontalScrollView>
+            <androidx.cardview.widget.CardView
+                android:layout_width="220dp"
+                android:layout_height="220dp"
+                android:layout_marginEnd="12dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/gray_200" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvFeaturedRooms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingStart="14dp"
+            android:paddingEnd="14dp"
+            android:clipToPadding="false"
+            android:visibility="gone"
+            android:orientation="horizontal"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         <TextView
             android:id="@+id/tvNoFeatured"
@@ -273,12 +287,12 @@
             android:layout_height="wrap_content"
             android:text="Chưa có phòng trọ nổi bật"
             android:textSize="14sp"
-            android:textColor="#999999"
+            android:textColor="@color/text_hint"
             android:gravity="center"
             android:padding="20dp"
             android:visibility="gone" />
 
-        <!-- ===== PHÒNG TRỌ MỚI ĐĂNG ===== -->
+        <!-- ===== PHÒNG MỚI ĐĂNG ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -286,36 +300,84 @@
             android:gravity="center_vertical"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:layout_marginTop="18dp"
+            android:layout_marginTop="20dp"
             android:layout_marginBottom="10dp">
+
+            <View
+                android:layout_width="4dp"
+                android:layout_height="20dp"
+                android:background="@color/success"
+                android:layout_marginEnd="8dp" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="Phòng trọ mới đăng"
-                android:textSize="17sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
-                android:textColor="#1A1A2E" />
+                android:textColor="@color/text_primary" />
 
             <TextView
                 android:id="@+id/tvSeeAllNew"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Xem tất cả"
+                android:text="Xem tất cả →"
                 android:textSize="13sp"
-                android:textColor="#1976D2"
+                android:textColor="@color/primary"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
+        <!-- Skeleton phòng mới (hiện khi đang tải) -->
         <LinearLayout
-            android:id="@+id/layoutNewRooms"
+            android:id="@+id/skeletonNewRooms"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:visibility="visible">
+
+            <!-- Skeleton item 1 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/gray_200" />
+
+            <!-- Skeleton item 2 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/gray_200" />
+
+            <!-- Skeleton item 3 -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="90dp"
+                android:layout_marginBottom="10dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="@color/gray_200" />
+
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvNewRooms"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
             android:paddingStart="14dp"
-            android:paddingEnd="14dp" />
+            android:paddingEnd="14dp"
+            android:clipToPadding="false"
+            android:nestedScrollingEnabled="false"
+            android:visibility="gone"
+            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
 
         <TextView
             android:id="@+id/tvNoNewRooms"
@@ -323,7 +385,7 @@
             android:layout_height="wrap_content"
             android:text="Chưa có bài đăng nào"
             android:textSize="14sp"
-            android:textColor="#999999"
+            android:textColor="@color/text_hint"
             android:gravity="center"
             android:padding="20dp"
             android:visibility="gone" />

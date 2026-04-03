@@ -23,6 +23,8 @@ class SearchFragment : Fragment() {
 
     private lateinit var chipPhuong: Chip
     private lateinit var chipXa: Chip
+    private lateinit var chipScopeWard: Chip
+    private lateinit var chipScopeDistrict: Chip
     private lateinit var spinnerArea: Spinner
     private lateinit var edtAddress: EditText
     private lateinit var chipGroupPrice: ChipGroup
@@ -52,6 +54,8 @@ class SearchFragment : Fragment() {
 
         chipPhuong = view.findViewById(R.id.chipPhuong)
         chipXa = view.findViewById(R.id.chipXa)
+        chipScopeWard = view.findViewById(R.id.chipScopeWard)
+        chipScopeDistrict = view.findViewById(R.id.chipScopeDistrict)
         spinnerArea = view.findViewById(R.id.spinnerArea)
         edtAddress = view.findViewById(R.id.edtAddress)
         chipGroupPrice = view.findViewById(R.id.chipGroupPrice)
@@ -114,9 +118,9 @@ class SearchFragment : Fragment() {
 
         // Nút tìm kiếm
         btnSearch.setOnClickListener {
-            val selectedWard = spinnerArea.selectedItem?.toString() ?: ""
+            val selectedItem = spinnerArea.selectedItem?.toString() ?: ""
 
-            if (selectedWard.isEmpty() || spinnerArea.selectedItemPosition == 0) {
+            if (selectedItem.isEmpty() || spinnerArea.selectedItemPosition == 0) {
                 androidx.appcompat.app.AlertDialog.Builder(requireContext())
                     .setTitle("Chưa chọn khu vực")
                     .setMessage("Vui lòng chọn khu vực bạn muốn tìm phòng trọ để bắt đầu tìm kiếm.")
@@ -125,8 +129,25 @@ class SearchFragment : Fragment() {
                 return@setOnClickListener
             }
 
+            // Parse "Mộ Lao (Hà Đông)" → ward = "Mộ Lao", district = "Hà Đông"
+            val wardName: String
+            val districtName: String
+            val parenStart = selectedItem.indexOf('(')
+            val parenEnd = selectedItem.indexOf(')')
+            if (parenStart > 0 && parenEnd > parenStart) {
+                wardName = selectedItem.substring(0, parenStart).trim()
+                districtName = selectedItem.substring(parenStart + 1, parenEnd).trim()
+            } else {
+                wardName = selectedItem
+                districtName = ""
+            }
+
+            val searchMode = if (chipScopeDistrict.isChecked) "district" else "ward"
+
             val intent = Intent(requireContext(), SearchResultsActivity::class.java)
-            intent.putExtra("ward", selectedWard)
+            intent.putExtra("ward", wardName)
+            intent.putExtra("district", districtName)
+            intent.putExtra("searchMode", searchMode)
 
             // Giá
             var minPrice = 0L

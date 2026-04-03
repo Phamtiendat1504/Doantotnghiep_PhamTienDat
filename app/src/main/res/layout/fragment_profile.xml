@@ -1,11 +1,80 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView
+<FrameLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true"
-    android:background="#F0F4F8">
+    android:background="@color/bg_light">
+
+    <!-- ===== GUEST VIEW (chưa đăng nhập) ===== -->
+    <LinearLayout
+        android:id="@+id/layoutGuest"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <!-- Icon lớn -->
+        <ImageView
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_person"
+            app:tint="#CCCCCC"
+            android:layout_marginBottom="20dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bạn chưa đăng nhập"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#333333" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Đăng nhập để xem thông tin cá nhân,\nlưu bài đăng và đặt lịch xem phòng"
+            android:textSize="14sp"
+            android:textColor="#888888"
+            android:gravity="center"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="32dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuestLogin"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Đăng nhập"
+            android:textSize="15sp"
+            android:textAllCaps="false"
+            app:backgroundTint="@color/primary"
+            app:cornerRadius="14dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnGuestRegister"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:text="Tạo tài khoản mới"
+            android:textSize="15sp"
+            android:textAllCaps="false"
+            android:layout_marginTop="12dp"
+            app:backgroundTint="@color/bg_white"
+            app:strokeColor="@color/primary"
+            app:strokeWidth="1.5dp"
+            android:textColor="@color/primary"
+            app:cornerRadius="14dp" />
+
+    </LinearLayout>
+
+    <!-- ===== PROFILE VIEW (đã đăng nhập) ===== -->
+    <ScrollView
+        android:id="@+id/layoutProfile"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:visibility="gone">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,7 +91,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="180dp"
-                android:background="#1976D2"
+                android:background="@drawable/bg_header_wave"
                 android:orientation="vertical"
                 android:gravity="end|top"
                 android:padding="16dp">
@@ -48,7 +117,7 @@
                 android:layout_marginEnd="40dp"
                 app:cardCornerRadius="20dp"
                 app:cardElevation="6dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -111,7 +180,7 @@
                     android:layout_gravity="center"
                     app:cardCornerRadius="50dp"
                     app:cardElevation="8dp"
-                    app:cardBackgroundColor="#FFFFFF">
+                    app:cardBackgroundColor="@color/bg_white">
 
                     <ImageView
                         android:id="@+id/imgAvatar"
@@ -120,7 +189,7 @@
                         android:scaleType="centerCrop"
                         android:src="@drawable/ic_person"
                         app:tint="#1976D2"
-                        android:background="#FFFFFF"
+                        android:background="@color/bg_white"
                         android:padding="18dp"
                         android:contentDescription="Ảnh đại diện" />
 
@@ -177,7 +246,7 @@
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:id="@+id/btnPersonalInfo"
@@ -196,7 +265,7 @@
                         android:layout_height="40dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#E3F2FD">
+                        app:cardBackgroundColor="@color/primary_surface">
 
                         <ImageView
                             android:layout_width="22dp"
@@ -233,7 +302,7 @@
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:id="@+id/btnChangePassword"
@@ -252,7 +321,7 @@
                         android:layout_height="40dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#FFF3E0">
+                        app:cardBackgroundColor="@color/warning_surface">
 
                         <ImageView
                             android:layout_width="22dp"
@@ -301,7 +370,7 @@
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:id="@+id/btnSavedPosts"
@@ -320,7 +389,7 @@
                         android:layout_height="40dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#E8F5E9">
+                        app:cardBackgroundColor="@color/success_surface">
 
                         <ImageView
                             android:layout_width="22dp"
@@ -357,7 +426,7 @@
                 android:layout_marginBottom="8dp"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:id="@+id/btnAppointments"
@@ -376,7 +445,7 @@
                         android:layout_height="40dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#EDE7F6">
+                        app:cardBackgroundColor="@color/purple_surface">
 
                         <ImageView
                             android:layout_width="22dp"
@@ -395,6 +464,18 @@
                         android:textSize="15sp"
                         android:textColor="#1A1A2E"
                         android:layout_marginStart="14dp" />
+
+                    <TextView
+                        android:id="@+id/tvAppointmentBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_badge_red"
+                        android:layout_marginEnd="8dp"
+                        android:visibility="gone" />
 
                     <ImageView
                         android:layout_width="18dp"
@@ -417,7 +498,7 @@
                 android:visibility="gone"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:id="@+id/btnMyPosts"
@@ -436,7 +517,7 @@
                         android:layout_height="40dp"
                         app:cardCornerRadius="12dp"
                         app:cardElevation="0dp"
-                        app:cardBackgroundColor="#E3F2FD">
+                        app:cardBackgroundColor="@color/primary_surface">
 
                         <ImageView
                             android:layout_width="22dp"
@@ -456,6 +537,18 @@
                         android:textColor="#1A1A2E"
                         android:layout_marginStart="14dp" />
 
+                    <TextView
+                        android:id="@+id/tvMyPostsBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:background="@drawable/bg_badge_red"
+                        android:layout_marginEnd="8dp"
+                        android:visibility="gone" />
+
                     <ImageView
                         android:layout_width="18dp"
                         android:layout_height="18dp"
@@ -473,7 +566,7 @@
                 android:layout_marginTop="12dp"
                 app:cardCornerRadius="14dp"
                 app:cardElevation="2dp"
-                app:cardBackgroundColor="#FFFFFF">
+                app:cardBackgroundColor="@color/bg_white">
 
                 <LinearLayout
                     android:id="@+id/btnLogout"
@@ -510,4 +603,6 @@
 
     </LinearLayout>
 
-</ScrollView>
+    </ScrollView>
+
+</FrameLayout>

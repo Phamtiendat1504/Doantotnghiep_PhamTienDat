@@ -12,7 +12,16 @@
           "package_name": "com.example.doantotnghiep"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "320322209979-6vqphcf81r6eooitqvt6nfc1apb1sn8q.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.doantotnghiep",
+            "certificate_hash": "3a08596609e1b845f126b9289e4ae93c09fd683d"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA1bYW1EpqwknjxmjsoX2qyAfOS5zcwH4Q"

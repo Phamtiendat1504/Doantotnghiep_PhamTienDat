@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -14,13 +16,8 @@
 
         <activity
             android:name=".View.Auth.LoginActivity"
-            android:exported="true"
-            android:windowSoftInputMode="adjustPan">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:exported="false"
+            android:windowSoftInputMode="adjustPan" />
 
         <activity
             android:name=".View.Auth.RegisterActivity"
@@ -30,6 +27,16 @@
             android:name=".View.Auth.ForgotPasswordActivity"
             android:exported="false"
             android:windowSoftInputMode="adjustPan" />
+        <activity
+            android:name=".View.Auth.SplashActivity"
+            android:exported="true"
+            android:theme="@style/Theme.Doantotnghiep">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name=".MainActivity"
             android:exported="false" />
@@ -79,6 +86,17 @@
             android:windowSoftInputMode="adjustPan" />
         <activity
             android:name=".View.Auth.MyPostDetailActivity"
+            android:exported="false" />
+        <activity
+            android:name=".View.Auth.AppointmentRoomDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".View.Auth.SavedPostDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".View.Auth.PostSuccessActivity"
             android:exported="false" />
 
     </application>

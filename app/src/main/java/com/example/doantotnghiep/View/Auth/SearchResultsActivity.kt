@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.view.View
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
@@ -16,7 +17,10 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
+import kotlin.math.ceil
 
 class SearchResultsActivity : AppCompatActivity() {
 
@@ -35,23 +39,31 @@ class SearchResultsActivity : AppCompatActivity() {
         DecimalFormat("#,###", symbols)
     }
 
-    // Data class gộp theo chủ trọ
-    data class OwnerGroup(
+    data class RoomItem(
+        val roomId: String,
         val userId: String,
-        val ownerName: String,
+        val title: String,
         val address: String,
         val ward: String,
         val district: String,
         val firstImage: String,
+        val price: Long,
         val roomCount: Int,
-        val minPrice: Long,
-        val maxPrice: Long,
-        val docs: List<DocumentSnapshot>
+        val rentedCount: Int,
+        val createdAt: Long
     )
 
-    private var allOwnerGroups = mutableListOf<OwnerGroup>()
+    private var allRoomItems = mutableListOf<RoomItem>()
     private var currentPage = 1
     private val itemsPerPage = 10
+
+    enum class SortType { NONE, PRICE_ASC, PRICE_DESC, NEWEST, OLDEST }
+    private var currentSort = SortType.NONE
+
+    private lateinit var chipSortPriceAsc: TextView
+    private lateinit var chipSortPriceDesc: TextView
+    private lateinit var chipSortNewest: TextView
+    private lateinit var chipSortOldest: TextView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,40 +76,35 @@ class SearchResultsActivity : AppCompatActivity() {
         tvResultCount = findViewById(R.id.tvResultCount)
         tvSearchArea = findViewById(R.id.tvSearchArea)
         btnBack = findViewById(R.id.btnBack)
+        chipSortPriceAsc = findViewById(R.id.chipSortPriceAsc)
+        chipSortPriceDesc = findViewById(R.id.chipSortPriceDesc)
+        chipSortNewest = findViewById(R.id.chipSortNewest)
+        chipSortOldest = findViewById(R.id.chipSortOldest)
 
         btnBack.setOnClickListener { finish() }
 
-        // Hiển thị khu vực tìm kiếm
-        val wardDisplay = intent.getStringExtra("ward") ?: ""
-        tvSearchArea.text = wardDisplay
+        listOf(chipSortPriceAsc, chipSortPriceDesc, chipSortNewest, chipSortOldest).forEach { chip ->
+            chip.setOnClickListener { onSortChipClick(chip) }
+        }
 
-        // Lấy tiêu chí tìm kiếm
         val ward = intent.getStringExtra("ward") ?: ""
+        val district = intent.getStringExtra("district") ?: ""
+        val searchMode = intent.getStringExtra("searchMode") ?: "ward"
+
+        tvSearchArea.text = when {
+            ward.isEmpty() -> "Tất cả khu vực"
+            searchMode == "district" && district.isNotEmpty() -> district
+            district.isNotEmpty() -> "$ward ($district)"
+            else -> ward
+        }
+
         val minPrice = intent.getLongExtra("minPrice", 0)
         val maxPrice = intent.getLongExtra("maxPrice", 0)
-        val minArea = intent.getIntExtra("minArea", 0)
-        val maxArea = intent.getIntExtra("maxArea", 0)
-        val hasWifi = intent.getBooleanExtra("hasWifi", false)
-        val hasAirCon = intent.getBooleanExtra("hasAirCon", false)
-        val hasWaterHeater = intent.getBooleanExtra("hasWaterHeater", false)
-        val hasParking = intent.getBooleanExtra("hasParking", false)
-        val genderPrefer = intent.getStringExtra("genderPrefer") ?: ""
-        val curfew = intent.getStringExtra("curfew") ?: ""
 
-        searchRooms(ward, minPrice, maxPrice, minArea, maxArea,
-            hasWifi, hasAirCon, hasWaterHeater, hasParking, genderPrefer, curfew)
+        searchRooms(ward, district, searchMode, minPrice, maxPrice)
     }
 
-    // ═══════════════════════════════════════
-    // TÌM KIẾM VÀ GỘP THEO CHỦ TRỌ
-    // ═══════════════════════════════════════
-    private fun searchRooms(
-        ward: String, minPrice: Long, maxPrice: Long,
-        minArea: Int, maxArea: Int,
-        hasWifi: Boolean, hasAirCon: Boolean,
-        hasWaterHeater: Boolean, hasParking: Boolean,
-        genderPrefer: String, curfew: String
-    ) {
+    private fun searchRooms(ward: String, district: String, searchMode: String, minPrice: Long, maxPrice: Long) {
         progressBar.visibility = View.VISIBLE
         tvEmpty.visibility = View.GONE
 
@@ -113,295 +120,297 @@ class SearchResultsActivity : AppCompatActivity() {
                     return@addOnSuccessListener
                 }
 
-                // Lọc theo khu vực
                 val matchedDocs = documents.filter { doc ->
                     val data = doc.data
-                    if (ward.isNotEmpty() && ward != "-- Chọn phường/xã --") {
-                        val roomWard = data["ward"] as? String ?: ""
-                        val roomDistrict = data["district"] as? String ?: ""
-                        val roomAddress = data["address"] as? String ?: ""
-                        val fullLocation = "$roomWard $roomDistrict $roomAddress"
-                        fullLocation.contains(ward, ignoreCase = true) ||
-                                ward.contains(roomWard, ignoreCase = true)
-                    } else true
-                }
+                    val roomPrice = data["price"] as? Long ?: 0
 
-                // Gộp theo chủ trọ (userId)
-                val groupedByOwner = matchedDocs.groupBy { it.getString("userId") ?: "" }
+                    val priceMatch = (minPrice == 0L || roomPrice >= minPrice) &&
+                                     (maxPrice == 0L || roomPrice <= maxPrice)
 
-                val ownerGroups = mutableListOf<OwnerGroup>()
-
-                for ((userId, docs) in groupedByOwner) {
-                    if (userId.isEmpty()) continue
-                    val firstDoc = docs.first().data ?: continue
-
-                    val ownerName = firstDoc["ownerName"] as? String ?: ""
-                    val addr = firstDoc["address"] as? String ?: ""
-                    val w = firstDoc["ward"] as? String ?: ""
-                    val d = firstDoc["district"] as? String ?: ""
-
-                    // Lấy ảnh đầu tiên
-                    var firstImg = ""
-                    for (doc in docs) {
-                        val imgs = doc.data?.get("imageUrls") as? List<String> ?: listOf()
-                        if (imgs.isNotEmpty()) {
-                            firstImg = imgs[0]
-                            break
+                    val locationMatch = when {
+                        ward.isEmpty() -> true
+                        searchMode == "district" && district.isNotEmpty() -> {
+                            val rDistrict = data["district"] as? String ?: ""
+                            rDistrict.equals(district, ignoreCase = true)
+                        }
+                        else -> {
+                            val rWard = data["ward"] as? String ?: ""
+                            rWard.equals(ward, ignoreCase = true)
                         }
                     }
 
-                    // Tính giá min max
-                    val prices = docs.mapNotNull { (it.data?.get("price") as? Long) }.filter { it > 0 }
-                    val pMin = prices.minOrNull() ?: 0
-                    val pMax = prices.maxOrNull() ?: 0
+                    priceMatch && locationMatch
+                }
 
-                    ownerGroups.add(
-                        OwnerGroup(userId, ownerName, addr, w, d, firstImg, docs.size, pMin, pMax, docs)
+                // Mỗi bài đăng là 1 card riêng biệt, không gom theo chủ trọ
+                val roomItems = matchedDocs.map { doc ->
+                    RoomItem(
+                        roomId = doc.id,
+                        userId = doc.getString("userId") ?: "",
+                        title = doc.getString("title") ?: "",
+                        address = doc.getString("address") ?: "",
+                        ward = doc.getString("ward") ?: "",
+                        district = doc.getString("district") ?: "",
+                        firstImage = (doc.get("imageUrls") as? List<String>)?.firstOrNull() ?: "",
+                        price = doc.getLong("price") ?: 0,
+                        roomCount = (doc.getLong("roomCount") ?: 0).toInt(),
+                        rentedCount = (doc.getLong("rentedCount") ?: 0).toInt(),
+                        createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 }
 
-                allOwnerGroups = ownerGroups
-                tvResultCount.text = "Kết quả tìm kiếm: ${matchedDocs.size} phòng"
-
-                if (ownerGroups.isEmpty()) {
-                    tvEmpty.visibility = View.VISIBLE
-                    return@addOnSuccessListener
+                allRoomItems = roomItems.toMutableList()
+                tvResultCount.text = "Kết quả tìm kiếm: ${roomItems.size} bài đăng"
+                if (roomItems.isEmpty()) tvEmpty.visibility = View.VISIBLE else {
+                    currentPage = 1
+                    displayPage(currentPage)
                 }
-
-                currentPage = 1
-                displayPage(currentPage)
-            }
-            .addOnFailureListener {
-                progressBar.visibility = View.GONE
-                tvEmpty.text = "Lỗi tải dữ liệu"
-                tvEmpty.visibility = View.VISIBLE
             }
     }
 
-    // ═══════════════════════════════════════
-    // HIỂN THỊ TRANG (LƯỚI 2 CỘT)
-    // ═══════════════════════════════════════
     private fun displayPage(page: Int) {
-        layoutResults.removeAllViews()
-
-        val totalPages = Math.ceil(allOwnerGroups.size.toDouble() / itemsPerPage).toInt()
-        val startIndex = (page - 1) * itemsPerPage
-        val endIndex = minOf(startIndex + itemsPerPage, allOwnerGroups.size)
-        val pageItems = allOwnerGroups.subList(startIndex, endIndex)
-
-        var i = 0
-        while (i < pageItems.size) {
-            val rowLayout = LinearLayout(this)
-            rowLayout.orientation = LinearLayout.HORIZONTAL
-            rowLayout.layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            )
-
-            // Cột trái
-            val leftCard = createOwnerCard(pageItems[i])
-            val leftParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            leftParams.marginEnd = dpToPx(5)
-            leftCard.layoutParams = leftParams
-            rowLayout.addView(leftCard)
-
-            // Cột phải
-            if (i + 1 < pageItems.size) {
-                val rightCard = createOwnerCard(pageItems[i + 1])
-                val rightParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                rightParams.marginStart = dpToPx(5)
-                rightCard.layoutParams = rightParams
-                rowLayout.addView(rightCard)
-            } else {
-                val emptyView = View(this)
-                val emptyParams = LinearLayout.LayoutParams(0, 0, 1f)
-                emptyParams.marginStart = dpToPx(5)
-                emptyView.layoutParams = emptyParams
-                rowLayout.addView(emptyView)
-            }
-
-            val rowParams = rowLayout.layoutParams as LinearLayout.LayoutParams
-            rowParams.bottomMargin = dpToPx(10)
-            rowLayout.layoutParams = rowParams
-
-            layoutResults.addView(rowLayout)
-            i += 2
-        }
-
-        displayPagination(page, totalPages)
+        currentPage = page
+        applySortAndDisplay()
     }
 
-    // ═══════════════════════════════════════
-    // PHÂN TRANG
-    // ═══════════════════════════════════════
-    private fun displayPagination(currentPage: Int, totalPages: Int) {
-        layoutPagination.removeAllViews()
-
-        if (totalPages <= 1) return
-
-        // Nút Trước
-        if (currentPage > 1) {
-            val btnPrev = createPageButton("← Trước", false)
-            btnPrev.setOnClickListener {
-                this.currentPage = currentPage - 1
-                displayPage(this.currentPage)
-                findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)?.scrollTo(0, 0)
-            }
-            layoutPagination.addView(btnPrev)
+    private fun createRoomCard(item: RoomItem): CardView {
+        val card = CardView(this).apply {
+            radius = dpToPx(12).toFloat()
+            cardElevation = dpToPx(3).toFloat()
         }
 
-        // Số trang
-        for (i in 1..totalPages) {
-            val btnPage = createPageButton("$i", i == currentPage)
-            btnPage.setOnClickListener {
-                this.currentPage = i
-                displayPage(this.currentPage)
-                findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)?.scrollTo(0, 0)
-            }
-            layoutPagination.addView(btnPage)
+        val mainLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+
+        // --- Ảnh + Badge đã kiểm duyệt ---
+        val imageContainer = FrameLayout(this)
+        val imgView = ImageView(this).apply {
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dpToPx(130))
+            scaleType = ImageView.ScaleType.CENTER_CROP
         }
+        Glide.with(this).load(item.firstImage).placeholder(R.color.gray_200).into(imgView)
+        imageContainer.addView(imgView)
 
-        // Nút Sau
-        if (currentPage < totalPages) {
-            val btnNext = createPageButton("Sau →", false)
-            btnNext.setOnClickListener {
-                this.currentPage = currentPage + 1
-                displayPage(this.currentPage)
-                findViewById<androidx.core.widget.NestedScrollView>(R.id.scrollView)?.scrollTo(0, 0)
+        val verifiedBadge = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(dpToPx(6), dpToPx(2), dpToPx(8), dpToPx(2))
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFFE8F5E9.toInt())
+                cornerRadius = dpToPx(4).toFloat()
             }
-            layoutPagination.addView(btnNext)
-        }
-    }
-
-    private fun createPageButton(text: String, isActive: Boolean): TextView {
-        val tv = TextView(this)
-        tv.text = text
-        tv.textSize = 14f
-        tv.setTypeface(tv.typeface, android.graphics.Typeface.BOLD)
-        tv.gravity = Gravity.CENTER
-        tv.setPadding(dpToPx(14), dpToPx(8), dpToPx(14), dpToPx(8))
-
-        val params = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        params.marginEnd = dpToPx(6)
-        tv.layoutParams = params
-
-        if (isActive) {
-            tv.setTextColor(0xFFFFFFFF.toInt())
-            tv.background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFF1976D2.toInt())
-                cornerRadius = dpToPx(8).toFloat()
-            }
-        } else {
-            tv.setTextColor(0xFF1976D2.toInt())
-            tv.background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFFFFFFFF.toInt())
-                setStroke(dpToPx(1), 0xFFE0E0E0.toInt())
-                cornerRadius = dpToPx(8).toFloat()
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.TOP or Gravity.START
+                topMargin = dpToPx(8)
+                leftMargin = dpToPx(8)
             }
         }
+        verifiedBadge.addView(TextView(this).apply {
+            text = "✓"
+            textSize = 13f
+            setTextColor(0xFF2E7D32.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(dpToPx(14), dpToPx(14))
+        })
+        verifiedBadge.addView(TextView(this).apply {
+            text = "Đã được kiểm duyệt"
+            textSize = 10f
+            setTextColor(0xFF2E7D32.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dpToPx(4), 0, 0, 0)
+        })
+        imageContainer.addView(verifiedBadge)
+        mainLayout.addView(imageContainer)
 
-        return tv
-    }
-
-    // ═══════════════════════════════════════
-    // TẠO CARD CHỦ TRỌ (GỘP PHÒNG)
-    // ═══════════════════════════════════════
-    private fun createOwnerCard(group: OwnerGroup): CardView {
-        val card = CardView(this)
-        card.radius = dpToPx(12).toFloat()
-        card.cardElevation = dpToPx(3).toFloat()
-        card.setCardBackgroundColor(0xFFFFFFFF.toInt())
-
-        val mainLayout = LinearLayout(this)
-        mainLayout.orientation = LinearLayout.VERTICAL
-        mainLayout.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-
-        // ═══ ẢNH ═══
-        val imgView = ImageView(this)
-        val imgParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(130)
-        )
-        imgView.layoutParams = imgParams
-        imgView.scaleType = ImageView.ScaleType.CENTER_CROP
-        imgView.setBackgroundColor(0xFFE0E0E0.toInt())
-        imgView.clipToOutline = true
-        imgView.adjustViewBounds = false
-
-        if (group.firstImage.isNotEmpty()) {
-            Glide.with(this).load(group.firstImage).centerCrop().into(imgView)
+        // --- Thông tin bài đăng ---
+        val infoLayout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(10))
         }
-        mainLayout.addView(imgView)
 
-        // ═══ THÔNG TIN ═══
-        val infoLayout = LinearLayout(this)
-        infoLayout.orientation = LinearLayout.VERTICAL
-        infoLayout.setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(10))
+        // Tiêu đề bài đăng
+        infoLayout.addView(TextView(this).apply {
+            text = item.title.ifEmpty { "${item.address}, ${item.ward}" }
+            textSize = 13f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setTextColor(0xFF1A1A2E.toInt())
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+        })
 
-        // Địa chỉ
-        val tvAddress = TextView(this)
-        val fullAddress = if (group.address.isNotEmpty())
-            "${group.address}, ${group.ward}, ${group.district}"
-        else "${group.ward}, ${group.district}"
-        tvAddress.text = fullAddress
-        tvAddress.textSize = 12f
-        tvAddress.setTextColor(0xFF333333.toInt())
-        tvAddress.maxLines = 2
-        tvAddress.minLines = 2
-        tvAddress.ellipsize = android.text.TextUtils.TruncateAt.END
-        infoLayout.addView(tvAddress)
+        // Địa chỉ chi tiết (chủ trọ nhập)
+        val fullAddress = buildString {
+            if (item.address.isNotEmpty()) append(item.address)
+            if (item.ward.isNotEmpty()) {
+                if (isNotEmpty()) append(", ")
+                append(item.ward)
+            }
+            if (item.district.isNotEmpty()) {
+                if (isNotEmpty()) append(", ")
+                append(item.district)
+            }
+        }
+        infoLayout.addView(TextView(this).apply {
+            text = "📍 $fullAddress"
+            textSize = 11f
+            setTextColor(0xFF757575.toInt())
+            maxLines = 2
+            ellipsize = android.text.TextUtils.TruncateAt.END
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = dpToPx(3)
+            }
+        })
+
+        // Hàng giá + ngày đăng
+        val rowPriceDate = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                topMargin = dpToPx(5)
+            }
+        }
 
         // Giá
-        val tvPrice = TextView(this)
-        if (group.minPrice == group.maxPrice || group.maxPrice == 0L) {
-            tvPrice.text = "Giá: ${formatter.format(group.minPrice)}đ/th"
-        } else {
-            tvPrice.text = "Giá: ${formatter.format(group.minPrice)} - ${formatter.format(group.maxPrice)}đ/th"
-        }
-        tvPrice.textSize = 12f
-        tvPrice.setTextColor(0xFFD32F2F.toInt())
-        tvPrice.setTypeface(tvPrice.typeface, android.graphics.Typeface.BOLD)
-        tvPrice.setPadding(0, dpToPx(4), 0, 0)
-        infoLayout.addView(tvPrice)
+        rowPriceDate.addView(TextView(this).apply {
+            text = "${formatter.format(item.price)}đ/th"
+            setTextColor(0xFFD32F2F.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            textSize = 13f
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
 
-        // Số phòng trống
-        val tvRoomCount = TextView(this)
-        tvRoomCount.text = "Còn ${group.roomCount} phòng trống"
-        tvRoomCount.textSize = 11f
-        tvRoomCount.setTextColor(0xFFFFFFFF.toInt())
-        tvRoomCount.setTypeface(tvRoomCount.typeface, android.graphics.Typeface.BOLD)
-        tvRoomCount.setPadding(dpToPx(8), dpToPx(3), dpToPx(8), dpToPx(3))
-        tvRoomCount.background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(0xFF1976D2.toInt())
-            cornerRadius = dpToPx(6).toFloat()
+        // Ngày đăng
+        val dateStr = if (item.createdAt > 0) {
+            SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(Date(item.createdAt))
+        } else ""
+        if (dateStr.isNotEmpty()) {
+            rowPriceDate.addView(TextView(this).apply {
+                text = "🕐 $dateStr"
+                textSize = 10f
+                setTextColor(0xFF9E9E9E.toInt())
+            })
         }
-        val rcParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.WRAP_CONTENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
-        rcParams.topMargin = dpToPx(5)
-        tvRoomCount.layoutParams = rcParams
-        infoLayout.addView(tvRoomCount)
+
+        infoLayout.addView(rowPriceDate)
+
+        // Badge số phòng trống
+        val available = item.roomCount - item.rentedCount
+        if (item.roomCount > 0) {
+            infoLayout.addView(TextView(this).apply {
+                text = if (available > 0) "Còn $available phòng trống" else "Hết phòng"
+                textSize = 10f
+                setTextColor(0xFFFFFFFF.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(if (available > 0) 0xFF1976D2.toInt() else 0xFF9E9E9E.toInt())
+                    cornerRadius = dpToPx(4).toFloat()
+                }
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    topMargin = dpToPx(4)
+                }
+            })
+        }
 
         mainLayout.addView(infoLayout)
         card.addView(mainLayout)
-
-        // ═══ BẤM VÀO XEM DANH SÁCH PHÒNG ═══
         card.setOnClickListener {
             val intent = Intent(this, RoomDetailActivity::class.java)
-            intent.putExtra("userId", group.userId)
+            intent.putExtra("roomId", item.roomId)
             startActivity(intent)
         }
-
         return card
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
+    private fun displayPagination(currentPage: Int, totalPages: Int) {
+        layoutPagination.removeAllViews()
+        if (totalPages <= 1) return
+        for (i in 1..totalPages) {
+            val tv = TextView(this).apply {
+                text = "$i"
+                setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+                if (i == currentPage) {
+                    setTextColor(0xFFFFFFFF.toInt())
+                    background = android.graphics.drawable.GradientDrawable().apply {
+                        setColor(0xFF1976D2.toInt()); cornerRadius = dpToPx(8).toFloat()
+                    }
+                }
+                setOnClickListener { displayPage(i) }
+            }
+            layoutPagination.addView(tv)
+        }
     }
+
+    private fun onSortChipClick(selected: TextView) {
+        val newSort = when (selected) {
+            chipSortPriceAsc -> SortType.PRICE_ASC
+            chipSortPriceDesc -> SortType.PRICE_DESC
+            chipSortNewest -> SortType.NEWEST
+            chipSortOldest -> SortType.OLDEST
+            else -> SortType.NONE
+        }
+        // Bấm lại chip đang chọn → bỏ chọn
+        currentSort = if (currentSort == newSort) SortType.NONE else newSort
+        updateChipUI()
+        currentPage = 1
+        applySortAndDisplay()
+    }
+
+    private fun updateChipUI() {
+        val chips = mapOf(
+            chipSortPriceAsc to SortType.PRICE_ASC,
+            chipSortPriceDesc to SortType.PRICE_DESC,
+            chipSortNewest to SortType.NEWEST,
+            chipSortOldest to SortType.OLDEST
+        )
+        chips.forEach { (chip, sort) ->
+            if (currentSort == sort) {
+                chip.setBackgroundResource(R.drawable.bg_chip_selected)
+                chip.setTextColor(0xFFFFFFFF.toInt())
+            } else {
+                chip.setBackgroundResource(R.drawable.bg_chip_unselected)
+                chip.setTextColor(0xFF1976D2.toInt())
+            }
+        }
+    }
+
+    private fun applySortAndDisplay() {
+        val sorted = when (currentSort) {
+            SortType.PRICE_ASC -> allRoomItems.sortedBy { it.price }
+            SortType.PRICE_DESC -> allRoomItems.sortedByDescending { it.price }
+            SortType.NEWEST -> allRoomItems.sortedByDescending { it.createdAt }
+            SortType.OLDEST -> allRoomItems.sortedBy { it.createdAt }
+            SortType.NONE -> allRoomItems.toList()
+        }
+        val totalPages = ceil(sorted.size / itemsPerPage.toDouble()).toInt().coerceAtLeast(1)
+        val page = currentPage.coerceIn(1, totalPages)
+        val start = (page - 1) * itemsPerPage
+        val end = minOf(start + itemsPerPage, sorted.size)
+        val pageItems = sorted.subList(start, end)
+
+        layoutResults.removeAllViews()
+        var i = 0
+        while (i < pageItems.size) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                    bottomMargin = dpToPx(10)
+                }
+            }
+            row.addView(createRoomCard(pageItems[i]).apply {
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dpToPx(5) }
+            })
+            if (i + 1 < pageItems.size) {
+                row.addView(createRoomCard(pageItems[i + 1]).apply {
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dpToPx(5) }
+                })
+            } else {
+                row.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
+            }
+            layoutResults.addView(row)
+            i += 2
+        }
+        displayPagination(page, totalPages)
+    }
+
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }

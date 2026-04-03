@@ -178,11 +178,11 @@ class SavedPostsActivity : AppCompatActivity() {
         mainLayout.addView(infoLayout)
         card.addView(mainLayout)
 
-        // Bấm vào xem chi tiết
+        // Click vào card → Mở SavedPostDetailActivity
         card.setOnClickListener {
-            val intent = Intent(this, RoomDetailActivity::class.java)
-            intent.putExtra("userId", ownerId)
+            val intent = Intent(this, SavedPostDetailActivity::class.java)
             intent.putExtra("roomId", roomId)
+            intent.putExtra("savedDocId", savedDocId)
             startActivity(intent)
         }
 

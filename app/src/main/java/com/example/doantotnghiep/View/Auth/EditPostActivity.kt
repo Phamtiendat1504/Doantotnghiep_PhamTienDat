@@ -4,7 +4,9 @@ import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -12,488 +14,472 @@ import androidx.cardview.widget.CardView
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.AddressData
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.Utils.NumberFormatUtils
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
-import java.text.SimpleDateFormat
 import java.util.*
 import androidx.activity.addCallback
+
 class EditPostActivity : AppCompatActivity() {
 
     private val db = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance()
-    private val imageUris = mutableListOf<Uri>()
+    private val storage = FirebaseStorage.getInstance("gs://doantotnghiep-b39ae.firebasestorage.app")
+    
     private var existingImageUrls = mutableListOf<String>()
+    private val newImageUris = mutableListOf<Uri>()
+    private val deletedImageUrls = mutableListOf<String>()
+    
     private val MAX_PHOTOS = 10
     private var roomId = ""
+    
+    private var replaceIndex = -1
+    private var isReplacingExisting = false
 
-    private val pickImageLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
+    // CẬP NHẬT: Cho phép thêm nhiều ảnh mới cùng lúc
+    private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data
-            if (uri != null && (imageUris.size + existingImageUrls.size) < MAX_PHOTOS) {
-                imageUris.add(uri)
-                addPhotoToLayout(uri)
+            val data = result.data
+            if (data?.clipData != null) {
+                val count = data.clipData!!.itemCount
+                for (i in 0 until count) {
+                    val uri = data.clipData!!.getItemAt(i).uri
+                    if ((existingImageUrls.size + newImageUris.size) < MAX_PHOTOS) {
+                        newImageUris.add(uri)
+                    }
+                }
+                renderPhotos()
+            } else if (data?.data != null) {
+                val uri = data.data!!
+                if ((existingImageUrls.size + newImageUris.size) < MAX_PHOTOS) {
+                    newImageUris.add(uri)
+                    renderPhotos()
+                }
             }
+        }
+    }
+
+    private val replaceImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val uri = result.data?.data ?: return@registerForActivityResult
+            if (isReplacingExisting) {
+                deletedImageUrls.add(existingImageUrls[replaceIndex])
+                existingImageUrls.removeAt(replaceIndex)
+                newImageUris.add(uri)
+            } else {
+                newImageUris[replaceIndex] = uri
+            }
+            renderPhotos()
         }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.fragment_post)
-        // Bấm nút back điện thoại để quay lại
+        
         onBackPressedDispatcher.addCallback(this) { finish() }
+        
         roomId = intent.getStringExtra("roomId") ?: ""
         if (roomId.isEmpty()) { finish(); return }
 
-        // Đổi header
-        findViewById<TextView>(android.R.id.text1)?.text = "Sửa bài đăng"
-
-        // Đổi nút đăng bài thành nút cập nhật
-        val btnPost = findViewById<MaterialButton>(R.id.btnPostRoom)
-        btnPost.text = "Cập nhật và đăng lại"
-        // Setup spinner
-        val spinnerWard = findViewById<Spinner>(R.id.spinnerWard)
-        val allAreas = mutableListOf("-- Chọn phường/xã --")
-        allAreas.addAll(AddressData.phuongList.drop(1))
-        allAreas.addAll(AddressData.xaList.drop(1))
-        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, allAreas)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerWard.adapter = adapter
-
-        // Format giá
-        NumberFormatUtils.addFormatWatcher(findViewById(R.id.edtPrice))
-        NumberFormatUtils.addFormatWatcher(findViewById(R.id.edtWifiPrice))
-        NumberFormatUtils.addFormatWatcher(findViewById(R.id.edtElectricPrice))
-        NumberFormatUtils.addFormatWatcher(findViewById(R.id.edtWaterPrice))
-        NumberFormatUtils.addFormatWatcher(findViewById(R.id.edtDepositAmount))
-
-        // Checkbox listeners
-        setupCheckboxListeners()
-
-        // Thêm ảnh
-        findViewById<CardView>(R.id.btnAddPhoto).setOnClickListener {
-            if ((imageUris.size + existingImageUrls.size) >= MAX_PHOTOS) {
-                Toast.makeText(this, "Tối đa $MAX_PHOTOS ảnh", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            val intent = Intent(Intent.ACTION_PICK)
-            intent.type = "image/*"
-            pickImageLauncher.launch(intent)
-        }
-
-        // Load dữ liệu cũ
+        setupUI()
         loadRoomData()
-
-        // Nút cập nhật
-        btnPost.setOnClickListener { updatePost() }
     }
 
-    private fun setupCheckboxListeners() {
-        val cbWifi = findViewById<CheckBox>(R.id.cbWifi)
-        val edtWifiPrice = findViewById<EditText>(R.id.edtWifiPrice)
-        cbWifi.setOnCheckedChangeListener { _, isChecked ->
-            edtWifiPrice.isEnabled = isChecked
-            if (!isChecked) edtWifiPrice.text?.clear()
+    private fun setupUI() {
+        findViewById<ImageView>(R.id.btnBack).apply {
+            visibility = View.VISIBLE
+            setOnClickListener { finish() }
         }
 
-        val cbElectric = findViewById<CheckBox>(R.id.cbElectric)
-        val edtElectricPrice = findViewById<EditText>(R.id.edtElectricPrice)
-        cbElectric.setOnCheckedChangeListener { _, isChecked ->
-            edtElectricPrice.isEnabled = isChecked
-            if (!isChecked) edtElectricPrice.text?.clear()
+        findViewById<TextView>(R.id.tvHeaderTitle).text = "Sửa bài đăng"
+        findViewById<TextView>(R.id.tvHeaderSubTitle).text = "Chạm vào ảnh để thay đổi hoặc xóa"
+        findViewById<Button>(R.id.btnPostRoom)?.text = "Cập nhật bài viết"
+        
+        val spinnerWard = findViewById<Spinner>(R.id.spinnerWard)
+        val allAreas = mutableListOf("-- Chọn phường/xã --").apply {
+            addAll(AddressData.phuongList.drop(1))
+            addAll(AddressData.xaList.drop(1))
+        }
+        spinnerWard.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, allAreas).apply {
+            setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-        val cbWater = findViewById<CheckBox>(R.id.cbWater)
-        val edtWaterPrice = findViewById<EditText>(R.id.edtWaterPrice)
-        cbWater.setOnCheckedChangeListener { _, isChecked ->
-            edtWaterPrice.isEnabled = isChecked
-            if (!isChecked) edtWaterPrice.text?.clear()
-        }
+        val priceIds = listOf(R.id.edtPrice, R.id.edtWifiPrice, R.id.edtElectricPrice, R.id.edtWaterPrice, 
+               R.id.edtDepositAmount, R.id.edtMotorbikeFee, R.id.edtEBikeFee, R.id.edtBicycleFee)
+        priceIds.forEach { id -> findViewById<EditText>(id)?.let { NumberFormatUtils.addFormatWatcher(it) } }
 
-        val rgPet = findViewById<RadioGroup>(R.id.rgPet)
-        val layoutPetDetail = findViewById<LinearLayout>(R.id.layoutPetDetail)
-        rgPet.setOnCheckedChangeListener { _, checkedId ->
-            layoutPetDetail.visibility = if (checkedId == R.id.rbPetYes) View.VISIBLE else View.GONE
-        }
-
-        val rgCurfew = findViewById<RadioGroup>(R.id.rgCurfew)
-        val edtCurfewTime = findViewById<EditText>(R.id.edtCurfewTime)
-        rgCurfew.setOnCheckedChangeListener { _, checkedId ->
-            edtCurfewTime.visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
-        }
-
-        // Xe
+        setupMainListeners()
         setupParkingListeners()
+        
+        // CẬP NHẬT: Cho phép chọn nhiều ảnh khi sửa
+        findViewById<CardView>(R.id.btnAddPhoto).setOnClickListener {
+            if ((existingImageUrls.size + newImageUris.size) >= MAX_PHOTOS) {
+                MessageUtils.showInfoDialog(this, "Giới hạn ảnh", "Tối đa $MAX_PHOTOS ảnh.")
+            } else {
+                val intent = Intent(Intent.ACTION_PICK)
+                intent.type = "image/*"
+                intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                pickImageLauncher.launch(intent)
+            }
+        }
+
+        findViewById<MaterialButton>(R.id.btnPostRoom).setOnClickListener { updatePost() }
+    }
+
+    private fun setupMainListeners() {
+        findViewById<CheckBox>(R.id.cbWifi).setOnCheckedChangeListener { _, isChecked -> 
+            findViewById<EditText>(R.id.edtWifiPrice).isEnabled = isChecked
+        }
+        findViewById<CheckBox>(R.id.cbElectric).setOnCheckedChangeListener { _, isChecked -> 
+            findViewById<EditText>(R.id.edtElectricPrice).isEnabled = isChecked
+        }
+        findViewById<CheckBox>(R.id.cbWater).setOnCheckedChangeListener { _, isChecked -> 
+            findViewById<EditText>(R.id.edtWaterPrice).isEnabled = isChecked
+        }
+        findViewById<RadioGroup>(R.id.rgPet).setOnCheckedChangeListener { _, checkedId ->
+            findViewById<LinearLayout>(R.id.layoutPetDetail).visibility = if (checkedId == R.id.rbPetYes) View.VISIBLE else View.GONE
+        }
+        findViewById<RadioGroup>(R.id.rgCurfew).setOnCheckedChangeListener { _, checkedId ->
+            findViewById<EditText>(R.id.edtCurfewTime).visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
+        }
     }
 
     private fun setupParkingListeners() {
-        val cbMotorbike = findViewById<CheckBox>(R.id.cbMotorbike) ?: return
-        val rgMotorbikeFee = findViewById<RadioGroup>(R.id.rgMotorbikeFee) ?: return
-        val edtMotorbikeFee = findViewById<EditText>(R.id.edtMotorbikeFee) ?: return
-
-        cbMotorbike.setOnCheckedChangeListener { _, isChecked ->
-            rgMotorbikeFee.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) { edtMotorbikeFee.visibility = View.GONE; edtMotorbikeFee.text?.clear() }
-        }
-        rgMotorbikeFee.setOnCheckedChangeListener { _, checkedId ->
-            edtMotorbikeFee.visibility = if (checkedId == R.id.rbMotorbikePaid) View.VISIBLE else View.GONE
-        }
-
-        val cbEBike = findViewById<CheckBox>(R.id.cbEBike) ?: return
-        val rgEBikeFee = findViewById<RadioGroup>(R.id.rgEBikeFee) ?: return
-        val edtEBikeFee = findViewById<EditText>(R.id.edtEBikeFee) ?: return
-
-        cbEBike.setOnCheckedChangeListener { _, isChecked ->
-            rgEBikeFee.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) { edtEBikeFee.visibility = View.GONE; edtEBikeFee.text?.clear() }
-        }
-        rgEBikeFee.setOnCheckedChangeListener { _, checkedId ->
-            edtEBikeFee.visibility = if (checkedId == R.id.rbEBikePaid) View.VISIBLE else View.GONE
-        }
-
-        val cbBicycle = findViewById<CheckBox>(R.id.cbBicycle) ?: return
-        val rgBicycleFee = findViewById<RadioGroup>(R.id.rgBicycleFee) ?: return
-        val edtBicycleFee = findViewById<EditText>(R.id.edtBicycleFee) ?: return
-
-        cbBicycle.setOnCheckedChangeListener { _, isChecked ->
-            rgBicycleFee.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) { edtBicycleFee.visibility = View.GONE; edtBicycleFee.text?.clear() }
-        }
-        rgBicycleFee.setOnCheckedChangeListener { _, checkedId ->
-            edtBicycleFee.visibility = if (checkedId == R.id.rbBicyclePaid) View.VISIBLE else View.GONE
-        }
-
-        NumberFormatUtils.addFormatWatcher(edtMotorbikeFee)
-        NumberFormatUtils.addFormatWatcher(edtEBikeFee)
-        NumberFormatUtils.addFormatWatcher(edtBicycleFee)
+        setupSingleParking(R.id.cbMotorbike, R.id.rgMotorbikeFee, R.id.rbMotorbikePaid, R.id.edtMotorbikeFee)
+        setupSingleParking(R.id.cbEBike, R.id.rgEBikeFee, R.id.rbEBikePaid, R.id.edtEBikeFee)
+        setupSingleParking(R.id.cbBicycle, R.id.rgBicycleFee, R.id.rbBicyclePaid, R.id.edtBicycleFee)
     }
 
-    // ═══ LOAD DỮ LIỆU CŨ ═══
+    private fun setupSingleParking(cbId: Int, rgId: Int, rbPaidId: Int, edtId: Int) {
+        val cb = findViewById<CheckBox>(cbId)
+        val rg = findViewById<RadioGroup>(rgId)
+        val edt = findViewById<EditText>(edtId)
+        cb.setOnCheckedChangeListener { _, isChecked ->
+            rg.visibility = if (isChecked) View.VISIBLE else View.GONE
+            if (!isChecked) { rg.clearCheck(); edt.visibility = View.GONE }
+        }
+        rg.setOnCheckedChangeListener { _, checkedId ->
+            edt.visibility = if (checkedId == rbPaidId) View.VISIBLE else View.GONE
+        }
+    }
+
     private fun loadRoomData() {
-        db.collection("rooms").document(roomId).get()
-            .addOnSuccessListener { doc ->
-                if (!doc.exists()) { finish(); return@addOnSuccessListener }
-                val d = doc.data ?: return@addOnSuccessListener
+        db.collection("rooms").document(roomId).get().addOnSuccessListener { doc ->
+            if (!doc.exists()) return@addOnSuccessListener
+            val d = doc.data ?: return@addOnSuccessListener
+            
+            if (d["status"] == "rejected") addRejectionBanner(d["rejectReason"] as? String ?: "")
 
-                // Thông tin chủ trọ
-                findViewById<EditText>(R.id.edtOwnerName).setText(d["ownerName"] as? String ?: "")
-                findViewById<EditText>(R.id.edtOwnerPhone).setText(d["ownerPhone"] as? String ?: "")
-                when (d["ownerGender"] as? String) {
-                    "Nam" -> findViewById<RadioGroup>(R.id.rgOwnerGender).check(R.id.rbOwnerMale)
-                    "Nữ" -> findViewById<RadioGroup>(R.id.rgOwnerGender).check(R.id.rbOwnerFemale)
-                }
+            findViewById<EditText>(R.id.edtOwnerName).setText(d["ownerName"] as? String ?: "")
+            findViewById<EditText>(R.id.edtOwnerPhone).setText(d["ownerPhone"] as? String ?: "")
+            if (d["ownerGender"] == "Nam") findViewById<RadioButton>(R.id.rbOwnerMale).isChecked = true
+            else if (d["ownerGender"] == "Nữ") findViewById<RadioButton>(R.id.rbOwnerFemale).isChecked = true
 
-                // Thông tin bài đăng
-                findViewById<EditText>(R.id.edtTitle).setText(d["title"] as? String ?: "")
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
-                findViewById<TextView>(R.id.tvPostDate).text = dateFormat.format(Date())
-                findViewById<EditText>(R.id.edtAddress).setText(d["address"] as? String ?: "")
-                findViewById<EditText>(R.id.edtDescription).setText(d["description"] as? String ?: "")
-
-                // Spinner khu vực
-                val ward = d["ward"] as? String ?: ""
-                val district = d["district"] as? String ?: ""
-                val spinnerWard = findViewById<Spinner>(R.id.spinnerWard)
-                for (i in 0 until spinnerWard.adapter.count) {
-                    val item = spinnerWard.adapter.getItem(i).toString()
-                    if (item.contains(ward) && item.contains(district)) {
-                        spinnerWard.setSelection(i)
-                        break
-                    }
-                }
-
-                // Chi tiết
-                val price = d["price"] as? Long ?: 0
-                if (price > 0) findViewById<EditText>(R.id.edtPrice).setText(price.toString())
-                val area = (d["area"] as? Long)?.toInt() ?: (d["area"] as? Int ?: 0)
-                if (area > 0) findViewById<EditText>(R.id.edtArea).setText(area.toString())
-                val people = (d["peopleCount"] as? Long)?.toInt() ?: 0
-                if (people > 0) findViewById<EditText>(R.id.edtPeopleCount).setText(people.toString())
-
-                when (d["roomType"] as? String) {
-                    "Chung chủ" -> findViewById<RadioGroup>(R.id.rgRoomStyle).check(R.id.rbShared)
-                    "Riêng chủ" -> findViewById<RadioGroup>(R.id.rgRoomStyle).check(R.id.rbPrivate)
-                }
-
-                val depositMonths = (d["depositMonths"] as? Long)?.toInt() ?: 0
-                if (depositMonths > 0) findViewById<EditText>(R.id.edtDepositMonths).setText(depositMonths.toString())
-                val depositAmount = d["depositAmount"] as? Long ?: 0
-                if (depositAmount > 0) findViewById<EditText>(R.id.edtDepositAmount).setText(depositAmount.toString())
-
-                // Tiện ích
-                if (d["hasWifi"] == true) { findViewById<CheckBox>(R.id.cbWifi).isChecked = true }
-                val wifiPrice = d["wifiPrice"] as? Long ?: 0
-                if (wifiPrice > 0) findViewById<EditText>(R.id.edtWifiPrice).setText(wifiPrice.toString())
-
-                if (d["hasAirCon"] == true) findViewById<CheckBox>(R.id.cbAirCon).isChecked = true
-                if (d["hasWaterHeater"] == true) findViewById<CheckBox>(R.id.cbWaterHeater).isChecked = true
-                if (d["hasWasher"] == true) findViewById<CheckBox>(R.id.cbWasher).isChecked = true
-                if (d["hasDryingArea"] == true) findViewById<CheckBox>(R.id.cbDryingArea).isChecked = true
-                if (d["hasWardrobe"] == true) findViewById<CheckBox>(R.id.cbWardrobe).isChecked = true
-                if (d["hasBed"] == true) findViewById<CheckBox>(R.id.cbBed).isChecked = true
-
-                val electricPrice = d["electricPrice"] as? Long ?: 0
-                if (electricPrice > 0) {
-                    findViewById<CheckBox>(R.id.cbElectric).isChecked = true
-                    findViewById<EditText>(R.id.edtElectricPrice).setText(electricPrice.toString())
-                }
-                val waterPrice = d["waterPrice"] as? Long ?: 0
-                if (waterPrice > 0) {
-                    findViewById<CheckBox>(R.id.cbWater).isChecked = true
-                    findViewById<EditText>(R.id.edtWaterPrice).setText(waterPrice.toString())
-                }
-
-                // Bếp, vệ sinh, giới tính, thú cưng, giờ giấc
-                when (d["kitchen"] as? String) {
-                    "Chung" -> findViewById<RadioGroup>(R.id.rgKitchen).check(R.id.rbKitchenShared)
-                    "Riêng" -> findViewById<RadioGroup>(R.id.rgKitchen).check(R.id.rbKitchenPrivate)
-                    "Không" -> findViewById<RadioGroup>(R.id.rgKitchen).check(R.id.rbKitchenNone)
-                }
-                when (d["bathroom"] as? String) {
-                    "Chung" -> findViewById<RadioGroup>(R.id.rgBathroom).check(R.id.rbBathroomShared)
-                    "Riêng" -> findViewById<RadioGroup>(R.id.rgBathroom).check(R.id.rbBathroomPrivate)
-                }
-                when (d["genderPrefer"] as? String) {
-                    "Nam" -> findViewById<RadioGroup>(R.id.rgGenderPrefer).check(R.id.rbGenderMale)
-                    "Nữ" -> findViewById<RadioGroup>(R.id.rgGenderPrefer).check(R.id.rbGenderFemale)
-                    "Tất cả" -> findViewById<RadioGroup>(R.id.rgGenderPrefer).check(R.id.rbGenderAll)
-                }
-                when (d["pet"] as? String) {
-                    "Cho nuôi" -> {
-                        findViewById<RadioGroup>(R.id.rgPet).check(R.id.rbPetYes)
-                        findViewById<EditText>(R.id.edtPetName).setText(d["petName"] as? String ?: "")
-                        val petCount = (d["petCount"] as? Long)?.toInt() ?: 0
-                        if (petCount > 0) findViewById<EditText>(R.id.edtPetCount).setText(petCount.toString())
-                    }
-                    "Không" -> findViewById<RadioGroup>(R.id.rgPet).check(R.id.rbPetNo)
-                }
-                when (d["curfew"] as? String) {
-                    "Tự do" -> findViewById<RadioGroup>(R.id.rgCurfew).check(R.id.rbCurfewFree)
-                    "Tùy chọn" -> {
-                        findViewById<RadioGroup>(R.id.rgCurfew).check(R.id.rbCurfewCustom)
-                        findViewById<EditText>(R.id.edtCurfewTime).setText(d["curfewTime"] as? String ?: "")
-                    }
-                }
-
-                // Xe
-                if (d["hasMotorbike"] == true) findViewById<CheckBox>(R.id.cbMotorbike)?.isChecked = true
-                if (d["hasEBike"] == true) findViewById<CheckBox>(R.id.cbEBike)?.isChecked = true
-                if (d["hasBicycle"] == true) findViewById<CheckBox>(R.id.cbBicycle)?.isChecked = true
-
-                // Ảnh cũ
-                existingImageUrls = (d["imageUrls"] as? List<String>)?.toMutableList() ?: mutableListOf()
-                loadExistingPhotos()
+            findViewById<EditText>(R.id.edtTitle).setText(d["title"] as? String ?: "")
+            findViewById<EditText>(R.id.edtAddress).setText(d["address"] as? String ?: "")
+            findViewById<EditText>(R.id.edtDescription).setText(d["description"] as? String ?: "")
+            
+            val ward = d["ward"] as? String ?: ""
+            val spinner = findViewById<Spinner>(R.id.spinnerWard)
+            for (i in 0 until spinner.count) {
+                if (spinner.getItemAtPosition(i).toString().contains(ward)) { spinner.setSelection(i); break }
             }
+
+            findViewById<EditText>(R.id.edtPrice).setText(d["price"]?.toString() ?: "")
+            findViewById<EditText>(R.id.edtArea).setText(d["area"]?.toString() ?: "")
+            findViewById<EditText>(R.id.edtPeopleCount).setText(d["peopleCount"]?.toString() ?: "")
+            if (d["roomType"] == "Chung chủ") findViewById<RadioButton>(R.id.rbShared).isChecked = true
+            else if (d["roomType"] == "Riêng chủ") findViewById<RadioButton>(R.id.rbPrivate).isChecked = true
+
+            findViewById<EditText>(R.id.edtDepositMonths).setText(d["depositMonths"]?.toString() ?: "")
+            findViewById<EditText>(R.id.edtDepositAmount).setText(d["depositAmount"]?.toString() ?: "")
+
+            findViewById<CheckBox>(R.id.cbWifi).isChecked = d["hasWifi"] as? Boolean ?: false
+            findViewById<EditText>(R.id.edtWifiPrice).setText(d["wifiPrice"]?.toString() ?: "")
+            findViewById<CheckBox>(R.id.cbElectric).isChecked = (d["electricPrice"] as? Long ?: 0) > 0
+            findViewById<EditText>(R.id.edtElectricPrice).setText(d["electricPrice"]?.toString() ?: "")
+            findViewById<CheckBox>(R.id.cbWater).isChecked = (d["waterPrice"] as? Long ?: 0) > 0
+            findViewById<EditText>(R.id.edtWaterPrice).setText(d["waterPrice"]?.toString() ?: "")
+
+            findViewById<CheckBox>(R.id.cbAirCon).isChecked = d["hasAirCon"] as? Boolean ?: false
+            findViewById<CheckBox>(R.id.cbWaterHeater).isChecked = d["hasWaterHeater"] as? Boolean ?: false
+            findViewById<CheckBox>(R.id.cbWasher).isChecked = d["hasWasher"] as? Boolean ?: false
+            findViewById<CheckBox>(R.id.cbDryingArea).isChecked = d["hasDryingArea"] as? Boolean ?: false
+            findViewById<CheckBox>(R.id.cbWardrobe).isChecked = d["hasWardrobe"] as? Boolean ?: false
+            findViewById<CheckBox>(R.id.cbBed).isChecked = d["hasBed"] as? Boolean ?: false
+
+            when(d["kitchen"] as? String) {
+                "Chung" -> findViewById<RadioButton>(R.id.rbKitchenShared).isChecked = true
+                "Riêng" -> findViewById<RadioButton>(R.id.rbKitchenPrivate).isChecked = true
+                "Không" -> findViewById<RadioButton>(R.id.rbKitchenNone).isChecked = true
+            }
+            if (d["bathroom"] == "Chung") findViewById<RadioButton>(R.id.rbBathroomShared).isChecked = true
+            else if (d["bathroom"] == "Riêng") findViewById<RadioButton>(R.id.rbBathroomPrivate).isChecked = true
+
+            if (d["pet"] == "Cho nuôi") {
+                findViewById<RadioButton>(R.id.rbPetYes).isChecked = true
+                findViewById<LinearLayout>(R.id.layoutPetDetail).visibility = View.VISIBLE
+                findViewById<EditText>(R.id.edtPetName).setText(d["petName"] as? String ?: "")
+                findViewById<EditText>(R.id.edtPetCount).setText(d["petCount"]?.toString() ?: "")
+            } else {
+                findViewById<RadioButton>(R.id.rbPetNo).isChecked = true
+            }
+
+            // Giờ giấc
+            val curfew = d["curfew"] as? String ?: ""
+            val curfewTime = d["curfewTime"] as? String ?: ""
+            when (curfew) {
+                "Tự do" -> {
+                    findViewById<RadioButton>(R.id.rbCurfewFree).isChecked = true
+                    findViewById<EditText>(R.id.edtCurfewTime).visibility = View.GONE
+                }
+                "Tùy chọn" -> {
+                    findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked = true
+                    findViewById<EditText>(R.id.edtCurfewTime).apply {
+                        visibility = View.VISIBLE
+                        setText(curfewTime)
+                    }
+                }
+            }
+
+            // Đối tượng thuê
+            when (d["genderPrefer"] as? String ?: "") {
+                "Nam" -> findViewById<RadioButton>(R.id.rbGenderMale).isChecked = true
+                "Nữ" -> findViewById<RadioButton>(R.id.rbGenderFemale).isChecked = true
+                else -> findViewById<RadioButton>(R.id.rbGenderAll).isChecked = true
+            }
+
+            loadParkingData("Motorbike", d); loadParkingData("EBike", d); loadParkingData("Bicycle", d)
+
+            existingImageUrls = (d["imageUrls"] as? List<String>)?.toMutableList() ?: mutableListOf()
+            renderPhotos()
+        }
     }
 
-    private fun loadExistingPhotos() {
-        val layoutPhotos = findViewById<LinearLayout>(R.id.layoutPhotos)
-        val tvPhotoCount = findViewById<TextView>(R.id.tvPhotoCount)
+    private fun loadParkingData(type: String, d: Map<String, Any>) {
+        val hasKey = "has$type"
+        val cb = findViewById<CheckBox>(resources.getIdentifier("cb$type", "id", packageName))
+        val rg = findViewById<RadioGroup>(resources.getIdentifier("rg${type}Fee", "id", packageName))
+        if (d[hasKey] as? Boolean == true) {
+            cb.isChecked = true; rg.visibility = View.VISIBLE
+            val fee = d["${type.lowercase()}Fee"] as? Long ?: 0
+            if (fee > 0) {
+                findViewById<RadioButton>(resources.getIdentifier("rb${type}Paid", "id", packageName)).isChecked = true
+                findViewById<EditText>(resources.getIdentifier("edt${type}Fee", "id", packageName)).apply { visibility = View.VISIBLE; setText(fee.toString()) }
+            } else {
+                findViewById<RadioButton>(resources.getIdentifier("rb${type}Free", "id", packageName)).isChecked = true
+            }
+        }
+    }
 
-        for (url in existingImageUrls) {
-            val imgView = ImageView(this)
-            val params = LinearLayout.LayoutParams(dpToPx(90), dpToPx(90))
-            params.marginEnd = dpToPx(8)
-            imgView.layoutParams = params
-            imgView.scaleType = ImageView.ScaleType.CENTER_CROP
+    private fun addRejectionBanner(reason: String) {
+        val btnPost = findViewById<View>(R.id.btnPostRoom)
+        val container = btnPost.parent as? ViewGroup ?: return
+        val banner = layoutInflater.inflate(R.layout.layout_rejection_banner, container, false)
+        banner.findViewById<TextView>(R.id.tvRejectReason).text = "Lý do từ chối: $reason"
+        container.addView(banner, 1)
+    }
+
+    private fun renderPhotos() {
+        val layout = findViewById<LinearLayout>(R.id.layoutPhotos)
+        val tvPhotoCount = findViewById<TextView>(R.id.tvPhotoCount)
+        val btnAdd = findViewById<CardView>(R.id.btnAddPhoto)
+        layout.removeAllViews()
+
+        existingImageUrls.forEachIndexed { index, url ->
+            val imgView = createImageView()
             Glide.with(this).load(url).centerCrop().into(imgView)
+            imgView.setOnClickListener { showImageOptions(index, true, url, null) }
+            layout.addView(imgView)
+        }
 
-            imgView.setOnLongClickListener {
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Xóa ảnh")
-                    .setMessage("Bạn có muốn xóa ảnh này?")
-                    .setPositiveButton("Xóa") { _, _ ->
-                        existingImageUrls.remove(url)
-                        layoutPhotos.removeView(imgView)
-                        tvPhotoCount.text = "${imageUris.size + existingImageUrls.size}/$MAX_PHOTOS ảnh"
+        newImageUris.forEachIndexed { index, uri ->
+            val imgView = createImageView()
+            imgView.setImageURI(uri)
+            imgView.setOnClickListener { showImageOptions(index, false, null, uri) }
+            layout.addView(imgView)
+        }
+
+        layout.addView(btnAdd)
+        val total = existingImageUrls.size + newImageUris.size
+        tvPhotoCount.text = "$total/$MAX_PHOTOS ảnh"
+        btnAdd.visibility = if (total < MAX_PHOTOS) View.VISIBLE else View.GONE
+    }
+
+    private fun createImageView(): ImageView {
+        return ImageView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(dpToPx(90), dpToPx(90)).apply { marginEnd = dpToPx(8) }
+            scaleType = ImageView.ScaleType.CENTER_CROP
+            clipToOutline = true
+            background = getDrawable(R.drawable.bg_edit_post)
+            outlineProvider = android.view.ViewOutlineProvider.BACKGROUND
+        }
+    }
+
+    private fun showImageOptions(index: Int, isExisting: Boolean, url: String?, uri: Uri?) {
+        val options = arrayOf("🔍 Xem ảnh phóng to", "🔄 Thay đổi ảnh khác", "🗑️ Xóa ảnh này")
+        
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Tùy chọn hình ảnh")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> showImagePreview(url, uri)
+                    1 -> {
+                        replaceIndex = index
+                        isReplacingExisting = isExisting
+                        replaceImageLauncher.launch(Intent(Intent.ACTION_PICK).apply { type = "image/*" })
                     }
-                    .setNegativeButton("Hủy", null)
-                    .show()
-                true
-            }
-
-            layoutPhotos.addView(imgView, layoutPhotos.childCount - 1)
-        }
-        tvPhotoCount.text = "${existingImageUrls.size}/$MAX_PHOTOS ảnh"
-    }
-
-    private fun addPhotoToLayout(uri: Uri) {
-        val layoutPhotos = findViewById<LinearLayout>(R.id.layoutPhotos)
-        val tvPhotoCount = findViewById<TextView>(R.id.tvPhotoCount)
-
-        val imgView = ImageView(this)
-        val params = LinearLayout.LayoutParams(dpToPx(90), dpToPx(90))
-        params.marginEnd = dpToPx(8)
-        imgView.layoutParams = params
-        imgView.scaleType = ImageView.ScaleType.CENTER_CROP
-        imgView.setImageURI(uri)
-
-        imgView.setOnLongClickListener {
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("Xóa ảnh")
-                .setMessage("Bạn có muốn xóa ảnh này?")
-                .setPositiveButton("Xóa") { _, _ ->
-                    val idx = layoutPhotos.indexOfChild(imgView) - existingImageUrls.size
-                    if (idx >= 0 && idx < imageUris.size) imageUris.removeAt(idx)
-                    layoutPhotos.removeView(imgView)
-                    tvPhotoCount.text = "${imageUris.size + existingImageUrls.size}/$MAX_PHOTOS ảnh"
+                    2 -> {
+                        if (isExisting) {
+                            deletedImageUrls.add(existingImageUrls[index])
+                            existingImageUrls.removeAt(index)
+                        } else {
+                            newImageUris.removeAt(index)
+                        }
+                        renderPhotos()
+                    }
                 }
-                .setNegativeButton("Hủy", null)
-                .show()
-            true
-        }
-
-        layoutPhotos.addView(imgView, layoutPhotos.childCount - 1)
-        tvPhotoCount.text = "${imageUris.size + existingImageUrls.size}/$MAX_PHOTOS ảnh"
+            }
+            .setNegativeButton("Đóng", null)
+            .show()
     }
 
-    // ═══ CẬP NHẬT BÀI ĐĂNG ═══
+    private fun showImagePreview(url: String?, uri: Uri?) {
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this, android.R.style.Theme_Black_NoTitleBar_Fullscreen).create()
+        val view = LayoutInflater.from(this).inflate(R.layout.layout_image_preview, null)
+        val imgFull = view.findViewById<ImageView>(R.id.imgFull)
+        val btnClose = view.findViewById<ImageView>(R.id.btnClose)
+
+        if (url != null) Glide.with(this).load(url).into(imgFull)
+        else imgFull.setImageURI(uri)
+
+        btnClose.setOnClickListener { dialog.dismiss() }
+        dialog.setView(view)
+        dialog.show()
+    }
+
     private fun updatePost() {
-        val selectedWard = findViewById<Spinner>(R.id.spinnerWard).selectedItem?.toString() ?: ""
+        val layoutProgress = findViewById<LinearLayout>(R.id.layoutProgress)
+        val tvProgressPercent = findViewById<TextView>(R.id.tvProgressPercent)
+        
+        layoutProgress?.visibility = View.VISIBLE
+        tvProgressPercent?.text = "Đang đăng bài..."
+
+        val wardWithDistrict = findViewById<Spinner>(R.id.spinnerWard).selectedItem.toString()
         if (findViewById<Spinner>(R.id.spinnerWard).selectedItemPosition == 0) {
-            Toast.makeText(this, "Vui lòng chọn khu vực", Toast.LENGTH_SHORT).show()
+            layoutProgress?.visibility = View.GONE
+            MessageUtils.showInfoDialog(this, "Thông tin thiếu", "Vui lòng chọn khu vực phường/xã.")
             return
         }
 
-        val wardName = if (selectedWard.contains("(")) selectedWard.substringBefore("(").trim() else selectedWard
-        val districtName = if (selectedWard.contains("(")) selectedWard.substringAfter("(").replace(")", "").trim() else ""
-
-        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
-        val btnPost = findViewById<MaterialButton>(R.id.btnPostRoom)
-        progressBar.visibility = View.VISIBLE
-        btnPost.isEnabled = false
-        btnPost.text = "Đang cập nhật..."
-
-        // Upload ảnh mới nếu có
-        if (imageUris.isNotEmpty()) {
-            uploadNewImages { newUrls ->
-                val allUrls = existingImageUrls + newUrls
-                saveUpdate(wardName, districtName, allUrls, progressBar, btnPost)
-            }
+        val ward = wardWithDistrict.substringBefore("(").trim()
+        val district = wardWithDistrict.substringAfter("(").replace(")", "").trim()
+        
+        if (newImageUris.isNotEmpty()) {
+            uploadNewImages { urls -> saveToFirestore(ward, district, existingImageUrls + urls) }
         } else {
-            saveUpdate(wardName, districtName, existingImageUrls, progressBar, btnPost)
+            saveToFirestore(ward, district, existingImageUrls)
         }
     }
 
     private fun uploadNewImages(onComplete: (List<String>) -> Unit) {
-        val urls = mutableListOf<String>()
-        var uploaded = 0
-
-        for ((index, uri) in imageUris.withIndex()) {
-            val ref = storage.reference.child("rooms/$roomId/edit_img_${System.currentTimeMillis()}_$index.jpg")
-            ref.putFile(uri).addOnSuccessListener {
-                ref.downloadUrl.addOnSuccessListener { downloadUrl ->
-                    urls.add(downloadUrl.toString())
-                    uploaded++
-                    if (uploaded == imageUris.size) onComplete(urls)
-                }
-            }.addOnFailureListener {
-                Toast.makeText(this, "Upload ảnh thất bại", Toast.LENGTH_SHORT).show()
+        val tvProgressPercent = findViewById<TextView>(R.id.tvProgressPercent)
+        val urls = mutableListOf<String>(); var count = 0
+        newImageUris.forEach { uri ->
+            val ref = storage.reference.child("rooms/$roomId/img_${UUID.randomUUID()}.jpg")
+            ref.putFile(uri).continueWithTask { it.result?.storage?.downloadUrl }.addOnSuccessListener {
+                urls.add(it.toString())
+                count++
+                tvProgressPercent?.text = "Đang đăng bài: $count/${newImageUris.size} ảnh"
+                if (count == newImageUris.size) onComplete(urls)
             }
         }
     }
 
-    private fun saveUpdate(wardName: String, districtName: String, allImageUrls: List<String>,
-                           progressBar: ProgressBar, btnPost: MaterialButton) {
-
-        val cbMotorbike = findViewById<CheckBox>(R.id.cbMotorbike)
-        val cbEBike = findViewById<CheckBox>(R.id.cbEBike)
-        val cbBicycle = findViewById<CheckBox>(R.id.cbBicycle)
-        val rgMotorbikeFee = findViewById<RadioGroup>(R.id.rgMotorbikeFee)
-        val rgEBikeFee = findViewById<RadioGroup>(R.id.rgEBikeFee)
-        val rgBicycleFee = findViewById<RadioGroup>(R.id.rgBicycleFee)
-        val edtMotorbikeFee = findViewById<EditText>(R.id.edtMotorbikeFee)
-        val edtEBikeFee = findViewById<EditText>(R.id.edtEBikeFee)
-        val edtBicycleFee = findViewById<EditText>(R.id.edtBicycleFee)
-
-        val updates = hashMapOf<String, Any>(
+    private fun saveToFirestore(ward: String, district: String, allUrls: List<String>) {
+        val data = hashMapOf<String, Any>(
             "ownerName" to findViewById<EditText>(R.id.edtOwnerName).text.toString().trim(),
             "ownerPhone" to findViewById<EditText>(R.id.edtOwnerPhone).text.toString().trim(),
-            "ownerGender" to when (findViewById<RadioGroup>(R.id.rgOwnerGender).checkedRadioButtonId) {
-                R.id.rbOwnerMale -> "Nam"; R.id.rbOwnerFemale -> "Nữ"; else -> ""
-            },
+            "ownerGender" to if (findViewById<RadioButton>(R.id.rbOwnerMale).isChecked) "Nam" else "Nữ",
             "title" to findViewById<EditText>(R.id.edtTitle).text.toString().trim(),
-            "ward" to wardName,
-            "district" to districtName,
+            "ward" to ward, "district" to district,
             "address" to findViewById<EditText>(R.id.edtAddress).text.toString().trim(),
             "description" to findViewById<EditText>(R.id.edtDescription).text.toString().trim(),
             "price" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtPrice)).toLongOrNull() ?: 0L),
             "area" to (findViewById<EditText>(R.id.edtArea).text.toString().toIntOrNull() ?: 0),
             "peopleCount" to (findViewById<EditText>(R.id.edtPeopleCount).text.toString().toIntOrNull() ?: 0),
-            "roomType" to when (findViewById<RadioGroup>(R.id.rgRoomStyle).checkedRadioButtonId) {
-                R.id.rbShared -> "Chung chủ"; R.id.rbPrivate -> "Riêng chủ"; else -> ""
-            },
+            "roomType" to if (findViewById<RadioButton>(R.id.rbShared).isChecked) "Chung chủ" else "Riêng chủ",
             "depositMonths" to (findViewById<EditText>(R.id.edtDepositMonths).text.toString().toIntOrNull() ?: 0),
             "depositAmount" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtDepositAmount)).toLongOrNull() ?: 0L),
-            "hasWifi" to findViewById<CheckBox>(R.id.cbWifi).isChecked,
-            "wifiPrice" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtWifiPrice)).toLongOrNull() ?: 0L),
-            "electricPrice" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtElectricPrice)).toLongOrNull() ?: 0L),
-            "waterPrice" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtWaterPrice)).toLongOrNull() ?: 0L),
-            "hasAirCon" to findViewById<CheckBox>(R.id.cbAirCon).isChecked,
-            "hasWaterHeater" to findViewById<CheckBox>(R.id.cbWaterHeater).isChecked,
-            "hasWasher" to findViewById<CheckBox>(R.id.cbWasher).isChecked,
-            "hasDryingArea" to findViewById<CheckBox>(R.id.cbDryingArea).isChecked,
-            "hasWardrobe" to findViewById<CheckBox>(R.id.cbWardrobe).isChecked,
-            "hasBed" to findViewById<CheckBox>(R.id.cbBed).isChecked,
-            "kitchen" to when (findViewById<RadioGroup>(R.id.rgKitchen).checkedRadioButtonId) {
-                R.id.rbKitchenShared -> "Chung"; R.id.rbKitchenPrivate -> "Riêng"; R.id.rbKitchenNone -> "Không"; else -> ""
-            },
-            "bathroom" to when (findViewById<RadioGroup>(R.id.rgBathroom).checkedRadioButtonId) {
-                R.id.rbBathroomShared -> "Chung"; R.id.rbBathroomPrivate -> "Riêng"; else -> ""
-            },
-            "pet" to when (findViewById<RadioGroup>(R.id.rgPet).checkedRadioButtonId) {
-                R.id.rbPetYes -> "Cho nuôi"; R.id.rbPetNo -> "Không"; else -> ""
-            },
-            "petName" to findViewById<EditText>(R.id.edtPetName).text.toString().trim(),
-            "petCount" to (findViewById<EditText>(R.id.edtPetCount).text.toString().toIntOrNull() ?: 0),
-            "genderPrefer" to when (findViewById<RadioGroup>(R.id.rgGenderPrefer).checkedRadioButtonId) {
-                R.id.rbGenderMale -> "Nam"; R.id.rbGenderFemale -> "Nữ"; R.id.rbGenderAll -> "Tất cả"; else -> ""
-            },
-            "curfew" to when (findViewById<RadioGroup>(R.id.rgCurfew).checkedRadioButtonId) {
-                R.id.rbCurfewFree -> "Tự do"; R.id.rbCurfewCustom -> "Tùy chọn"; else -> ""
-            },
-            "curfewTime" to findViewById<EditText>(R.id.edtCurfewTime).text.toString().trim(),
-            "hasMotorbike" to (cbMotorbike?.isChecked ?: false),
-            "motorbikeFee" to if (cbMotorbike?.isChecked == true && rgMotorbikeFee?.checkedRadioButtonId == R.id.rbMotorbikePaid)
-                (NumberFormatUtils.getRawNumber(edtMotorbikeFee).toLongOrNull() ?: 0L) else 0L,
-            "hasEBike" to (cbEBike?.isChecked ?: false),
-            "eBikeFee" to if (cbEBike?.isChecked == true && rgEBikeFee?.checkedRadioButtonId == R.id.rbEBikePaid)
-                (NumberFormatUtils.getRawNumber(edtEBikeFee).toLongOrNull() ?: 0L) else 0L,
-            "hasBicycle" to (cbBicycle?.isChecked ?: false),
-            "bicycleFee" to if (cbBicycle?.isChecked == true && rgBicycleFee?.checkedRadioButtonId == R.id.rbBicyclePaid)
-                (NumberFormatUtils.getRawNumber(edtBicycleFee).toLongOrNull() ?: 0L) else 0L,
-            "imageUrls" to allImageUrls,
-            "status" to "pending",
-            "rejectReason" to "",
-            "createdAt" to System.currentTimeMillis()
+            "imageUrls" to allUrls, "status" to "pending", "updatedAt" to System.currentTimeMillis()
         )
 
-        db.collection("rooms").document(roomId)
-            .update(updates)
-            .addOnSuccessListener {
-                progressBar.visibility = View.GONE
-                btnPost.isEnabled = true
-                btnPost.text = "Cập nhật và đăng lại"
+        data["hasWifi"] = findViewById<CheckBox>(R.id.cbWifi).isChecked
+        data["wifiPrice"] = NumberFormatUtils.getRawNumber(findViewById(R.id.edtWifiPrice)).toLongOrNull() ?: 0L
+        data["electricPrice"] = NumberFormatUtils.getRawNumber(findViewById(R.id.edtElectricPrice)).toLongOrNull() ?: 0L
+        data["waterPrice"] = NumberFormatUtils.getRawNumber(findViewById(R.id.edtWaterPrice)).toLongOrNull() ?: 0L
+        data["hasAirCon"] = findViewById<CheckBox>(R.id.cbAirCon).isChecked
+        data["hasWaterHeater"] = findViewById<CheckBox>(R.id.cbWaterHeater).isChecked
+        data["hasWasher"] = findViewById<CheckBox>(R.id.cbWasher).isChecked
+        data["hasDryingArea"] = findViewById<CheckBox>(R.id.cbDryingArea).isChecked
+        data["hasWardrobe"] = findViewById<CheckBox>(R.id.cbWardrobe).isChecked
+        data["hasBed"] = findViewById<CheckBox>(R.id.cbBed).isChecked
+        
+        data["kitchen"] = when {
+            findViewById<RadioButton>(R.id.rbKitchenShared).isChecked -> "Chung"
+            findViewById<RadioButton>(R.id.rbKitchenPrivate).isChecked -> "Riêng"
+            else -> "Không"
+        }
+        data["bathroom"] = if (findViewById<RadioButton>(R.id.rbBathroomShared).isChecked) "Chung" else "Riêng"
+        data["pet"] = if (findViewById<RadioButton>(R.id.rbPetYes).isChecked) "Cho nuôi" else "Không"
+        data["petName"] = findViewById<EditText>(R.id.edtPetName).text.toString().trim()
+        data["petCount"] = findViewById<EditText>(R.id.edtPetCount).text.toString().toIntOrNull() ?: 0
+        
+        data["genderPrefer"] = when {
+            findViewById<RadioButton>(R.id.rbGenderMale).isChecked -> "Nam"
+            findViewById<RadioButton>(R.id.rbGenderFemale).isChecked -> "Nữ"
+            else -> "Tất cả"
+        }
+        data["curfew"] = if (findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked) "Tùy chọn" else "Tự do"
+        data["curfewTime"] = findViewById<EditText>(R.id.edtCurfewTime).text.toString().trim()
 
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle("Cập nhật thành công!")
-                    .setMessage("Bài đăng đã được sửa và gửi lại chờ admin duyệt.")
-                    .setPositiveButton("OK") { _, _ -> finish() }
-                    .setCancelable(false)
-                    .show()
-            }
-            .addOnFailureListener { e ->
-                progressBar.visibility = View.GONE
-                btnPost.isEnabled = true
-                btnPost.text = "Cập nhật và đăng lại"
-                Toast.makeText(this, "Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
-            }
+        saveParkingToMap("Motorbike", data); saveParkingToMap("EBike", data); saveParkingToMap("Bicycle", data)
+        
+        db.collection("rooms").document(roomId).update(data).addOnSuccessListener {
+            cleanupDeletedImages()
+            findViewById<LinearLayout>(R.id.layoutProgress)?.visibility = View.GONE
+            MessageUtils.showSuccessDialog(this, "Thành công", "Bài đăng đã được cập nhật và đang chờ duyệt lại.") { finish() }
+        }.addOnFailureListener {
+            findViewById<LinearLayout>(R.id.layoutProgress)?.visibility = View.GONE
+            MessageUtils.showErrorDialog(this, "Lỗi cập nhật", it.message ?: "")
+        }
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
+    private fun cleanupDeletedImages() {
+        // BUG FIX #9: Improved error handling for deleted images from Storage
+        deletedImageUrls.forEach { url ->
+            try {
+                storage.getReferenceFromUrl(url).delete()
+                    .addOnFailureListener { e ->
+                        // Log the error but don't throw - continue with other images
+                        android.util.Log.e("EditPost", "Failed to delete image: ${e.message}")
+                    }
+            } catch (e: Exception) {
+                android.util.Log.e("EditPost", "Error parsing image URL: ${e.message}")
+            }
+        }
     }
+
+    private fun saveParkingToMap(type: String, map: HashMap<String, Any>) {
+        val isChecked = findViewById<CheckBox>(resources.getIdentifier("cb$type", "id", packageName)).isChecked
+        map["has$type"] = isChecked
+        if (isChecked) {
+            val isPaid = findViewById<RadioButton>(resources.getIdentifier("rb${type}Paid", "id", packageName)).isChecked
+            map["${type.lowercase()}Fee"] = if (isPaid) NumberFormatUtils.getRawNumber(findViewById(resources.getIdentifier("edt${type}Fee", "id", packageName))).toLongOrNull() ?: 0L else 0L
+        }
+    }
+
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }

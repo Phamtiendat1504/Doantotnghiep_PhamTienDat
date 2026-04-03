@@ -6,9 +6,9 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.repository.AuthRepository
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -93,11 +93,7 @@ class ForgotPasswordActivity : AppCompatActivity() {
                 override fun onVerificationFailed(e: FirebaseException) {
                     progressBar.visibility = View.GONE
                     btnSendOtp.isEnabled = true
-                    Toast.makeText(
-                        this@ForgotPasswordActivity,
-                        "Gửi mã thất bại: ${e.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
+                    MessageUtils.showErrorDialog(this@ForgotPasswordActivity, "Gửi mã thất bại", e.message ?: "Vui lòng thử lại")
                 }
 
                 override fun onCodeSent(

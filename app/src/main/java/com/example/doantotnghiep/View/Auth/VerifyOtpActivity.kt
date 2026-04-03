@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
 import com.google.android.material.button.MaterialButton

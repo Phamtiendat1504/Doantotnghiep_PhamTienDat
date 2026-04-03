@@ -22,27 +22,21 @@ class AuthRepository {
             .addOnSuccessListener { result ->
                 val uid = result.user?.uid ?: ""
 
-                // Tạo object User để lưu vào Firestore
                 val user = User(
                     uid = uid,
                     fullName = fullName,
                     email = email,
-                    phone = phone
+                    phone = phone,
+                    role = "tenant", // Mặc định là người thuê
+                    createdAt = System.currentTimeMillis()
                 )
 
-                // Lưu thông tin user vào Firestore collection "users"
                 db.collection("users").document(uid)
                     .set(user)
-                    .addOnSuccessListener {
-                        onSuccess()
-                    }
-                    .addOnFailureListener { e ->
-                        onFailure("Lưu thông tin thất bại: ${e.message}")
-                    }
+                    .addOnSuccessListener { onSuccess() }
+                    .addOnFailureListener { e -> onFailure("Lưu thông tin thất bại: ${e.message}") }
             }
-            .addOnFailureListener { e ->
-                onFailure("Đăng ký thất bại: ${e.message}")
-            }
+            .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
     }
 
     // Đăng nhập
@@ -53,14 +47,11 @@ class AuthRepository {
         onFailure: (String) -> Unit
     ) {
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener {
-                onSuccess()
-            }
-            .addOnFailureListener { e ->
-                onFailure("Đăng nhập thất bại: ${e.message}")
-            }
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onFailure("Đăng nhập thất bại: ${e.message}") }
     }
-    // Tìm email theo số điện thoại từ Firestore
+
+    // Tìm email theo số điện thoại
     fun findEmailByPhone(
         phone: String,
         onSuccess: (String) -> Unit,
@@ -77,30 +68,20 @@ class AuthRepository {
                     onFailure("Số điện thoại chưa được đăng ký")
                 }
             }
-            .addOnFailureListener { e ->
-                onFailure("Lỗi: ${e.message}")
-            }
+            .addOnFailureListener { e -> onFailure("Lỗi hệ thống: ${e.message}") }
     }
 
-    // Đổi mật khẩu sau khi xác thực OTP
+    // Cập nhật mật khẩu (Dùng sau khi verify OTP thành công)
     fun updatePasswordAfterOtp(
         email: String,
         newPassword: String,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        val user = auth.currentUser
-        if (user != null) {
-            user.updatePassword(newPassword)
-                .addOnSuccessListener {
-                    auth.signOut()
-                    onSuccess()
-                }
-                .addOnFailureListener { e ->
-                    onFailure("Đổi mật khẩu thất bại: ${e.message}")
-                }
-        } else {
-            onFailure("Không tìm thấy người dùng")
-        }
+        // Lưu ý: Firebase Auth yêu cầu re-authenticate nếu đổi pass mà ko có session
+        // Cách tốt nhất cho "Quên mật khẩu" là dùng sendPasswordResetEmail
+        auth.sendPasswordResetEmail(email)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e -> onFailure("Gửi yêu cầu đặt lại mật khẩu thất bại: ${e.message}") }
     }
 }

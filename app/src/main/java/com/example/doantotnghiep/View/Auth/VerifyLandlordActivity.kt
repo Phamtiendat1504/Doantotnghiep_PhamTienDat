@@ -10,11 +10,10 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
-import com.google.android.material.button.MaterialButton
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
@@ -31,7 +30,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private lateinit var imgBack: ImageView
     private lateinit var layoutFrontPlaceholder: LinearLayout
     private lateinit var layoutBackPlaceholder: LinearLayout
-    private lateinit var btnSubmitVerify: MaterialButton
+    private lateinit var btnSubmitVerify: com.google.android.material.button.MaterialButton
     private lateinit var btnBack: ImageView
     private lateinit var progressBar: ProgressBar
 
@@ -62,6 +61,16 @@ class VerifyLandlordActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_verify_landlord)
 
+        initViews()
+        loadUserInfo()
+
+        frameFront.setOnClickListener { isPickingFront = true; pickImage() }
+        frameBack.setOnClickListener { isPickingFront = false; pickImage() }
+        btnSubmitVerify.setOnClickListener { submitVerification() }
+        btnBack.setOnClickListener { finish() }
+    }
+
+    private fun initViews() {
         edtFullName = findViewById(R.id.edtFullName)
         edtCccdNumber = findViewById(R.id.edtCccdNumber)
         edtPhone = findViewById(R.id.edtPhone)
@@ -75,34 +84,11 @@ class VerifyLandlordActivity : AppCompatActivity() {
         btnSubmitVerify = findViewById(R.id.btnSubmitVerify)
         btnBack = findViewById(R.id.btnBack)
         progressBar = findViewById(R.id.progressBar)
-
-        // Load thông tin user
-        loadUserInfo()
-
-        // Chọn ảnh mặt trước
-        frameFront.setOnClickListener {
-            isPickingFront = true
-            pickImage()
-        }
-
-        // Chọn ảnh mặt sau
-        frameBack.setOnClickListener {
-            isPickingFront = false
-            pickImage()
-        }
-
-        // Gửi xác minh
-        btnSubmitVerify.setOnClickListener {
-            submitVerification()
-        }
-
-        btnBack.setOnClickListener { finish() }
     }
 
     private fun loadUserInfo() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        FirebaseFirestore.getInstance().collection("users").document(uid)
-            .get()
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 if (doc.exists()) {
                     edtFullName.setText(doc.getString("fullName") ?: "")
@@ -112,105 +98,77 @@ class VerifyLandlordActivity : AppCompatActivity() {
     }
 
     private fun pickImage() {
-        val intent = Intent(Intent.ACTION_PICK)
-        intent.type = "image/*"
+        val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
         pickImageLauncher.launch(intent)
     }
 
     private fun submitVerification() {
-        val cccdNumber = edtCccdNumber.text.toString().trim()
+        val cccd = edtCccdNumber.text.toString().trim()
         val address = edtAddress.text.toString().trim()
-        val fullName = edtFullName.text.toString().trim()
-        val phone = edtPhone.text.toString().trim()
 
-        // Validate
-        if (cccdNumber.isEmpty()) {
-            Toast.makeText(this, "Vui lòng nhập số CCCD", Toast.LENGTH_SHORT).show()
+        if (cccd.length != 12) {
+            MessageUtils.showInfoDialog(this, "Số CCCD không hợp lệ", "Vui lòng nhập đúng 12 số CCCD của bạn.")
             return
         }
-        if (cccdNumber.length != 12) {
-            Toast.makeText(this, "Số CCCD phải có 12 số", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (address.isEmpty()) {
-            Toast.makeText(this, "Vui lòng nhập địa chỉ thường trú", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (frontUri == null) {
-            Toast.makeText(this, "Vui lòng chọn ảnh mặt trước CCCD", Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (backUri == null) {
-            Toast.makeText(this, "Vui lòng chọn ảnh mặt sau CCCD", Toast.LENGTH_SHORT).show()
+        
+        if (address.isEmpty() || frontUri == null || backUri == null) {
+            MessageUtils.showInfoDialog(this, "Thông tin chưa đủ", "Vui lòng nhập địa chỉ và tải đủ 2 mặt ảnh CCCD.")
             return
         }
 
-        progressBar.visibility = View.VISIBLE
-        btnSubmitVerify.isEnabled = false
-
+        setLoading(true)
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val storageRef = FirebaseStorage.getInstance().reference
 
         // Upload ảnh mặt trước
-        val frontRef = storageRef.child("verifications/$uid/cccd_front.jpg")
-        frontRef.putFile(frontUri!!)
-            .addOnSuccessListener {
-                frontRef.downloadUrl.addOnSuccessListener { frontUrl ->
-
-                    // Upload ảnh mặt sau
-                    val backRef = storageRef.child("verifications/$uid/cccd_back.jpg")
-                    backRef.putFile(backUri!!)
-                        .addOnSuccessListener {
-                            backRef.downloadUrl.addOnSuccessListener { backUrl ->
-
-                                // Lưu thông tin xác minh vào Firestore
-                                val verification = hashMapOf(
-                                    "userId" to uid,
-                                    "fullName" to fullName,
-                                    "cccdNumber" to cccdNumber,
-                                    "phone" to phone,
-                                    "address" to address,
-                                    "cccdFrontUrl" to frontUrl.toString(),
-                                    "cccdBackUrl" to backUrl.toString(),
-                                    "status" to "pending",
-                                    "createdAt" to System.currentTimeMillis()
-                                )
-
-                                FirebaseFirestore.getInstance()
-                                    .collection("verifications")
-                                    .document(uid)
-                                    .set(verification)
-                                    .addOnSuccessListener {
-                                        progressBar.visibility = View.GONE
-                                        btnSubmitVerify.isEnabled = true
-
-                                        androidx.appcompat.app.AlertDialog.Builder(this)
-                                            .setTitle("Gửi thành công!")
-                                            .setMessage("Yêu cầu xác minh đã được gửi. Vui lòng chờ admin phê duyệt.")
-                                            .setPositiveButton("OK") { _, _ ->
-                                                finish()
-                                            }
-                                            .setCancelable(false)
-                                            .show()
-                                    }
-                                    .addOnFailureListener { e ->
-                                        progressBar.visibility = View.GONE
-                                        btnSubmitVerify.isEnabled = true
-                                        Toast.makeText(this, "Lỗi: ${e.message}", Toast.LENGTH_LONG).show()
-                                    }
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            progressBar.visibility = View.GONE
-                            btnSubmitVerify.isEnabled = true
-                            Toast.makeText(this, "Upload ảnh mặt sau thất bại: ${e.message}", Toast.LENGTH_LONG).show()
-                        }
-                }
+        val frontRef = storageRef.child("verifications/$uid/cccd_front_${System.currentTimeMillis()}.jpg")
+        frontRef.putFile(frontUri!!).continueWithTask { task ->
+            if (!task.isSuccessful) task.exception?.let { throw it }
+            frontRef.downloadUrl
+        }.continueWithTask { task ->
+            val frontUrl = task.result.toString()
+            // Upload ảnh mặt sau
+            val backRef = storageRef.child("verifications/$uid/cccd_back_${System.currentTimeMillis()}.jpg")
+            backRef.putFile(backUri!!).continueWithTask { backTask ->
+                if (!backTask.isSuccessful) backTask.exception?.let { throw it }
+                backRef.downloadUrl
+            }.continueWithTask { backUrlTask ->
+                val backUrl = backUrlTask.result.toString()
+                // Lưu vào Firestore
+                val data = hashMapOf(
+                    "userId" to uid,
+                    "fullName" to edtFullName.text.toString(),
+                    "cccdNumber" to cccd,
+                    "phone" to edtPhone.text.toString(),
+                    "address" to address,
+                    "cccdFrontUrl" to frontUrl,
+                    "cccdBackUrl" to backUrl,
+                    "status" to "pending",
+                    "createdAt" to System.currentTimeMillis()
+                )
+                FirebaseFirestore.getInstance().collection("verifications").document(uid).set(data)
             }
-            .addOnFailureListener { e ->
-                progressBar.visibility = View.GONE
-                btnSubmitVerify.isEnabled = true
-                Toast.makeText(this, "Upload ảnh mặt trước thất bại: ${e.message}", Toast.LENGTH_LONG).show()
+        }.addOnSuccessListener {
+            setLoading(false)
+            MessageUtils.showSuccessDialog(
+                this,
+                "Gửi yêu cầu thành công",
+                "Thông tin xác minh của bạn đã được gửi. Vui lòng chờ Admin phê duyệt để có quyền đăng tin."
+            ) {
+                finish()
             }
+        }.addOnFailureListener { e ->
+            setLoading(false)
+            MessageUtils.showErrorDialog(this, "Lỗi gửi yêu cầu", e.message ?: "Đã có lỗi xảy ra, vui lòng thử lại sau.")
+        }
+    }
+
+    private fun setLoading(isLoading: Boolean) {
+        progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        btnSubmitVerify.isEnabled = !isLoading
+    }
+
+    private fun pickImageLauncher() {
+        // Dummy function to keep pickImageLauncher as it is used in result activity
     }
 }

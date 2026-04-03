@@ -15,8 +15,11 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Model.Room
 import com.example.doantotnghiep.Utils.AddressData
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.Utils.NumberFormatUtils
 import com.example.doantotnghiep.View.Auth.VerifyLandlordActivity
+import com.bumptech.glide.Glide
+import com.example.doantotnghiep.View.Auth.PostSuccessActivity
 import com.example.doantotnghiep.ViewModel.PostViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
@@ -33,15 +36,35 @@ class PostFragment : Fragment() {
     private val imageUris = mutableListOf<Uri>()
     private val MAX_PHOTOS = 10
     private var isFormSetup = false
+    private var userRoleChecked = false
+
+    // Lưu tạm thông tin bài vừa đăng để hiển thị trên màn hình thành công
+    private var lastPostedTitle = ""
+    private var lastPostedPrice = 0L
+    private var lastPostedLocation = ""
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data
-            if (uri != null && imageUris.size < MAX_PHOTOS) {
-                imageUris.add(uri)
-                addPhotoToLayout(uri)
+            val data = result.data
+            if (data?.clipData != null) {
+                // Trường hợp chọn nhiều ảnh cùng lúc
+                val count = data.clipData!!.itemCount
+                for (i in 0 until count) {
+                    val uri = data.clipData!!.getItemAt(i).uri
+                    if (imageUris.size < MAX_PHOTOS) {
+                        imageUris.add(uri)
+                        addPhotoToLayout(uri)
+                    }
+                }
+            } else if (data?.data != null) {
+                // Trường hợp chỉ chọn 1 ảnh
+                val uri = data.data!!
+                if (imageUris.size < MAX_PHOTOS) {
+                    imageUris.add(uri)
+                    addPhotoToLayout(uri)
+                }
             }
         }
     }
@@ -71,13 +94,13 @@ class PostFragment : Fragment() {
         setupVerifyButton()
     }
 
-    // ═══ KIỂM TRA VAI TRÒ ═══
     private fun checkUserRole() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         db.collection("users").document(uid).get()
             .addOnSuccessListener { userDoc ->
                 if (userDoc.exists()) {
+                    userRoleChecked = true
                     val role = userDoc.getString("role") ?: "tenant"
                     if (role == "landlord" || role == "admin") {
                         showPostForm()
@@ -149,7 +172,6 @@ class PostFragment : Fragment() {
         }
     }
 
-    // ═══ THÊM ẢNH VÀO LAYOUT ═══
     private fun addPhotoToLayout(uri: Uri) {
         val view = postFormView ?: return
         val layoutPhotos = view.findViewById<LinearLayout>(R.id.layoutPhotos)
@@ -161,9 +183,8 @@ class PostFragment : Fragment() {
         params.marginEnd = dpToPx(8)
         imgView.layoutParams = params
         imgView.scaleType = ImageView.ScaleType.CENTER_CROP
-        imgView.setImageURI(uri)
+        Glide.with(this).load(uri).centerCrop().into(imgView)
 
-        // Bấm giữ để xóa ảnh
         imgView.setOnLongClickListener {
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
                 .setTitle("Xóa ảnh")
@@ -187,12 +208,10 @@ class PostFragment : Fragment() {
         if (imageUris.size >= MAX_PHOTOS) btnAddPhoto.visibility = View.GONE
     }
 
-    // ═══ SETUP FORM ĐĂNG BÀI ═══
     private fun setupPostForm() {
         val view = postFormView ?: return
         val viewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
-        // Khai báo view
         val edtOwnerName = view.findViewById<EditText>(R.id.edtOwnerName)
         val edtOwnerPhone = view.findViewById<EditText>(R.id.edtOwnerPhone)
         val rgOwnerGender = view.findViewById<RadioGroup>(R.id.rgOwnerGender)
@@ -230,9 +249,10 @@ class PostFragment : Fragment() {
         val edtCurfewTime = view.findViewById<EditText>(R.id.edtCurfewTime)
         val btnAddPhoto = view.findViewById<CardView>(R.id.btnAddPhoto)
         val btnPostRoom = view.findViewById<MaterialButton>(R.id.btnPostRoom)
-        val progressBar = view.findViewById<ProgressBar>(R.id.progressBar)
+        
+        val layoutProgress = view.findViewById<LinearLayout>(R.id.layoutProgress)
+        val tvProgressPercent = view.findViewById<TextView>(R.id.tvProgressPercent)
 
-        // Load thông tin chủ trọ từ tài khoản
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         db.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
@@ -247,11 +267,9 @@ class PostFragment : Fragment() {
                 }
             }
 
-        // Ngày đăng
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
         tvPostDate.text = dateFormat.format(Date())
 
-        // Spinner khu vực
         val allAreas = mutableListOf("-- Chọn phường/xã --")
         allAreas.addAll(AddressData.phuongList.drop(1))
         allAreas.addAll(AddressData.xaList.drop(1))
@@ -259,14 +277,12 @@ class PostFragment : Fragment() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerWard.adapter = adapter
 
-        // Format giá
         NumberFormatUtils.addFormatWatcher(edtPrice)
         NumberFormatUtils.addFormatWatcher(edtWifiPrice)
         NumberFormatUtils.addFormatWatcher(edtElectricPrice)
         NumberFormatUtils.addFormatWatcher(edtWaterPrice)
         NumberFormatUtils.addFormatWatcher(edtDepositAmount)
 
-        // Checkbox tiện ích
         cbWifi.setOnCheckedChangeListener { _, isChecked ->
             edtWifiPrice.isEnabled = isChecked
             if (!isChecked) edtWifiPrice.text?.clear()
@@ -280,65 +296,62 @@ class PostFragment : Fragment() {
             if (!isChecked) edtWaterPrice.text?.clear()
         }
 
-        // Thú cưng
         rgPet.setOnCheckedChangeListener { _, checkedId ->
             layoutPetDetail.visibility = if (checkedId == R.id.rbPetYes) View.VISIBLE else View.GONE
         }
 
-        // Giờ ra vào
         rgCurfew.setOnCheckedChangeListener { _, checkedId ->
             edtCurfewTime.visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
         }
 
-        // Chỗ để xe
         setupParkingListeners(view)
 
-        // Thêm ảnh
         btnAddPhoto.setOnClickListener {
             if (imageUris.size >= MAX_PHOTOS) {
-                Toast.makeText(requireContext(), "Tối đa $MAX_PHOTOS ảnh", Toast.LENGTH_SHORT).show()
+                MessageUtils.showInfoDialog(requireContext(), "Giới hạn ảnh", "Bạn chỉ được chọn tối đa $MAX_PHOTOS ảnh.")
                 return@setOnClickListener
             }
             val intent = Intent(Intent.ACTION_PICK)
             intent.type = "image/*"
+            intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             pickImageLauncher.launch(intent)
         }
 
-        // ═══ OBSERVE VIEWMODEL ═══
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            layoutProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnPostRoom.isEnabled = !isLoading
             btnPostRoom.text = if (isLoading) "Đang đăng bài..." else "Đăng bài cho thuê"
+        }
+        
+        viewModel.uploadProgress.observe(viewLifecycleOwner) { progress ->
+            tvProgressPercent.text = "Đang đăng bài: $progress%"
         }
 
         viewModel.postResult.observe(viewLifecycleOwner) { success ->
             if (success) {
-                androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                    .setTitle("Đăng bài thành công!")
-                    .setMessage("Bài đăng của bạn đã được gửi và đang chờ admin kiểm duyệt nội dung và hình ảnh trước khi hiển thị trên ứng dụng.")
-                    .setPositiveButton("OK") { _, _ ->
-                        resetForm(view)
-                    }
-                    .setCancelable(false)
-                    .show()
+                resetForm(view)
+                val intent = Intent(requireContext(), PostSuccessActivity::class.java).apply {
+                    putExtra("title", lastPostedTitle)
+                    putExtra("price", lastPostedPrice)
+                    putExtra("location", lastPostedLocation)
+                }
+                startActivity(intent)
             }
         }
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
-            Toast.makeText(requireContext(), error, Toast.LENGTH_LONG).show()
+            MessageUtils.showErrorDialog(requireContext(), "Lỗi đăng bài", error)
         }
 
-        // ═══ NÚT ĐĂNG BÀI ═══
         btnPostRoom.setOnClickListener {
             val selectedWard = spinnerWard.selectedItem?.toString() ?: ""
             if (spinnerWard.selectedItemPosition == 0) {
-                Toast.makeText(requireContext(), "Vui lòng chọn khu vực", Toast.LENGTH_SHORT).show()
+                MessageUtils.showInfoDialog(requireContext(), "Thông tin thiếu", "Vui lòng chọn khu vực phường/xã.")
                 return@setOnClickListener
             }
             val wardName = if (selectedWard.contains("(")) selectedWard.substringBefore("(").trim() else selectedWard
             val districtName = if (selectedWard.contains("(")) selectedWard.substringAfter("(").replace(")", "").trim() else ""
 
-            // Lấy thông tin chỗ để xe
             val cbMotorbike = view.findViewById<CheckBox>(R.id.cbMotorbike)
             val cbEBike = view.findViewById<CheckBox>(R.id.cbEBike)
             val cbBicycle = view.findViewById<CheckBox>(R.id.cbBicycle)
@@ -425,11 +438,13 @@ class PostFragment : Fragment() {
                 createdAt = System.currentTimeMillis()
             )
 
+            lastPostedTitle    = room.title
+            lastPostedPrice    = room.price
+            lastPostedLocation = if (room.ward.isNotEmpty()) "${room.ward}, ${room.district}" else room.district
             viewModel.postRoom(room, imageUris)
         }
     }
 
-    // ═══ SETUP CHỖ ĐỂ XE ═══
     private fun setupParkingListeners(view: View) {
         val cbMotorbike = view.findViewById<CheckBox>(R.id.cbMotorbike) ?: return
         val rgMotorbikeFee = view.findViewById<RadioGroup>(R.id.rgMotorbikeFee) ?: return
@@ -487,7 +502,6 @@ class PostFragment : Fragment() {
         NumberFormatUtils.addFormatWatcher(edtBicycleFee)
     }
 
-    // ═══ RESET FORM ═══
     private fun resetForm(view: View) {
         view.findViewById<EditText>(R.id.edtOwnerName)?.text?.clear()
         view.findViewById<EditText>(R.id.edtOwnerPhone)?.text?.clear()
@@ -539,7 +553,6 @@ class PostFragment : Fragment() {
         view.findViewById<TextView>(R.id.tvPhotoCount)?.text = "0/$MAX_PHOTOS ảnh"
         view.findViewById<CardView>(R.id.btnAddPhoto)?.visibility = View.VISIBLE
 
-        // Load lại thông tin chủ trọ
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         db.collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
@@ -556,6 +569,9 @@ class PostFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        checkUserRole()
+        // Chỉ check role lần đầu, tránh query Firebase mỗi khi chuyển tab
+        if (!userRoleChecked) {
+            checkUserRole()
+        }
     }
 }

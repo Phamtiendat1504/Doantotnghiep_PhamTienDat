@@ -2,7 +2,10 @@ package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
+import android.widget.CheckBox
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
@@ -24,19 +27,16 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvForgotPassword: TextView
     private lateinit var tvGoToRegister: TextView
+    private lateinit var cbRememberPassword: CheckBox
     private lateinit var viewModel: AuthViewModel
+
+    private val PREF_NAME = "login_prefs"
+    private val KEY_REMEMBER = "remember_password"
+    // Password lưu theo key "pwd_<email>" để mỗi email có password riêng
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
-        // Kiểm tra nếu đã đăng nhập → vào thẳng MainActivity
-        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-        if (currentUser != null) {
-            val intent = Intent(this, MainActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            return
-        }
         tilEmail = findViewById(R.id.tilEmail)
         tilPassword = findViewById(R.id.tilPassword)
         edtEmail = findViewById(R.id.edtEmail)
@@ -45,8 +45,38 @@ class LoginActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
         tvGoToRegister = findViewById(R.id.tvGoToRegister)
+        cbRememberPassword = findViewById(R.id.cbRememberPassword)
 
         viewModel = ViewModelProvider(this)[AuthViewModel::class.java]
+
+        val prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
+        val isRemember = prefs.getBoolean(KEY_REMEMBER, false)
+
+        // Khôi phục email lần cuối đăng nhập
+        if (isRemember) {
+            val lastEmail = prefs.getString("last_email", "") ?: ""
+            edtEmail.setText(lastEmail)
+            if (lastEmail.isNotEmpty()) {
+                edtPassword.setText(prefs.getString("pwd_$lastEmail", ""))
+            }
+            cbRememberPassword.isChecked = true
+        }
+
+        // Khi người dùng gõ email khác → tự điền password tương ứng nếu đã lưu
+        edtEmail.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (!isRemember && !cbRememberPassword.isChecked) return
+                val typedEmail = s?.toString()?.trim() ?: return
+                val savedPwd = prefs.getString("pwd_$typedEmail", null)
+                if (savedPwd != null) {
+                    edtPassword.setText(savedPwd)
+                } else {
+                    edtPassword.setText("")
+                }
+            }
+        })
 
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
@@ -55,9 +85,9 @@ class LoginActivity : AppCompatActivity() {
 
         viewModel.loginResult.observe(this) { success ->
             if (success) {
-                val intent = Intent(this, MainActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
+                viewModel.loginResult.value = false
+                // Quay lại MainActivity (đang chạy phía sau)
+                finish()
             }
         }
 
@@ -82,6 +112,18 @@ class LoginActivity : AppCompatActivity() {
             clearErrors()
             val email = edtEmail.text.toString().trim()
             val password = edtPassword.text.toString().trim()
+
+            // Lưu hoặc xóa thông tin đăng nhập tùy theo checkbox
+            val editor = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit()
+            if (cbRememberPassword.isChecked) {
+                editor.putBoolean(KEY_REMEMBER, true)
+                editor.putString("last_email", email)
+                editor.putString("pwd_$email", password) // lưu password theo từng email
+            } else {
+                editor.clear()
+            }
+            editor.apply()
+
             viewModel.login(email, password)
         }
 

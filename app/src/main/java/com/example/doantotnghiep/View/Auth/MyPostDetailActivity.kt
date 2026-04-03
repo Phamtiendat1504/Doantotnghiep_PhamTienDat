@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.firestore.FirebaseFirestore
 import java.text.DecimalFormat
@@ -56,7 +57,7 @@ class MyPostDetailActivity : AppCompatActivity() {
                 val status = d["status"] as? String ?: "pending"
                 val rejectReason = d["rejectReason"] as? String ?: ""
 
-                // Badge trạng thái
+                // 1. Badge trạng thái bài đăng
                 val tvStatusBadge = findViewById<TextView>(R.id.tvStatusBadge)
                 when (status) {
                     "pending" -> {
@@ -76,7 +77,7 @@ class MyPostDetailActivity : AppCompatActivity() {
                     }
                 }
 
-                // Lý do từ chối
+                // 2. Lý do từ chối (nếu có)
                 val layoutReject = findViewById<LinearLayout>(R.id.layoutRejectReason)
                 val tvRejectReason = findViewById<TextView>(R.id.tvRejectReason)
                 if (status == "rejected" && rejectReason.isNotEmpty()) {
@@ -86,40 +87,28 @@ class MyPostDetailActivity : AppCompatActivity() {
                     layoutReject.visibility = View.GONE
                 }
 
-                // Tiêu đề
+                // 3. Thông tin cơ bản
                 findViewById<TextView>(R.id.tvTitle).text = d["title"] as? String ?: "Chưa có tiêu đề"
-
-                // Giá
                 val price = d["price"] as? Long ?: 0
                 findViewById<TextView>(R.id.tvPrice).text = "${formatter.format(price)} đ/tháng"
-
-                // Địa chỉ
+                
                 val address = d["address"] as? String ?: ""
                 val ward = d["ward"] as? String ?: ""
                 val district = d["district"] as? String ?: ""
-                findViewById<TextView>(R.id.tvAddress).text =
-                    if (address.isNotEmpty()) "📍 $address, $ward, $district" else "📍 $ward, $district"
+                findViewById<TextView>(R.id.tvAddress).text = if (address.isNotEmpty()) "📍 $address, $ward, $district" else "📍 $ward, $district"
 
-                // Ngày đăng
                 val createdAt = d["createdAt"] as? Long ?: 0
                 val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi", "VN"))
                 findViewById<TextView>(R.id.tvPostDate).text = "📅 Ngày đăng: ${sdf.format(Date(createdAt))}"
 
-                // Mô tả
-                val desc = d["description"] as? String ?: ""
-                findViewById<TextView>(R.id.tvDescription).text = if (desc.isNotEmpty()) desc else "Không có mô tả"
+                findViewById<TextView>(R.id.tvDescription).text = (d["description"] as? String) ?: "Không có mô tả"
 
-                // Ảnh
-                val imageUrls = d["imageUrls"] as? List<String> ?: listOf()
-                setupImageSlider(imageUrls)
-
-                // Thông tin phòng
+                // 4. Setup Slider và các phần chi tiết
+                setupImageSlider(d["imageUrls"] as? List<String> ?: listOf())
                 setupRoomInfo(d)
-
-                // Tiện ích
                 setupAmenities(d)
 
-                // Nút sửa (chỉ hiện khi bị từ chối)
+                // 5. Nút sửa bài (chỉ hiện khi bị từ chối)
                 val btnEdit = findViewById<MaterialButton>(R.id.btnEditPost)
                 if (status == "rejected") {
                     btnEdit.visibility = View.VISIBLE
@@ -141,45 +130,24 @@ class MyPostDetailActivity : AppCompatActivity() {
 
         viewPager.adapter = object : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
-                val img = ImageView(parent.context)
-                img.layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-                img.scaleType = ImageView.ScaleType.CENTER_CROP
-                img.setBackgroundColor(0xFFE0E0E0.toInt())
+                val img = ImageView(parent.context).apply {
+                    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+                    scaleType = ImageView.ScaleType.CENTER_CROP
+                    setBackgroundColor(0xFFE0E0E0.toInt())
+                }
                 return object : RecyclerView.ViewHolder(img) {}
             }
-
             override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
                 val imgView = holder.itemView as ImageView
                 if (images[position].isNotEmpty()) {
-                    Glide.with(this@MyPostDetailActivity)
-                        .load(images[position])
-                        .centerCrop()
-                        .into(imgView)
-
-                    imgView.setOnClickListener {
-                        val intent = Intent(this@MyPostDetailActivity, ImageViewerActivity::class.java)
-                        intent.putExtra("imageUrl", images[position])
-                        startActivity(intent)
-                    }
+                    Glide.with(this@MyPostDetailActivity).load(images[position]).centerCrop().into(imgView)
                 }
             }
-
             override fun getItemCount() = images.size
         }
-
         tvCount.text = "1/${images.size}"
-        tvCount.background = android.graphics.drawable.GradientDrawable().apply {
-            setColor(0x99000000.toInt())
-            cornerRadius = dpToPx(10).toFloat()
-        }
-
         viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                tvCount.text = "${position + 1}/${images.size}"
-            }
+            override fun onPageSelected(position: Int) { tvCount.text = "${position + 1}/${images.size}" }
         })
     }
 
@@ -187,133 +155,128 @@ class MyPostDetailActivity : AppCompatActivity() {
         val layout = findViewById<LinearLayout>(R.id.layoutRoomInfo)
         layout.removeAllViews()
 
-        val area = (data["area"] as? Long)?.toInt() ?: (data["area"] as? Int ?: 0)
-        val peopleCount = (data["peopleCount"] as? Long)?.toInt() ?: 0
+        // Diện tích & Sức chứa
+        val area = (data["area"] as? Number)?.toInt() ?: 0
+        if (area > 0) addInfoRow(layout, "Diện tích", "${area} m²")
+        
+        val peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0
+        if (peopleCount > 0) addInfoRow(layout, "Sức chứa", "$peopleCount người")
+
+        // Loại phòng & Đối tượng
         val roomType = data["roomType"] as? String ?: ""
-        val deposit = data["depositAmount"] as? Long ?: 0
-        val depositMonths = (data["depositMonths"] as? Long)?.toInt() ?: 0
-        val kitchen = data["kitchen"] as? String ?: ""
-        val bathroom = data["bathroom"] as? String ?: ""
+        if (roomType.isNotEmpty()) addInfoRow(layout, "Loại phòng", roomType)
+
         val genderPrefer = data["genderPrefer"] as? String ?: ""
+        if (genderPrefer.isNotEmpty()) addInfoRow(layout, "Đối tượng thuê", genderPrefer)
+
+        // Tiền cọc
+        val depositMonths = (data["depositMonths"] as? Number)?.toInt() ?: 0
+        if (depositMonths > 0) addInfoRow(layout, "Đặt cọc", "$depositMonths tháng")
+        
+        val depositAmount = (data["depositAmount"] as? Number)?.toLong() ?: 0L
+        if (depositAmount > 0) addInfoRow(layout, "Số tiền cọc", "${formatter.format(depositAmount)} đ")
+
+        // Chi phí dịch vụ
+        val wifiPrice = (data["wifiPrice"] as? Number)?.toLong() ?: 0L
+        if (data["hasWifi"] == true) addInfoRow(layout, "Internet", if (wifiPrice > 0) "${formatter.format(wifiPrice)} đ/tháng" else "Miễn phí")
+
+        val electricPrice = (data["electricPrice"] as? Number)?.toLong() ?: 0L
+        if (electricPrice > 0) addInfoRow(layout, "Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
+
+        val waterPrice = (data["waterPrice"] as? Number)?.toLong() ?: 0L
+        if (waterPrice > 0) addInfoRow(layout, "Tiền nước", "${formatter.format(waterPrice)} đ/khối")
+
+        // Chỗ để xe
+        if (data["hasMotorbike"] == true) {
+            val fee = (data["motorbikeFee"] as? Number)?.toLong() ?: 0L
+            addInfoRow(layout, "Xe máy", if (fee > 0) "${formatter.format(fee)} đ/xe" else "Miễn phí")
+        }
+
+        // Giờ giấc & Thú cưng
         val curfew = data["curfew"] as? String ?: ""
         val curfewTime = data["curfewTime"] as? String ?: ""
-        val electricPrice = data["electricPrice"] as? Long ?: 0
-        val waterPrice = data["waterPrice"] as? Long ?: 0
-        val wifiPrice = data["wifiPrice"] as? Long ?: 0
-        val ownerName = data["ownerName"] as? String ?: ""
-        val ownerPhone = data["ownerPhone"] as? String ?: ""
-        val ownerGender = data["ownerGender"] as? String ?: ""
+        if (curfew.isNotEmpty()) addInfoRow(layout, "Giờ ra vào", if (curfew == "Tùy chọn") curfewTime else curfew)
 
-        if (area > 0) addInfoRow(layout, "Diện tích", "${area} m²")
-        if (peopleCount > 0) addInfoRow(layout, "Số người/phòng", "$peopleCount người")
-        if (roomType.isNotEmpty()) addInfoRow(layout, "Dạng phòng", roomType)
-        if (genderPrefer.isNotEmpty()) addInfoRow(layout, "Giới tính ưu tiên", genderPrefer)
-        if (kitchen.isNotEmpty()) addInfoRow(layout, "Bếp", kitchen)
-        if (bathroom.isNotEmpty()) addInfoRow(layout, "Vệ sinh", bathroom)
-        if (electricPrice > 0) addInfoRow(layout, "Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
-        if (waterPrice > 0) addInfoRow(layout, "Tiền nước", "${formatter.format(waterPrice)} đ/m³")
-        if (wifiPrice > 0) addInfoRow(layout, "Tiền wifi", "${formatter.format(wifiPrice)} đ/tháng")
-        if (deposit > 0) addInfoRow(layout, "Đặt cọc", "${formatter.format(deposit)} đ")
-        if (depositMonths > 0) addInfoRow(layout, "Cọc trước", "$depositMonths tháng")
-        if (curfew.isNotEmpty()) {
-            val curfewText = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Khóa cửa $curfewTime" else curfew
-            addInfoRow(layout, "Giờ giấc", curfewText)
-        }
         val pet = data["pet"] as? String ?: ""
         if (pet.isNotEmpty()) {
             val petName = data["petName"] as? String ?: ""
-            val petCount = (data["petCount"] as? Long)?.toInt() ?: 0
-            val petText = if (pet == "Cho nuôi" && petName.isNotEmpty())
-                "Cho nuôi: $petName (tối đa $petCount)" else pet
-            addInfoRow(layout, "Thú cưng", petText)
+            addInfoRow(layout, "Thú cưng", if (pet == "Cho nuôi" && petName.isNotEmpty()) "Cho nuôi ($petName)" else pet)
         }
-        if (ownerName.isNotEmpty()) addInfoRow(layout, "Chủ trọ", ownerName)
-        if (ownerPhone.isNotEmpty()) addInfoRow(layout, "SĐT chủ trọ", ownerPhone)
-        if (ownerGender.isNotEmpty()) addInfoRow(layout, "Giới tính CT", ownerGender)
     }
 
     private fun addInfoRow(parent: LinearLayout, label: String, value: String) {
-        val row = LinearLayout(this)
-        row.orientation = LinearLayout.HORIZONTAL
-        row.setPadding(0, dpToPx(6), 0, dpToPx(6))
-
-        val tvLabel = TextView(this)
-        tvLabel.text = label
-        tvLabel.textSize = 13f
-        tvLabel.setTextColor(0xFF999999.toInt())
-        tvLabel.layoutParams = LinearLayout.LayoutParams(dpToPx(120), LinearLayout.LayoutParams.WRAP_CONTENT)
-        row.addView(tvLabel)
-
-        val tvValue = TextView(this)
-        tvValue.text = value
-        tvValue.textSize = 14f
-        tvValue.setTextColor(0xFF333333.toInt())
-        tvValue.setTypeface(tvValue.typeface, android.graphics.Typeface.BOLD)
-        row.addView(tvValue)
-
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dpToPx(8), 0, dpToPx(8))
+        }
+        row.addView(TextView(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(0xFF757575.toInt())
+            layoutParams = LinearLayout.LayoutParams(dpToPx(130), -2)
+        })
+        row.addView(TextView(this).apply {
+            text = value
+            textSize = 14f
+            setTextColor(0xFF212121.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+        })
         parent.addView(row)
-
-        val divider = View(this)
-        divider.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)
-        )
-        divider.setBackgroundColor(0xFFF5F5F5.toInt())
-        parent.addView(divider)
+        parent.addView(View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dpToPx(1))
+            setBackgroundColor(0xFFEEEEEE.toInt())
+        })
     }
 
     private fun setupAmenities(data: Map<String, Any>) {
         val layout = findViewById<LinearLayout>(R.id.layoutAmenities)
         layout.removeAllViews()
+        val ams = mutableListOf<String>()
+        
+        if (data["hasAirCon"] == true) ams.add("❄️ Điều hòa")
+        if (data["hasWaterHeater"] == true) ams.add("🔥 Bình nóng lạnh")
+        if (data["hasWasher"] == true) ams.add("🧺 Máy giặt")
+        if (data["hasBed"] == true) ams.add("🛏️ Giường ngủ")
+        if (data["hasWardrobe"] == true) ams.add("👗 Tủ quần áo")
+        if (data["hasDryingArea"] == true) ams.add("☀️ Sân phơi")
+        
+        val kitchen = data["kitchen"] as? String ?: ""
+        if (kitchen.isNotEmpty() && kitchen != "Không") ams.add("🍳 Bếp: $kitchen")
+        
+        val bathroom = data["bathroom"] as? String ?: ""
+        if (bathroom.isNotEmpty()) ams.add("🚿 WC: $bathroom")
 
-        val amenities = mutableListOf<String>()
-        if (data["hasWifi"] == true) amenities.add("✓ Wifi")
-        if (data["hasAirCon"] == true) amenities.add("✓ Điều hòa")
-        if (data["hasWaterHeater"] == true) amenities.add("✓ Nóng lạnh")
-        if (data["hasWasher"] == true) amenities.add("✓ Máy giặt")
-        if (data["hasDryingArea"] == true) amenities.add("✓ Chỗ phơi đồ")
-        if (data["hasWardrobe"] == true) amenities.add("✓ Tủ quần áo")
-        if (data["hasBed"] == true) amenities.add("✓ Giường")
-        if (data["hasMotorbike"] == true) amenities.add("✓ Để xe máy")
-        if (data["hasEBike"] == true) amenities.add("✓ Để xe đạp điện")
-        if (data["hasBicycle"] == true) amenities.add("✓ Để xe đạp")
-
-        if (amenities.isEmpty()) {
-            val tv = TextView(this)
-            tv.text = "Không có thông tin"
-            tv.textSize = 13f
-            tv.setTextColor(0xFF999999.toInt())
-            layout.addView(tv)
+        if (ams.isEmpty()) {
+            layout.addView(TextView(this).apply { text = "Không có thông tin tiện ích"; setTextColor(0xFF999999.toInt()) })
             return
         }
 
-        var i = 0
-        while (i < amenities.size) {
-            val row = LinearLayout(this)
-            row.orientation = LinearLayout.HORIZONTAL
-            row.setPadding(0, dpToPx(4), 0, dpToPx(4))
-
-            val tv1 = TextView(this)
-            tv1.text = amenities[i]
-            tv1.textSize = 14f
-            tv1.setTextColor(0xFF2E7D32.toInt())
-            tv1.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-            row.addView(tv1)
-
-            if (i + 1 < amenities.size) {
-                val tv2 = TextView(this)
-                tv2.text = amenities[i + 1]
-                tv2.textSize = 14f
-                tv2.setTextColor(0xFF2E7D32.toInt())
-                tv2.layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                row.addView(tv2)
+        // Hiển thị dạng lưới 2 cột
+        for (i in ams.indices step 2) {
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                setPadding(0, dpToPx(4), 0, dpToPx(4))
             }
-
+            row.addView(TextView(this).apply {
+                text = ams[i]
+                textSize = 14f
+                setTextColor(0xFF424242.toInt())
+                layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+            })
+            if (i + 1 < ams.size) {
+                row.addView(TextView(this).apply {
+                    text = ams[i + 1]
+                    textSize = 14f
+                    setTextColor(0xFF424242.toInt())
+                    layoutParams = LinearLayout.LayoutParams(0, -2, 1f)
+                })
+            } else {
+                row.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, -2, 1f) })
+            }
             layout.addView(row)
-            i += 2
         }
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
-    }
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
