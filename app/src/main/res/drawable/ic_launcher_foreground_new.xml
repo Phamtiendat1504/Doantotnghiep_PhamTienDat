@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Location pin trắng: thân tròn + mũi nhọn dưới -->
+    <path
+        android:pathData="M54,18 C40.745,18 30,28.745 30,42 C30,57.5 54,90 54,90 C54,90 78,57.5 78,42 C78,28.745 67.255,18 54,18 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Mái nhà tam giác xanh bên trong pin -->
+    <path
+        android:pathData="M54,28 L67,40 L41,40 Z"
+        android:fillColor="#1976D2" />
+
+    <!-- Thân nhà xanh -->
+    <path
+        android:pathData="M43,40 L43,54 L65,54 L65,40 Z"
+        android:fillColor="#1976D2" />
+
+    <!-- Cửa chính trắng (hình chữ U) -->
+    <path
+        android:pathData="M50,46 C50,43.791 51.791,42 54,42 C56.209,42 58,43.791 58,46 L58,54 L50,54 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Cửa sổ trái trắng -->
+    <path
+        android:pathData="M45,42 L48.5,42 L48.5,47 L45,47 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85" />
+
+    <!-- Cửa sổ phải trắng -->
+    <path
+        android:pathData="M59.5,42 L63,42 L63,47 L59.5,47 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.85" />
+
+    <!-- Ống khói nhỏ -->
+    <path
+        android:pathData="M60,28 L60,33 L63,33 L63,28 Z"
+        android:fillColor="#1976D2" />
+
+</vector>

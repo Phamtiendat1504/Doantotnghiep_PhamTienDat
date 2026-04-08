@@ -1,12 +1,15 @@
 package com.example.doantotnghiep.View.Auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
+import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
-import com.example.doantotnghiep.repository.AuthRepository
+import com.example.doantotnghiep.ViewModel.ResetPasswordViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -20,7 +23,7 @@ class ResetPasswordActivity : AppCompatActivity() {
     private lateinit var btnResetPassword: MaterialButton
     private lateinit var progressBar: ProgressBar
 
-    private val repository = AuthRepository()
+    private val viewModel: ResetPasswordViewModel by viewModels()
     private var email = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,65 +39,46 @@ class ResetPasswordActivity : AppCompatActivity() {
 
         email = intent.getStringExtra("email") ?: ""
 
+        observeViewModel()
+
         btnResetPassword.setOnClickListener {
             tilNewPassword.error = null
             tilConfirmPassword.error = null
-
             val newPassword = edtNewPassword.text.toString().trim()
             val confirmPassword = edtConfirmPassword.text.toString().trim()
+            viewModel.resetPassword(email, newPassword, confirmPassword)
+        }
+    }
 
-            if (newPassword.isEmpty()) {
-                tilNewPassword.error = "Vui lòng nhập mật khẩu mới"
-                return@setOnClickListener
-            }
-            if (newPassword.length < 12 ||
-                !newPassword.any { it.isUpperCase() } ||
-                !newPassword.any { it.isDigit() } ||
-                !newPassword.any { !it.isLetterOrDigit() }
-            ) {
-                tilNewPassword.error =
-                    "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
-                return@setOnClickListener
-            }
-            if (confirmPassword.isEmpty()) {
-                tilConfirmPassword.error = "Vui lòng xác nhận mật khẩu"
-                return@setOnClickListener
-            }
-            if (newPassword != confirmPassword) {
-                tilConfirmPassword.error = "Mật khẩu xác nhận không khớp"
-                return@setOnClickListener
-            }
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(this) { loading ->
+            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            btnResetPassword.isEnabled = !loading
+        }
 
-            progressBar.visibility = View.VISIBLE
-            btnResetPassword.isEnabled = false
+        viewModel.resetResult.observe(this) { success ->
+            if (success) {
+                AlertDialog.Builder(this)
+                    .setTitle("Thành công")
+                    .setMessage("Mật khẩu đã được đổi thành công! Vui lòng đăng nhập lại.")
+                    .setPositiveButton("Đăng nhập") { _, _ ->
+                        val intent = Intent(this, LoginActivity::class.java)
+                        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        startActivity(intent)
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+        }
 
-            repository.updatePasswordAfterOtp(email, newPassword,
-                onSuccess = {
-                    progressBar.visibility = View.GONE
-                    btnResetPassword.isEnabled = true
-
-                    androidx.appcompat.app.AlertDialog.Builder(this)
-                        .setTitle("Thành công")
-                        .setMessage("Mật khẩu đã được đổi thành công! Vui lòng đăng nhập lại.")
-                        .setPositiveButton("Đăng nhập") { _, _ ->
-                            // Quay về LoginActivity, xóa hết stack
-                            val intent = android.content.Intent(
-                                this, LoginActivity::class.java
-                            )
-                            intent.flags =
-                                android.content.Intent.FLAG_ACTIVITY_NEW_TASK or
-                                        android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK
-                            startActivity(intent)
-                        }
-                        .setCancelable(false)
-                        .show()
-                },
-                onFailure = { error ->
-                    progressBar.visibility = View.GONE
-                    btnResetPassword.isEnabled = true
-                    MessageUtils.showErrorDialog(this, "Đặt lại mật khẩu thất bại", error)
-                }
-            )
+        viewModel.errorMessage.observe(this) { msg ->
+            when (msg) {
+                "new_empty" -> tilNewPassword.error = "Vui lòng nhập mật khẩu mới"
+                "new_weak" -> tilNewPassword.error = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
+                "confirm_empty" -> tilConfirmPassword.error = "Vui lòng xác nhận mật khẩu"
+                "confirm_mismatch" -> tilConfirmPassword.error = "Mật khẩu xác nhận không khớp"
+                else -> if (!msg.isNullOrEmpty()) MessageUtils.showErrorDialog(this, "Đặt lại mật khẩu thất bại", msg)
+            }
         }
     }
 }

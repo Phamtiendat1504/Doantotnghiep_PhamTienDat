@@ -159,11 +159,14 @@ class BookingActivity : AppCompatActivity() {
             return
         }
 
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val uid = viewModel.getCurrentUserId() ?: return
         val roomId = intent.getStringExtra("roomId") ?: ""
         val landlordId = intent.getStringExtra("landlordId") ?: ""
         val roomTitle = intent.getStringExtra("roomTitle") ?: ""
         val roomAddress = intent.getStringExtra("roomAddress") ?: ""
+        val roomImageUrl = intent.getStringExtra("roomImageUrl") ?: ""
+        val landlordName = intent.getStringExtra("landlordName") ?: ""
+        val landlordPhone = intent.getStringExtra("landlordPhone") ?: ""
 
         val appointment: HashMap<String, Any> = hashMapOf(
             "tenantId" to uid,
@@ -174,6 +177,9 @@ class BookingActivity : AppCompatActivity() {
             "roomId" to roomId,
             "roomTitle" to roomTitle,
             "roomAddress" to roomAddress,
+            "roomImageUrl" to roomImageUrl,
+            "landlordName" to landlordName,
+            "landlordPhone" to landlordPhone,
             "date" to selectedDate,
             "dateDisplay" to selectedDateDisplay,
             "time" to selectedTime,

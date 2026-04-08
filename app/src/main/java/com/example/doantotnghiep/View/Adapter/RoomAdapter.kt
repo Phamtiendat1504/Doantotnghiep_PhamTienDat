@@ -124,6 +124,8 @@ class RoomAdapter(
     override fun getItemCount() = items.size
 
     // Cập nhật dữ liệu mới vào adapter dùng DiffUtil để tránh redraw toàn bộ list
+    fun getItems(): List<RoomItem> = items.toList()
+
     fun submitList(newItems: List<RoomItem>) {
         val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
             override fun getOldListSize() = items.size

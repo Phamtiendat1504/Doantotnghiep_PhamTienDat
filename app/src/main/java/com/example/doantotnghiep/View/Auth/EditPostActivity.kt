@@ -10,23 +10,22 @@ import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.viewModels
 import androidx.cardview.widget.CardView
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.AddressData
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.Utils.NumberFormatUtils
+import com.example.doantotnghiep.ViewModel.EditPostViewModel
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
 import java.util.*
 import androidx.activity.addCallback
 
 class EditPostActivity : AppCompatActivity() {
 
-    private val db = FirebaseFirestore.getInstance()
-    private val storage = FirebaseStorage.getInstance("gs://doantotnghiep-b39ae.firebasestorage.app")
-    
+    private val viewModel: EditPostViewModel by viewModels()
+
     private var existingImageUrls = mutableListOf<String>()
     private val newImageUris = mutableListOf<Uri>()
     private val deletedImageUrls = mutableListOf<String>()
@@ -37,7 +36,6 @@ class EditPostActivity : AppCompatActivity() {
     private var replaceIndex = -1
     private var isReplacingExisting = false
 
-    // CẬP NHẬT: Cho phép thêm nhiều ảnh mới cùng lúc
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
@@ -64,10 +62,12 @@ class EditPostActivity : AppCompatActivity() {
         if (result.resultCode == Activity.RESULT_OK) {
             val uri = result.data?.data ?: return@registerForActivityResult
             if (isReplacingExisting) {
+                if (replaceIndex < 0 || replaceIndex >= existingImageUrls.size) return@registerForActivityResult
                 deletedImageUrls.add(existingImageUrls[replaceIndex])
                 existingImageUrls.removeAt(replaceIndex)
                 newImageUris.add(uri)
             } else {
+                if (replaceIndex < 0 || replaceIndex >= newImageUris.size) return@registerForActivityResult
                 newImageUris[replaceIndex] = uri
             }
             renderPhotos()
@@ -84,7 +84,46 @@ class EditPostActivity : AppCompatActivity() {
         if (roomId.isEmpty()) { finish(); return }
 
         setupUI()
-        loadRoomData()
+        setupObservers()
+        viewModel.loadRoomData(roomId)
+    }
+
+    private fun setupObservers() {
+        // Quan sát dữ liệu phòng từ ViewModel
+        viewModel.roomData.observe(this) { data ->
+            if (data == null) return@observe
+            populateForm(data)
+        }
+
+        // Quan sát tiến trình upload
+        viewModel.uploadProgressText.observe(this) { text ->
+            findViewById<TextView>(R.id.tvProgressPercent)?.text = text
+        }
+
+        // Quan sát kết quả lưu
+        viewModel.saveResult.observe(this) { success ->
+            if (success == true) {
+                viewModel.resetSaveResult()
+                findViewById<LinearLayout>(R.id.layoutProgress)?.visibility = View.GONE
+                MessageUtils.showSuccessDialog(this, "Thành công", "Bài đăng đã được cập nhật và đang chờ duyệt lại.") { finish() }
+            }
+        }
+
+        // Quan sát lỗi
+        viewModel.errorMessage.observe(this) { error ->
+            if (!error.isNullOrEmpty()) {
+                viewModel.resetErrorMessage()
+                findViewById<LinearLayout>(R.id.layoutProgress)?.visibility = View.GONE
+                MessageUtils.showErrorDialog(this, "Lỗi cập nhật", error)
+            }
+        }
+
+        // Quan sát trạng thái loading
+        viewModel.isLoading.observe(this) { isLoading ->
+            val layoutProgress = findViewById<LinearLayout>(R.id.layoutProgress)
+            layoutProgress?.visibility = if (isLoading) View.VISIBLE else View.GONE
+            findViewById<MaterialButton>(R.id.btnPostRoom)?.isEnabled = !isLoading
+        }
     }
 
     private fun setupUI() {
@@ -113,7 +152,6 @@ class EditPostActivity : AppCompatActivity() {
         setupMainListeners()
         setupParkingListeners()
         
-        // CẬP NHẬT: Cho phép chọn nhiều ảnh khi sửa
         findViewById<CardView>(R.id.btnAddPhoto).setOnClickListener {
             if ((existingImageUrls.size + newImageUris.size) >= MAX_PHOTOS) {
                 MessageUtils.showInfoDialog(this, "Giới hạn ảnh", "Tối đa $MAX_PHOTOS ảnh.")
@@ -165,97 +203,91 @@ class EditPostActivity : AppCompatActivity() {
         }
     }
 
-    private fun loadRoomData() {
-        db.collection("rooms").document(roomId).get().addOnSuccessListener { doc ->
-            if (!doc.exists()) return@addOnSuccessListener
-            val d = doc.data ?: return@addOnSuccessListener
-            
-            if (d["status"] == "rejected") addRejectionBanner(d["rejectReason"] as? String ?: "")
+    // Điền dữ liệu vào form từ Map — được gọi từ observer của viewModel.roomData
+    private fun populateForm(d: Map<String, Any>) {
+        if (d["status"] == "rejected") addRejectionBanner(d["rejectReason"] as? String ?: "")
 
-            findViewById<EditText>(R.id.edtOwnerName).setText(d["ownerName"] as? String ?: "")
-            findViewById<EditText>(R.id.edtOwnerPhone).setText(d["ownerPhone"] as? String ?: "")
-            if (d["ownerGender"] == "Nam") findViewById<RadioButton>(R.id.rbOwnerMale).isChecked = true
-            else if (d["ownerGender"] == "Nữ") findViewById<RadioButton>(R.id.rbOwnerFemale).isChecked = true
+        findViewById<EditText>(R.id.edtOwnerName).setText(d["ownerName"] as? String ?: "")
+        findViewById<EditText>(R.id.edtOwnerPhone).setText(d["ownerPhone"] as? String ?: "")
+        if (d["ownerGender"] == "Nam") findViewById<RadioButton>(R.id.rbOwnerMale).isChecked = true
+        else if (d["ownerGender"] == "Nữ") findViewById<RadioButton>(R.id.rbOwnerFemale).isChecked = true
 
-            findViewById<EditText>(R.id.edtTitle).setText(d["title"] as? String ?: "")
-            findViewById<EditText>(R.id.edtAddress).setText(d["address"] as? String ?: "")
-            findViewById<EditText>(R.id.edtDescription).setText(d["description"] as? String ?: "")
-            
-            val ward = d["ward"] as? String ?: ""
-            val spinner = findViewById<Spinner>(R.id.spinnerWard)
-            for (i in 0 until spinner.count) {
-                if (spinner.getItemAtPosition(i).toString().contains(ward)) { spinner.setSelection(i); break }
-            }
-
-            findViewById<EditText>(R.id.edtPrice).setText(d["price"]?.toString() ?: "")
-            findViewById<EditText>(R.id.edtArea).setText(d["area"]?.toString() ?: "")
-            findViewById<EditText>(R.id.edtPeopleCount).setText(d["peopleCount"]?.toString() ?: "")
-            if (d["roomType"] == "Chung chủ") findViewById<RadioButton>(R.id.rbShared).isChecked = true
-            else if (d["roomType"] == "Riêng chủ") findViewById<RadioButton>(R.id.rbPrivate).isChecked = true
-
-            findViewById<EditText>(R.id.edtDepositMonths).setText(d["depositMonths"]?.toString() ?: "")
-            findViewById<EditText>(R.id.edtDepositAmount).setText(d["depositAmount"]?.toString() ?: "")
-
-            findViewById<CheckBox>(R.id.cbWifi).isChecked = d["hasWifi"] as? Boolean ?: false
-            findViewById<EditText>(R.id.edtWifiPrice).setText(d["wifiPrice"]?.toString() ?: "")
-            findViewById<CheckBox>(R.id.cbElectric).isChecked = (d["electricPrice"] as? Long ?: 0) > 0
-            findViewById<EditText>(R.id.edtElectricPrice).setText(d["electricPrice"]?.toString() ?: "")
-            findViewById<CheckBox>(R.id.cbWater).isChecked = (d["waterPrice"] as? Long ?: 0) > 0
-            findViewById<EditText>(R.id.edtWaterPrice).setText(d["waterPrice"]?.toString() ?: "")
-
-            findViewById<CheckBox>(R.id.cbAirCon).isChecked = d["hasAirCon"] as? Boolean ?: false
-            findViewById<CheckBox>(R.id.cbWaterHeater).isChecked = d["hasWaterHeater"] as? Boolean ?: false
-            findViewById<CheckBox>(R.id.cbWasher).isChecked = d["hasWasher"] as? Boolean ?: false
-            findViewById<CheckBox>(R.id.cbDryingArea).isChecked = d["hasDryingArea"] as? Boolean ?: false
-            findViewById<CheckBox>(R.id.cbWardrobe).isChecked = d["hasWardrobe"] as? Boolean ?: false
-            findViewById<CheckBox>(R.id.cbBed).isChecked = d["hasBed"] as? Boolean ?: false
-
-            when(d["kitchen"] as? String) {
-                "Chung" -> findViewById<RadioButton>(R.id.rbKitchenShared).isChecked = true
-                "Riêng" -> findViewById<RadioButton>(R.id.rbKitchenPrivate).isChecked = true
-                "Không" -> findViewById<RadioButton>(R.id.rbKitchenNone).isChecked = true
-            }
-            if (d["bathroom"] == "Chung") findViewById<RadioButton>(R.id.rbBathroomShared).isChecked = true
-            else if (d["bathroom"] == "Riêng") findViewById<RadioButton>(R.id.rbBathroomPrivate).isChecked = true
-
-            if (d["pet"] == "Cho nuôi") {
-                findViewById<RadioButton>(R.id.rbPetYes).isChecked = true
-                findViewById<LinearLayout>(R.id.layoutPetDetail).visibility = View.VISIBLE
-                findViewById<EditText>(R.id.edtPetName).setText(d["petName"] as? String ?: "")
-                findViewById<EditText>(R.id.edtPetCount).setText(d["petCount"]?.toString() ?: "")
-            } else {
-                findViewById<RadioButton>(R.id.rbPetNo).isChecked = true
-            }
-
-            // Giờ giấc
-            val curfew = d["curfew"] as? String ?: ""
-            val curfewTime = d["curfewTime"] as? String ?: ""
-            when (curfew) {
-                "Tự do" -> {
-                    findViewById<RadioButton>(R.id.rbCurfewFree).isChecked = true
-                    findViewById<EditText>(R.id.edtCurfewTime).visibility = View.GONE
-                }
-                "Tùy chọn" -> {
-                    findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked = true
-                    findViewById<EditText>(R.id.edtCurfewTime).apply {
-                        visibility = View.VISIBLE
-                        setText(curfewTime)
-                    }
-                }
-            }
-
-            // Đối tượng thuê
-            when (d["genderPrefer"] as? String ?: "") {
-                "Nam" -> findViewById<RadioButton>(R.id.rbGenderMale).isChecked = true
-                "Nữ" -> findViewById<RadioButton>(R.id.rbGenderFemale).isChecked = true
-                else -> findViewById<RadioButton>(R.id.rbGenderAll).isChecked = true
-            }
-
-            loadParkingData("Motorbike", d); loadParkingData("EBike", d); loadParkingData("Bicycle", d)
-
-            existingImageUrls = (d["imageUrls"] as? List<String>)?.toMutableList() ?: mutableListOf()
-            renderPhotos()
+        findViewById<EditText>(R.id.edtTitle).setText(d["title"] as? String ?: "")
+        findViewById<EditText>(R.id.edtAddress).setText(d["address"] as? String ?: "")
+        findViewById<EditText>(R.id.edtDescription).setText(d["description"] as? String ?: "")
+        
+        val ward = d["ward"] as? String ?: ""
+        val spinner = findViewById<Spinner>(R.id.spinnerWard)
+        for (i in 0 until spinner.count) {
+            if (spinner.getItemAtPosition(i).toString().contains(ward)) { spinner.setSelection(i); break }
         }
+
+        findViewById<EditText>(R.id.edtPrice).setText(d["price"]?.toString() ?: "")
+        findViewById<EditText>(R.id.edtArea).setText(d["area"]?.toString() ?: "")
+        findViewById<EditText>(R.id.edtPeopleCount).setText(d["peopleCount"]?.toString() ?: "")
+        if (d["roomType"] == "Chung chủ") findViewById<RadioButton>(R.id.rbShared).isChecked = true
+        else if (d["roomType"] == "Riêng chủ") findViewById<RadioButton>(R.id.rbPrivate).isChecked = true
+
+        findViewById<EditText>(R.id.edtDepositMonths).setText(d["depositMonths"]?.toString() ?: "")
+        findViewById<EditText>(R.id.edtDepositAmount).setText(d["depositAmount"]?.toString() ?: "")
+
+        findViewById<CheckBox>(R.id.cbWifi).isChecked = d["hasWifi"] as? Boolean ?: false
+        findViewById<EditText>(R.id.edtWifiPrice).setText(d["wifiPrice"]?.toString() ?: "")
+        findViewById<CheckBox>(R.id.cbElectric).isChecked = (d["electricPrice"] as? Long ?: 0) > 0
+        findViewById<EditText>(R.id.edtElectricPrice).setText(d["electricPrice"]?.toString() ?: "")
+        findViewById<CheckBox>(R.id.cbWater).isChecked = (d["waterPrice"] as? Long ?: 0) > 0
+        findViewById<EditText>(R.id.edtWaterPrice).setText(d["waterPrice"]?.toString() ?: "")
+
+        findViewById<CheckBox>(R.id.cbAirCon).isChecked = d["hasAirCon"] as? Boolean ?: false
+        findViewById<CheckBox>(R.id.cbWaterHeater).isChecked = d["hasWaterHeater"] as? Boolean ?: false
+        findViewById<CheckBox>(R.id.cbWasher).isChecked = d["hasWasher"] as? Boolean ?: false
+        findViewById<CheckBox>(R.id.cbDryingArea).isChecked = d["hasDryingArea"] as? Boolean ?: false
+        findViewById<CheckBox>(R.id.cbWardrobe).isChecked = d["hasWardrobe"] as? Boolean ?: false
+        findViewById<CheckBox>(R.id.cbBed).isChecked = d["hasBed"] as? Boolean ?: false
+
+        when(d["kitchen"] as? String) {
+            "Chung" -> findViewById<RadioButton>(R.id.rbKitchenShared).isChecked = true
+            "Riêng" -> findViewById<RadioButton>(R.id.rbKitchenPrivate).isChecked = true
+            "Không" -> findViewById<RadioButton>(R.id.rbKitchenNone).isChecked = true
+        }
+        if (d["bathroom"] == "Chung") findViewById<RadioButton>(R.id.rbBathroomShared).isChecked = true
+        else if (d["bathroom"] == "Riêng") findViewById<RadioButton>(R.id.rbBathroomPrivate).isChecked = true
+
+        if (d["pet"] == "Cho nuôi") {
+            findViewById<RadioButton>(R.id.rbPetYes).isChecked = true
+            findViewById<LinearLayout>(R.id.layoutPetDetail).visibility = View.VISIBLE
+            findViewById<EditText>(R.id.edtPetName).setText(d["petName"] as? String ?: "")
+            findViewById<EditText>(R.id.edtPetCount).setText(d["petCount"]?.toString() ?: "")
+        } else {
+            findViewById<RadioButton>(R.id.rbPetNo).isChecked = true
+        }
+
+        val curfew = d["curfew"] as? String ?: ""
+        val curfewTime = d["curfewTime"] as? String ?: ""
+        when (curfew) {
+            "Tự do" -> {
+                findViewById<RadioButton>(R.id.rbCurfewFree).isChecked = true
+                findViewById<EditText>(R.id.edtCurfewTime).visibility = View.GONE
+            }
+            "Tùy chọn" -> {
+                findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked = true
+                findViewById<EditText>(R.id.edtCurfewTime).apply {
+                    visibility = View.VISIBLE
+                    setText(curfewTime)
+                }
+            }
+        }
+
+        when (d["genderPrefer"] as? String ?: "") {
+            "Nam" -> findViewById<RadioButton>(R.id.rbGenderMale).isChecked = true
+            "Nữ" -> findViewById<RadioButton>(R.id.rbGenderFemale).isChecked = true
+            else -> findViewById<RadioButton>(R.id.rbGenderAll).isChecked = true
+        }
+
+        loadParkingData("Motorbike", d); loadParkingData("EBike", d); loadParkingData("Bicycle", d)
+
+        existingImageUrls = (d["imageUrls"] as? List<String>)?.toMutableList() ?: mutableListOf()
+        renderPhotos()
     }
 
     private fun loadParkingData(type: String, d: Map<String, Any>) {
@@ -362,49 +394,40 @@ class EditPostActivity : AppCompatActivity() {
 
     private fun updatePost() {
         val layoutProgress = findViewById<LinearLayout>(R.id.layoutProgress)
-        val tvProgressPercent = findViewById<TextView>(R.id.tvProgressPercent)
-        
         layoutProgress?.visibility = View.VISIBLE
-        tvProgressPercent?.text = "Đang đăng bài..."
+        findViewById<TextView>(R.id.tvProgressPercent)?.text = "Đang đăng bài..."
 
-        val wardWithDistrict = findViewById<Spinner>(R.id.spinnerWard).selectedItem.toString()
-        if (findViewById<Spinner>(R.id.spinnerWard).selectedItemPosition == 0) {
+        val spinnerWard = findViewById<Spinner>(R.id.spinnerWard)
+        if (spinnerWard.selectedItemPosition == 0) {
             layoutProgress?.visibility = View.GONE
             MessageUtils.showInfoDialog(this, "Thông tin thiếu", "Vui lòng chọn khu vực phường/xã.")
             return
         }
 
+        val wardWithDistrict = spinnerWard.selectedItem.toString()
         val ward = wardWithDistrict.substringBefore("(").trim()
         val district = wardWithDistrict.substringAfter("(").replace(")", "").trim()
+
+        val data = buildFormData()
         
-        if (newImageUris.isNotEmpty()) {
-            uploadNewImages { urls -> saveToFirestore(ward, district, existingImageUrls + urls) }
-        } else {
-            saveToFirestore(ward, district, existingImageUrls)
-        }
+        // Gọi ViewModel thay vì Firebase trực tiếp
+        viewModel.updatePost(
+            roomId = roomId,
+            ward = ward,
+            district = district,
+            existingImageUrls = existingImageUrls,
+            newImageUris = newImageUris,
+            deletedImageUrls = deletedImageUrls,
+            data = data
+        )
     }
 
-    private fun uploadNewImages(onComplete: (List<String>) -> Unit) {
-        val tvProgressPercent = findViewById<TextView>(R.id.tvProgressPercent)
-        val urls = mutableListOf<String>(); var count = 0
-        newImageUris.forEach { uri ->
-            val ref = storage.reference.child("rooms/$roomId/img_${UUID.randomUUID()}.jpg")
-            ref.putFile(uri).continueWithTask { it.result?.storage?.downloadUrl }.addOnSuccessListener {
-                urls.add(it.toString())
-                count++
-                tvProgressPercent?.text = "Đang đăng bài: $count/${newImageUris.size} ảnh"
-                if (count == newImageUris.size) onComplete(urls)
-            }
-        }
-    }
-
-    private fun saveToFirestore(ward: String, district: String, allUrls: List<String>) {
+    private fun buildFormData(): HashMap<String, Any> {
         val data = hashMapOf<String, Any>(
             "ownerName" to findViewById<EditText>(R.id.edtOwnerName).text.toString().trim(),
             "ownerPhone" to findViewById<EditText>(R.id.edtOwnerPhone).text.toString().trim(),
             "ownerGender" to if (findViewById<RadioButton>(R.id.rbOwnerMale).isChecked) "Nam" else "Nữ",
             "title" to findViewById<EditText>(R.id.edtTitle).text.toString().trim(),
-            "ward" to ward, "district" to district,
             "address" to findViewById<EditText>(R.id.edtAddress).text.toString().trim(),
             "description" to findViewById<EditText>(R.id.edtDescription).text.toString().trim(),
             "price" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtPrice)).toLongOrNull() ?: 0L),
@@ -412,8 +435,7 @@ class EditPostActivity : AppCompatActivity() {
             "peopleCount" to (findViewById<EditText>(R.id.edtPeopleCount).text.toString().toIntOrNull() ?: 0),
             "roomType" to if (findViewById<RadioButton>(R.id.rbShared).isChecked) "Chung chủ" else "Riêng chủ",
             "depositMonths" to (findViewById<EditText>(R.id.edtDepositMonths).text.toString().toIntOrNull() ?: 0),
-            "depositAmount" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtDepositAmount)).toLongOrNull() ?: 0L),
-            "imageUrls" to allUrls, "status" to "pending", "updatedAt" to System.currentTimeMillis()
+            "depositAmount" to (NumberFormatUtils.getRawNumber(findViewById(R.id.edtDepositAmount)).toLongOrNull() ?: 0L)
         )
 
         data["hasWifi"] = findViewById<CheckBox>(R.id.cbWifi).isChecked
@@ -445,31 +467,11 @@ class EditPostActivity : AppCompatActivity() {
         data["curfew"] = if (findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked) "Tùy chọn" else "Tự do"
         data["curfewTime"] = findViewById<EditText>(R.id.edtCurfewTime).text.toString().trim()
 
-        saveParkingToMap("Motorbike", data); saveParkingToMap("EBike", data); saveParkingToMap("Bicycle", data)
-        
-        db.collection("rooms").document(roomId).update(data).addOnSuccessListener {
-            cleanupDeletedImages()
-            findViewById<LinearLayout>(R.id.layoutProgress)?.visibility = View.GONE
-            MessageUtils.showSuccessDialog(this, "Thành công", "Bài đăng đã được cập nhật và đang chờ duyệt lại.") { finish() }
-        }.addOnFailureListener {
-            findViewById<LinearLayout>(R.id.layoutProgress)?.visibility = View.GONE
-            MessageUtils.showErrorDialog(this, "Lỗi cập nhật", it.message ?: "")
-        }
-    }
+        saveParkingToMap("Motorbike", data)
+        saveParkingToMap("EBike", data)
+        saveParkingToMap("Bicycle", data)
 
-    private fun cleanupDeletedImages() {
-        // BUG FIX #9: Improved error handling for deleted images from Storage
-        deletedImageUrls.forEach { url ->
-            try {
-                storage.getReferenceFromUrl(url).delete()
-                    .addOnFailureListener { e ->
-                        // Log the error but don't throw - continue with other images
-                        android.util.Log.e("EditPost", "Failed to delete image: ${e.message}")
-                    }
-            } catch (e: Exception) {
-                android.util.Log.e("EditPost", "Error parsing image URL: ${e.message}")
-            }
-        }
+        return data
     }
 
     private fun saveParkingToMap(type: String, map: HashMap<String, Any>) {

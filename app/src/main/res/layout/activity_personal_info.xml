@@ -101,7 +101,7 @@
                         android:layout_height="wrap_content"
                         android:text="Tài khoản"
                         android:textSize="12sp"
-                        android:textColor="#888888"
+                        android:textColor="@color/text_hint"
                         android:textAllCaps="true"
                         android:letterSpacing="0.08"
                         android:layout_marginBottom="12dp" />
@@ -144,32 +144,6 @@
                             android:inputType="textEmailAddress"
                             android:enabled="false"
                             android:drawableStart="@drawable/ic_email"
-                            android:drawableTint="#888888"
-                            android:drawablePadding="12dp" />
-
-                    </com.google.android.material.textfield.TextInputLayout>
-
-                    <!-- Mật khẩu (chỉ đọc, lấy từ SharedPreferences) -->
-                    <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilSavedPassword"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:hint="Mật khẩu đã lưu"
-                        android:layout_marginTop="10dp"
-                        app:endIconMode="password_toggle"
-                        app:helperTextEnabled="true"
-                        app:helperText="Mật khẩu bạn đang sử dụng (nếu đã bật Nhớ mật khẩu)"
-                        app:helperTextTextColor="#888888"
-                        style="@style/OutlinedBoxRounded">
-
-                        <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/edtSavedPassword"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:inputType="textPassword"
-                            android:enabled="false"
-                            android:focusable="false"
-                            android:drawableStart="@drawable/ic_lock"
                             android:drawableTint="#888888"
                             android:drawablePadding="12dp" />
 
@@ -221,7 +195,7 @@
                         android:layout_height="wrap_content"
                         android:text="Thông tin cá nhân"
                         android:textSize="12sp"
-                        android:textColor="#888888"
+                        android:textColor="@color/text_hint"
                         android:textAllCaps="true"
                         android:letterSpacing="0.08"
                         android:layout_marginBottom="12dp" />
@@ -232,7 +206,7 @@
                         android:layout_height="wrap_content"
                         android:text="Ngày sinh"
                         android:textSize="12sp"
-                        android:textColor="#888888"
+                        android:textColor="@color/text_hint"
                         android:layout_marginBottom="6dp" />
 
                     <LinearLayout
@@ -258,7 +232,7 @@
                             android:layout_weight="1"
                             android:text="Chưa cập nhật"
                             android:textSize="14sp"
-                            android:textColor="#999999"
+                            android:textColor="@color/text_hint"
                             android:layout_marginStart="12dp" />
 
                         <ImageView
@@ -277,7 +251,7 @@
                         android:layout_height="wrap_content"
                         android:text="Giới tính"
                         android:textSize="12sp"
-                        android:textColor="#888888"
+                        android:textColor="@color/text_hint"
                         android:layout_marginBottom="6dp" />
 
                     <RadioGroup
@@ -392,7 +366,7 @@
                 app:backgroundTint="@color/bg_white"
                 app:strokeColor="#CCCCCC"
                 app:strokeWidth="1dp"
-                android:textColor="#666666"
+                android:textColor="@color/text_secondary"
                 app:cornerRadius="14dp" />
 
             <ProgressBar

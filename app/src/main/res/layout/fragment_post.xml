@@ -93,7 +93,7 @@
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:background="#80FFFFFF"
+                    android:background="@color/white"
                     android:layout_marginStart="6dp"
                     android:layout_marginEnd="6dp" />
 
@@ -102,13 +102,13 @@
                     android:layout_height="wrap_content"
                     android:text="② Chờ duyệt"
                     android:textSize="11sp"
-                    android:textColor="#80FFFFFF" />
+                    android:textColor="@color/white" />
 
                 <View
                     android:layout_width="0dp"
                     android:layout_height="1dp"
                     android:layout_weight="1"
-                    android:background="#80FFFFFF"
+                    android:background="@color/white"
                     android:layout_marginStart="6dp"
                     android:layout_marginEnd="6dp" />
 
@@ -117,7 +117,7 @@
                     android:layout_height="wrap_content"
                     android:text="③ Hoạt động"
                     android:textSize="11sp"
-                    android:textColor="#80FFFFFF" />
+                    android:textColor="@color/white" />
 
             </LinearLayout>
 
@@ -144,6 +144,7 @@
 
                 <!-- Section Header -->
                 <LinearLayout
+                    android:id="@+id/llHeaderCard1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -166,17 +167,27 @@
                         android:layout_marginEnd="10dp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_weight="1"
                         android:text="Thông tin chủ trọ"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary" />
 
+                    <ImageView
+                        android:id="@+id/ivArrowCard1"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:rotation="90"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="@color/primary" />
+
                 </LinearLayout>
 
                 <!-- Nội dung -->
                 <LinearLayout
+                    android:id="@+id/llContentCard1"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
@@ -285,6 +296,16 @@
 
                     </LinearLayout>
 
+                    <!-- Nút Tiếp Tục -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNextCard1"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:text="Tiếp tục"
+                        android:layout_marginTop="16dp"
+                        app:cornerRadius="8dp" />
+
                 </LinearLayout>
 
             </LinearLayout>
@@ -311,6 +332,7 @@
 
                 <!-- Section Header -->
                 <LinearLayout
+                    android:id="@+id/llHeaderCard2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -333,19 +355,30 @@
                         android:layout_marginEnd="10dp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="Thông tin bài đăng"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/purple_accent" />
 
+                    <ImageView
+                        android:id="@+id/ivArrowCard2"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:rotation="0"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="@color/purple_accent" />
+
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/llContentCard2"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:visibility="gone"
                     android:padding="16dp">
 
                     <!-- Tiêu đề -->
@@ -565,6 +598,17 @@
 
                     </HorizontalScrollView>
 
+                    <!-- Nút Tiếp Tục -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNextCard2"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:text="Tiếp tục"
+                        android:layout_marginTop="16dp"
+                        app:backgroundTint="@color/purple_accent"
+                        app:cornerRadius="8dp" />
+
                 </LinearLayout>
 
             </LinearLayout>
@@ -591,6 +635,7 @@
 
                 <!-- Section Header -->
                 <LinearLayout
+                    android:id="@+id/llHeaderCard3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -613,19 +658,30 @@
                         android:layout_marginEnd="10dp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="Chi tiết phòng trọ"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/secondary" />
 
+                    <ImageView
+                        android:id="@+id/ivArrowCard3"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:rotation="0"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="@color/secondary" />
+
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/llContentCard3"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:visibility="gone"
                     android:padding="16dp">
 
                     <!-- Giá + Diện tích -->
@@ -747,28 +803,30 @@
                             <RadioGroup
                                 android:id="@+id/rgRoomStyle"
                                 android:layout_width="match_parent"
-                                android:layout_height="48dp"
-                                android:orientation="horizontal"
-                                android:gravity="center_vertical"
+                                android:layout_height="wrap_content"
+                                android:orientation="vertical"
                                 android:background="@drawable/bg_edit_post"
-                                android:paddingStart="8dp">
+                                android:paddingStart="10dp"
+                                android:paddingTop="6dp"
+                                android:paddingBottom="6dp">
 
                                 <RadioButton
                                     android:id="@+id/rbShared"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Chung"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="36dp"
+                                    android:text="Chung chủ"
                                     android:textSize="13sp"
+                                    android:gravity="center_vertical"
                                     android:buttonTint="@color/secondary" />
 
                                 <RadioButton
                                     android:id="@+id/rbPrivate"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="Riêng"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="36dp"
+                                    android:text="Riêng chủ"
                                     android:textSize="13sp"
-                                    android:buttonTint="@color/secondary"
-                                    android:layout_marginStart="6dp" />
+                                    android:gravity="center_vertical"
+                                    android:buttonTint="@color/secondary" />
 
                             </RadioGroup>
 
@@ -847,6 +905,17 @@
 
                     </LinearLayout>
 
+                    <!-- Nút Tiếp Tục -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNextCard3"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:text="Tiếp tục"
+                        android:layout_marginTop="16dp"
+                        app:backgroundTint="@color/secondary"
+                        app:cornerRadius="8dp" />
+
                 </LinearLayout>
 
             </LinearLayout>
@@ -873,6 +942,7 @@
 
                 <!-- Section Header -->
                 <LinearLayout
+                    android:id="@+id/llHeaderCard4"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
@@ -895,19 +965,30 @@
                         android:layout_marginEnd="10dp" />
 
                     <TextView
-                        android:layout_width="wrap_content"
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
                         android:layout_height="wrap_content"
                         android:text="Tiện ích &amp; Chi phí"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/teal" />
 
+                    <ImageView
+                        android:id="@+id/ivArrowCard4"
+                        android:layout_width="24dp"
+                        android:layout_height="24dp"
+                        android:rotation="0"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="@color/teal" />
+
                 </LinearLayout>
 
                 <LinearLayout
+                    android:id="@+id/llContentCard4"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
+                    android:visibility="gone"
                     android:padding="16dp">
 
                     <!-- Chi phí hàng tháng -->
@@ -1149,10 +1230,10 @@
                         <!-- Bếp -->
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
+                            android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:gravity="center_vertical"
-                            android:layout_marginBottom="2dp">
+                            android:layout_marginBottom="6dp">
 
                             <TextView
                                 android:layout_width="90dp"
@@ -1164,14 +1245,16 @@
 
                             <RadioGroup
                                 android:id="@+id/rgKitchen"
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal">
+                                android:layout_weight="1"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
 
                                 <RadioButton
                                     android:id="@+id/rbKitchenShared"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
+                                    android:layout_height="wrap_content"
                                     android:text="Chung"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal" />
@@ -1179,20 +1262,20 @@
                                 <RadioButton
                                     android:id="@+id/rbKitchenPrivate"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
+                                    android:layout_height="wrap_content"
                                     android:text="Riêng"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="6dp" />
 
                                 <RadioButton
                                     android:id="@+id/rbKitchenNone"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
+                                    android:layout_height="wrap_content"
                                     android:text="Không"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="6dp" />
 
                             </RadioGroup>
 
@@ -1332,7 +1415,7 @@
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="44dp"
+                            android:layout_height="wrap_content"
                             android:orientation="horizontal"
                             android:gravity="center_vertical">
 
@@ -1346,14 +1429,16 @@
 
                             <RadioGroup
                                 android:id="@+id/rgGenderPrefer"
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal">
+                                android:layout_weight="1"
+                                android:orientation="horizontal"
+                                android:gravity="center_vertical">
 
                                 <RadioButton
                                     android:id="@+id/rbGenderMale"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
+                                    android:layout_height="wrap_content"
                                     android:text="Nam"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal" />
@@ -1361,7 +1446,7 @@
                                 <RadioButton
                                     android:id="@+id/rbGenderFemale"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
+                                    android:layout_height="wrap_content"
                                     android:text="Nữ"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
@@ -1370,7 +1455,7 @@
                                 <RadioButton
                                     android:id="@+id/rbGenderAll"
                                     android:layout_width="wrap_content"
-                                    android:layout_height="34dp"
+                                    android:layout_height="wrap_content"
                                     android:text="Tất cả"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
@@ -1424,17 +1509,54 @@
 
                     </LinearLayout>
 
-                    <EditText
-                        android:id="@+id/edtCurfewTime"
+                    <LinearLayout
+                        android:id="@+id/layoutCurfewTime"
                         android:layout_width="match_parent"
-                        android:layout_height="42dp"
-                        android:hint="Giờ đóng cửa (VD: 22:00)"
-                        android:textSize="13sp"
-                        android:inputType="text"
-                        android:paddingStart="14dp"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center"
                         android:background="@drawable/bg_edit_post"
                         android:visibility="gone"
-                        android:layout_marginBottom="14dp" />
+                        android:layout_marginBottom="14dp">
+
+                        <!-- Giờ -->
+                        <NumberPicker
+                            android:id="@+id/pickerHour"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text=":"
+                            android:textSize="18sp"
+                            android:textStyle="bold"
+                            android:paddingStart="4dp"
+                            android:paddingEnd="4dp" />
+
+                        <!-- Phút -->
+                        <NumberPicker
+                            android:id="@+id/pickerMinute"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1" />
+
+                        <!-- AM/PM -->
+                        <NumberPicker
+                            android:id="@+id/pickerAmPm"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1" />
+
+                        <!-- Hidden TextView để đọc giá trị -->
+                        <TextView
+                            android:id="@+id/edtCurfewTime"
+                            android:layout_width="0dp"
+                            android:layout_height="0dp"
+                            android:visibility="gone" />
+
+                    </LinearLayout>
 
                     <!-- Chỗ để xe -->
                     <LinearLayout

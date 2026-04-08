@@ -30,9 +30,13 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var cbRememberPassword: CheckBox
     private lateinit var viewModel: AuthViewModel
 
-    private val PREF_NAME = "login_prefs"
     private val KEY_REMEMBER = "remember_password"
     // Password lưu theo key "pwd_<email>" để mỗi email có password riêng
+
+    // Lưu email để gợi ý lần sau (không lưu password)
+    private val prefs by lazy {
+        getSharedPreferences("login_prefs", MODE_PRIVATE)
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,29 +53,25 @@ class LoginActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
-        val prefs = getSharedPreferences(PREF_NAME, MODE_PRIVATE)
         val isRemember = prefs.getBoolean(KEY_REMEMBER, false)
+        // Chỉ khôi phục trạng thái checkbox, không tự fill email/password
+        cbRememberPassword.isChecked = isRemember
 
-        // Khôi phục email lần cuối đăng nhập
-        if (isRemember) {
-            val lastEmail = prefs.getString("last_email", "") ?: ""
-            edtEmail.setText(lastEmail)
-            if (lastEmail.isNotEmpty()) {
-                edtPassword.setText(prefs.getString("pwd_$lastEmail", ""))
-            }
-            cbRememberPassword.isChecked = true
-        }
-
-        // Khi người dùng gõ email khác → tự điền password tương ứng nếu đã lưu
+        // Auto-fill password khi người dùng gõ email đã từng lưu mật khẩu
         edtEmail.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
-                if (!isRemember && !cbRememberPassword.isChecked) return
-                val typedEmail = s?.toString()?.trim() ?: return
-                val savedPwd = prefs.getString("pwd_$typedEmail", null)
-                if (savedPwd != null) {
-                    edtPassword.setText(savedPwd)
+                val typedEmail = s?.toString()?.trim() ?: ""
+                if (typedEmail.isNotEmpty()) {
+                    val savedPassword = prefs.getString("pwd_$typedEmail", "") ?: ""
+                    if (savedPassword.isNotEmpty()) {
+                        edtPassword.setText(savedPassword)
+                        cbRememberPassword.isChecked = true
+                    } else {
+                        edtPassword.setText("")
+                        cbRememberPassword.isChecked = prefs.getBoolean(KEY_REMEMBER, false)
+                    }
                 } else {
                     edtPassword.setText("")
                 }
@@ -85,8 +85,25 @@ class LoginActivity : AppCompatActivity() {
 
         viewModel.loginResult.observe(this) { success ->
             if (success) {
-                viewModel.loginResult.value = false
-                // Quay lại MainActivity (đang chạy phía sau)
+                viewModel.resetLoginResult()
+
+                // Chỉ lưu credentials sau khi đăng nhập thành công
+                val email = edtEmail.text.toString().trim()
+                val password = edtPassword.text.toString().trim()
+                val editor = prefs.edit()
+                if (cbRememberPassword.isChecked) {
+                    editor.putBoolean(KEY_REMEMBER, true)
+                    editor.putString("last_email", email)
+                    editor.putString("pwd_$email", password)
+                } else {
+                    editor.clear()
+                }
+                editor.apply()
+
+                val intent = Intent(this, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }
+                startActivity(intent)
                 finish()
             }
         }
@@ -97,6 +114,14 @@ class LoginActivity : AppCompatActivity() {
                 message.contains("nhập email", ignoreCase = true) -> tilEmail.error = message
                 message.contains("nhập mật khẩu", ignoreCase = true) -> tilPassword.error = message
                 else -> {
+                    // Chỉ xóa credentials khi sai email/mật khẩu thực sự (lỗi từ Firebase)
+                    val email = edtEmail.text.toString().trim()
+                    prefs.edit()
+                        .remove("pwd_$email")
+                        .putBoolean(KEY_REMEMBER, false)
+                        .apply()
+                    cbRememberPassword.isChecked = false
+
                     androidx.appcompat.app.AlertDialog.Builder(this)
                         .setTitle("Đăng nhập thất bại")
                         .setMessage("Thông tin không chính xác. Vui lòng nhập lại.")
@@ -112,18 +137,6 @@ class LoginActivity : AppCompatActivity() {
             clearErrors()
             val email = edtEmail.text.toString().trim()
             val password = edtPassword.text.toString().trim()
-
-            // Lưu hoặc xóa thông tin đăng nhập tùy theo checkbox
-            val editor = getSharedPreferences(PREF_NAME, MODE_PRIVATE).edit()
-            if (cbRememberPassword.isChecked) {
-                editor.putBoolean(KEY_REMEMBER, true)
-                editor.putString("last_email", email)
-                editor.putString("pwd_$email", password) // lưu password theo từng email
-            } else {
-                editor.clear()
-            }
-            editor.apply()
-
             viewModel.login(email, password)
         }
 

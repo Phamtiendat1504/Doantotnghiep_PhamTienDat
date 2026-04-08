@@ -5,7 +5,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#F5F7FA">
+    android:background="@color/bg_light">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -17,7 +17,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1976D2"
+            android:background="@color/primary"
             android:paddingStart="20dp"
             android:paddingEnd="20dp"
             android:paddingTop="16dp"
@@ -40,7 +40,7 @@
                 android:text="Xác minh chủ trọ"
                 android:textSize="20sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF"
+                android:textColor="@color/white"
                 android:layout_marginStart="12dp" />
 
         </LinearLayout>
@@ -70,7 +70,7 @@
                     <View
                         android:layout_width="4dp"
                         android:layout_height="20dp"
-                        android:background="#1976D2" />
+                        android:background="@color/primary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -78,7 +78,7 @@
                         android:text="Thông tin cá nhân"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A2E"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="8dp" />
 
                 </LinearLayout>
@@ -90,7 +90,7 @@
                     android:text="Họ và tên *"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="#444444"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="4dp" />
 
                 <EditText
@@ -112,7 +112,7 @@
                     android:text="Số CCCD/CMND *"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="#444444"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="4dp" />
 
                 <EditText
@@ -134,7 +134,7 @@
                     android:text="Số điện thoại *"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="#444444"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="4dp" />
 
                 <EditText
@@ -156,7 +156,7 @@
                     android:text="Địa chỉ thường trú *"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="#444444"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="4dp" />
 
                 <EditText
@@ -200,7 +200,7 @@
                     <View
                         android:layout_width="4dp"
                         android:layout_height="20dp"
-                        android:background="#D32F2F" />
+                        android:background="@color/secondary" />
 
                     <TextView
                         android:layout_width="wrap_content"
@@ -208,7 +208,7 @@
                         android:text="Ảnh CCCD/CMND"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A2E"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="8dp" />
 
                 </LinearLayout>
@@ -220,7 +220,7 @@
                     android:text="Mặt trước CCCD *"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="#444444"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="8dp" />
 
                 <FrameLayout
@@ -248,7 +248,7 @@
                             android:layout_height="wrap_content"
                             android:text="Bấm để chọn ảnh mặt trước"
                             android:textSize="13sp"
-                            android:textColor="#999999"
+                            android:textColor="@color/text_hint"
                             android:layout_marginTop="8dp" />
 
                     </LinearLayout>
@@ -269,7 +269,7 @@
                     android:text="Mặt sau CCCD *"
                     android:textSize="13sp"
                     android:textStyle="bold"
-                    android:textColor="#444444"
+                    android:textColor="@color/text_primary"
                     android:layout_marginBottom="8dp" />
 
                 <FrameLayout
@@ -297,7 +297,7 @@
                             android:layout_height="wrap_content"
                             android:text="Bấm để chọn ảnh mặt sau"
                             android:textSize="13sp"
-                            android:textColor="#999999"
+                            android:textColor="@color/text_hint"
                             android:layout_marginTop="8dp" />
 
                     </LinearLayout>

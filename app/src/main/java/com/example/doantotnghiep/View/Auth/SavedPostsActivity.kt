@@ -9,11 +9,11 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
+import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
+import com.example.doantotnghiep.Utils.MessageUtils
+import com.example.doantotnghiep.ViewModel.SavedPostsViewModel
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -25,7 +25,8 @@ class SavedPostsActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var btnBack: ImageView
 
-    private val db = FirebaseFirestore.getInstance()
+    private lateinit var viewModel: SavedPostsViewModel
+
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -40,68 +41,65 @@ class SavedPostsActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvEmpty = findViewById(R.id.tvEmpty)
         btnBack = findViewById(R.id.btnBack)
-
         btnBack.setOnClickListener { finish() }
 
-        loadSavedPosts()
+        viewModel = ViewModelProvider(this)[SavedPostsViewModel::class.java]
+
+        viewModel.isLoading.observe(this) { isLoading ->
+            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+        }
+
+        viewModel.savedPosts.observe(this) { posts ->
+            layoutPosts.removeAllViews()
+            if (posts.isEmpty()) {
+                tvEmpty.visibility = View.VISIBLE
+            } else {
+                tvEmpty.visibility = View.GONE
+                posts.forEach { post ->
+                    layoutPosts.addView(createSavedCard(post))
+                }
+            }
+        }
+
+        viewModel.errorMessage.observe(this) { error ->
+            if (!error.isNullOrEmpty()) {
+                tvEmpty.text = "Lỗi tải dữ liệu"
+                tvEmpty.visibility = View.VISIBLE
+            }
+        }
+
+        viewModel.deleteResult.observe(this) { _ ->
+            viewModel.loadSavedPosts()
+        }
+
+        viewModel.roomCheckResult.observe(this) { (savedDocId, exists) ->
+            progressBar.visibility = View.GONE
+            val post = viewModel.savedPosts.value?.find { it.savedDocId == savedDocId } ?: return@observe
+            if (exists) {
+                startActivity(Intent(this, RoomDetailActivity::class.java).apply {
+                    putExtra("roomId", post.roomId)
+                })
+            } else {
+                viewModel.autoDeleteSavedPost(savedDocId)
+                MessageUtils.showInfoDialog(
+                    this,
+                    "Phòng không còn tồn tại",
+                    "Bài đăng này đã bị gỡ bởi chủ trọ và đã được xóa khỏi danh sách yêu thích của bạn."
+                ) { viewModel.loadSavedPosts() }
+            }
+        }
+
+        viewModel.loadSavedPosts()
     }
 
     override fun onResume() {
         super.onResume()
-        loadSavedPosts()
+        viewModel.loadSavedPosts()
     }
 
-    private fun loadSavedPosts() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-
-        layoutPosts.removeAllViews()
-        progressBar.visibility = View.VISIBLE
-        tvEmpty.visibility = View.GONE
-
-        db.collection("savedPosts")
-            .whereEqualTo("userId", uid)
-            .get()
-            .addOnSuccessListener { documents ->
-                progressBar.visibility = View.GONE
-                layoutPosts.removeAllViews()
-
-                if (documents.isEmpty) {
-                    tvEmpty.visibility = View.VISIBLE
-                    return@addOnSuccessListener
-                }
-
-                for (doc in documents) {
-                    val card = createSavedCard(
-                        savedDocId = doc.id,
-                        roomId = doc.getString("roomId") ?: "",
-                        ownerId = doc.getString("ownerId") ?: "",
-                        title = doc.getString("title") ?: "",
-                        price = doc.getLong("price") ?: 0,
-                        address = doc.getString("address") ?: "",
-                        ward = doc.getString("ward") ?: "",
-                        district = doc.getString("district") ?: "",
-                        imageUrl = doc.getString("imageUrl") ?: ""
-                    )
-                    layoutPosts.addView(card)
-                }
-            }
-            .addOnFailureListener {
-                progressBar.visibility = View.GONE
-                tvEmpty.text = "Lỗi tải dữ liệu"
-                tvEmpty.visibility = View.VISIBLE
-            }
-    }
-
-    private fun createSavedCard(
-        savedDocId: String, roomId: String, ownerId: String,
-        title: String, price: Long, address: String,
-        ward: String, district: String, imageUrl: String
-    ): CardView {
+    private fun createSavedCard(post: SavedPostsViewModel.SavedPost): CardView {
         val card = CardView(this)
-        val cardParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT,
-            LinearLayout.LayoutParams.WRAP_CONTENT
-        )
+        val cardParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
         cardParams.bottomMargin = dpToPx(12)
         card.layoutParams = cardParams
         card.radius = dpToPx(14).toFloat()
@@ -112,10 +110,8 @@ class SavedPostsActivity : AppCompatActivity() {
         mainLayout.orientation = LinearLayout.HORIZONTAL
         mainLayout.setPadding(dpToPx(12), dpToPx(12), dpToPx(12), dpToPx(12))
 
-        // Ảnh
         val imgView = ImageView(this)
-        val imgParams = LinearLayout.LayoutParams(dpToPx(100), dpToPx(85))
-        imgView.layoutParams = imgParams
+        imgView.layoutParams = LinearLayout.LayoutParams(dpToPx(100), dpToPx(85))
         imgView.scaleType = ImageView.ScaleType.CENTER_CROP
         imgView.setBackgroundColor(0xFFE0E0E0.toInt())
         imgView.clipToOutline = true
@@ -124,72 +120,59 @@ class SavedPostsActivity : AppCompatActivity() {
                 outline.setRoundRect(0, 0, view.width, view.height, dpToPx(10).toFloat())
             }
         }
-
-        if (imageUrl.isNotEmpty()) {
-            Glide.with(this).load(imageUrl).centerCrop().into(imgView)
-        }
+        if (post.imageUrl.isNotEmpty()) Glide.with(this).load(post.imageUrl).centerCrop().into(imgView)
         mainLayout.addView(imgView)
 
-        // Thông tin
         val infoLayout = LinearLayout(this)
         infoLayout.orientation = LinearLayout.VERTICAL
         val infoParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         infoParams.marginStart = dpToPx(12)
         infoLayout.layoutParams = infoParams
 
-        val tvTitle = TextView(this)
-        tvTitle.text = title
-        tvTitle.textSize = 15f
-        tvTitle.setTextColor(0xFF1A1A2E.toInt())
-        tvTitle.setTypeface(tvTitle.typeface, android.graphics.Typeface.BOLD)
-        tvTitle.maxLines = 2
+        val tvTitle = TextView(this).apply {
+            text = post.title; textSize = 15f; setTextColor(0xFF1A1A2E.toInt())
+            setTypeface(typeface, android.graphics.Typeface.BOLD); maxLines = 2
+        }
         infoLayout.addView(tvTitle)
 
-        val tvAddress = TextView(this)
-        val fullAddr = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
-        tvAddress.text = fullAddr
-        tvAddress.textSize = 12f
-        tvAddress.setTextColor(0xFF999999.toInt())
-        tvAddress.setPadding(0, dpToPx(3), 0, 0)
-        tvAddress.maxLines = 2
+        val fullAddr = if (post.address.isNotEmpty()) "${post.address}, ${post.ward}, ${post.district}" else "${post.ward}, ${post.district}"
+        val tvAddress = TextView(this).apply {
+            text = fullAddr; textSize = 12f; setTextColor(0xFF999999.toInt())
+            setPadding(0, dpToPx(3), 0, 0); maxLines = 2
+        }
         infoLayout.addView(tvAddress)
 
-        val tvPrice = TextView(this)
-        tvPrice.text = "${formatter.format(price)} đ/tháng"
-        tvPrice.textSize = 15f
-        tvPrice.setTextColor(0xFFD32F2F.toInt())
-        tvPrice.setTypeface(tvPrice.typeface, android.graphics.Typeface.BOLD)
-        tvPrice.setPadding(0, dpToPx(4), 0, 0)
+        val tvPrice = TextView(this).apply {
+            text = "${formatter.format(post.price)} đ/tháng"; textSize = 15f; setTextColor(0xFFD32F2F.toInt())
+            setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(0, dpToPx(4), 0, 0)
+        }
         infoLayout.addView(tvPrice)
 
-        // Nút bỏ lưu
-        val tvRemove = TextView(this)
-        tvRemove.text = "Bỏ lưu"
-        tvRemove.textSize = 12f
-        tvRemove.setTextColor(0xFFD32F2F.toInt())
-        tvRemove.setTypeface(tvRemove.typeface, android.graphics.Typeface.BOLD)
-        tvRemove.setPadding(0, dpToPx(4), 0, 0)
+        val tvRemove = TextView(this).apply {
+            text = "Bỏ lưu"; textSize = 12f; setTextColor(0xFFD32F2F.toInt())
+            setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(0, dpToPx(4), 0, 0)
+        }
         tvRemove.setOnClickListener {
-            db.collection("savedPosts").document(savedDocId).delete()
-                .addOnSuccessListener { loadSavedPosts() }
+            tvRemove.isClickable = false
+            tvRemove.alpha = 0.4f
+            viewModel.deleteSavedPost(post.savedDocId)
         }
         infoLayout.addView(tvRemove)
 
         mainLayout.addView(infoLayout)
         card.addView(mainLayout)
 
-        // Click vào card → Mở SavedPostDetailActivity
         card.setOnClickListener {
-            val intent = Intent(this, SavedPostDetailActivity::class.java)
-            intent.putExtra("roomId", roomId)
-            intent.putExtra("savedDocId", savedDocId)
-            startActivity(intent)
+            if (post.roomId.isEmpty()) {
+                MessageUtils.showErrorDialog(this, "Lỗi", "Không tìm thấy thông tin phòng.")
+                return@setOnClickListener
+            }
+            progressBar.visibility = View.VISIBLE
+            viewModel.checkRoomExists(post.savedDocId, post.roomId)
         }
 
         return card
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
-    }
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }

@@ -6,10 +6,11 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
-import com.example.doantotnghiep.repository.AuthRepository
+import com.example.doantotnghiep.ViewModel.ForgotPasswordViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
@@ -29,7 +30,7 @@ class ForgotPasswordActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageView
     private lateinit var tvGoToLogin: TextView
 
-    private val repository = AuthRepository()
+    private val viewModel: ForgotPasswordViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,42 +43,40 @@ class ForgotPasswordActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         tvGoToLogin = findViewById(R.id.tvGoToLogin)
 
+        observeViewModel()
+
         btnSendOtp.setOnClickListener {
             tilPhone.error = null
             val phone = edtPhone.text.toString().trim()
-
-            if (phone.isEmpty()) {
-                tilPhone.error = "Vui lòng nhập số điện thoại"
-                return@setOnClickListener
-            }
-            if (phone.length != 10 || !phone.startsWith("0")) {
-                tilPhone.error = "Số điện thoại phải có 10 số và bắt đầu bằng 0"
-                return@setOnClickListener
-            }
-
-            progressBar.visibility = View.VISIBLE
-            btnSendOtp.isEnabled = false
-
-            // Kiểm tra số điện thoại có trong hệ thống không
-            repository.findEmailByPhone(phone,
-                onSuccess = { email ->
-                    // Chuyển sang format quốc tế: 0xx -> +84xx
-                    val phoneInternational = "+84" + phone.substring(1)
-                    sendOtp(phoneInternational, email)
-                },
-                onFailure = { error ->
-                    progressBar.visibility = View.GONE
-                    btnSendOtp.isEnabled = true
-                    tilPhone.error = error
-                }
-            )
+            viewModel.findEmailByPhone(phone)
         }
 
         btnBack.setOnClickListener { finish() }
         tvGoToLogin.setOnClickListener { finish() }
     }
 
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(this) { loading ->
+            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            btnSendOtp.isEnabled = !loading
+        }
+
+        // Khi tìm thấy email → gửi OTP (PhoneAuth bắt buộc cần Activity nên giữ ở đây)
+        viewModel.emailFound.observe(this) { email ->
+            val phone = edtPhone.text.toString().trim()
+            val phoneInternational = "+84" + phone.substring(1)
+            sendOtp(phoneInternational, email)
+        }
+
+        viewModel.errorMessage.observe(this) { msg ->
+            if (!msg.isNullOrEmpty()) tilPhone.error = msg
+        }
+    }
+
     private fun sendOtp(phone: String, email: String) {
+        progressBar.visibility = View.VISIBLE
+        btnSendOtp.isEnabled = false
+
         val options = PhoneAuthOptions.newBuilder(FirebaseAuth.getInstance())
             .setPhoneNumber(phone)
             .setTimeout(60L, TimeUnit.SECONDS)
@@ -85,7 +84,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
             .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
 
                 override fun onVerificationCompleted(credential: PhoneAuthCredential) {
-                    // Tự động verify trên một số thiết bị
                     progressBar.visibility = View.GONE
                     btnSendOtp.isEnabled = true
                 }
@@ -103,11 +101,7 @@ class ForgotPasswordActivity : AppCompatActivity() {
                     progressBar.visibility = View.GONE
                     btnSendOtp.isEnabled = true
 
-                    // Chuyển sang màn nhập OTP
-                    val intent = Intent(
-                        this@ForgotPasswordActivity,
-                        VerifyOtpActivity::class.java
-                    )
+                    val intent = Intent(this@ForgotPasswordActivity, VerifyOtpActivity::class.java)
                     intent.putExtra("verificationId", verificationId)
                     intent.putExtra("email", email)
                     intent.putExtra("phone", phone)

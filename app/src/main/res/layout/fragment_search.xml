@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:fillViewport="true"
     android:overScrollMode="never"
-    android:background="#F0F4F8">
+    android:background="@color/bg_light">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -31,19 +31,19 @@
                 android:text="Tìm phòng trọ"
                 android:textSize="24sp"
                 android:textStyle="bold"
-                android:textColor="#FFFFFF" />
+                android:textColor="@color/white" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Thiết lập bộ lọc để tìm phòng phù hợp"
                 android:textSize="13sp"
-                android:textColor="#B3DEFF"
+                android:textColor="@color/primary_light"
                 android:layout_marginTop="4dp" />
 
         </LinearLayout>
 
-        <!-- ═══════ 1. KHU VỰC ═══════ -->
+        <!-- 📍📍📍🕐 1. KHU VỰC 📍📍📍🕐 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -81,7 +81,7 @@
                         android:text="Khu vực"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A2E"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="4dp" />
 
                 </LinearLayout>
@@ -92,7 +92,7 @@
                     android:layout_height="wrap_content"
                     android:text="Loại khu vực"
                     android:textSize="12sp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_hint"
                     android:layout_marginBottom="6dp" />
 
                 <com.google.android.material.chip.ChipGroup
@@ -132,7 +132,7 @@
                     android:layout_height="wrap_content"
                     android:text="Phạm vi tìm kiếm"
                     android:textSize="12sp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_hint"
                     android:layout_marginBottom="6dp" />
 
                 <com.google.android.material.chip.ChipGroup
@@ -172,7 +172,7 @@
                     android:layout_height="wrap_content"
                     android:text="Chọn phường / xã"
                     android:textSize="12sp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_hint"
                     android:layout_marginBottom="6dp" />
 
                 <Spinner
@@ -189,7 +189,7 @@
                     android:layout_height="wrap_content"
                     android:text="Số nhà, tên đường (tùy chọn)"
                     android:textSize="12sp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_hint"
                     android:layout_marginBottom="6dp" />
 
                 <EditText
@@ -206,7 +206,7 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════ 2. GIÁ THUÊ ═══════ -->
+        <!-- 📍📍📍🕐 2. GIÁ THUÊ 📍📍📍🕐 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -233,7 +233,7 @@
                     <TextView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:text="💰"
+                        android:text="\📍"
                         android:textSize="16sp"
                         android:gravity="center" />
 
@@ -243,7 +243,7 @@
                         android:text="Giá thuê / tháng"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A2E"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="4dp" />
 
                 </LinearLayout>
@@ -334,7 +334,7 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════ 3. THÔNG TIN PHÒNG ═══════ -->
+        <!-- 📍📍📍🕐 3. THÔNG TIN PHÒNG 📍📍📍🕐 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -361,7 +361,7 @@
                     <TextView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:text="🏠"
+                        android:text="\📍"
                         android:textSize="16sp"
                         android:gravity="center" />
 
@@ -371,7 +371,7 @@
                         android:text="Thông tin phòng"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A2E"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="4dp" />
 
                 </LinearLayout>
@@ -382,7 +382,7 @@
                     android:layout_height="wrap_content"
                     android:text="Dạng phòng thuê"
                     android:textSize="12sp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_hint"
                     android:layout_marginBottom="6dp" />
 
                 <RadioGroup
@@ -433,7 +433,7 @@
                             android:layout_height="wrap_content"
                             android:text="Diện tích (m²)"
                             android:textSize="12sp"
-                            android:textColor="#888888"
+                            android:textColor="@color/text_hint"
                             android:layout_marginBottom="6dp" />
 
                         <EditText
@@ -461,7 +461,7 @@
                             android:layout_height="wrap_content"
                             android:text="Số người / phòng"
                             android:textSize="12sp"
-                            android:textColor="#888888"
+                            android:textColor="@color/text_hint"
                             android:layout_marginBottom="6dp" />
 
                         <EditText
@@ -483,7 +483,7 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════ 4. TIỆN ÍCH & GIỜ GIẤC ═══════ -->
+        <!-- 📍📍📍🕐 4. TIỆN ÍCH & GIỜ GIẤC 📍📍📍🕐 -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -510,7 +510,7 @@
                     <TextView
                         android:layout_width="32dp"
                         android:layout_height="32dp"
-                        android:text="⚡"
+                        android:text="\🕐"
                         android:textSize="16sp"
                         android:gravity="center" />
 
@@ -520,7 +520,7 @@
                         android:text="Tiện ích &amp; Giờ giấc"
                         android:textSize="15sp"
                         android:textStyle="bold"
-                        android:textColor="#1A1A2E"
+                        android:textColor="@color/text_primary"
                         android:layout_marginStart="4dp" />
 
                 </LinearLayout>
@@ -625,7 +625,7 @@
                 <View
                     android:layout_width="match_parent"
                     android:layout_height="1dp"
-                    android:background="#F0F0F0"
+                    android:background="@color/gray_200"
                     android:layout_marginBottom="14dp" />
 
                 <!-- Giờ ra vào -->
@@ -634,7 +634,7 @@
                     android:layout_height="wrap_content"
                     android:text="Giờ ra vào"
                     android:textSize="12sp"
-                    android:textColor="#888888"
+                    android:textColor="@color/text_hint"
                     android:layout_marginBottom="6dp" />
 
                 <RadioGroup
@@ -683,7 +683,24 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════ NÚT TÌM KIẾM ═══════ -->
+        <!-- 📍📍📍🕐 NÚT XÓA BỘ LỌC 📍📍📍🕐 -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnResetFilter"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:text="Xóa bộ lọc"
+            android:textSize="15sp"
+            android:textAllCaps="false"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="12dp"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            app:strokeColor="#1976D2"
+            app:strokeWidth="1.5dp"
+            app:cornerRadius="16dp"
+            android:textColor="@color/primary" />
+
+        <!-- 📍📍📍🕐 NÚT TÌM KIẾM 📍📍📍🕐 -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSearch"
             android:layout_width="match_parent"

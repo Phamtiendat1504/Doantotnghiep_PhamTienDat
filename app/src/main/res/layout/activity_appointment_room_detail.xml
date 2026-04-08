@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F8F9FA">
+    android:background="@color/bg_light">
 
     <!-- Header -->
     <RelativeLayout
@@ -29,7 +29,7 @@
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
             android:text="Thông tin phòng hẹn"
-            android:textColor="#1A1A2E"
+            android:textColor="@color/text_primary"
             android:textSize="18sp"
             android:textStyle="bold" />
     </RelativeLayout>
@@ -57,7 +57,7 @@
                     android:id="@+id/viewPagerImages"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:background="#EEEEEE" />
+                    android:background="@color/gray_200" />
 
                 <TextView
                     android:id="@+id/tvImageCount"
@@ -80,7 +80,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 android:text="Tiêu đề phòng trọ"
-                android:textColor="#1A1A2E"
+                android:textColor="@color/text_primary"
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
@@ -90,7 +90,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
                 android:text="0 đ/tháng"
-                android:textColor="#D32F2F"
+                android:textColor="@color/secondary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
@@ -101,7 +101,7 @@
                 android:layout_marginTop="8dp"
                 android:drawablePadding="8dp"
                 android:text="Địa chỉ phòng"
-                android:textColor="#666666"
+                android:textColor="@color/text_secondary"
                 android:textSize="14sp"
                 app:drawableStartCompat="@drawable/ic_location"
                 app:drawableTint="#666666" />
@@ -112,7 +112,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
                 android:text="Chi tiết phòng"
-                android:textColor="#1A1A2E"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -138,7 +138,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:text="Tiện nghi &amp; Dịch vụ"
-                android:textColor="#1A1A2E"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -158,13 +158,39 @@
                     android:padding="12dp" />
             </androidx.cardview.widget.CardView>
 
+            <!-- Chủ trọ -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:text="Thông tin chủ trọ"
+                android:textColor="@color/text_primary"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                app:cardBackgroundColor="@color/white"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="1dp">
+
+                <LinearLayout
+                    android:id="@+id/layoutOwnerInfo"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp" />
+            </androidx.cardview.widget.CardView>
+
             <!-- Mô tả -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="20dp"
                 android:text="Mô tả thêm"
-                android:textColor="#1A1A2E"
+                android:textColor="@color/text_primary"
                 android:textSize="16sp"
                 android:textStyle="bold" />
 
@@ -175,7 +201,7 @@
                 android:layout_marginTop="8dp"
                 android:lineSpacingExtra="4dp"
                 android:text="Nội dung mô tả bài viết..."
-                android:textColor="#444444"
+                android:textColor="@color/text_primary"
                 android:textSize="14sp" />
 
             <View

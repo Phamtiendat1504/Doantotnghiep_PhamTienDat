@@ -6,7 +6,7 @@
     android:orientation="vertical"
     android:gravity="center"
     android:padding="32dp"
-    android:background="#F5F7FA">
+    android:background="@color/bg_light">
 
     <TextView
         android:layout_width="wrap_content"
@@ -14,7 +14,7 @@
         android:text="Xác minh chủ trọ"
         android:textSize="24sp"
         android:textStyle="bold"
-        android:textColor="#1976D2"
+        android:textColor="@color/primary"
         android:layout_marginBottom="12dp" />
 
     <TextView
@@ -23,7 +23,7 @@
         android:layout_height="wrap_content"
         android:text="Bạn cần xác minh là chủ trọ để có thể đăng bài cho thuê phòng trọ."
         android:textSize="14sp"
-        android:textColor="#1976D2"
+        android:textColor="@color/primary"
         android:textAlignment="center"
         android:lineSpacingExtra="4dp"
         android:layout_marginBottom="32dp"

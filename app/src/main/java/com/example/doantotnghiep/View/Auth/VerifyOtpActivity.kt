@@ -7,13 +7,21 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
+import com.example.doantotnghiep.ViewModel.VerifyOtpViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.PhoneAuthCredential
+import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
+import java.util.concurrent.TimeUnit
 
 class VerifyOtpActivity : AppCompatActivity() {
 
@@ -28,6 +36,10 @@ class VerifyOtpActivity : AppCompatActivity() {
     private var verificationId = ""
     private var email = ""
     private var phone = ""
+    private var resendToken: PhoneAuthProvider.ForceResendingToken? = null
+    private var countDownTimer: CountDownTimer? = null
+
+    private val viewModel: VerifyOtpViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -47,53 +59,109 @@ class VerifyOtpActivity : AppCompatActivity() {
 
         tvDescription.text = "Mã xác nhận 6 số đã được gửi đến\n$phone"
 
-        // Đếm ngược 60 giây
         startCountDown()
+        observeViewModel()
 
         btnVerifyOtp.setOnClickListener {
             tilOtp.error = null
             val otp = edtOtp.text.toString().trim()
+            viewModel.verifyOtp(verificationId, otp, email)
+        }
 
-            if (otp.isEmpty()) {
-                tilOtp.error = "Vui lòng nhập mã xác nhận"
-                return@setOnClickListener
-            }
-            if (otp.length != 6) {
-                tilOtp.error = "Mã xác nhận phải có 6 số"
-                return@setOnClickListener
-            }
-
-            progressBar.visibility = View.VISIBLE
-            btnVerifyOtp.isEnabled = false
-
-            // Xác thực OTP
-            val credential = PhoneAuthProvider.getCredential(verificationId, otp)
-            FirebaseAuth.getInstance().signInWithCredential(credential)
-                .addOnSuccessListener {
-                    progressBar.visibility = View.GONE
-                    btnVerifyOtp.isEnabled = true
-
-                    // Chuyển sang màn đặt mật khẩu mới
-                    val intent = Intent(this, ResetPasswordActivity::class.java)
-                    intent.putExtra("email", email)
-                    startActivity(intent)
-                    finish()
-                }
-                .addOnFailureListener { e ->
-                    progressBar.visibility = View.GONE
-                    btnVerifyOtp.isEnabled = true
-                    tilOtp.error = "Mã xác nhận không đúng"
-                }
+        tvResend.setOnClickListener {
+            if (!tvResend.isEnabled) return@setOnClickListener
+            resendOtp()
         }
 
         btnBack.setOnClickListener { finish() }
     }
 
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(this) { loading ->
+            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            btnVerifyOtp.isEnabled = !loading
+        }
+
+        viewModel.verifySuccess.observe(this) { emailAddr ->
+            AlertDialog.Builder(this)
+                .setTitle("Gửi email thành công")
+                .setMessage("Link đặt lại mật khẩu đã được gửi đến $emailAddr.\nVui lòng kiểm tra hộp thư và làm theo hướng dẫn.")
+                .setPositiveButton("Về đăng nhập") { _, _ ->
+                    val intent = Intent(this, LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    startActivity(intent)
+                }
+                .setCancelable(false)
+                .show()
+        }
+
+        viewModel.invalidOtp.observe(this) { invalid ->
+            if (invalid) tilOtp.error = "Mã xác nhận không đúng"
+        }
+
+        viewModel.errorMessage.observe(this) { msg ->
+            when (msg) {
+                "otp_empty" -> tilOtp.error = "Vui lòng nhập mã xác nhận"
+                "otp_invalid" -> tilOtp.error = "Mã xác nhận phải có 6 số"
+                else -> if (!msg.isNullOrEmpty()) MessageUtils.showErrorDialog(this, "Lỗi", msg)
+            }
+        }
+    }
+
+    // PhoneAuth resend bắt buộc cần setActivity(this) nên giữ ở Activity
+    private fun resendOtp() {
+        tvResend.isEnabled = false
+        progressBar.visibility = View.VISIBLE
+
+        val optionsBuilder = PhoneAuthOptions.newBuilder(FirebaseAuth.getInstance())
+            .setPhoneNumber(phone)
+            .setTimeout(60L, TimeUnit.SECONDS)
+            .setActivity(this)
+            .setCallbacks(object : PhoneAuthProvider.OnVerificationStateChangedCallbacks() {
+
+                override fun onVerificationCompleted(credential: PhoneAuthCredential) {
+                    FirebaseAuth.getInstance().signInWithCredential(credential)
+                        .addOnSuccessListener {
+                            FirebaseAuth.getInstance().signOut()
+                            progressBar.visibility = View.GONE
+                            viewModel.verifyOtp(verificationId, "", email) // trigger sendResetEmail via success path
+                        }
+                        .addOnFailureListener {
+                            progressBar.visibility = View.GONE
+                            tvResend.isEnabled = true
+                        }
+                }
+
+                override fun onVerificationFailed(e: FirebaseException) {
+                    progressBar.visibility = View.GONE
+                    tvResend.isEnabled = true
+                    MessageUtils.showErrorDialog(this@VerifyOtpActivity, "Gửi lại thất bại", e.message ?: "Vui lòng thử lại")
+                }
+
+                override fun onCodeSent(
+                    newVerificationId: String,
+                    token: PhoneAuthProvider.ForceResendingToken
+                ) {
+                    progressBar.visibility = View.GONE
+                    verificationId = newVerificationId
+                    resendToken = token
+                    edtOtp.text?.clear()
+                    tilOtp.error = null
+                    startCountDown()
+                }
+            })
+
+        resendToken?.let { optionsBuilder.setForceResendingToken(it) }
+        PhoneAuthProvider.verifyPhoneNumber(optionsBuilder.build())
+    }
+
     private fun startCountDown() {
+        countDownTimer?.cancel()
         tvResend.isEnabled = false
         tvResend.setTextColor(0xFF999999.toInt())
 
-        object : CountDownTimer(60000, 1000) {
+        countDownTimer = object : CountDownTimer(60000, 1000) {
             override fun onTick(millisUntilFinished: Long) {
                 tvResend.text = "Gửi lại mã sau ${millisUntilFinished / 1000}s"
             }
@@ -104,5 +172,10 @@ class VerifyOtpActivity : AppCompatActivity() {
                 tvResend.isEnabled = true
             }
         }.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        countDownTimer?.cancel()
     }
 }

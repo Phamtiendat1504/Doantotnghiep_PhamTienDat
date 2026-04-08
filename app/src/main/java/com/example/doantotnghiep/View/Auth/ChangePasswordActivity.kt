@@ -1,16 +1,18 @@
 package com.example.doantotnghiep.View.Auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
+import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 
 class ChangePasswordActivity : AppCompatActivity() {
@@ -24,6 +26,8 @@ class ChangePasswordActivity : AppCompatActivity() {
     private lateinit var btnChangePassword: MaterialButton
     private lateinit var progressBar: ProgressBar
     private lateinit var btnBack: ImageView
+
+    private val authViewModel: AuthViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,77 +43,62 @@ class ChangePasswordActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         btnBack = findViewById(R.id.btnBack)
 
+        observeViewModel()
+
         btnChangePassword.setOnClickListener {
             clearErrors()
-
             val oldPassword = edtOldPassword.text.toString().trim()
             val newPassword = edtNewPassword.text.toString().trim()
             val confirmPassword = edtConfirmPassword.text.toString().trim()
-
-            // Validate
-            if (oldPassword.isEmpty()) {
-                tilOldPassword.error = "Vui lòng nhập mật khẩu cũ"
-                return@setOnClickListener
-            }
-            if (newPassword.isEmpty()) {
-                tilNewPassword.error = "Vui lòng nhập mật khẩu mới"
-                return@setOnClickListener
-            }
-            if (newPassword.length < 12 ||
-                !newPassword.any { it.isUpperCase() } ||
-                !newPassword.any { it.isDigit() } ||
-                !newPassword.any { !it.isLetterOrDigit() }
-            ) {
-                tilNewPassword.error = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
-                return@setOnClickListener
-            }
-            if (confirmPassword.isEmpty()) {
-                tilConfirmPassword.error = "Vui lòng nhập lại mật khẩu mới"
-                return@setOnClickListener
-            }
-            if (newPassword != confirmPassword) {
-                tilConfirmPassword.error = "Mật khẩu xác nhận không khớp"
-                return@setOnClickListener
-            }
-            if (oldPassword == newPassword) {
-                tilNewPassword.error = "Mật khẩu mới phải khác mật khẩu cũ"
-                return@setOnClickListener
-            }
-
-            progressBar.visibility = View.VISIBLE
-            btnChangePassword.isEnabled = false
-
-            // Xác thực lại bằng mật khẩu cũ
-            val user = FirebaseAuth.getInstance().currentUser
-            val email = user?.email ?: ""
-            val credential = EmailAuthProvider.getCredential(email, oldPassword)
-
-            user?.reauthenticate(credential)
-                ?.addOnSuccessListener {
-                    // Xác thực thành công → đổi mật khẩu
-                    user.updatePassword(newPassword)
-                        .addOnSuccessListener {
-                            progressBar.visibility = View.GONE
-                            btnChangePassword.isEnabled = true
-
-                            MessageUtils.showSuccessDialog(this, "Thành công", "Mật khẩu của bạn đã được thay đổi thành công!") {
-                                finish()
-                            }
-                        }
-                        .addOnFailureListener { e ->
-                            progressBar.visibility = View.GONE
-                            btnChangePassword.isEnabled = true
-                            MessageUtils.showErrorDialog(this, "Lỗi đổi mật khẩu", e.message ?: "Không thể cập nhật mật khẩu mới.")
-                        }
-                }
-                ?.addOnFailureListener {
-                    progressBar.visibility = View.GONE
-                    btnChangePassword.isEnabled = true
-                    tilOldPassword.error = "Mật khẩu cũ không đúng"
-                }
+            authViewModel.changePassword(oldPassword, newPassword, confirmPassword)
         }
 
         btnBack.setOnClickListener { finish() }
+    }
+
+    private fun observeViewModel() {
+        authViewModel.isLoading.observe(this) { loading ->
+            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+            btnChangePassword.isEnabled = !loading
+        }
+
+        authViewModel.changePasswordResult.observe(this) { success ->
+            if (success) {
+                // Cập nhật mật khẩu mới vào SharedPreferences nếu đang nhớ mật khẩu
+                val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
+                val isRemember = prefs.getBoolean("remember_password", false)
+                if (isRemember) {
+                    val currentEmail = authViewModel.getCurrentUserEmail()
+                    val newPassword = edtNewPassword.text.toString().trim()
+                    if (currentEmail.isNotEmpty()) {
+                        prefs.edit().putString("pwd_$currentEmail", newPassword).apply()
+                    }
+                }
+
+                MessageUtils.showSuccessDialog(this, "Thành công", "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.") {
+                    authViewModel.logOut()
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                }
+            }
+        }
+
+        authViewModel.wrongOldPassword.observe(this) { wrong ->
+            if (wrong) tilOldPassword.error = "Mật khẩu cũ không đúng"
+        }
+
+        authViewModel.errorMessage.observe(this) { msg ->
+            when (msg) {
+                "old_empty" -> tilOldPassword.error = "Vui lòng nhập mật khẩu cũ"
+                "new_empty" -> tilNewPassword.error = "Vui lòng nhập mật khẩu mới"
+                "new_weak" -> tilNewPassword.error = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
+                "confirm_empty" -> tilConfirmPassword.error = "Vui lòng nhập lại mật khẩu mới"
+                "confirm_mismatch" -> tilConfirmPassword.error = "Mật khẩu xác nhận không khớp"
+                "same_password" -> tilNewPassword.error = "Mật khẩu mới phải khác mật khẩu cũ"
+                else -> if (!msg.isNullOrEmpty()) MessageUtils.showErrorDialog(this, "Lỗi", msg)
+            }
+        }
     }
 
     private fun clearErrors() {

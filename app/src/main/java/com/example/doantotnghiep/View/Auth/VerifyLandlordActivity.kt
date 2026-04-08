@@ -12,11 +12,10 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.storage.FirebaseStorage
+import com.example.doantotnghiep.ViewModel.VerifyLandlordViewModel
 
 class VerifyLandlordActivity : AppCompatActivity() {
 
@@ -33,6 +32,8 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private lateinit var btnSubmitVerify: com.google.android.material.button.MaterialButton
     private lateinit var btnBack: ImageView
     private lateinit var progressBar: ProgressBar
+
+    private lateinit var viewModel: VerifyLandlordViewModel
 
     private var frontUri: Uri? = null
     private var backUri: Uri? = null
@@ -62,7 +63,35 @@ class VerifyLandlordActivity : AppCompatActivity() {
         setContentView(R.layout.activity_verify_landlord)
 
         initViews()
-        loadUserInfo()
+        viewModel = ViewModelProvider(this)[VerifyLandlordViewModel::class.java]
+
+        viewModel.ownerInfo.observe(this) { (fullName, phone) ->
+            edtFullName.setText(fullName)
+            edtPhone.setText(phone)
+        }
+
+        viewModel.isLoading.observe(this) { isLoading ->
+            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            btnSubmitVerify.isEnabled = !isLoading
+        }
+
+        viewModel.submitResult.observe(this) { success ->
+            if (success == true) {
+                MessageUtils.showSuccessDialog(
+                    this,
+                    "Gửi yêu cầu thành công",
+                    "Thông tin xác minh của bạn đã được gửi. Vui lòng chờ Admin phê duyệt để có quyền đăng tin."
+                ) { finish() }
+            }
+        }
+
+        viewModel.errorMessage.observe(this) { error ->
+            if (!error.isNullOrEmpty()) {
+                MessageUtils.showErrorDialog(this, "Lỗi gửi yêu cầu", error)
+            }
+        }
+
+        viewModel.loadUserInfo()
 
         frameFront.setOnClickListener { isPickingFront = true; pickImage() }
         frameBack.setOnClickListener { isPickingFront = false; pickImage() }
@@ -86,17 +115,6 @@ class VerifyLandlordActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
     }
 
-    private fun loadUserInfo() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        FirebaseFirestore.getInstance().collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    edtFullName.setText(doc.getString("fullName") ?: "")
-                    edtPhone.setText(doc.getString("phone") ?: "")
-                }
-            }
-    }
-
     private fun pickImage() {
         val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
         pickImageLauncher.launch(intent)
@@ -105,70 +123,18 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private fun submitVerification() {
         val cccd = edtCccdNumber.text.toString().trim()
         val address = edtAddress.text.toString().trim()
+        val fullName = edtFullName.text.toString().trim()
+        val phone = edtPhone.text.toString().trim()
 
         if (cccd.length != 12) {
             MessageUtils.showInfoDialog(this, "Số CCCD không hợp lệ", "Vui lòng nhập đúng 12 số CCCD của bạn.")
             return
         }
-        
         if (address.isEmpty() || frontUri == null || backUri == null) {
             MessageUtils.showInfoDialog(this, "Thông tin chưa đủ", "Vui lòng nhập địa chỉ và tải đủ 2 mặt ảnh CCCD.")
             return
         }
 
-        setLoading(true)
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val storageRef = FirebaseStorage.getInstance().reference
-
-        // Upload ảnh mặt trước
-        val frontRef = storageRef.child("verifications/$uid/cccd_front_${System.currentTimeMillis()}.jpg")
-        frontRef.putFile(frontUri!!).continueWithTask { task ->
-            if (!task.isSuccessful) task.exception?.let { throw it }
-            frontRef.downloadUrl
-        }.continueWithTask { task ->
-            val frontUrl = task.result.toString()
-            // Upload ảnh mặt sau
-            val backRef = storageRef.child("verifications/$uid/cccd_back_${System.currentTimeMillis()}.jpg")
-            backRef.putFile(backUri!!).continueWithTask { backTask ->
-                if (!backTask.isSuccessful) backTask.exception?.let { throw it }
-                backRef.downloadUrl
-            }.continueWithTask { backUrlTask ->
-                val backUrl = backUrlTask.result.toString()
-                // Lưu vào Firestore
-                val data = hashMapOf(
-                    "userId" to uid,
-                    "fullName" to edtFullName.text.toString(),
-                    "cccdNumber" to cccd,
-                    "phone" to edtPhone.text.toString(),
-                    "address" to address,
-                    "cccdFrontUrl" to frontUrl,
-                    "cccdBackUrl" to backUrl,
-                    "status" to "pending",
-                    "createdAt" to System.currentTimeMillis()
-                )
-                FirebaseFirestore.getInstance().collection("verifications").document(uid).set(data)
-            }
-        }.addOnSuccessListener {
-            setLoading(false)
-            MessageUtils.showSuccessDialog(
-                this,
-                "Gửi yêu cầu thành công",
-                "Thông tin xác minh của bạn đã được gửi. Vui lòng chờ Admin phê duyệt để có quyền đăng tin."
-            ) {
-                finish()
-            }
-        }.addOnFailureListener { e ->
-            setLoading(false)
-            MessageUtils.showErrorDialog(this, "Lỗi gửi yêu cầu", e.message ?: "Đã có lỗi xảy ra, vui lòng thử lại sau.")
-        }
-    }
-
-    private fun setLoading(isLoading: Boolean) {
-        progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
-        btnSubmitVerify.isEnabled = !isLoading
-    }
-
-    private fun pickImageLauncher() {
-        // Dummy function to keep pickImageLauncher as it is used in result activity
+        viewModel.submitVerification(fullName, cccd, phone, address, frontUri!!, backUri!!)
     }
 }

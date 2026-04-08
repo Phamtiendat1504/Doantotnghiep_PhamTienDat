@@ -12,8 +12,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
+import androidx.activity.viewModels
 import com.example.doantotnghiep.R
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.doantotnghiep.ViewModel.SavedPostDetailViewModel
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -33,7 +34,7 @@ class SavedPostDetailActivity : AppCompatActivity() {
     private lateinit var btnRemoveSaved: LinearLayout
     private lateinit var progressBar: ProgressBar
 
-    private val db = FirebaseFirestore.getInstance()
+    private val viewModel: SavedPostDetailViewModel by viewModels()
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -54,11 +55,52 @@ class SavedPostDetailActivity : AppCompatActivity() {
         roomId = intent.getStringExtra("roomId") ?: ""
         savedDocId = intent.getStringExtra("savedDocId") ?: ""
 
+        observeViewModel()
+
         if (roomId.isNotEmpty()) {
-            loadRoomDetail()
+            viewModel.loadRoomDetail(roomId)
         }
 
-        btnRemoveSaved.setOnClickListener { removeSavedPost() }
+        btnRemoveSaved.setOnClickListener { confirmRemoveSavedPost() }
+    }
+
+    private fun observeViewModel() {
+        viewModel.isLoading.observe(this) { loading ->
+            progressBar.visibility = if (loading) View.VISIBLE else View.GONE
+        }
+
+        viewModel.roomData.observe(this) { data ->
+            tvTitle.text = data["title"] as? String ?: "Chưa có tiêu đề"
+
+            val price = data["price"] as? Long ?: 0
+            tvPrice.text = "${formatter.format(price)} đ/tháng"
+
+            val address = data["address"] as? String ?: ""
+            val ward = data["ward"] as? String ?: ""
+            val district = data["district"] as? String ?: ""
+            tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
+
+            tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
+
+            val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
+            setupImageSlider(imageUrls)
+            setupRoomInfo(data)
+            setupAmenities(data)
+            setupOwnerInfo(data)
+        }
+
+        viewModel.deleteResult.observe(this) { success ->
+            if (success) {
+                MessageUtils.showSuccessDialog(this, "Thành công", "Đã bỏ lưu bài viết") { finish() }
+            }
+        }
+
+        viewModel.errorMessage.observe(this) { msg ->
+            if (!msg.isNullOrEmpty()) {
+                MessageUtils.showErrorDialog(this, "Lỗi", msg)
+                if (viewModel.roomData.value == null) finish()
+            }
+        }
     }
 
     private fun initViews() {
@@ -74,44 +116,6 @@ class SavedPostDetailActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         btnRemoveSaved = findViewById(R.id.btnRemoveSaved)
         progressBar = findViewById(R.id.progressBar)
-    }
-
-    private fun loadRoomDetail() {
-        progressBar.visibility = View.VISIBLE
-
-        db.collection("rooms").document(roomId).get()
-            .addOnSuccessListener { doc ->
-                progressBar.visibility = View.GONE
-
-                if (doc.exists()) {
-                    val data = doc.data ?: return@addOnSuccessListener
-
-                    tvTitle.text = data["title"] as? String ?: "Chưa có tiêu đề"
-
-                    val price = data["price"] as? Long ?: 0
-                    tvPrice.text = "${formatter.format(price)} đ/tháng"
-
-                    val address = data["address"] as? String ?: ""
-                    val ward = data["ward"] as? String ?: ""
-                    val district = data["district"] as? String ?: ""
-                    tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
-
-                    tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
-
-                    val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
-                    setupImageSlider(imageUrls)
-                    setupRoomInfo(data)
-                    setupAmenities(data)
-                    setupOwnerInfo(data)
-                } else {
-                    MessageUtils.showErrorDialog(this, "Lỗi", "Không tìm thấy bài viết")
-                    finish()
-                }
-            }
-            .addOnFailureListener {
-                progressBar.visibility = View.GONE
-                MessageUtils.showErrorDialog(this, "Lỗi tải dữ liệu", "Không thể tải thông tin bài viết, vui lòng thử lại")
-            }
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -303,22 +307,11 @@ class SavedPostDetailActivity : AppCompatActivity() {
         layoutOwnerInfo.addView(row)
     }
 
-    private fun removeSavedPost() {
+    private fun confirmRemoveSavedPost() {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Bỏ lưu bài viết")
             .setMessage("Bạn có chắc chắn muốn bỏ lưu bài viết này?")
-            .setPositiveButton("Bỏ lưu") { _, _ ->
-                progressBar.visibility = View.VISIBLE
-                db.collection("savedPosts").document(savedDocId).delete()
-                    .addOnSuccessListener {
-                        progressBar.visibility = View.GONE
-                        MessageUtils.showSuccessDialog(this, "Thành công", "Đã bỏ lưu bài viết") { finish() }
-                    }
-                    .addOnFailureListener {
-                        progressBar.visibility = View.GONE
-                        MessageUtils.showErrorDialog(this, "Lỗi bỏ lưu", it.message ?: "Vui lòng thử lại")
-                    }
-            }
+            .setPositiveButton("Bỏ lưu") { _, _ -> viewModel.deleteSavedPost(savedDocId) }
             .setNegativeButton("Hủy", null)
             .show()
     }

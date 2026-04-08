@@ -19,11 +19,10 @@ import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.Utils.NumberFormatUtils
 import com.example.doantotnghiep.View.Auth.VerifyLandlordActivity
 import com.bumptech.glide.Glide
-import com.example.doantotnghiep.View.Auth.PostSuccessActivity
+import com.example.doantotnghiep.Utils.PostNotificationHelper
 import com.example.doantotnghiep.ViewModel.PostViewModel
 import com.google.android.material.button.MaterialButton
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
+
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -32,13 +31,13 @@ class PostFragment : Fragment() {
     private var verifyRequiredView: View? = null
     private var postFormView: View? = null
 
-    private val db = FirebaseFirestore.getInstance()
     private val imageUris = mutableListOf<Uri>()
     private val MAX_PHOTOS = 10
     private var isFormSetup = false
     private var userRoleChecked = false
 
-    // Lưu tạm thông tin bài vừa đăng để hiển thị trên màn hình thành công
+    private lateinit var viewModel: PostViewModel
+
     private var lastPostedTitle = ""
     private var lastPostedPrice = 0L
     private var lastPostedLocation = ""
@@ -49,82 +48,68 @@ class PostFragment : Fragment() {
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
             if (data?.clipData != null) {
-                // Trường hợp chọn nhiều ảnh cùng lúc
                 val count = data.clipData!!.itemCount
                 for (i in 0 until count) {
                     val uri = data.clipData!!.getItemAt(i).uri
-                    if (imageUris.size < MAX_PHOTOS) {
-                        imageUris.add(uri)
-                        addPhotoToLayout(uri)
-                    }
+                    if (imageUris.size < MAX_PHOTOS) { imageUris.add(uri); addPhotoToLayout(uri) }
                 }
             } else if (data?.data != null) {
-                // Trường hợp chỉ chọn 1 ảnh
                 val uri = data.data!!
-                if (imageUris.size < MAX_PHOTOS) {
-                    imageUris.add(uri)
-                    addPhotoToLayout(uri)
-                }
+                if (imageUris.size < MAX_PHOTOS) { imageUris.add(uri); addPhotoToLayout(uri) }
             }
         }
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         val frameLayout = FrameLayout(requireContext())
-        frameLayout.layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.MATCH_PARENT
-        )
+        frameLayout.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
 
         verifyRequiredView = inflater.inflate(R.layout.layout_verify_required, container, false)
         postFormView = inflater.inflate(R.layout.fragment_post, container, false)
 
+        verifyRequiredView?.visibility = View.GONE
+        postFormView?.visibility = View.GONE
+
         frameLayout.addView(verifyRequiredView)
         frameLayout.addView(postFormView)
-
         return frameLayout
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        viewModel = ViewModelProvider(this)[PostViewModel::class.java]
+
+        viewModel.userRole.observe(viewLifecycleOwner) { role ->
+            if (role == "landlord" || role == "admin") {
+                showPostForm()
+            }
+            // If tenant: wait for verifyStatus
+        }
+
+        viewModel.verifyStatus.observe(viewLifecycleOwner) { status ->
+            val role = viewModel.userRole.value ?: "tenant"
+            if (role == "landlord" || role == "admin") return@observe
+            when (status) {
+                "pending" -> showPendingStatus()
+                "rejected" -> showRejectedStatus(viewModel.verifyRejectReason.value ?: "")
+                else -> showVerifyRequired()
+            }
+        }
+
+        viewModel.ownerInfo.observe(viewLifecycleOwner) { (name, phone) ->
+            val view = postFormView ?: return@observe
+            view.findViewById<EditText>(R.id.edtOwnerName)?.setText(name)
+            view.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(phone)
+        }
+
         checkUserRole()
         setupVerifyButton()
     }
 
     private fun checkUserRole() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { userDoc ->
-                if (userDoc.exists()) {
-                    userRoleChecked = true
-                    val role = userDoc.getString("role") ?: "tenant"
-                    if (role == "landlord" || role == "admin") {
-                        showPostForm()
-                    } else {
-                        checkVerificationStatus(uid)
-                    }
-                }
-            }
-    }
-
-    private fun checkVerificationStatus(uid: String) {
-        db.collection("verifications").document(uid).get()
-            .addOnSuccessListener { verifyDoc ->
-                if (verifyDoc.exists()) {
-                    when (verifyDoc.getString("status") ?: "none") {
-                        "pending" -> showPendingStatus()
-                        "rejected" -> showRejectedStatus(verifyDoc.getString("rejectReason") ?: "")
-                        else -> showVerifyRequired()
-                    }
-                } else {
-                    showVerifyRequired()
-                }
-            }
-            .addOnFailureListener { showVerifyRequired() }
+        userRoleChecked = true
+        viewModel.checkUserRole() // UID được lấy trong ViewModel
     }
 
     private fun showVerifyRequired() {
@@ -133,8 +118,7 @@ class PostFragment : Fragment() {
         verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)?.text =
             "Bạn cần xác minh là chủ trọ để có thể đăng bài cho thuê phòng trọ."
         verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.apply {
-            text = "Xác minh ngay"
-            visibility = View.VISIBLE
+            text = "Xác minh ngay"; visibility = View.VISIBLE
         }
     }
 
@@ -152,8 +136,7 @@ class PostFragment : Fragment() {
         verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)?.text =
             "Yêu cầu xác minh bị từ chối.\nLý do: $reason\n\nVui lòng gửi lại yêu cầu."
         verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.apply {
-            text = "Gửi lại xác minh"
-            visibility = View.VISIBLE
+            text = "Gửi lại xác minh"; visibility = View.VISIBLE
         }
     }
 
@@ -187,22 +170,17 @@ class PostFragment : Fragment() {
 
         imgView.setOnLongClickListener {
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("Xóa ảnh")
-                .setMessage("Bạn có muốn xóa ảnh này?")
+                .setTitle("Xóa ảnh").setMessage("Bạn có muốn xóa ảnh này?")
                 .setPositiveButton("Xóa") { _, _ ->
-                    val index = layoutPhotos.indexOfChild(imgView)
-                    if (index >= 0 && index < imageUris.size) {
-                        imageUris.removeAt(index)
-                    }
+                    val uriIndex = imageUris.indexOf(uri)
+                    if (uriIndex >= 0) imageUris.removeAt(uriIndex)
                     layoutPhotos.removeView(imgView)
                     tvPhotoCount.text = "${imageUris.size}/$MAX_PHOTOS ảnh"
                     if (imageUris.size < MAX_PHOTOS) btnAddPhoto.visibility = View.VISIBLE
                 }
-                .setNegativeButton("Hủy", null)
-                .show()
+                .setNegativeButton("Hủy", null).show()
             true
         }
-
         layoutPhotos.addView(imgView, layoutPhotos.childCount - 1)
         tvPhotoCount.text = "${imageUris.size}/$MAX_PHOTOS ảnh"
         if (imageUris.size >= MAX_PHOTOS) btnAddPhoto.visibility = View.GONE
@@ -210,7 +188,6 @@ class PostFragment : Fragment() {
 
     private fun setupPostForm() {
         val view = postFormView ?: return
-        val viewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
         val edtOwnerName = view.findViewById<EditText>(R.id.edtOwnerName)
         val edtOwnerPhone = view.findViewById<EditText>(R.id.edtOwnerPhone)
@@ -246,26 +223,34 @@ class PostFragment : Fragment() {
         val edtPetCount = view.findViewById<EditText>(R.id.edtPetCount)
         val rgGenderPrefer = view.findViewById<RadioGroup>(R.id.rgGenderPrefer)
         val rgCurfew = view.findViewById<RadioGroup>(R.id.rgCurfew)
-        val edtCurfewTime = view.findViewById<EditText>(R.id.edtCurfewTime)
+        val layoutCurfewTime = view.findViewById<LinearLayout>(R.id.layoutCurfewTime)
+        val edtCurfewTime = view.findViewById<TextView>(R.id.edtCurfewTime)
+        val pickerHour = view.findViewById<android.widget.NumberPicker>(R.id.pickerHour)
+        val pickerMinute = view.findViewById<android.widget.NumberPicker>(R.id.pickerMinute)
+        val pickerAmPm = view.findViewById<android.widget.NumberPicker>(R.id.pickerAmPm)
+
+        pickerHour.minValue = 1; pickerHour.maxValue = 12; pickerHour.value = 10
+        pickerMinute.minValue = 0; pickerMinute.maxValue = 59; pickerMinute.value = 0
+        pickerMinute.setFormatter { String.format("%02d", it) }
+        pickerAmPm.minValue = 0; pickerAmPm.maxValue = 1
+        pickerAmPm.displayedValues = arrayOf("SA", "CH"); pickerAmPm.value = 1
+
+        val syncCurfewTime = {
+            val amPm = if (pickerAmPm.value == 0) "SA" else "CH"
+            edtCurfewTime.text = String.format("%02d:%02d %s", pickerHour.value, pickerMinute.value, amPm)
+        }
+        pickerHour.setOnValueChangedListener { _, _, _ -> syncCurfewTime() }
+        pickerMinute.setOnValueChangedListener { _, _, _ -> syncCurfewTime() }
+        pickerAmPm.setOnValueChangedListener { _, _, _ -> syncCurfewTime() }
+        syncCurfewTime()
+
         val btnAddPhoto = view.findViewById<CardView>(R.id.btnAddPhoto)
         val btnPostRoom = view.findViewById<MaterialButton>(R.id.btnPostRoom)
-        
         val layoutProgress = view.findViewById<LinearLayout>(R.id.layoutProgress)
         val tvProgressPercent = view.findViewById<TextView>(R.id.tvProgressPercent)
 
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    edtOwnerName.setText(doc.getString("fullName") ?: "")
-                    edtOwnerPhone.setText(doc.getString("phone") ?: "")
-                    val gender = doc.getString("gender") ?: ""
-                    when (gender) {
-                        "Nam" -> rgOwnerGender.check(R.id.rbOwnerMale)
-                        "Nữ" -> rgOwnerGender.check(R.id.rbOwnerFemale)
-                    }
-                }
-            }
+        // Load owner info via ViewModel — không gọi FirebaseAuth từ Fragment
+        viewModel.loadOwnerInfo()
 
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
         tvPostDate.text = dateFormat.format(Date())
@@ -283,28 +268,46 @@ class PostFragment : Fragment() {
         NumberFormatUtils.addFormatWatcher(edtWaterPrice)
         NumberFormatUtils.addFormatWatcher(edtDepositAmount)
 
-        cbWifi.setOnCheckedChangeListener { _, isChecked ->
-            edtWifiPrice.isEnabled = isChecked
-            if (!isChecked) edtWifiPrice.text?.clear()
-        }
-        cbElectric.setOnCheckedChangeListener { _, isChecked ->
-            edtElectricPrice.isEnabled = isChecked
-            if (!isChecked) edtElectricPrice.text?.clear()
-        }
-        cbWater.setOnCheckedChangeListener { _, isChecked ->
-            edtWaterPrice.isEnabled = isChecked
-            if (!isChecked) edtWaterPrice.text?.clear()
-        }
-
-        rgPet.setOnCheckedChangeListener { _, checkedId ->
-            layoutPetDetail.visibility = if (checkedId == R.id.rbPetYes) View.VISIBLE else View.GONE
-        }
-
-        rgCurfew.setOnCheckedChangeListener { _, checkedId ->
-            edtCurfewTime.visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
-        }
+        cbWifi.setOnCheckedChangeListener { _, isChecked -> edtWifiPrice.isEnabled = isChecked; if (!isChecked) edtWifiPrice.text?.clear() }
+        cbElectric.setOnCheckedChangeListener { _, isChecked -> edtElectricPrice.isEnabled = isChecked; if (!isChecked) edtElectricPrice.text?.clear() }
+        cbWater.setOnCheckedChangeListener { _, isChecked -> edtWaterPrice.isEnabled = isChecked; if (!isChecked) edtWaterPrice.text?.clear() }
+        rgPet.setOnCheckedChangeListener { _, checkedId -> layoutPetDetail.visibility = if (checkedId == R.id.rbPetYes) View.VISIBLE else View.GONE }
+        rgCurfew.setOnCheckedChangeListener { _, checkedId -> layoutCurfewTime.visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE }
 
         setupParkingListeners(view)
+
+        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            layoutProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
+            btnPostRoom.isEnabled = !isLoading
+            btnPostRoom.text = if (isLoading) "Đang đăng bài..." else "Đăng bài cho thuê"
+            if (isLoading) PostNotificationHelper.showProgress(requireContext(), 0)
+        }
+
+        viewModel.uploadProgress.observe(viewLifecycleOwner) { progress ->
+            tvProgressPercent.text = "Đang đăng bài: $progress%"
+            PostNotificationHelper.showProgress(requireContext(), progress)
+        }
+
+        viewModel.postResult.observe(viewLifecycleOwner) { success ->
+            if (success == true) {
+                viewModel.resetPostResult()
+                PostNotificationHelper.showSuccess(requireContext(), lastPostedTitle)
+                resetForm(view)
+                val intent = Intent(requireContext(), com.example.doantotnghiep.View.Auth.PostSuccessActivity::class.java).apply {
+                    putExtra("title", lastPostedTitle)
+                    putExtra("price", lastPostedPrice)
+                    putExtra("location", lastPostedLocation)
+                }
+                startActivity(intent)
+            }
+        }
+
+        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
+            if (!error.isNullOrEmpty()) {
+                PostNotificationHelper.cancel(requireContext())
+                MessageUtils.showErrorDialog(requireContext(), "Lỗi đăng bài", error)
+            }
+        }
 
         btnAddPhoto.setOnClickListener {
             if (imageUris.size >= MAX_PHOTOS) {
@@ -315,32 +318,6 @@ class PostFragment : Fragment() {
             intent.type = "image/*"
             intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             pickImageLauncher.launch(intent)
-        }
-
-        viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-            layoutProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
-            btnPostRoom.isEnabled = !isLoading
-            btnPostRoom.text = if (isLoading) "Đang đăng bài..." else "Đăng bài cho thuê"
-        }
-        
-        viewModel.uploadProgress.observe(viewLifecycleOwner) { progress ->
-            tvProgressPercent.text = "Đang đăng bài: $progress%"
-        }
-
-        viewModel.postResult.observe(viewLifecycleOwner) { success ->
-            if (success) {
-                resetForm(view)
-                val intent = Intent(requireContext(), PostSuccessActivity::class.java).apply {
-                    putExtra("title", lastPostedTitle)
-                    putExtra("price", lastPostedPrice)
-                    putExtra("location", lastPostedLocation)
-                }
-                startActivity(intent)
-            }
-        }
-
-        viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
-            MessageUtils.showErrorDialog(requireContext(), "Lỗi đăng bài", error)
         }
 
         btnPostRoom.setOnClickListener {
@@ -365,83 +342,96 @@ class PostFragment : Fragment() {
             val room = Room(
                 ownerName = edtOwnerName.text.toString().trim(),
                 ownerPhone = edtOwnerPhone.text.toString().trim(),
-                ownerGender = when (rgOwnerGender.checkedRadioButtonId) {
-                    R.id.rbOwnerMale -> "Nam"
-                    R.id.rbOwnerFemale -> "Nữ"
-                    else -> ""
-                },
+                ownerGender = when (rgOwnerGender.checkedRadioButtonId) { R.id.rbOwnerMale -> "Nam"; R.id.rbOwnerFemale -> "Nữ"; else -> "" },
                 title = edtTitle.text.toString().trim(),
-                ward = wardName,
-                district = districtName,
+                ward = wardName, district = districtName,
                 address = edtAddress.text.toString().trim(),
                 description = edtDescription.text.toString().trim(),
                 price = NumberFormatUtils.getRawNumber(edtPrice).toLongOrNull() ?: 0,
                 area = edtArea.text.toString().toIntOrNull() ?: 0,
                 peopleCount = edtPeopleCount.text.toString().toIntOrNull() ?: 0,
-                roomType = when (rgRoomStyle.checkedRadioButtonId) {
-                    R.id.rbShared -> "Chung chủ"
-                    R.id.rbPrivate -> "Riêng chủ"
-                    else -> ""
-                },
+                roomType = when (rgRoomStyle.checkedRadioButtonId) { R.id.rbShared -> "Chung chủ"; R.id.rbPrivate -> "Riêng chủ"; else -> "" },
                 depositMonths = edtDepositMonths.text.toString().toIntOrNull() ?: 0,
                 depositAmount = NumberFormatUtils.getRawNumber(edtDepositAmount).toLongOrNull() ?: 0,
                 hasWifi = cbWifi.isChecked,
                 wifiPrice = NumberFormatUtils.getRawNumber(edtWifiPrice).toLongOrNull() ?: 0,
                 electricPrice = NumberFormatUtils.getRawNumber(edtElectricPrice).toLongOrNull() ?: 0,
                 waterPrice = NumberFormatUtils.getRawNumber(edtWaterPrice).toLongOrNull() ?: 0,
-                hasAirCon = cbAirCon.isChecked,
-                hasWaterHeater = cbWaterHeater.isChecked,
-                hasWasher = cbWasher.isChecked,
-                hasDryingArea = cbDryingArea.isChecked,
-                hasWardrobe = cbWardrobe.isChecked,
-                hasBed = cbBed.isChecked,
-                kitchen = when (rgKitchen.checkedRadioButtonId) {
-                    R.id.rbKitchenShared -> "Chung"
-                    R.id.rbKitchenPrivate -> "Riêng"
-                    R.id.rbKitchenNone -> "Không"
-                    else -> ""
-                },
-                bathroom = when (rgBathroom.checkedRadioButtonId) {
-                    R.id.rbBathroomShared -> "Chung"
-                    R.id.rbBathroomPrivate -> "Riêng"
-                    else -> ""
-                },
-                pet = when (rgPet.checkedRadioButtonId) {
-                    R.id.rbPetYes -> "Cho nuôi"
-                    R.id.rbPetNo -> "Không"
-                    else -> ""
-                },
+                hasAirCon = cbAirCon.isChecked, hasWaterHeater = cbWaterHeater.isChecked,
+                hasWasher = cbWasher.isChecked, hasDryingArea = cbDryingArea.isChecked,
+                hasWardrobe = cbWardrobe.isChecked, hasBed = cbBed.isChecked,
+                kitchen = when (rgKitchen.checkedRadioButtonId) { R.id.rbKitchenShared -> "Chung"; R.id.rbKitchenPrivate -> "Riêng"; R.id.rbKitchenNone -> "Không"; else -> "" },
+                bathroom = when (rgBathroom.checkedRadioButtonId) { R.id.rbBathroomShared -> "Chung"; R.id.rbBathroomPrivate -> "Riêng"; else -> "" },
+                pet = when (rgPet.checkedRadioButtonId) { R.id.rbPetYes -> "Cho nuôi"; R.id.rbPetNo -> "Không"; else -> "" },
                 petName = edtPetName.text.toString().trim(),
                 petCount = edtPetCount.text.toString().toIntOrNull() ?: 0,
-                genderPrefer = when (rgGenderPrefer.checkedRadioButtonId) {
-                    R.id.rbGenderMale -> "Nam"
-                    R.id.rbGenderFemale -> "Nữ"
-                    R.id.rbGenderAll -> "Tất cả"
-                    else -> ""
-                },
+                genderPrefer = when (rgGenderPrefer.checkedRadioButtonId) { R.id.rbGenderMale -> "Nam"; R.id.rbGenderFemale -> "Nữ"; R.id.rbGenderAll -> "Tất cả"; else -> "" },
                 hasMotorbike = cbMotorbike?.isChecked ?: false,
-                motorbikeFee = if (cbMotorbike?.isChecked == true && rgMotorbikeFee?.checkedRadioButtonId == R.id.rbMotorbikePaid)
-                    NumberFormatUtils.getRawNumber(edtMotorbikeFee).toLongOrNull() ?: 0 else 0,
+                motorbikeFee = if (cbMotorbike?.isChecked == true && rgMotorbikeFee?.checkedRadioButtonId == R.id.rbMotorbikePaid) NumberFormatUtils.getRawNumber(edtMotorbikeFee).toLongOrNull() ?: 0 else 0,
                 hasEBike = cbEBike?.isChecked ?: false,
-                eBikeFee = if (cbEBike?.isChecked == true && rgEBikeFee?.checkedRadioButtonId == R.id.rbEBikePaid)
-                    NumberFormatUtils.getRawNumber(edtEBikeFee).toLongOrNull() ?: 0 else 0,
+                eBikeFee = if (cbEBike?.isChecked == true && rgEBikeFee?.checkedRadioButtonId == R.id.rbEBikePaid) NumberFormatUtils.getRawNumber(edtEBikeFee).toLongOrNull() ?: 0 else 0,
                 hasBicycle = cbBicycle?.isChecked ?: false,
-                bicycleFee = if (cbBicycle?.isChecked == true && rgBicycleFee?.checkedRadioButtonId == R.id.rbBicyclePaid)
-                    NumberFormatUtils.getRawNumber(edtBicycleFee).toLongOrNull() ?: 0 else 0,
-                curfew = when (rgCurfew.checkedRadioButtonId) {
-                    R.id.rbCurfewFree -> "Tự do"
-                    R.id.rbCurfewCustom -> "Tùy chọn"
-                    else -> ""
-                },
+                bicycleFee = if (cbBicycle?.isChecked == true && rgBicycleFee?.checkedRadioButtonId == R.id.rbBicyclePaid) NumberFormatUtils.getRawNumber(edtBicycleFee).toLongOrNull() ?: 0 else 0,
+                curfew = when (rgCurfew.checkedRadioButtonId) { R.id.rbCurfewFree -> "Tự do"; R.id.rbCurfewCustom -> "Tùy chọn"; else -> "" },
                 curfewTime = edtCurfewTime.text.toString().trim(),
-                status = "pending",
-                createdAt = System.currentTimeMillis()
+                status = "pending", createdAt = System.currentTimeMillis()
             )
 
-            lastPostedTitle    = room.title
-            lastPostedPrice    = room.price
+            lastPostedTitle = room.title
+            lastPostedPrice = room.price
             lastPostedLocation = if (room.ward.isNotEmpty()) "${room.ward}, ${room.district}" else room.district
             viewModel.postRoom(room, imageUris)
+        }
+
+        setupAccordionLogic(view)
+    }
+
+    private fun setupAccordionLogic(view: View) {
+        val headers = listOf(
+            view.findViewById<LinearLayout>(R.id.llHeaderCard1),
+            view.findViewById<LinearLayout>(R.id.llHeaderCard2),
+            view.findViewById<LinearLayout>(R.id.llHeaderCard3),
+            view.findViewById<LinearLayout>(R.id.llHeaderCard4)
+        )
+        val contents = listOf(
+            view.findViewById<LinearLayout>(R.id.llContentCard1),
+            view.findViewById<LinearLayout>(R.id.llContentCard2),
+            view.findViewById<LinearLayout>(R.id.llContentCard3),
+            view.findViewById<LinearLayout>(R.id.llContentCard4)
+        )
+        val arrows = listOf(
+            view.findViewById<ImageView>(R.id.ivArrowCard1),
+            view.findViewById<ImageView>(R.id.ivArrowCard2),
+            view.findViewById<ImageView>(R.id.ivArrowCard3),
+            view.findViewById<ImageView>(R.id.ivArrowCard4)
+        )
+        val nextBtns = listOf(
+            view.findViewById<View>(R.id.btnNextCard1),
+            view.findViewById<View>(R.id.btnNextCard2),
+            view.findViewById<View>(R.id.btnNextCard3),
+            null
+        )
+
+        for (i in 0..3) {
+            headers[i]?.setOnClickListener {
+                val isVisible = contents[i]?.visibility == View.VISIBLE
+                if (isVisible) {
+                    contents[i]?.visibility = View.GONE
+                    arrows[i]?.animate()?.rotation(0f)?.setDuration(200)?.start()
+                } else {
+                    contents[i]?.visibility = View.VISIBLE
+                    arrows[i]?.animate()?.rotation(90f)?.setDuration(200)?.start()
+                }
+            }
+
+            nextBtns[i]?.setOnClickListener {
+                contents[i]?.visibility = View.GONE
+                arrows[i]?.animate()?.rotation(0f)?.setDuration(200)?.start()
+                if (i + 1 < 4) {
+                    contents[i + 1]?.visibility = View.VISIBLE
+                    arrows[i + 1]?.animate()?.rotation(90f)?.setDuration(200)?.start()
+                }
+            }
         }
     }
 
@@ -449,53 +439,20 @@ class PostFragment : Fragment() {
         val cbMotorbike = view.findViewById<CheckBox>(R.id.cbMotorbike) ?: return
         val rgMotorbikeFee = view.findViewById<RadioGroup>(R.id.rgMotorbikeFee) ?: return
         val edtMotorbikeFee = view.findViewById<EditText>(R.id.edtMotorbikeFee) ?: return
-
-        cbMotorbike.setOnCheckedChangeListener { _, isChecked ->
-            rgMotorbikeFee.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) {
-                edtMotorbikeFee.visibility = View.GONE
-                edtMotorbikeFee.text?.clear()
-                rgMotorbikeFee.check(R.id.rbMotorbikeFree)
-            }
-        }
-        rgMotorbikeFee.setOnCheckedChangeListener { _, checkedId ->
-            edtMotorbikeFee.visibility = if (checkedId == R.id.rbMotorbikePaid) View.VISIBLE else View.GONE
-            if (checkedId == R.id.rbMotorbikeFree) edtMotorbikeFee.text?.clear()
-        }
+        cbMotorbike.setOnCheckedChangeListener { _, isChecked -> rgMotorbikeFee.visibility = if (isChecked) View.VISIBLE else View.GONE; if (!isChecked) { edtMotorbikeFee.visibility = View.GONE; edtMotorbikeFee.text?.clear(); rgMotorbikeFee.check(R.id.rbMotorbikeFree) } }
+        rgMotorbikeFee.setOnCheckedChangeListener { _, checkedId -> edtMotorbikeFee.visibility = if (checkedId == R.id.rbMotorbikePaid) View.VISIBLE else View.GONE; if (checkedId == R.id.rbMotorbikeFree) edtMotorbikeFee.text?.clear() }
 
         val cbEBike = view.findViewById<CheckBox>(R.id.cbEBike) ?: return
         val rgEBikeFee = view.findViewById<RadioGroup>(R.id.rgEBikeFee) ?: return
         val edtEBikeFee = view.findViewById<EditText>(R.id.edtEBikeFee) ?: return
-
-        cbEBike.setOnCheckedChangeListener { _, isChecked ->
-            rgEBikeFee.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) {
-                edtEBikeFee.visibility = View.GONE
-                edtEBikeFee.text?.clear()
-                rgEBikeFee.check(R.id.rbEBikeFree)
-            }
-        }
-        rgEBikeFee.setOnCheckedChangeListener { _, checkedId ->
-            edtEBikeFee.visibility = if (checkedId == R.id.rbEBikePaid) View.VISIBLE else View.GONE
-            if (checkedId == R.id.rbEBikeFree) edtEBikeFee.text?.clear()
-        }
+        cbEBike.setOnCheckedChangeListener { _, isChecked -> rgEBikeFee.visibility = if (isChecked) View.VISIBLE else View.GONE; if (!isChecked) { edtEBikeFee.visibility = View.GONE; edtEBikeFee.text?.clear(); rgEBikeFee.check(R.id.rbEBikeFree) } }
+        rgEBikeFee.setOnCheckedChangeListener { _, checkedId -> edtEBikeFee.visibility = if (checkedId == R.id.rbEBikePaid) View.VISIBLE else View.GONE; if (checkedId == R.id.rbEBikeFree) edtEBikeFee.text?.clear() }
 
         val cbBicycle = view.findViewById<CheckBox>(R.id.cbBicycle) ?: return
         val rgBicycleFee = view.findViewById<RadioGroup>(R.id.rgBicycleFee) ?: return
         val edtBicycleFee = view.findViewById<EditText>(R.id.edtBicycleFee) ?: return
-
-        cbBicycle.setOnCheckedChangeListener { _, isChecked ->
-            rgBicycleFee.visibility = if (isChecked) View.VISIBLE else View.GONE
-            if (!isChecked) {
-                edtBicycleFee.visibility = View.GONE
-                edtBicycleFee.text?.clear()
-                rgBicycleFee.check(R.id.rbBicycleFree)
-            }
-        }
-        rgBicycleFee.setOnCheckedChangeListener { _, checkedId ->
-            edtBicycleFee.visibility = if (checkedId == R.id.rbBicyclePaid) View.VISIBLE else View.GONE
-            if (checkedId == R.id.rbBicycleFree) edtBicycleFee.text?.clear()
-        }
+        cbBicycle.setOnCheckedChangeListener { _, isChecked -> rgBicycleFee.visibility = if (isChecked) View.VISIBLE else View.GONE; if (!isChecked) { edtBicycleFee.visibility = View.GONE; edtBicycleFee.text?.clear(); rgBicycleFee.check(R.id.rbBicycleFree) } }
+        rgBicycleFee.setOnCheckedChangeListener { _, checkedId -> edtBicycleFee.visibility = if (checkedId == R.id.rbBicyclePaid) View.VISIBLE else View.GONE; if (checkedId == R.id.rbBicycleFree) edtBicycleFee.text?.clear() }
 
         NumberFormatUtils.addFormatWatcher(edtMotorbikeFee)
         NumberFormatUtils.addFormatWatcher(edtEBikeFee)
@@ -503,75 +460,35 @@ class PostFragment : Fragment() {
     }
 
     private fun resetForm(view: View) {
-        view.findViewById<EditText>(R.id.edtOwnerName)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtOwnerPhone)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtTitle)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtAddress)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtDescription)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtPrice)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtArea)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtPeopleCount)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtDepositMonths)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtDepositAmount)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtWifiPrice)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtElectricPrice)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtWaterPrice)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtCurfewTime)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtPetName)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtPetCount)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtMotorbikeFee)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtEBikeFee)?.text?.clear()
-        view.findViewById<EditText>(R.id.edtBicycleFee)?.text?.clear()
+        listOf(R.id.edtOwnerName, R.id.edtOwnerPhone, R.id.edtTitle, R.id.edtAddress,
+            R.id.edtDescription, R.id.edtPrice, R.id.edtArea, R.id.edtPeopleCount,
+            R.id.edtDepositMonths, R.id.edtDepositAmount, R.id.edtWifiPrice,
+            R.id.edtElectricPrice, R.id.edtWaterPrice, R.id.edtPetName, R.id.edtPetCount,
+            R.id.edtMotorbikeFee, R.id.edtEBikeFee, R.id.edtBicycleFee
+        ).forEach { id -> view.findViewById<EditText>(id)?.text?.clear() }
+        view.findViewById<TextView>(R.id.edtCurfewTime)?.text = ""
         view.findViewById<Spinner>(R.id.spinnerWard)?.setSelection(0)
-
-        view.findViewById<CheckBox>(R.id.cbWifi)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbElectric)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbWater)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbAirCon)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbWaterHeater)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbWasher)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbDryingArea)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbWardrobe)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbBed)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbMotorbike)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbEBike)?.isChecked = false
-        view.findViewById<CheckBox>(R.id.cbBicycle)?.isChecked = false
-
-        view.findViewById<RadioGroup>(R.id.rgOwnerGender)?.clearCheck()
-        view.findViewById<RadioGroup>(R.id.rgRoomStyle)?.clearCheck()
-        view.findViewById<RadioGroup>(R.id.rgKitchen)?.clearCheck()
-        view.findViewById<RadioGroup>(R.id.rgBathroom)?.clearCheck()
-        view.findViewById<RadioGroup>(R.id.rgPet)?.clearCheck()
-        view.findViewById<RadioGroup>(R.id.rgGenderPrefer)?.clearCheck()
-        view.findViewById<RadioGroup>(R.id.rgCurfew)?.clearCheck()
-
+        listOf(R.id.cbWifi, R.id.cbElectric, R.id.cbWater, R.id.cbAirCon, R.id.cbWaterHeater,
+            R.id.cbWasher, R.id.cbDryingArea, R.id.cbWardrobe, R.id.cbBed,
+            R.id.cbMotorbike, R.id.cbEBike, R.id.cbBicycle
+        ).forEach { id -> view.findViewById<CheckBox>(id)?.isChecked = false }
+        listOf(R.id.rgOwnerGender, R.id.rgRoomStyle, R.id.rgKitchen, R.id.rgBathroom,
+            R.id.rgPet, R.id.rgGenderPrefer, R.id.rgCurfew
+        ).forEach { id -> view.findViewById<RadioGroup>(id)?.clearCheck() }
         imageUris.clear()
         val layoutPhotos = view.findViewById<LinearLayout>(R.id.layoutPhotos)
-        while (layoutPhotos.childCount > 1) {
-            layoutPhotos.removeViewAt(0)
-        }
+        while (layoutPhotos.childCount > 1) layoutPhotos.removeViewAt(0)
         view.findViewById<TextView>(R.id.tvPhotoCount)?.text = "0/$MAX_PHOTOS ảnh"
         view.findViewById<CardView>(R.id.btnAddPhoto)?.visibility = View.VISIBLE
 
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    view.findViewById<EditText>(R.id.edtOwnerName)?.setText(doc.getString("fullName") ?: "")
-                    view.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(doc.getString("phone") ?: "")
-                }
-            }
+        // Reload owner info after form reset — không gọi Firebase từ Fragment
+        viewModel.loadOwnerInfo()
     }
 
-    private fun dpToPx(dp: Int): Int {
-        return (dp * resources.displayMetrics.density).toInt()
-    }
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 
     override fun onResume() {
         super.onResume()
-        // Chỉ check role lần đầu, tránh query Firebase mỗi khi chuyển tab
-        if (!userRoleChecked) {
-            checkUserRole()
-        }
+        if (!userRoleChecked) checkUserRole()
     }
 }

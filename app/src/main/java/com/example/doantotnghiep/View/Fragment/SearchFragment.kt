@@ -38,6 +38,7 @@ class SearchFragment : Fragment() {
     private lateinit var edtWifiPrice: EditText
     private lateinit var edtElectricPrice: EditText
     private lateinit var edtWaterPrice: EditText
+    private lateinit var rgRoomStyle: RadioGroup
     private lateinit var rgCurfew: RadioGroup
     private lateinit var edtCurfewTime: EditText
     private lateinit var btnSearch: MaterialButton
@@ -69,6 +70,7 @@ class SearchFragment : Fragment() {
         edtWifiPrice = view.findViewById(R.id.edtWifiPrice)
         edtElectricPrice = view.findViewById(R.id.edtElectricPrice)
         edtWaterPrice = view.findViewById(R.id.edtWaterPrice)
+        rgRoomStyle = view.findViewById(R.id.rgRoomStyle)
         rgCurfew = view.findViewById(R.id.rgCurfew)
         edtCurfewTime = view.findViewById(R.id.edtCurfewTime)
         btnSearch = view.findViewById(R.id.btnSearch)
@@ -116,6 +118,11 @@ class SearchFragment : Fragment() {
                 if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
         }
 
+        // Nút xóa bộ lọc
+        view.findViewById<MaterialButton>(R.id.btnResetFilter)?.setOnClickListener {
+            resetFilters()
+        }
+
         // Nút tìm kiếm
         btnSearch.setOnClickListener {
             val selectedItem = spinnerArea.selectedItem?.toString() ?: ""
@@ -156,7 +163,7 @@ class SearchFragment : Fragment() {
             if (chipPriceCustom.isChecked && edtCustomPrice.text.isNotEmpty()) {
                 val customPrice = edtCustomPrice.text.toString()
                     .replace(".", "").replace(",", "").toLongOrNull() ?: 0
-                minPrice = customPrice - 500000
+                minPrice = (customPrice - 500000).coerceAtLeast(0L)
                 maxPrice = customPrice + 500000
             } else {
                 when (chipGroupPrice.checkedChipId) {
@@ -182,9 +189,8 @@ class SearchFragment : Fragment() {
 
             // Tiện ích
             intent.putExtra("hasWifi", cbWifi.isChecked)
-            intent.putExtra("hasAirCon", false)
-            intent.putExtra("hasWaterHeater", false)
-            intent.putExtra("hasParking", false)
+            intent.putExtra("hasElectric", cbElectric.isChecked)
+            intent.putExtra("hasWater", cbWater.isChecked)
 
             // Giờ giấc
             val curfew = when (rgCurfew.checkedRadioButtonId) {
@@ -197,6 +203,39 @@ class SearchFragment : Fragment() {
 
             startActivity(intent)
         }
+    }
+
+    private fun resetFilters() {
+        // Khu vực: về Phường + phạm vi Phường/Xã
+        chipPhuong.isChecked = true
+        chipScopeWard.isChecked = true
+        loadAreaSpinner(AddressData.phuongList)
+        spinnerArea.setSelection(0)
+        edtAddress.text?.clear()
+
+        // Giá
+        chipGroupPrice.clearCheck()
+        chipPriceCustom.isChecked = false
+        edtCustomPrice.text?.clear()
+        edtCustomPrice.visibility = View.GONE
+
+        // Thông tin phòng
+        rgRoomStyle.clearCheck()
+        edtRoomArea.text?.clear()
+        edtPeopleCount.text?.clear()
+
+        // Tiện ích
+        cbWifi.isChecked = false
+        cbElectric.isChecked = false
+        cbWater.isChecked = false
+        edtWifiPrice.text?.clear()
+        edtElectricPrice.text?.clear()
+        edtWaterPrice.text?.clear()
+
+        // Giờ giấc
+        rgCurfew.clearCheck()
+        edtCurfewTime.text?.clear()
+        edtCurfewTime.visibility = View.GONE
     }
 
     private fun loadAreaSpinner(list: Array<String>) {

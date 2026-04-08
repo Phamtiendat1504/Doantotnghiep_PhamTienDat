@@ -7,11 +7,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
-import com.google.firebase.firestore.FirebaseFirestore
+import com.example.doantotnghiep.ViewModel.AppointmentRoomDetailViewModel
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
@@ -26,9 +27,11 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
     private lateinit var tvDescription: TextView
     private lateinit var layoutRoomInfo: LinearLayout
     private lateinit var layoutAmenities: LinearLayout
+    private lateinit var layoutOwnerInfo: LinearLayout
     private lateinit var btnBack: ImageView
 
-    private val db = FirebaseFirestore.getInstance()
+    private lateinit var viewModel: AppointmentRoomDetailViewModel
+
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -40,11 +43,30 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
         setContentView(R.layout.activity_appointment_room_detail)
 
         initViews()
+        viewModel = ViewModelProvider(this)[AppointmentRoomDetailViewModel::class.java]
+
+        viewModel.roomData.observe(this) { data ->
+            if (data != null) {
+                displayData(data)
+            } else {
+                tvTitle.text = "Phòng không còn tồn tại"
+                tvAddress.text = "Bài đăng này đã bị xóa hoặc đã được cho thuê"
+                tvPrice.text = ""
+                tvDescription.text = ""
+            }
+        }
+
+        viewModel.errorMessage.observe(this) { error ->
+            if (!error.isNullOrEmpty()) {
+                tvTitle.text = "Không thể tải thông tin"
+                tvAddress.text = "Vui lòng kiểm tra kết nối và thử lại"
+                tvPrice.text = ""
+                tvDescription.text = ""
+            }
+        }
 
         val roomId = intent.getStringExtra("roomId") ?: ""
-        if (roomId.isNotEmpty()) {
-            loadRoomData(roomId)
-        }
+        if (roomId.isNotEmpty()) viewModel.loadRoomData(roomId)
 
         btnBack.setOnClickListener { finish() }
     }
@@ -58,36 +80,58 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
         tvDescription = findViewById(R.id.tvDescription)
         layoutRoomInfo = findViewById(R.id.layoutRoomInfo)
         layoutAmenities = findViewById(R.id.layoutAmenities)
+        layoutOwnerInfo = findViewById(R.id.layoutOwnerInfo)
         btnBack = findViewById(R.id.btnBack)
-    }
-
-    private fun loadRoomData(roomId: String) {
-        db.collection("rooms").document(roomId).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    val data = doc.data ?: return@addOnSuccessListener
-                    displayData(data)
-                }
-            }
     }
 
     private fun displayData(data: Map<String, Any>) {
         tvTitle.text = data["title"] as? String ?: "Chưa có tiêu đề"
-        
         val price = (data["price"] as? Number)?.toLong() ?: 0L
         tvPrice.text = "${formatter.format(price)} đ/tháng"
-        
         val address = data["address"] as? String ?: ""
         val ward = data["ward"] as? String ?: ""
         val district = data["district"] as? String ?: ""
         tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
-        
         tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
-        
+
         val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
         setupImageSlider(imageUrls)
         setupRoomInfo(data)
         setupAmenities(data)
+        setupOwnerInfo(data)
+    }
+
+    private fun setupOwnerInfo(data: Map<String, Any>) {
+        layoutOwnerInfo.removeAllViews()
+        val name = data["ownerName"] as? String ?: ""
+        val phone = data["ownerPhone"] as? String ?: ""
+        val gender = data["ownerGender"] as? String ?: ""
+        if (name.isNotEmpty()) addOwnerRow("Họ tên", name)
+        if (phone.isNotEmpty()) addOwnerRow("SĐT", phone)
+        if (gender.isNotEmpty()) addOwnerRow("Giới tính", gender)
+        if (name.isEmpty() && phone.isEmpty()) {
+            layoutOwnerInfo.addView(TextView(this).apply {
+                text = "Không có thông tin"
+                textSize = 13f
+                setTextColor(0xFF999999.toInt())
+            })
+        }
+    }
+
+    private fun addOwnerRow(label: String, value: String) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dpToPx(6), 0, dpToPx(6))
+        }
+        row.addView(TextView(this).apply {
+            text = label; textSize = 13f; setTextColor(0xFF999999.toInt())
+            layoutParams = LinearLayout.LayoutParams(dpToPx(80), LinearLayout.LayoutParams.WRAP_CONTENT)
+        })
+        row.addView(TextView(this).apply {
+            text = value; textSize = 14f; setTextColor(0xFF333333.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+        })
+        layoutOwnerInfo.addView(row)
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -110,15 +154,12 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
         }
         tvImageCount.text = "1/${images.size}"
         viewPagerImages.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-            override fun onPageSelected(position: Int) {
-                tvImageCount.text = "${position + 1}/${images.size}"
-            }
+            override fun onPageSelected(position: Int) { tvImageCount.text = "${position + 1}/${images.size}" }
         })
     }
 
     private fun setupRoomInfo(data: Map<String, Any>) {
         layoutRoomInfo.removeAllViews()
-        
         val area = (data["area"] as? Number)?.toInt() ?: 0
         val peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0
         val roomType = data["roomType"] as? String ?: ""
@@ -140,18 +181,14 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
         if (genderPrefer.isNotEmpty()) addInfoRow("Ưu tiên", genderPrefer)
         if (kitchen.isNotEmpty()) addInfoRow("Bếp", kitchen)
         if (bathroom.isNotEmpty()) addInfoRow("Vệ sinh", bathroom)
-        
         if (electricPrice > 0) addInfoRow("Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
         if (waterPrice > 0) addInfoRow("Tiền nước", "${formatter.format(waterPrice)} đ/m³")
         if (wifiPrice > 0) addInfoRow("Tiền wifi", "${formatter.format(wifiPrice)} đ/tháng")
-        
         if (deposit > 0) addInfoRow("Tiền cọc", "${formatter.format(deposit)} đ (${depositMonths} tháng)")
-        
         if (curfew.isNotEmpty()) {
             val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Khóa cửa lúc $curfewTime" else curfew
             addInfoRow("Giờ giấc", text)
         }
-        
         if (pet.isNotEmpty()) {
             val petName = data["petName"] as? String ?: ""
             val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
@@ -166,25 +203,18 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
             setPadding(0, dpToPx(8), 0, dpToPx(8))
         }
         row.addView(TextView(this).apply {
-            text = label
-            textSize = 14f
-            setTextColor(0xFF888888.toInt())
+            text = label; textSize = 14f; setTextColor(0xFF888888.toInt())
             layoutParams = LinearLayout.LayoutParams(dpToPx(120), LinearLayout.LayoutParams.WRAP_CONTENT)
         })
         row.addView(TextView(this).apply {
-            text = value
-            textSize = 14f
-            setTextColor(0xFF333333.toInt())
+            text = value; textSize = 14f; setTextColor(0xFF333333.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
         })
         layoutRoomInfo.addView(row)
-        
-        // Thêm gạch ngang phân cách giống RoomDetailActivity
-        val divider = View(this).apply {
+        layoutRoomInfo.addView(View(this).apply {
             layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1))
             setBackgroundColor(0xFFF5F5F5.toInt())
-        }
-        layoutRoomInfo.addView(divider)
+        })
     }
 
     private fun setupAmenities(data: Map<String, Any>) {
@@ -205,24 +235,15 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
             layoutAmenities.addView(TextView(this).apply { text = "Không có thông tin tiện ích" })
             return
         }
-
-        // Hiển thị 2 cột giống trang gốc
         for (i in amenities.indices step 2) {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                setPadding(0, dpToPx(4), 0, dpToPx(4))
-            }
+            val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dpToPx(4), 0, dpToPx(4)) }
             row.addView(TextView(this).apply {
-                text = amenities[i]
-                textSize = 14f
-                setTextColor(0xFF2E7D32.toInt())
+                text = amenities[i]; textSize = 14f; setTextColor(0xFF2E7D32.toInt())
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             })
             if (i + 1 < amenities.size) {
                 row.addView(TextView(this).apply {
-                    text = amenities[i + 1]
-                    textSize = 14f
-                    setTextColor(0xFF2E7D32.toInt())
+                    text = amenities[i + 1]; textSize = 14f; setTextColor(0xFF2E7D32.toInt())
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 })
             }
