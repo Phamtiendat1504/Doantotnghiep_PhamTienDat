@@ -1,9 +1,13 @@
 package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.webkit.WebSettings
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -37,6 +41,9 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageView
     private lateinit var btnSave: MaterialButton
     private lateinit var btnBooking: MaterialButton
+    private lateinit var btnOpenMaps: MaterialButton
+    private lateinit var tvMapAddress: TextView
+    private lateinit var webViewMap: WebView
 
     private lateinit var viewModel: RoomViewModel
 
@@ -86,6 +93,9 @@ class RoomDetailActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
         btnSave = findViewById(R.id.btnSavePost)
         btnBooking = findViewById(R.id.btnBooking)
+        btnOpenMaps = findViewById(R.id.btnOpenMaps)
+        tvMapAddress = findViewById(R.id.tvMapAddress)
+        webViewMap = findViewById(R.id.webViewMap)
     }
 
     private fun observeViewModel() {
@@ -186,6 +196,7 @@ class RoomDetailActivity : AppCompatActivity() {
         setupRoomInfo(data)
         setupAmenities(data)
         setupOwnerInfo(data)
+        setupMapSection(address, ward, district)
 
         // Load dữ liệu phụ qua ViewModel
         viewModel.loadBookedSlots(currentRoomId)
@@ -212,6 +223,112 @@ class RoomDetailActivity : AppCompatActivity() {
             viewModel.toggleSavePost(uid!!, currentRoomId, currentRoomData)
         }
     }
+
+    // ─── GOOGLE MAPS ───────────────────────────────────────────────────────────
+    private fun setupMapSection(address: String, ward: String, district: String) {
+        val fullAddress = buildString {
+            if (address.isNotEmpty()) append("$address, ")
+            if (ward.isNotEmpty()) append("$ward, ")
+            if (district.isNotEmpty()) append("$district, ")
+            append("Hà Nội")
+        }
+
+        // Hiển thị địa chỉ text
+        tvMapAddress.text = fullAddress
+
+        // Nhúng Google Maps vào WebView (không cần API key)
+        with(webViewMap.settings) {
+            javaScriptEnabled = true
+            loadWithOverviewMode = true
+            useWideViewPort = true
+            cacheMode = WebSettings.LOAD_NO_CACHE
+            domStorageEnabled = true
+        }
+        webViewMap.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(
+                view: WebView?,
+                request: android.webkit.WebResourceRequest?
+            ): Boolean {
+                val url = request?.url?.toString() ?: return false
+                
+                // Nếu là link web bình thường thì cho chạy trong WebView
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    // Mở link Google Maps sang trình duyệt/app ngoài cho tiện
+                    if (url.contains("maps.google.com")) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        return true
+                    }
+                    return false 
+                }
+
+                // Nếu là các link gọi app hệ thống (vd: intent://, geo://)
+                try {
+                    val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
+                    if (intent.resolveActivity(packageManager) != null) {
+                        startActivity(intent)
+                        return true
+                    }
+                    // Nếu máy không có app, thử tìm link fallback (mở trình duyệt)
+                    val fallbackUrl = intent.getStringExtra("browser_fallback_url")
+                    if (fallbackUrl != null) {
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl)))
+                        return true
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+                
+                // Trả về true để báo là app đã tự xử lý, đừng văng lỗi "Không khả dụng"
+                return true
+            }
+        }
+
+        // URL nhúng bản đồ — tìm kiếm theo địa chỉ, không cần API key
+        val encodedAddr = Uri.encode(fullAddress)
+        val embedUrl = "https://maps.google.com/maps?q=$encodedAddr&output=embed&hl=vi&z=15"
+        
+        // Bọc trong thẻ HTML tiêu chuẩn chứa iframe để vượt lỗi của Google Maps
+        val iframeHtml = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+                <style>
+                    body { margin: 0; padding: 0; overflow: hidden; }
+                    iframe { width: 100%; height: 100vh; border: none; }
+                </style>
+            </head>
+            <body>
+                <iframe src="$embedUrl" allowfullscreen loading="lazy"></iframe>
+            </body>
+            </html>
+        """.trimIndent()
+
+        webViewMap.loadDataWithBaseURL(null, iframeHtml, "text/html", "utf-8", null)
+
+        // Nút mở full Google Maps app
+        btnOpenMaps.setOnClickListener {
+            openGoogleMaps(fullAddress)
+        }
+    }
+
+    private fun openGoogleMaps(address: String) {
+        // Thử mở app Google Maps trước
+        val geoUri = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
+        val mapsIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
+            setPackage("com.google.android.apps.maps")
+        }
+        if (mapsIntent.resolveActivity(packageManager) != null) {
+            startActivity(mapsIntent)
+        } else {
+            // Fallback: mở bằng trình duyệt nếu chưa cài Google Maps
+            val browserUri = Uri.parse(
+                "https://www.google.com/maps/search/?api=1&query=${Uri.encode(address)}"
+            )
+            startActivity(Intent(Intent.ACTION_VIEW, browserUri))
+        }
+    }
+    // ──────────────────────────────────────────────────────────────────────────
 
     override fun onResume() {
         super.onResume()

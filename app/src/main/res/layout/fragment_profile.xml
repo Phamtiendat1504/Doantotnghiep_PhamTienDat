@@ -359,6 +359,9 @@ mà không cần đăng nhập"
 
                 <ImageView
                     android:id="@+id/btnNotification"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
                     android:layout_width="40dp"
                     android:layout_height="40dp"
                     android:layout_gravity="end"

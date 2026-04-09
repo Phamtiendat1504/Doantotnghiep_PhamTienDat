@@ -100,8 +100,12 @@
             android:name=".View.Auth.PostSuccessActivity"
             android:exported="false" />
 
-        <!-- Firebase Messaging Service - kích hoạt lại sau khi thêm dependency firebase-messaging-ktx -->
-        <!--
+        <activity
+            android:name=".View.Auth.NotificationsActivity"
+            android:exported="false" />
+
+
+        <!-- Firebase Messaging Service - nhận Push Notification từ FCM -->
         <service
             android:name=".Utils.MyFirebaseMessagingService"
             android:exported="false">
@@ -109,7 +113,7 @@
                 <action android:name="com.google.firebase.MESSAGING_EVENT" />
             </intent-filter>
         </service>
-        -->
+
 
     </application>
 

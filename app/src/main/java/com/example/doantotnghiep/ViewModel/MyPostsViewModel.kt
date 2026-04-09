@@ -20,13 +20,13 @@ class MyPostsViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
 
-    fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
-
     private val _renewResult = MutableLiveData<Boolean>()
     val renewResult: LiveData<Boolean> = _renewResult
 
     private val _deleteResult = MutableLiveData<Boolean>()
     val deleteResult: LiveData<Boolean> = _deleteResult
+
+    fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
 
     fun loadPosts(filter: String) {
         _isLoading.value = true
@@ -70,7 +70,6 @@ class MyPostsViewModel : ViewModel() {
         repository.markPostsAsSeen(uid, context)
     }
 
-    // Reset helpers
     fun resetRenewResult() { _renewResult.value = false }
     fun resetErrorMessage() { _errorMessage.value = "" }
 }

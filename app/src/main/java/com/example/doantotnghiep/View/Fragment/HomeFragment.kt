@@ -148,7 +148,9 @@ class HomeFragment : Fragment() {
         }
 
         btnNotification.setOnClickListener {
-            com.example.doantotnghiep.Utils.MessageUtils.showInfoDialog(requireContext(), "Thông báo", "Chức năng thông báo đang được phát triển, vui lòng quay lại sau!")
+            val intent = android.content.Intent(requireContext(),
+                com.example.doantotnghiep.View.Auth.NotificationsActivity::class.java)
+            startActivity(intent)
         }
 
         btnHomeSearch.setOnClickListener { performHomeSearch() }

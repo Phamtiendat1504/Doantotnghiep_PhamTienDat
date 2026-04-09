@@ -41,7 +41,11 @@ class HomeViewModel : ViewModel() {
     private val REFRESH_INTERVAL = 2 * 60 * 60 * 1000L
 
     fun loadUserName() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            _userName.value = "Khách"
+            return
+        }
         repository.loadUserName(uid) { name -> _userName.value = name }
     }
 

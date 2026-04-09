@@ -11,8 +11,6 @@ import com.google.firebase.auth.FirebaseAuth
 class RoomViewModel : ViewModel() {
 
     private val repository = RoomRepository()
-
-    fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
     private val authRepository = AuthRepository()
 
     private val _isLoading = MutableLiveData<Boolean>()
@@ -41,6 +39,8 @@ class RoomViewModel : ViewModel() {
 
     private val _saveResult = MutableLiveData<Boolean>()
     val saveResult: LiveData<Boolean> = _saveResult
+
+    fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
 
     fun loadOwnerRooms(userId: String, selectedRoomId: String) {
         _isLoading.value = true

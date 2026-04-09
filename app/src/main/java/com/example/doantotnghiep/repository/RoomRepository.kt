@@ -246,7 +246,7 @@ class RoomRepository {
             .whereEqualTo("userId", userId)
             .whereEqualTo("status", "approved")
             .get()
-            .addOnSuccessListener { docs -> onSuccess(docs.documents.sortedBy { it.getLong("createdAt") ?: 0 }) }
+            .addOnSuccessListener { docs -> onSuccess(docs.documents.sortedByDescending { it.getLong("createdAt") ?: 0 }) }
             .addOnFailureListener { e -> onFailure("Không thể tải thông tin phòng: ${e.message}") }
     }
 
@@ -279,9 +279,16 @@ class RoomRepository {
         db.collection("bookedSlots").whereEqualTo("roomId", roomId).get()
             .addOnSuccessListener { snap ->
                 val activeStatuses = setOf("pending", "confirmed", "tenant_confirmed")
+                val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
                 val active = snap.documents
                     .filter { activeStatuses.contains(it.getString("status") ?: "") }
-                    .sortedBy { it.getString("date") ?: "" }
+                    .sortedBy { doc ->
+                        try {
+                            dateFormat.parse(doc.getString("date") ?: "")?.time ?: 0L
+                        } catch (e: Exception) {
+                            0L
+                        }
+                    }
                     .map { it.data ?: emptyMap() }
                 onSuccess(active)
             }

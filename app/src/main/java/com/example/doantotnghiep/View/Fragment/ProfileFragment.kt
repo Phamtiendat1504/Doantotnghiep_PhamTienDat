@@ -213,6 +213,7 @@ class ProfileFragment : Fragment() {
         }
         btnPersonalInfo.setOnClickListener { startActivity(Intent(requireContext(), PersonalInfoActivity::class.java)) }
         btnChangePassword.setOnClickListener { startActivity(Intent(requireContext(), ChangePasswordActivity::class.java)) }
+        btnNotification.setOnClickListener { startActivity(Intent(requireContext(), NotificationsActivity::class.java)) }
         btnSavedPosts.setOnClickListener { startActivity(Intent(requireContext(), SavedPostsActivity::class.java)) }
         btnMyPosts.setOnClickListener {
             tvMyPostsBadge.visibility = View.GONE

@@ -68,7 +68,7 @@ class ChangePasswordActivity : AppCompatActivity() {
                 val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
                 val isRemember = prefs.getBoolean("remember_password", false)
                 if (isRemember) {
-                    val currentEmail = authViewModel.getCurrentUserEmail()
+                    val currentEmail = authViewModel.getCurrentUserEmail() ?: ""
                     val newPassword = edtNewPassword.text.toString().trim()
                     if (currentEmail.isNotEmpty()) {
                         prefs.edit().putString("pwd_$currentEmail", newPassword).apply()
