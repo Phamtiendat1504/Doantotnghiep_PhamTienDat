@@ -21,6 +21,8 @@ class PostSuccessActivity : AppCompatActivity() {
         val title    = intent.getStringExtra("title") ?: ""
         val price    = intent.getLongExtra("price", 0L)
         val location = intent.getStringExtra("location") ?: ""
+        val postId   = intent.getStringExtra("postId") ?: ""
+        val thumbnail = intent.getStringExtra("thumbnail") ?: ""
 
         val formatter = DecimalFormat("#,###", DecimalFormatSymbols(Locale("vi", "VN")).apply {
             groupingSeparator = '.'
@@ -29,6 +31,8 @@ class PostSuccessActivity : AppCompatActivity() {
         if (title.isNotEmpty())    findViewById<TextView>(R.id.tvPostTitle).text = title
         if (price > 0)             findViewById<TextView>(R.id.tvPostPrice).text = "${formatter.format(price)} đ/tháng"
         if (location.isNotEmpty()) findViewById<TextView>(R.id.tvPostLocation).text = location
+        if (postId.isNotEmpty())   findViewById<TextView>(R.id.tvPostId).text = postId
+
 
         // Nút Xem bài đăng của tôi → sang MyPostsActivity
         findViewById<MaterialButton>(R.id.btnViewMyPosts).setOnClickListener {

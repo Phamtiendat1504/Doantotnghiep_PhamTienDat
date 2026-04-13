@@ -43,7 +43,11 @@ class ProfileViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
-    // Cung cấp UID từ ViewModel, Fragment không cần gọi FirebaseAuth
+    private val _notificationBadgeCount = MutableLiveData<Int>()
+    val notificationBadgeCount: LiveData<Int> = _notificationBadgeCount
+
+    private var notificationListener: com.google.firebase.firestore.ListenerRegistration? = null
+
     fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
 
     fun logOut() {
@@ -69,10 +73,15 @@ class ProfileViewModel : ViewModel() {
         repository.loadVerificationStatusDetail(
             onSuccess = { status, rejectReason ->
                 _verificationStatus.value = status
-                if (status == "rejected") _verifyRejectReason.value = rejectReason
+                if (status == "rejected") _verifyRejectReason.value = rejectReason ?: ""
             },
             onFailure = { e -> _errorMessage.value = e }
         )
+    }
+
+    fun resetAvatarUploadState() {
+        _isUploadingAvatar.value = false
+        _newAvatarUrl.value = ""
     }
 
     fun uploadAvatar(imageUri: Uri) {
@@ -98,5 +107,18 @@ class ProfileViewModel : ViewModel() {
     fun loadAppointmentBadge() {
         val uid = getCurrentUserId() ?: return
         repository.loadAppointmentBadge(uid) { count -> _appointmentBadgeCount.value = count }
+    }
+
+    fun loadNotificationBadge() {
+        val uid = getCurrentUserId() ?: return
+        notificationListener?.remove()
+        notificationListener = com.example.doantotnghiep.repository.RoomRepository().listenUnseenNotificationCount(uid) { count ->
+            _notificationBadgeCount.postValue(count)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        notificationListener?.remove()
     }
 }

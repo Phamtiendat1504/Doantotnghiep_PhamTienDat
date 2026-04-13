@@ -15,7 +15,12 @@ import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKeys
 import com.example.doantotnghiep.MainActivity
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class LoginActivity : AppCompatActivity() {
 
@@ -27,15 +32,20 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvForgotPassword: TextView
     private lateinit var tvGoToRegister: TextView
-    private lateinit var cbRememberPassword: CheckBox
     private lateinit var viewModel: AuthViewModel
 
     private val KEY_REMEMBER = "remember_password"
-    // Password lưu theo key "pwd_<email>" để mỗi email có password riêng
 
-    // Lưu email để gợi ý lần sau (không lưu password)
+    // Sử dụng EncryptedSharedPreferences để bảo mật cấp độ 1
     private val prefs by lazy {
-        getSharedPreferences("login_prefs", MODE_PRIVATE)
+        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
+        EncryptedSharedPreferences.create(
+            "secure_login_prefs",
+            masterKeyAlias,
+            this,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,34 +59,11 @@ class LoginActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
         tvGoToRegister = findViewById(R.id.tvGoToRegister)
-        cbRememberPassword = findViewById(R.id.cbRememberPassword)
 
         viewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
-        val isRemember = prefs.getBoolean(KEY_REMEMBER, false)
-        // Chỉ khôi phục trạng thái checkbox, không tự fill email/password
-        cbRememberPassword.isChecked = isRemember
-
-        // Auto-fill password khi người dùng gõ email đã từng lưu mật khẩu
-        edtEmail.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                val typedEmail = s?.toString()?.trim() ?: ""
-                if (typedEmail.isNotEmpty()) {
-                    val savedPassword = prefs.getString("pwd_$typedEmail", "") ?: ""
-                    if (savedPassword.isNotEmpty()) {
-                        edtPassword.setText(savedPassword)
-                        cbRememberPassword.isChecked = true
-                    } else {
-                        edtPassword.setText("")
-                        cbRememberPassword.isChecked = prefs.getBoolean(KEY_REMEMBER, false)
-                    }
-                } else {
-                    edtPassword.setText("")
-                }
-            }
-        })
+        // Đã xóa bỏ hoàn toàn chức năng lưu/fill mật khẩu cục bộ để đảm bảo bảo mật 
+        // và đồng bộ dữ liệu khi Admin xóa tài khoản trên hệ thống.
 
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
@@ -86,25 +73,73 @@ class LoginActivity : AppCompatActivity() {
         viewModel.loginResult.observe(this) { success ->
             if (success) {
                 viewModel.resetLoginResult()
+                viewModel.checkLockStatus()
+            }
+        }
 
-                // Chỉ lưu credentials sau khi đăng nhập thành công
-                val email = edtEmail.text.toString().trim()
-                val password = edtPassword.text.toString().trim()
-                val editor = prefs.edit()
-                if (cbRememberPassword.isChecked) {
-                    editor.putBoolean(KEY_REMEMBER, true)
-                    editor.putString("last_email", email)
-                    editor.putString("pwd_$email", password)
+        viewModel.lockInfo.observe(this) { pair ->
+            val isLocked = pair.first
+            val (reason, until, lockDays) = pair.second
+
+            if (isLocked) {
+                val currentTime = System.currentTimeMillis()
+                
+                // Kiểm tra xem thời hạn khóa đã hết chưa
+                if (currentTime < until) {
+                    val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+                    val unlockDate = sdf.format(Date(until))
+                    
+                    val isPermanent = lockDays >= 999 || until > currentTime + (50L * 365 * 24 * 60 * 60 * 1000)
+                    val lockDuration = if (isPermanent) "Vĩnh viễn" else "$lockDays ngày"
+                    val displayTime = if (isPermanent) "Vĩnh viễn" else unlockDate
+                    
+                    val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Tài khoản đã bị khóa")
+                        .setMessage("Hệ thống đã tạm ngừng hoạt động của tài khoản này.\n\n" +
+                                "• Lý do: $reason\n" +
+                                "• Thời gian khóa: $lockDuration\n" +
+                                "• Mở khóa vào: $displayTime\n\n" +
+                                "Hệ thống sẽ tự động mở khóa khi hết hạn. Vui lòng quay lại sau.")
+                        .setPositiveButton("Đã hiểu") { dialog, _ ->
+                            viewModel.logOut()
+                            dialog.dismiss()
+                        }
+                        .setCancelable(false)
+                        .show()
+
+                    // --- BẮT ĐẦU LẮNG NGHE REAL-TIME KHI ĐANG HIỆN DIALOG ---
+                    val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+                    if (uid != null) {
+                        val listenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                            .collection("users").document(uid)
+                            .addSnapshotListener { snapshot, _ ->
+                                if (snapshot != null && snapshot.exists()) {
+                                    val currentlyLocked = snapshot.getBoolean("isLocked") ?: false
+                                    if (!currentlyLocked) {
+                                        // ADMIN VỪA MỞ KHÓA REAL-TIME!
+                                        if (dialog.isShowing) {
+                                            dialog.dismiss()
+                                            androidx.appcompat.app.AlertDialog.Builder(this)
+                                                .setTitle("Tin vui!")
+                                                .setMessage("Tài khoản của bạn đã được mở khóa thành công. Bạn có thể sử dụng ứng dụng ngay bây giờ.")
+                                                .setPositiveButton("Bắt đầu ngay") { d, _ ->
+                                                    d.dismiss()
+                                                    goToMainActivity()
+                                                }
+                                                .setCancelable(false)
+                                                .show()
+                                        }
+                                    }
+                                }
+                            }
+                        // Listener này sẽ tự động bị rò rỉ nếu không được quản lý, 
+                        // nhưng trong LoginActivity nó sẽ bị destroy cùng Activity.
+                    }
                 } else {
-                    editor.clear()
+                    goToMainActivity()
                 }
-                editor.apply()
-
-                val intent = Intent(this, MainActivity::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
-                }
-                startActivity(intent)
-                finish()
+            } else {
+                goToMainActivity()
             }
         }
 
@@ -114,17 +149,11 @@ class LoginActivity : AppCompatActivity() {
                 message.contains("nhập email", ignoreCase = true) -> tilEmail.error = message
                 message.contains("nhập mật khẩu", ignoreCase = true) -> tilPassword.error = message
                 else -> {
-                    // Chỉ xóa credentials khi sai email/mật khẩu thực sự (lỗi từ Firebase)
-                    val email = edtEmail.text.toString().trim()
-                    prefs.edit()
-                        .remove("pwd_$email")
-                        .putBoolean(KEY_REMEMBER, false)
-                        .apply()
-                    cbRememberPassword.isChecked = false
-
+                    // FIX Ý 3.2: Không tự động xóa credentials khi gõ sai, để người dùng sửa lỗi cho nhanh
+                    // Chỉ hiển thị thông báo lỗi
                     androidx.appcompat.app.AlertDialog.Builder(this)
                         .setTitle("Đăng nhập thất bại")
-                        .setMessage("Thông tin không chính xác. Vui lòng nhập lại.")
+                        .setMessage(message ?: "Thông tin không chính xác. Vui lòng nhập lại.")
                         .setPositiveButton("Thử lại") { dialog, _ ->
                             dialog.dismiss()
                         }
@@ -152,5 +181,13 @@ class LoginActivity : AppCompatActivity() {
     private fun clearErrors() {
         tilEmail.error = null
         tilPassword.error = null
+    }
+
+    private fun goToMainActivity() {
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+        startActivity(intent)
+        finish()
     }
 }

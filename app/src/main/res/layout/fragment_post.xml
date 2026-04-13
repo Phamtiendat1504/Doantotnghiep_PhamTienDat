@@ -1797,7 +1797,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Bài đăng sẽ được admin kiểm duyệt trước khi hiển thị. Thường từ 1–2 giờ."
+                        android:text="Bài đăng sẽ được đội ngũ kiểm duyệt xem xét trong vòng 24 giờ tới để đảm bảo an toàn cho người thuê."
                         android:textSize="12sp"
                         android:textColor="@color/warning"
                         android:lineSpacingExtra="2dp" />
@@ -1814,6 +1814,19 @@
                     android:textStyle="bold"
                     app:backgroundTint="@color/primary"
                     app:cornerRadius="14dp" />
+
+                <!-- Quy định đăng bài -->
+                <TextView
+                    android:id="@+id/tvRulesLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="12dp"
+                    android:text="Xem quy định đăng bài &amp; Trách nhiệm"
+                    android:textSize="12sp"
+                    android:textColor="@color/primary"
+                    android:padding="8dp"
+                    android:background="?attr/selectableItemBackground" />
 
                 <!-- Progress upload -->
                 <LinearLayout

@@ -36,8 +36,17 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(remoteMessage: RemoteMessage) {
         super.onMessageReceived(remoteMessage)
 
-        val title = remoteMessage.notification?.title ?: "Thông báo mới"
-        val body = remoteMessage.notification?.body ?: ""
+        // KIỂM TRA BẢO MẬT: Chỉ hiện thông báo nếu thiết bị đang đăng nhập đúng tài khoản được gửi
+        val targetUid = remoteMessage.data["userId"] // UID người nhận được đính kèm trong data của message
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+
+        if (targetUid != null && currentUid != null && targetUid != currentUid) {
+            android.util.Log.w("FCM", "Từ chối hiển thị thông báo: Nhầm tài khoản (Target: $targetUid, Current: $currentUid)")
+            return
+        }
+
+        val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "Thông báo mới"
+        val body = remoteMessage.notification?.body ?: remoteMessage.data["message"] ?: ""
 
         showNotification(title, body)
     }
@@ -65,10 +74,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     private fun showNotification(title: String, body: String) {
         createNotificationChannel()
 
-        // Khi bấm vào thông báo => mở lại MainActivity
-        val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
+        // Khi bấm vào thông báo => mở lại MainActivity kèm lệnh mở MyAppointmentsActivity
+        val intent = Intent(this, MainActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+        intent.putExtra("action", "open_appointments")
+
         val pendingIntent = PendingIntent.getActivity(
             this, System.currentTimeMillis().toInt(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

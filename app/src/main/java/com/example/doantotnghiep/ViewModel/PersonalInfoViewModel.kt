@@ -29,10 +29,20 @@ class PersonalInfoViewModel : ViewModel() {
 
     fun loadUserInfo() {
         _isLoading.value = true
-        repository.loadUserInfo(
-            onSuccess = { data ->
+        repository.loadUserObject(
+            onSuccess = { user ->
                 _isLoading.value = false
-                _userInfo.value = data
+                if (user != null) {
+                    val map = mutableMapOf<String, Any>()
+                    map["fullName"] = user.fullName
+                    map["email"] = user.email
+                    map["phone"] = user.phone
+                    map["address"] = user.address
+                    map["birthday"] = user.birthday
+                    map["gender"] = user.gender
+                    map["occupation"] = user.occupation
+                    _userInfo.value = map
+                }
             },
             onFailure = { error ->
                 _isLoading.value = false
@@ -41,13 +51,21 @@ class PersonalInfoViewModel : ViewModel() {
         )
     }
 
-    fun updateUserInfo(
-        fullName: String, email: String, phone: String,
-        address: String, birthday: String, gender: String, occupation: String
-    ) {
+    fun updateUserInfo(fullName: String, phone: String, address: String, birthday: String, gender: String, occupation: String) {
+        if (fullName.isBlank() || phone.isBlank()) {
+            _errorMessage.value = "Họ tên và Số điện thoại không được để trống"
+            return
+        }
+        val updates = mapOf(
+            "fullName" to fullName,
+            "phone" to phone,
+            "address" to address,
+            "birthday" to birthday,
+            "gender" to gender,
+            "occupation" to occupation
+        )
         _isLoading.value = true
-        repository.updateUserInfo(
-            fullName, email, phone, address, birthday, gender, occupation,
+        repository.updateUserInfo(updates, 
             onSuccess = {
                 _isLoading.value = false
                 _updateResult.value = true
@@ -59,21 +77,21 @@ class PersonalInfoViewModel : ViewModel() {
         )
     }
 
-    fun reauthenticateAndUpdateEmail(currentEmail: String, password: String, newEmail: String) {
+    fun reauthenticateAndUpdateEmail(currentPass: String, newEmail: String) {
+        if (currentPass.isEmpty() || newEmail.isEmpty()) {
+            _errorMessage.value = "Vui lòng nhập đầy đủ thông tin"
+            return
+        }
         _isLoading.value = true
-        repository.reauthenticateAndUpdateEmail(
-            currentEmail, password, newEmail,
+        repository.reauthenticateAndUpdateEmail(currentPass, newEmail,
             onSuccess = {
                 _isLoading.value = false
                 _emailUpdateResult.value = true
             },
-            onWrongPassword = {
-                _isLoading.value = false
-                _wrongPassword.value = true
-            },
             onFailure = { error ->
                 _isLoading.value = false
-                _errorMessage.value = error
+                if (error == "Mật khẩu không chính xác") _wrongPassword.value = true
+                else _errorMessage.value = error
             }
         )
     }

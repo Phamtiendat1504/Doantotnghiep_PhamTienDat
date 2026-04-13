@@ -102,6 +102,8 @@
                 style="@style/Widget.MaterialComponents.Chip.Choice"
                 app:chipBackgroundColor="@color/chip_bg_color" />
 
+
+
         </LinearLayout>
 
     </HorizontalScrollView>
@@ -154,37 +156,44 @@
         android:background="@color/gray_300" />
 
     <!-- Danh sách bài đăng -->
-    <ScrollView
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/swipeRefreshLayout"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <LinearLayout
-            android:id="@+id/layoutPosts"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="14dp">
+            android:layout_height="match_parent"
+            android:overScrollMode="never">
 
-            <ProgressBar
-                android:id="@+id/progressBar"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginTop="40dp" />
-
-            <TextView
-                android:id="@+id/tvEmpty"
+            <LinearLayout
+                android:id="@+id/layoutPosts"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Chưa có bài đăng nào"
-                android:textSize="14sp"
-                android:textColor="@color/text_hint"
-                android:gravity="center"
-                android:padding="40dp"
-                android:visibility="gone" />
+                android:orientation="vertical"
+                android:padding="14dp">
 
-        </LinearLayout>
+                <ProgressBar
+                    android:id="@+id/progressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="40dp" />
 
-    </ScrollView>
+                <TextView
+                    android:id="@+id/tvEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Chưa có bài đăng nào"
+                    android:textSize="14sp"
+                    android:textColor="@color/text_hint"
+                    android:gravity="center"
+                    android:padding="40dp"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </ScrollView>
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>

@@ -8,6 +8,11 @@ import android.os.Bundle
 import android.util.Log
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.widget.Toast
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.Utils.PostNotificationHelper
 import androidx.appcompat.app.AppCompatActivity
@@ -24,11 +29,14 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.firebase.firestore.ListenerRegistration
 
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mainViewModel: MainViewModel
+    private var userStatusListener: ListenerRegistration? = null
+    private val authRepository = com.example.doantotnghiep.repository.AuthRepository()
 
     // Launcher xin quyền thông báo (Android 13+)
     private val requestNotificationPermission =
@@ -45,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        observeNetworkStatus()
 
         PostNotificationHelper.createChannel(this)
 
@@ -72,15 +81,25 @@ class MainActivity : AppCompatActivity() {
                 prefs.edit().putLong("last_expire_check_${currentUser.uid}", System.currentTimeMillis()).apply()
                 mainViewModel.checkAndExpirePosts(currentUser.uid)
             }
+            startListeningUserStatus(currentUser.uid)
         }
 
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
         val fabAI = findViewById<FloatingActionButton>(R.id.fabAI)
 
         val openTab = intent.getStringExtra("openTab")
+        val action = intent.getStringExtra("action")
+
         if (openTab == "post") {
             loadFragment(PostFragment())
             bottomNav.selectedItemId = R.id.nav_post
+        } else if (action == "open_appointments") {
+            loadFragment(ProfileFragment())
+            bottomNav.selectedItemId = R.id.nav_profile
+            // Delay một chút để Fragment kịp load rồi mới mở Activity
+            window.decorView.postDelayed({
+                startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyAppointmentsActivity::class.java))
+            }, 500)
         } else {
             loadFragment(HomeFragment())
         }
@@ -107,15 +126,85 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent) // Cập nhật intent mới cho Activity
+
         val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
-        bottomNav.selectedItemId = R.id.nav_home
-        loadFragment(HomeFragment())
+        val action = intent.getStringExtra("action")
+
+        if (action == "open_appointments") {
+            loadFragment(ProfileFragment())
+            bottomNav.selectedItemId = R.id.nav_profile
+            window.decorView.postDelayed({
+                startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyAppointmentsActivity::class.java))
+            }, 300)
+        } else {
+            bottomNav.selectedItemId = R.id.nav_home
+            loadFragment(HomeFragment())
+        }
         
         // Gọi lại để lấy và gán Token cho User mới đăng nhập
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
             setupFcmNotifications()
+            startListeningUserStatus(currentUser.uid)
         }
+    }
+
+    private fun startListeningUserStatus(uid: String) {
+        userStatusListener?.remove()
+        userStatusListener = authRepository.listenUserStatus(uid) { isLockedOrDeleted, message ->
+            if (isLockedOrDeleted) {
+                handleUserLockedOrDeleted(message ?: "Tài khoản của bạn không khả dụng.")
+            }
+        }
+    }
+
+    private fun handleUserLockedOrDeleted(message: String) {
+        // Hủy listener ngay để tránh loop
+        userStatusListener?.remove()
+        userStatusListener = null
+
+        // Đăng xuất Firebase
+        FirebaseAuth.getInstance().signOut()
+
+        // Hiển thị thông báo và đá ra ngoài
+        runOnUiThread {
+            MessageUtils.showInfoDialog(
+                this,
+                "Thông báo tài khoản",
+                message,
+                onConfirm = {
+                    val intent = Intent(this, LoginActivity::class.java)
+                    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    startActivity(intent)
+                    finish()
+                }
+            )
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        userStatusListener?.remove()
+    }
+
+    private fun observeNetworkStatus() {
+        val connectivityManager = getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+        val networkRequest = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .build()
+
+        connectivityManager.registerNetworkCallback(networkRequest, object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                // Có mạng
+            }
+
+            override fun onLost(network: Network) {
+                runOnUiThread {
+                    Toast.makeText(this@MainActivity, "Mất kết nối Internet. Dữ liệu sẽ được đồng bộ khi có mạng lại.", Toast.LENGTH_LONG).show()
+                }
+            }
+        })
     }
 
     private fun loadFragment(fragment: Fragment) {
@@ -162,12 +251,16 @@ class MainActivity : AppCompatActivity() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
             Log.d("FCM", "FCM Token: $token")
+            val updates = hashMapOf<String, Any>(
+                "fcmToken" to token,
+                "lastLoginAt" to System.currentTimeMillis()
+            )
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(uid)
-                .update("fcmToken", token)
-                .addOnSuccessListener { Log.d("FCM", "Lưu Token thành công!") }
-                .addOnFailureListener { e -> Log.e("FCM", "Lỗi lưu Token: ${e.message}") }
+                .update(updates)
+                .addOnSuccessListener { Log.d("FCM", "Cập nhật Token và thời gian đăng nhập thành công!") }
+                .addOnFailureListener { e -> Log.e("FCM", "Lỗi cập nhật thông tin: ${e.message}") }
         }
     }
 }

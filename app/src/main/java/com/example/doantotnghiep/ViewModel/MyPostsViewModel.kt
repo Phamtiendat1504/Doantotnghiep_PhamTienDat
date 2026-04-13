@@ -66,6 +66,10 @@ class MyPostsViewModel : ViewModel() {
         repository.deleteRoom(docId, onSuccess = onSuccess, onFailure = onFailure)
     }
 
+    fun markAsRented(docId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        repository.markAsRented(docId, onSuccess = onSuccess, onFailure = onFailure)
+    }
+
     fun markPostsAsSeen(uid: String, context: android.content.Context) {
         repository.markPostsAsSeen(uid, context)
     }

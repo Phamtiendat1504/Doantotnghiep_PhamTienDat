@@ -151,6 +151,7 @@ class EditPostActivity : AppCompatActivity() {
 
         setupMainListeners()
         setupParkingListeners()
+        setupAccordionLogic()
         
         findViewById<CardView>(R.id.btnAddPhoto).setOnClickListener {
             if ((existingImageUrls.size + newImageUris.size) >= MAX_PHOTOS) {
@@ -180,8 +181,37 @@ class EditPostActivity : AppCompatActivity() {
             findViewById<LinearLayout>(R.id.layoutPetDetail).visibility = if (checkedId == R.id.rbPetYes) View.VISIBLE else View.GONE
         }
         findViewById<RadioGroup>(R.id.rgCurfew).setOnCheckedChangeListener { _, checkedId ->
-            findViewById<EditText>(R.id.edtCurfewTime).visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
+            findViewById<LinearLayout>(R.id.layoutCurfewTime).visibility = if (checkedId == R.id.rbCurfewCustom) View.VISIBLE else View.GONE
         }
+        
+        setupCurfewPickers()
+    }
+
+    private fun setupCurfewPickers() {
+        val pickerHour = findViewById<NumberPicker>(R.id.pickerHour)
+        val pickerMinute = findViewById<NumberPicker>(R.id.pickerMinute)
+        val pickerAmPm = findViewById<NumberPicker>(R.id.pickerAmPm)
+        val tvCurfewTime = findViewById<TextView>(R.id.edtCurfewTime)
+
+        pickerHour.minValue = 1; pickerHour.maxValue = 12
+        pickerMinute.minValue = 0; pickerMinute.maxValue = 59
+        pickerAmPm.minValue = 0; pickerAmPm.maxValue = 1
+        pickerAmPm.displayedValues = arrayOf("AM", "PM")
+
+        val onValueChangeListener = NumberPicker.OnValueChangeListener { _, _, _ ->
+            val hour = pickerHour.value
+            val minute = String.format(Locale.US, "%02d", pickerMinute.value)
+            val amPm = if (pickerAmPm.value == 0) "AM" else "PM"
+            tvCurfewTime.text = "$hour:$minute $amPm"
+        }
+
+        pickerHour.setOnValueChangedListener(onValueChangeListener)
+        pickerMinute.setOnValueChangedListener(onValueChangeListener)
+        pickerAmPm.setOnValueChangedListener(onValueChangeListener)
+
+        // Initial value
+        tvCurfewTime.text = "11:00 PM"
+        pickerHour.value = 11; pickerMinute.value = 0; pickerAmPm.value = 1
     }
 
     private fun setupParkingListeners() {
@@ -267,14 +297,26 @@ class EditPostActivity : AppCompatActivity() {
         when (curfew) {
             "Tự do" -> {
                 findViewById<RadioButton>(R.id.rbCurfewFree).isChecked = true
-                findViewById<EditText>(R.id.edtCurfewTime).visibility = View.GONE
+                findViewById<LinearLayout>(R.id.layoutCurfewTime).visibility = View.GONE
             }
             "Tùy chọn" -> {
                 findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked = true
-                findViewById<EditText>(R.id.edtCurfewTime).apply {
-                    visibility = View.VISIBLE
-                    setText(curfewTime)
-                }
+                findViewById<LinearLayout>(R.id.layoutCurfewTime).visibility = View.VISIBLE
+                val tvCurfew = findViewById<TextView>(R.id.edtCurfewTime)
+                tvCurfew.text = curfewTime
+                
+                // Parse time string (e.g., "11:30 PM") and set to NumberPickers
+                try {
+                    val parts = curfewTime.split(" ")
+                    if (parts.size == 2) {
+                        val timeParts = parts[0].split(":")
+                        if (timeParts.size == 2) {
+                            findViewById<NumberPicker>(R.id.pickerHour).value = timeParts[0].toInt()
+                            findViewById<NumberPicker>(R.id.pickerMinute).value = timeParts[1].toInt()
+                            findViewById<NumberPicker>(R.id.pickerAmPm).value = if (parts[1] == "AM") 0 else 1
+                        }
+                    }
+                } catch (e: Exception) {}
             }
         }
 
@@ -465,7 +507,7 @@ class EditPostActivity : AppCompatActivity() {
             else -> "Tất cả"
         }
         data["curfew"] = if (findViewById<RadioButton>(R.id.rbCurfewCustom).isChecked) "Tùy chọn" else "Tự do"
-        data["curfewTime"] = findViewById<EditText>(R.id.edtCurfewTime).text.toString().trim()
+        data["curfewTime"] = findViewById<TextView>(R.id.edtCurfewTime).text.toString().trim()
 
         saveParkingToMap("Motorbike", data)
         saveParkingToMap("EBike", data)
@@ -480,6 +522,55 @@ class EditPostActivity : AppCompatActivity() {
         if (isChecked) {
             val isPaid = findViewById<RadioButton>(resources.getIdentifier("rb${type}Paid", "id", packageName)).isChecked
             map["${type.lowercase()}Fee"] = if (isPaid) NumberFormatUtils.getRawNumber(findViewById(resources.getIdentifier("edt${type}Fee", "id", packageName))).toLongOrNull() ?: 0L else 0L
+        }
+    }
+
+    private fun setupAccordionLogic() {
+        val headers = listOf(
+            findViewById<LinearLayout>(R.id.llHeaderCard1),
+            findViewById<LinearLayout>(R.id.llHeaderCard2),
+            findViewById<LinearLayout>(R.id.llHeaderCard3),
+            findViewById<LinearLayout>(R.id.llHeaderCard4)
+        )
+        val contents = listOf(
+            findViewById<LinearLayout>(R.id.llContentCard1),
+            findViewById<LinearLayout>(R.id.llContentCard2),
+            findViewById<LinearLayout>(R.id.llContentCard3),
+            findViewById<LinearLayout>(R.id.llContentCard4)
+        )
+        val arrows = listOf(
+            findViewById<ImageView>(R.id.ivArrowCard1),
+            findViewById<ImageView>(R.id.ivArrowCard2),
+            findViewById<ImageView>(R.id.ivArrowCard3),
+            findViewById<ImageView>(R.id.ivArrowCard4)
+        )
+        val nextBtns = listOf(
+            findViewById<View>(R.id.btnNextCard1),
+            findViewById<View>(R.id.btnNextCard2),
+            findViewById<View>(R.id.btnNextCard3),
+            null
+        )
+
+        for (i in 0..3) {
+            headers[i]?.setOnClickListener {
+                val isVisible = contents[i]?.visibility == View.VISIBLE
+                if (isVisible) {
+                    contents[i]?.visibility = View.GONE
+                    arrows[i]?.animate()?.rotation(0f)?.setDuration(200)?.start()
+                } else {
+                    contents[i]?.visibility = View.VISIBLE
+                    arrows[i]?.animate()?.rotation(90f)?.setDuration(200)?.start()
+                }
+            }
+
+            nextBtns[i]?.setOnClickListener {
+                contents[i]?.visibility = View.GONE
+                arrows[i]?.animate()?.rotation(0f)?.setDuration(200)?.start()
+                if (i + 1 < 4) {
+                    contents[i + 1]?.visibility = View.VISIBLE
+                    arrows[i + 1]?.animate()?.rotation(90f)?.setDuration(200)?.start()
+                }
+            }
         }
     }
 

@@ -2,317 +2,294 @@ package com.example.doantotnghiep.repository
 
 import android.net.Uri
 import com.example.doantotnghiep.Model.User
+import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import okhttp3.*
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import java.io.IOException
 
 class AuthRepository {
 
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
+    private val client = OkHttpClient()
 
-    // Đăng ký tài khoản
-    fun register(
-        fullName: String,
-        email: String,
-        phone: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnSuccessListener { result ->
-                val uid = result.user?.uid ?: ""
+    fun register(fullName: String, email: String, phone: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener { result ->
+            val uid = result.user?.uid ?: ""
+            val user = User(uid = uid, fullName = fullName, email = email, phone = phone, role = "tenant", createdAt = System.currentTimeMillis())
+            db.collection("users").document(uid).set(user).addOnSuccessListener { onSuccess() }.addOnFailureListener { e -> onFailure("Lưu thất bại: ${e.message}") }
+        }.addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+    }
 
-                val user = User(
-                    uid = uid,
-                    fullName = fullName,
-                    email = email,
-                    phone = phone,
-                    role = "tenant", // Mặc định là người thuê
-                    createdAt = System.currentTimeMillis()
+    fun login(email: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        auth.signInWithEmailAndPassword(email, password).addOnSuccessListener { 
+            // Cập nhật FCM Token ngay khi đăng nhập để đảm bảo nhận được thông báo kể cả khi bị khóa
+            updateFcmToken()
+            onSuccess() 
+        }.addOnFailureListener { e -> 
+            val errorCode = (e as? com.google.firebase.auth.FirebaseAuthException)?.errorCode
+            val message = e.message ?: ""
+            
+            val errorMessage = when {
+                errorCode == "ERROR_WRONG_PASSWORD" || 
+                errorCode == "ERROR_USER_NOT_FOUND" ||
+                message.contains("credential is incorrect", ignoreCase = true) -> 
+                    "Đăng nhập thất bại do bạn nhập sai mật khẩu"
+                
+                errorCode == "ERROR_INVALID_EMAIL" -> 
+                    "Định dạng email không hợp lệ"
+                
+                errorCode == "ERROR_USER_DISABLED" -> 
+                    "Tài khoản này đã bị vô hiệu hóa"
+                
+                errorCode == "ERROR_TOO_MANY_REQUESTS" || 
+                message.contains("too many requests", ignoreCase = true) -> 
+                    "Quá nhiều lần thử thất bại. Vui lòng thử lại sau ít phút"
+
+                else -> "Đăng nhập thất bại: ${e.localizedMessage}"
+            }
+            onFailure(errorMessage)
+        }
+    }
+
+    private fun updateFcmToken() {
+        val uid = auth.currentUser?.uid ?: return
+        com.google.firebase.messaging.FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+            db.collection("users").document(uid).update("fcmToken", token)
+        }
+    }
+
+    fun checkUserLockStatus(onResult: (Boolean, String, Long, Int) -> Unit, onFailure: (String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                val isLocked = doc.getBoolean("isLocked") ?: false
+                val reason = doc.getString("lockReason") ?: "Vi phạm chính sách"
+                val until = doc.getLong("lockUntil") ?: 0L
+                val lockDays = doc.getLong("lockDays")?.toInt() ?: 0
+                
+                // Không tự động mở khóa ở đây nữa, để Server (Cloud Functions) và Web Admin lo.
+                // Điều này giúp đảm bảo thông báo Realtime luôn đến từ hệ thống.
+                onResult(isLocked, reason, until, lockDays)
+            } else { onResult(false, "", 0L, 0) }
+        }.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi kiểm tra khóa") }
+    }
+
+    fun loadUserProfile(onSuccess: (String, String, String, String, Boolean) -> Unit, onFailure: (String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                onSuccess(
+                    doc.getString("fullName") ?: "",
+                    doc.getString("email") ?: "",
+                    doc.getString("avatarUrl") ?: "",
+                    doc.getString("role") ?: "tenant",
+                    doc.getBoolean("isVerified") ?: false
                 )
-
-                db.collection("users").document(uid)
-                    .set(user)
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e -> onFailure("Lưu thông tin thất bại: ${e.message}") }
             }
-            .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
     }
 
-    // Đăng nhập
-    fun login(
-        email: String,
-        password: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onFailure("Đăng nhập thất bại: ${e.message}") }
+    fun loadUserObject(onSuccess: (User?) -> Unit, onFailure: (String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onSuccess(null)
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            onSuccess(doc.toObject(User::class.java))
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi tải dữ liệu") }
     }
 
-    // Tìm email theo số điện thoại
-    fun findEmailByPhone(
-        phone: String,
-        onSuccess: (String) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        db.collection("users")
-            .whereEqualTo("phone", phone)
-            .get()
-            .addOnSuccessListener { documents ->
-                if (!documents.isEmpty) {
-                    val email = documents.documents[0].getString("email") ?: ""
-                    onSuccess(email)
-                } else {
-                    onFailure("Số điện thoại chưa được đăng ký")
-                }
-            }
-            .addOnFailureListener { e -> onFailure("Lỗi hệ thống: ${e.message}") }
-    }
-
-    // Đổi mật khẩu (xác thực lại bằng mật khẩu cũ rồi cập nhật)
-    fun changePassword(
-        oldPassword: String,
-        newPassword: String,
-        onSuccess: () -> Unit,
-        onWrongOldPassword: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val user = auth.currentUser ?: return onFailure("Không tìm thấy người dùng")
-        val email = user.email ?: return onFailure("Không lấy được email")
-        val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(email, oldPassword)
-        user.reauthenticate(credential)
-            .addOnSuccessListener {
-                user.updatePassword(newPassword)
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e -> onFailure(e.message ?: "Không thể cập nhật mật khẩu mới.") }
-            }
-            .addOnFailureListener { onWrongOldPassword() }
-    }
-
-    // Tải thông tin cá nhân user (dạng Map)
-    fun loadUserInfo(
-        onSuccess: (Map<String, Any>) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val uid = auth.currentUser?.uid ?: return onFailure("Không tìm thấy người dùng")
-        db.collection("users").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) onSuccess(document.data ?: emptyMap())
-                else onFailure("Không tìm thấy dữ liệu người dùng")
-            }
-            .addOnFailureListener { onFailure("Không thể tải thông tin người dùng từ máy chủ.") }
-    }
-
-    // Tải thông tin cá nhân user (dạng User object)
-    fun loadUserObject(
-        onSuccess: (User?) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val uid = auth.currentUser?.uid ?: return onFailure("Không tìm thấy người dùng")
-        db.collection("users").document(uid)
-            .get()
-            .addOnSuccessListener { document ->
-                onSuccess(if (document.exists()) document.toObject(User::class.java) else null)
-            }
-            .addOnFailureListener { e -> onFailure("Không thể tải thông tin người dùng: ${e.message}") }
-    }
-
-    // Kiểm tra role người dùng hiện tại
-    fun getUserRole(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
-        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc -> onSuccess(doc.getString("role") ?: "tenant") }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
-    }
-
-    // Kiểm tra trạng thái xác minh chủ trọ
-    fun getVerificationStatus(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
-        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc -> onSuccess(doc.getString("verificationStatus") ?: "none") }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
-    }
-
-    // Tải thông tin user theo uid bất kỳ
     fun loadUserById(uid: String, onSuccess: (User?) -> Unit, onFailure: (String) -> Unit) {
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                onSuccess(if (doc.exists()) doc.toObject(User::class.java) else null)
-            }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            onSuccess(doc.toObject(User::class.java))
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi tải dữ liệu") }
     }
 
-    // Cập nhật thông tin cá nhân
-    fun updateUserInfo(
-        fullName: String, email: String, phone: String,
-        address: String, birthday: String, gender: String, occupation: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val uid = auth.currentUser?.uid ?: return onFailure("Không tìm thấy người dùng")
-        val updates = mapOf(
-            "fullName" to fullName, "email" to email, "phone" to phone,
-            "address" to address, "birthday" to birthday,
-            "gender" to gender, "occupation" to occupation
-        )
-        db.collection("users").document(uid)
-            .update(updates)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Đã có lỗi xảy ra.") }
+    fun getUserRole(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onSuccess("tenant")
+        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
+            onSuccess(doc.getString("role") ?: "tenant")
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
     }
 
-    // Xác thực lại rồi gửi email xác nhận đổi email mới
-    fun reauthenticateAndUpdateEmail(
-        currentEmail: String, password: String, newEmail: String,
-        onSuccess: () -> Unit,
-        onWrongPassword: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val user = auth.currentUser ?: return onFailure("Không tìm thấy người dùng")
-        val credential = com.google.firebase.auth.EmailAuthProvider.getCredential(currentEmail, password)
-        user.reauthenticate(credential)
-            .addOnSuccessListener {
-                user.verifyBeforeUpdateEmail(newEmail)
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e -> onFailure(e.message ?: "Không thể gửi yêu cầu đổi email.") }
-            }
-            .addOnFailureListener { onWrongPassword() }
+    fun changePassword(oldPass: String, newPass: String, onSuccess: () -> Unit, onWrongOldPassword: () -> Unit, onFailure: (String) -> Unit) {
+        val user = auth.currentUser ?: return onFailure("Chưa đăng nhập")
+        val credential = EmailAuthProvider.getCredential(user.email!!, oldPass)
+        user.reauthenticate(credential).addOnSuccessListener {
+            user.updatePassword(newPass).addOnSuccessListener { onSuccess() }.addOnFailureListener { onFailure(it.message ?: "Lỗi đổi mật khẩu") }
+        }.addOnFailureListener { onWrongOldPassword() }
     }
 
-    // Xác minh OTP rồi gửi email đặt lại mật khẩu
-    fun verifyOtpAndSendResetEmail(
-        verificationId: String,
-        otp: String,
-        email: String,
-        onSuccess: () -> Unit,
-        onInvalidOtp: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        val credential = com.google.firebase.auth.PhoneAuthProvider.getCredential(verificationId, otp)
-        auth.signInWithCredential(credential)
-            .addOnSuccessListener {
-                auth.signOut()
-                auth.sendPasswordResetEmail(email)
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e -> onFailure(e.message ?: "Gửi email thất bại") }
-            }
-            .addOnFailureListener { onInvalidOtp() }
-    }
-
-    // Cập nhật mật khẩu (Dùng sau khi verify OTP thành công)
-    fun updatePasswordAfterOtp(
-        email: String,
-        newPassword: String,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        // Lưu ý: Firebase Auth yêu cầu re-authenticate nếu đổi pass mà ko có session
-        // Cách tốt nhất cho "Quên mật khẩu" là dùng sendPasswordResetEmail
-        auth.sendPasswordResetEmail(email)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onFailure("Gửi yêu cầu đặt lại mật khẩu thất bại: ${e.message}") }
-    }
-
-    // Tải thông tin profile đầy đủ (fullName, email, avatarUrl, role, isVerified)
-    fun loadUserProfile(
-        onSuccess: (fullName: String, email: String, avatarUrl: String, role: String, isVerified: Boolean) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    fun loadVerificationStatusDetail(onSuccess: (String?, String?) -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    onSuccess(
-                        doc.getString("fullName") ?: "Chưa cập nhật",
-                        doc.getString("email") ?: "",
-                        doc.getString("avatarUrl") ?: "",
-                        doc.getString("role") ?: "tenant",
-                        doc.getBoolean("isVerified") ?: false
-                    )
-                }
-            }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
+        db.collection("verifications").document(uid).get().addOnSuccessListener { doc ->
+            if (doc.exists()) {
+                onSuccess(doc.getString("status"), doc.getString("rejectReason"))
+            } else { onSuccess(null, null) }
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
     }
 
-    // Kiểm tra trạng thái xác minh trong collection verifications
-    fun loadVerificationStatusDetail(
-        onSuccess: (status: String?, rejectReason: String) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    fun updateRulesAcceptedStatus(onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        db.collection("verifications").document(uid).get()
-            .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    onSuccess(doc.getString("status"), doc.getString("rejectReason") ?: "")
-                } else {
-                    onSuccess(null, "")
-                }
-            }
-            .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
+        db.collection("users").document(uid).update("hasAcceptedRules", true).addOnSuccessListener { onSuccess() }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
     }
 
-    // Upload ảnh đại diện lên Storage rồi cập nhật Firestore
-    fun uploadAvatar(
-        imageUri: Uri,
-        onSuccess: (String) -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    fun uploadAvatar(uri: Uri, onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        val storageRef = storage.reference.child("avatars/$uid.jpg")
-        storageRef.putFile(imageUri).continueWithTask { task ->
-            if (!task.isSuccessful) task.exception?.let { throw it }
-            storageRef.downloadUrl
-        }.addOnSuccessListener { downloadUrl ->
-            val url = downloadUrl.toString()
-            db.collection("users").document(uid)
-                .update("avatarUrl", url)
-                .addOnSuccessListener { onSuccess(url) }
-                .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi cập nhật ảnh") }
-        }.addOnFailureListener { e ->
-            val msg = when {
-                e.message?.contains("timeout", ignoreCase = true) == true -> "Upload quá lâu, vui lòng thử lại"
-                e.message?.contains("network", ignoreCase = true) == true -> "Lỗi mạng, vui lòng kiểm tra kết nối"
-                else -> "Lỗi: ${e.message}"
+        // Đường dẫn cố định avatars/$uid sẽ ghi đè file cũ nếu cùng tên, 
+        // nhưng tốt nhất là xóa file cũ trước nếu tồn tại (để tránh lỗi cache hoặc metadata)
+        val ref = storage.reference.child("avatars/$uid")
+        
+        ref.putFile(uri).addOnSuccessListener {
+            ref.downloadUrl.addOnSuccessListener { downloadUri ->
+                val url = downloadUri.toString()
+                db.collection("users").document(uid).update("avatarUrl", url)
+                    .addOnSuccessListener { onSuccess(url) }
+                    .addOnFailureListener { onFailure(it.message ?: "Lỗi cập nhật Firestore") }
             }
-            onFailure(msg)
-        }
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi upload") }
     }
 
-    // Đếm badge bài đăng chưa xem (approved/rejected)
-    fun loadMyPostsBadge(
-        uid: String,
-        context: android.content.Context,
-        onResult: (Int) -> Unit
-    ) {
-        val prefs = context.getSharedPreferences("post_seen_$uid", android.content.Context.MODE_PRIVATE)
-        val seenIds = prefs.getStringSet("seen_ids", emptySet()) ?: emptySet()
-        db.collection("rooms")
-            .whereEqualTo("userId", uid)
-            .whereIn("status", listOf("approved", "rejected"))
-            .get()
-            .addOnSuccessListener { docs ->
-                onResult(docs.count { !seenIds.contains(it.id) })
-            }
+    // Bổ sung hàm xóa toàn bộ dữ liệu Storage của user (dùng khi xóa tài khoản)
+    fun deleteUserStorage(uid: String, onComplete: () -> Unit) {
+        val ref = storage.reference.child("avatars/$uid")
+        ref.delete().addOnCompleteListener { onComplete() }
     }
 
-    // Đếm badge lịch hẹn cần xử lý
+    fun loadMyPostsBadge(uid: String, context: android.content.Context, onResult: (Int) -> Unit) {
+        db.collection("rooms").whereEqualTo("userId", uid).get().addOnSuccessListener { snap ->
+            onResult(snap.size())
+        }.addOnFailureListener { onResult(0) }
+    }
+
     fun loadAppointmentBadge(uid: String, onResult: (Int) -> Unit) {
-        db.collection("users").document(uid).get().addOnSuccessListener { userDoc ->
-            val role = userDoc.getString("role") ?: "tenant"
-            val isLandlord = role == "landlord" || role == "admin"
-            val field = if (isLandlord) "landlordId" else "tenantId"
-            val statusFilter = if (isLandlord) "pending" else "confirmed"
-            db.collection("appointments")
-                .whereEqualTo(field, uid)
-                .whereEqualTo("status", statusFilter)
-                .get()
-                .addOnSuccessListener { docs -> onResult(docs.size()) }
+        db.collection("appointments").whereEqualTo("landlordId", uid).whereEqualTo("status", "pending").get().addOnSuccessListener { snap ->
+            onResult(snap.size())
+        }.addOnFailureListener { onResult(0) }
+    }
+
+    fun findEmailByPhone(phone: String, onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
+        db.collection("users").whereEqualTo("phone", phone).limit(1).get().addOnSuccessListener { snap ->
+            if (!snap.isEmpty) onSuccess(snap.documents[0].getString("email") ?: "")
+            else onFailure("Không tìm thấy email với số điện thoại này")
+        }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
+    }
+
+    /**
+     * Cập nhật mật khẩu mới sau khi xác nhận OTP qua Cloud Function.
+     * Cách này giúp vượt qua Security Rules khi người dùng chưa đăng nhập.
+     */
+    fun updatePasswordAfterOtp(email: String, newPass: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        // Thay url này bằng link function của bạn sau khi deploy thành công
+        val url = "https://phamtriendat-doantotnghiep.cloudfunctions.net/resetPasswordAfterOtp"
+        
+        val json = JSONObject()
+        json.put("email", email)
+        json.put("newPassword", newPass)
+
+        val requestBody = json.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        client.newCall(request).enqueue(object : Callback {
+            override fun onFailure(call: Call, e: IOException) {
+                onFailure("Lỗi kết nối Server: ${e.message}")
+            }
+
+            override fun onResponse(call: Call, response: Response) {
+                val responseBody = response.body?.string() ?: ""
+                if (response.isSuccessful) {
+                    onSuccess()
+                } else {
+                    val errorMsg = try {
+                        JSONObject(responseBody).getString("error")
+                    } catch (e: Exception) { "Lỗi không xác định" }
+                    onFailure(errorMsg)
+                }
+            }
+        })
+    }
+
+    fun verifyOtpAndSendResetEmail(email: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        auth.sendPasswordResetEmail(email).addOnSuccessListener { onSuccess() }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
+    }
+
+    fun updateUserInfo(updates: Map<String, Any>, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
+        db.collection("users").document(uid).update(updates).addOnSuccessListener { onSuccess() }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
+    }
+
+    fun listenUserStatus(uid: String, onStatusChange: (Boolean, String?) -> Unit): com.google.firebase.firestore.ListenerRegistration {
+        return db.collection("users").document(uid).addSnapshotListener { snapshot, error ->
+            if (error != null) return@addSnapshotListener
+            if (snapshot != null) {
+                if (!snapshot.exists()) {
+                    // Tài khoản bị xóa
+                    onStatusChange(true, "Tài khoản của bạn đã bị xóa khỏi hệ thống.")
+                } else {
+                    val isLocked = snapshot.getBoolean("isLocked") ?: false
+                    val until = snapshot.getLong("lockUntil") ?: 0L
+                    
+                    // Kiểm tra nếu đã quá thời gian khóa thì tự động mở khóa
+                    if (isLocked && until > 0 && System.currentTimeMillis() > until) {
+                        val batch = db.batch()
+                        val userRef = snapshot.reference
+                        batch.update(userRef, 
+                            "isLocked", false,
+                            "lockReason", "",
+                            "lockUntil", 0
+                        )
+                        
+                        // Thêm bản ghi thông báo để kích hoạt FCM báo về máy
+                        val notifRef = db.collection("notifications").document()
+                        val notifData = hashMapOf(
+                            "userId" to uid,
+                            "title" to "Tài khoản đã được mở khóa",
+                            "message" to "Thời gian tạm khóa của bạn đã kết thúc. Chào mừng bạn quay trở lại!",
+                            "type" to "account_unlocked",
+                            "seen" to false,
+                            "createdAt" to System.currentTimeMillis()
+                        )
+                        batch.set(notifRef, notifData)
+                        
+                        batch.commit()
+                        onStatusChange(false, null)
+                        return@addSnapshotListener
+                    }
+
+                    if (isLocked) {
+                        val reason = snapshot.getString("lockReason") ?: "Vi phạm chính sách"
+                        
+                        val sdf = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale("vi", "VN"))
+                        val dateStr = if (until > 0) sdf.format(java.util.Date(until)) else "Không xác định"
+                        
+                        val detailedMessage = "Tài khoản của bạn đang bị tạm khóa.\n\n" +
+                                "• Lý do: $reason\n" +
+                                "• Thời gian mở khóa dự kiến: $dateStr\n\n" +
+                                "Tài khoản sẽ tự động mở khóa sau thời gian trên. Vui lòng quay lại sau."
+                        
+                        onStatusChange(true, detailedMessage)
+                    } else {
+                        onStatusChange(false, null)
+                    }
+                }
+            }
         }
+    }
+
+    fun reauthenticateAndUpdateEmail(pass: String, newEmail: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        val user = auth.currentUser ?: return onFailure("Chưa đăng nhập")
+        val cred = EmailAuthProvider.getCredential(user.email!!, pass)
+        user.reauthenticate(cred).addOnSuccessListener {
+            user.updateEmail(newEmail).addOnSuccessListener {
+                db.collection("users").document(user.uid).update("email", newEmail).addOnSuccessListener { onSuccess() }
+            }.addOnFailureListener { onFailure(it.message ?: "Lỗi cập nhật email") }
+        }.addOnFailureListener { onFailure("Mật khẩu không chính xác") }
     }
 }

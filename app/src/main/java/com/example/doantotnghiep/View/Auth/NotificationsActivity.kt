@@ -24,12 +24,12 @@ class NotificationsActivity : AppCompatActivity() {
     private lateinit var btnBack: View
 
     private val adapter = NotificationAdapter { item ->
-        // Bấm vào thông báo -> đánh dấu đã đọc
+        // Bấm vào thông báo -> đánh dấu đã xem
         if (!item.isRead) {
             FirebaseFirestore.getInstance()
                 .collection("notifications")
                 .document(item.id)
-                .update("isRead", true)
+                .update("seen", true)
         }
     }
 
@@ -73,15 +73,22 @@ class NotificationsActivity : AppCompatActivity() {
 
                 val list = snap.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
+                    // Kiểm tra cả 'seen' và 'isRead' để tránh mất dữ liệu cũ
+                    val isSeen = if (data.containsKey("seen")) {
+                        data["seen"] as? Boolean ?: false
+                    } else {
+                        data["isRead"] as? Boolean ?: false
+                    }
+                    
                     NotificationItem(
                         id        = doc.id,
                         title     = data["title"] as? String ?: "",
                         message   = data["message"] as? String ?: "",
                         type      = data["type"] as? String ?: "",
-                        isRead    = data["isRead"] as? Boolean ?: false,
+                        isRead    = isSeen,
                         createdAt = data["createdAt"] as? Long ?: 0L
                     )
-                }.sortedByDescending { it.createdAt } // Sắp xếp tại máy thay vì Server
+                }.sortedByDescending { it.createdAt }
 
                 if (list.isEmpty()) {
                     emptyState.visibility = View.VISIBLE
@@ -98,12 +105,29 @@ class NotificationsActivity : AppCompatActivity() {
         val uid = auth.currentUser?.uid ?: return
         db.collection("notifications")
             .whereEqualTo("userId", uid)
-            .whereEqualTo("isRead", false)
             .get()
             .addOnSuccessListener { snap ->
+                // Lọc thủ công các thông báo chưa đọc (vì có thể thiếu trường seen)
+                val unreadDocs = snap.documents.filter { doc ->
+                    val seen = doc.getBoolean("seen")
+                    val isRead = doc.getBoolean("isRead")
+                    // Nếu không có seen và không có isRead, hoặc một trong hai là false thì coi là chưa đọc
+                    (seen == null && isRead == null) || (seen == false) || (isRead == false)
+                }
+
+                if (unreadDocs.isEmpty()) {
+                    com.example.doantotnghiep.Utils.MessageUtils.showInfoDialog(this, "Thông báo", "Bạn không có thông báo mới nào.")
+                    return@addOnSuccessListener
+                }
+                
                 val batch = db.batch()
-                snap.forEach { doc -> batch.update(doc.reference, "isRead", true) }
-                batch.commit()
+                unreadDocs.forEach { doc -> 
+                    batch.update(doc.reference, "seen", true)
+                    batch.update(doc.reference, "isRead", true) // Cập nhật cả hai cho chắc chắn
+                }
+                batch.commit().addOnSuccessListener {
+                    // Thành công
+                }
             }
     }
 

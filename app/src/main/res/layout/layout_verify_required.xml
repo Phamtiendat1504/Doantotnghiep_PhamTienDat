@@ -8,27 +8,37 @@
     android:padding="32dp"
     android:background="@color/bg_light">
 
+    <ImageView
+        android:id="@+id/ivVerifyIcon"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:src="@drawable/ic_verify_pending"
+        android:layout_marginBottom="24dp"
+        app:tint="@color/primary"
+        xmlns:app="http://schemas.android.com/apk/res-auto" />
+
     <TextView
+        android:id="@+id/tvVerifyTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Xác minh chủ trọ"
-        android:textSize="24sp"
+        android:textSize="22sp"
         android:textStyle="bold"
         android:textColor="@color/primary"
         android:layout_marginBottom="12dp" />
 
     <TextView
         android:id="@+id/tvVerifyStatus"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Bạn cần xác minh là chủ trọ để có thể đăng bài cho thuê phòng trọ."
-        android:textSize="14sp"
-        android:textColor="@color/primary"
+        android:textSize="15sp"
+        android:textColor="#666666"
         android:textAlignment="center"
-        android:lineSpacingExtra="4dp"
+        android:lineSpacingExtra="6dp"
         android:layout_marginBottom="32dp"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp" />
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnStartVerify"
@@ -42,5 +52,16 @@
         app:backgroundTint="#1976D2"
         app:cornerRadius="12dp"
         xmlns:app="http://schemas.android.com/apk/res-auto" />
+
+    <TextView
+        android:id="@+id/tvViewRulesBeforeVerify"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Xem quy định &amp; Trách nhiệm chủ trọ"
+        android:textColor="@color/primary"
+        android:textSize="13sp"
+        android:padding="8dp"
+        android:background="?attr/selectableItemBackground" />
 
 </LinearLayout>

@@ -45,6 +45,9 @@ kotlin {
 }
 
 dependencies {
+    // OkHttp for Cloud Functions calls
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.appcompat:appcompat:1.7.0")
@@ -62,6 +65,13 @@ dependencies {
 
     // Glide (hiển thị ảnh)
     implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // Security
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // UI Components
+    implementation("androidx.gridlayout:gridlayout:1.0.0")
+    implementation("androidx.swiperefreshlayout:swiperefreshlayout:1.1.0")
 
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

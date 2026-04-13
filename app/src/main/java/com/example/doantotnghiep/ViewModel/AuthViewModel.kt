@@ -34,6 +34,9 @@ class AuthViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
+    private val _lockInfo = MutableLiveData<Pair<Boolean, Triple<String, Long, Int>>>()
+    val lockInfo: LiveData<Pair<Boolean, Triple<String, Long, Int>>> = _lockInfo
+
     private fun isValidEmail(email: String): Boolean {
         return email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
@@ -135,4 +138,18 @@ class AuthViewModel : ViewModel() {
     fun resetChangePasswordResult() { _changePasswordResult.value = false }
     fun resetWrongOldPassword() { _wrongOldPassword.value = false }
     fun resetErrorMessage() { _errorMessage.value = "" }
+
+    fun checkLockStatus() {
+        _isLoading.value = true
+        repository.checkUserLockStatus(
+            onResult = { isLocked: Boolean, reason: String, until: Long, lockDays: Int ->
+                _isLoading.value = false
+                _lockInfo.value = Pair(isLocked, Triple(reason, until, lockDays))
+            },
+            onFailure = { error: String ->
+                _isLoading.value = false
+                _errorMessage.value = error
+            }
+        )
+    }
 }

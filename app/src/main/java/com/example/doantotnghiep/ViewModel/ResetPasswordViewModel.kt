@@ -18,25 +18,21 @@ class ResetPasswordViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
-    fun resetPassword(email: String, newPassword: String, confirmPassword: String) {
-        if (newPassword.isEmpty()) { _errorMessage.value = "new_empty"; return }
-        if (newPassword.length < 12 ||
-            !newPassword.any { it.isUpperCase() } ||
-            !newPassword.any { it.isDigit() } ||
-            !newPassword.any { !it.isLetterOrDigit() }
-        ) { _errorMessage.value = "new_weak"; return }
-        if (confirmPassword.isEmpty()) { _errorMessage.value = "confirm_empty"; return }
-        if (newPassword != confirmPassword) { _errorMessage.value = "confirm_mismatch"; return }
+    fun resetPassword(email: String, newPass: String, confirmPass: String) {
+        if (newPass.isEmpty()) { _errorMessage.value = "Vui lòng nhập mật khẩu mới"; return }
+        if (newPass.length < 6) { _errorMessage.value = "Mật khẩu quá ngắn"; return }
+        if (newPass != confirmPass) { _errorMessage.value = "Mật khẩu không khớp"; return }
 
         _isLoading.value = true
-        repository.updatePasswordAfterOtp(email, newPassword,
+        repository.updatePasswordAfterOtp(
+            email, newPass,
             onSuccess = {
-                _isLoading.value = false
-                _resetResult.value = true
+                _isLoading.postValue(false)
+                _resetResult.postValue(true)
             },
             onFailure = { error ->
-                _isLoading.value = false
-                _errorMessage.value = error
+                _isLoading.postValue(false)
+                _errorMessage.postValue(error)
             }
         )
     }

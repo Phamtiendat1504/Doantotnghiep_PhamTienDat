@@ -83,17 +83,11 @@ class VerifyOtpActivity : AppCompatActivity() {
         }
 
         viewModel.verifySuccess.observe(this) { emailAddr ->
-            AlertDialog.Builder(this)
-                .setTitle("Gửi email thành công")
-                .setMessage("Link đặt lại mật khẩu đã được gửi đến $emailAddr.\nVui lòng kiểm tra hộp thư và làm theo hướng dẫn.")
-                .setPositiveButton("Về đăng nhập") { _, _ ->
-                    val intent = Intent(this, LoginActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_CLEAR_TASK or Intent.FLAG_ACTIVITY_NEW_TASK
-                    }
-                    startActivity(intent)
-                }
-                .setCancelable(false)
-                .show()
+            val intent = Intent(this, ResetPasswordActivity::class.java).apply {
+                putExtra("email", emailAddr)
+            }
+            startActivity(intent)
+            finish()
         }
 
         viewModel.invalidOtp.observe(this) { invalid ->

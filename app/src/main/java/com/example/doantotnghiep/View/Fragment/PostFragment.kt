@@ -80,27 +80,35 @@ class PostFragment : Fragment() {
 
         viewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
-        viewModel.userRole.observe(viewLifecycleOwner) { role ->
-            if (role == "landlord" || role == "admin") {
+        viewModel.userObject.observe(viewLifecycleOwner) { user ->
+            if (user == null) return@observe
+            userRoleChecked = true
+            
+            // Logic cũ: role == "landlord" hoặc role == "admin" thì được đăng
+            // Logic mới của bạn là "owner" nhưng có vẻ project dùng "landlord"
+            val isPrivileged = user.role == "landlord" || user.role == "admin" || user.role == "owner"
+            
+            if (isPrivileged) {
+                // Kiểm tra thêm trạng thái xác minh nếu cần (isVerified)
+                // Tuy nhiên, nếu tài khoản đã là landlord/admin thường là đã duyệt rồi
                 showPostForm()
-            }
-            // If tenant: wait for verifyStatus
-        }
-
-        viewModel.verifyStatus.observe(viewLifecycleOwner) { status ->
-            val role = viewModel.userRole.value ?: "tenant"
-            if (role == "landlord" || role == "admin") return@observe
-            when (status) {
-                "pending" -> showPendingStatus()
-                "rejected" -> showRejectedStatus(viewModel.verifyRejectReason.value ?: "")
-                else -> showVerifyRequired()
+                if (!user.hasAcceptedRules) {
+                    showRulesDialog(isFirstTime = true)
+                }
+            } else {
+                // Nếu là tenant hoặc role khác, kiểm tra status xác minh
+                when (user.role) {
+                    "pending" -> showPendingStatus()
+                    "rejected" -> showRejectedStatus(user.occupation) 
+                    else -> showVerifyRequired()
+                }
             }
         }
 
         viewModel.ownerInfo.observe(viewLifecycleOwner) { (name, phone) ->
-            val view = postFormView ?: return@observe
-            view.findViewById<EditText>(R.id.edtOwnerName)?.setText(name)
-            view.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(phone)
+            val v = postFormView ?: return@observe
+            v.findViewById<EditText>(R.id.edtOwnerName)?.setText(name)
+            v.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(phone)
         }
 
         checkUserRole()
@@ -108,36 +116,66 @@ class PostFragment : Fragment() {
     }
 
     private fun checkUserRole() {
-        userRoleChecked = true
-        viewModel.checkUserRole() // UID được lấy trong ViewModel
+        viewModel.loadUserObject()
     }
 
     private fun showVerifyRequired() {
         verifyRequiredView?.visibility = View.VISIBLE
         postFormView?.visibility = View.GONE
-        verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)?.text =
-            "Bạn cần xác minh là chủ trọ để có thể đăng bài cho thuê phòng trọ."
-        verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.apply {
-            text = "Xác minh ngay"; visibility = View.VISIBLE
-        }
+        
+        val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
+        val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
+        val ivVerifyIcon = verifyRequiredView?.findViewById<ImageView>(R.id.ivVerifyIcon)
+        val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
+        val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+
+        tvVerifyTitle?.text = "Xác minh chủ trọ"
+        tvVerifyStatus?.text = "Bạn cần xác minh danh tính chủ trọ để có thể đăng tin cho thuê phòng trên hệ thống."
+        ivVerifyIcon?.setImageResource(R.drawable.ic_verify_required)
+        ivVerifyIcon?.imageTintList = android.content.res.ColorStateList.valueOf(resources.getColor(R.color.primary))
+        
+        btnStartVerify?.visibility = View.VISIBLE
+        btnStartVerify?.text = "Bắt đầu xác minh ngay"
+        tvViewRules?.visibility = View.VISIBLE
     }
 
     private fun showPendingStatus() {
         verifyRequiredView?.visibility = View.VISIBLE
         postFormView?.visibility = View.GONE
-        verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)?.text =
-            "Yêu cầu xác minh của bạn đã được gửi.\nVui lòng chờ admin phê duyệt."
-        verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.visibility = View.GONE
+
+        val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
+        val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
+        val ivVerifyIcon = verifyRequiredView?.findViewById<ImageView>(R.id.ivVerifyIcon)
+        val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
+        val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+
+        tvVerifyTitle?.text = "Đang chờ phê duyệt"
+        tvVerifyStatus?.text = "Yêu cầu xác minh của bạn đã được gửi thành công. Admin đang kiểm tra và phê duyệt thông tin của bạn. Vui lòng quay lại sau."
+        ivVerifyIcon?.setImageResource(R.drawable.ic_verify_pending)
+        ivVerifyIcon?.imageTintList = android.content.res.ColorStateList.valueOf(resources.getColor(R.color.secondary))
+        
+        btnStartVerify?.visibility = View.GONE
+        tvViewRules?.visibility = View.VISIBLE
     }
 
     private fun showRejectedStatus(reason: String) {
         verifyRequiredView?.visibility = View.VISIBLE
         postFormView?.visibility = View.GONE
-        verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)?.text =
-            "Yêu cầu xác minh bị từ chối.\nLý do: $reason\n\nVui lòng gửi lại yêu cầu."
-        verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.apply {
-            text = "Gửi lại xác minh"; visibility = View.VISIBLE
-        }
+
+        val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
+        val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
+        val ivVerifyIcon = verifyRequiredView?.findViewById<ImageView>(R.id.ivVerifyIcon)
+        val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
+        val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+
+        tvVerifyTitle?.text = "Xác minh bị từ chối"
+        tvVerifyStatus?.text = "Rất tiếc, yêu cầu xác minh của bạn không được phê duyệt.\nLý do: $reason\n\nVui lòng kiểm tra lại thông tin và gửi lại yêu cầu."
+        ivVerifyIcon?.setImageResource(R.drawable.ic_verify_required)
+        ivVerifyIcon?.imageTintList = android.content.res.ColorStateList.valueOf(resources.getColor(android.R.color.holo_red_dark))
+        
+        btnStartVerify?.visibility = View.VISIBLE
+        btnStartVerify?.text = "Gửi lại yêu cầu xác minh"
+        tvViewRules?.visibility = View.VISIBLE
     }
 
     private fun showPostForm() {
@@ -152,6 +190,10 @@ class PostFragment : Fragment() {
     private fun setupVerifyButton() {
         verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.setOnClickListener {
             startActivity(Intent(requireContext(), VerifyLandlordActivity::class.java))
+        }
+        
+        verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)?.setOnClickListener {
+            showRulesDialog()
         }
     }
 
@@ -246,8 +288,13 @@ class PostFragment : Fragment() {
 
         val btnAddPhoto = view.findViewById<CardView>(R.id.btnAddPhoto)
         val btnPostRoom = view.findViewById<MaterialButton>(R.id.btnPostRoom)
+        val tvRulesLink = view.findViewById<TextView>(R.id.tvRulesLink)
         val layoutProgress = view.findViewById<LinearLayout>(R.id.layoutProgress)
         val tvProgressPercent = view.findViewById<TextView>(R.id.tvProgressPercent)
+
+        tvRulesLink.setOnClickListener {
+            showRulesDialog()
+        }
 
         // Load owner info via ViewModel — không gọi FirebaseAuth từ Fragment
         viewModel.loadOwnerInfo()
@@ -288,12 +335,15 @@ class PostFragment : Fragment() {
             PostNotificationHelper.showProgress(requireContext(), progress)
         }
 
-        viewModel.postResult.observe(viewLifecycleOwner) { success ->
-            if (success == true) {
+        viewModel.postResult.observe(viewLifecycleOwner) { result ->
+            if (result != null) {
+                val (postId, thumbnailUrl) = result
                 viewModel.resetPostResult()
                 PostNotificationHelper.showSuccess(requireContext(), lastPostedTitle)
                 resetForm(view)
                 val intent = Intent(requireContext(), com.example.doantotnghiep.View.Auth.PostSuccessActivity::class.java).apply {
+                    putExtra("postId", postId)
+                    putExtra("thumbnail", thumbnailUrl)
                     putExtra("title", lastPostedTitle)
                     putExtra("price", lastPostedPrice)
                     putExtra("location", lastPostedLocation)
@@ -380,7 +430,7 @@ class PostFragment : Fragment() {
             lastPostedTitle = room.title
             lastPostedPrice = room.price
             lastPostedLocation = if (room.ward.isNotEmpty()) "${room.ward}, ${room.district}" else room.district
-            viewModel.postRoom(room, imageUris)
+            viewModel.postRoom(requireContext(), room, imageUris)
         }
 
         setupAccordionLogic(view)
@@ -483,6 +533,25 @@ class PostFragment : Fragment() {
 
         // Reload owner info after form reset — không gọi Firebase từ Fragment
         viewModel.loadOwnerInfo()
+    }
+
+    private fun showRulesDialog(isFirstTime: Boolean = false) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_rules, null)
+        val dialog = android.app.AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .setCancelable(!isFirstTime) // Nếu là lần đầu, bắt buộc phải nhấn nút đồng ý
+            .create()
+
+        val btnAccept = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAcceptRules)
+        
+        btnAccept.setOnClickListener {
+            if (isFirstTime) {
+                viewModel.markRulesAccepted()
+            }
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

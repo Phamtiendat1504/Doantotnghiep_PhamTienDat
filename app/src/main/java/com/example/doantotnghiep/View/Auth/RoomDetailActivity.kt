@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -17,9 +18,12 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
+import androidx.core.content.ContextCompat
+import androidx.gridlayout.widget.GridLayout
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.RoomViewModel
+import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import java.text.DecimalFormat
@@ -38,12 +42,22 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var layoutRoomInfo: LinearLayout
     private lateinit var layoutAmenities: LinearLayout
     private lateinit var layoutOwnerInfo: LinearLayout
+    private lateinit var gridAmenities: GridLayout
     private lateinit var btnBack: ImageView
     private lateinit var btnSave: MaterialButton
     private lateinit var btnBooking: MaterialButton
     private lateinit var btnOpenMaps: MaterialButton
     private lateinit var tvMapAddress: TextView
     private lateinit var webViewMap: WebView
+    private lateinit var tvBookedCount: TextView
+    private lateinit var btnViewAllSlots: TextView
+    private lateinit var layoutBookedSummary: LinearLayout
+    private lateinit var cardBookedSlots: CardView
+
+    private lateinit var tvSpecArea: TextView
+    private lateinit var tvSpecPeople: TextView
+    private lateinit var tvSpecType: TextView
+    private lateinit var btnReadMore: TextView
 
     private lateinit var viewModel: RoomViewModel
 
@@ -57,13 +71,31 @@ class RoomDetailActivity : AppCompatActivity() {
     private var currentRoomId = ""
     private var currentRoomData: Map<String, Any> = emptyMap()
 
+    private lateinit var btnBackContainer: android.view.View
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Làm trong suốt Status Bar và xử lý Edge-to-Edge
+        androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        
         setContentView(R.layout.activity_room_detail)
+        
+        // Khởi tạo container nút Back ngay lập tức để tránh crash khi xử lý Insets
+        btnBackContainer = findViewById(R.id.btnBackContainer)
 
         viewModel = ViewModelProvider(this)[RoomViewModel::class.java]
 
         initViews()
+
+        // Xử lý WindowInsets để thanh tiêu đề tràn lên Status Bar nhưng nút Back vẫn ở vùng an toàn
+        androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(btnBackContainer) { v, insets ->
+            val systemBars = insets.getInsets(androidx.core.view.WindowInsetsCompat.Type.systemBars())
+            v.setPadding(0, systemBars.top, 0, 0)
+            insets
+        }
+
         observeViewModel()
 
         btnBack.setOnClickListener { finish() }
@@ -90,12 +122,22 @@ class RoomDetailActivity : AppCompatActivity() {
         layoutRoomInfo = findViewById(R.id.layoutRoomInfo)
         layoutAmenities = findViewById(R.id.layoutAmenities)
         layoutOwnerInfo = findViewById(R.id.layoutOwnerInfo)
+        gridAmenities = findViewById(R.id.gridAmenities)
         btnBack = findViewById(R.id.btnBack)
         btnSave = findViewById(R.id.btnSavePost)
         btnBooking = findViewById(R.id.btnBooking)
         btnOpenMaps = findViewById(R.id.btnOpenMaps)
         tvMapAddress = findViewById(R.id.tvMapAddress)
         webViewMap = findViewById(R.id.webViewMap)
+        tvBookedCount = findViewById(R.id.tvBookedCount)
+        btnViewAllSlots = findViewById(R.id.btnViewAllSlots)
+        layoutBookedSummary = findViewById(R.id.layoutBookedSummary)
+        cardBookedSlots = findViewById(R.id.cardBookedSlots)
+        tvSpecArea = findViewById(R.id.tvSpecArea)
+        tvSpecPeople = findViewById(R.id.tvSpecPeople)
+        tvSpecType = findViewById(R.id.tvSpecType)
+        btnReadMore = findViewById(R.id.btnReadMore)
+        // btnBackContainer đã được init sớm trong onCreate
     }
 
     private fun observeViewModel() {
@@ -114,11 +156,11 @@ class RoomDetailActivity : AppCompatActivity() {
         // Trạng thái lưu bài
         viewModel.isSaved.observe(this) { saved ->
             if (saved) {
-                btnSave.text = "✓ Đã lưu"
-                btnSave.setBackgroundColor(0xFF999999.toInt())
+                btnSave.setIconResource(R.drawable.ic_save) // Dùng icon đã lưu
+                btnSave.setIconTintResource(R.color.secondary)
             } else {
-                btnSave.text = "Lưu bài viết"
-                btnSave.setBackgroundColor(0xFF1976D2.toInt())
+                btnSave.setIconResource(R.drawable.ic_bookmark)
+                btnSave.setIconTintResource(R.color.primary)
             }
         }
 
@@ -189,7 +231,34 @@ class RoomDetailActivity : AppCompatActivity() {
         val district = data["district"] as? String ?: ""
         tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
 
-        tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
+        val desc = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
+        tvDescription.text = desc
+
+        // Xử lý nút "Xem thêm" cho mô tả
+        tvDescription.post {
+            if (tvDescription.lineCount > 4) {
+                btnReadMore.visibility = View.VISIBLE
+                btnReadMore.setOnClickListener {
+                    if (tvDescription.maxLines == 4) {
+                        tvDescription.maxLines = Int.MAX_VALUE
+                        btnReadMore.text = "Thu gọn"
+                    } else {
+                        tvDescription.maxLines = 4
+                        btnReadMore.text = "Xem thêm"
+                    }
+                }
+            } else {
+                btnReadMore.visibility = View.GONE
+            }
+        }
+
+        val area = (data["area"] as? Number)?.toInt() ?: 0
+        val peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0
+        val roomType = data["roomType"] as? String ?: "Phòng trọ"
+
+        tvSpecArea.text = if (area > 0) "$area m²" else "-- m²"
+        tvSpecPeople.text = if (peopleCount > 0) "$peopleCount người" else "-- người"
+        tvSpecType.text = roomType
 
         val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
         setupImageSlider(imageUrls)
@@ -198,17 +267,28 @@ class RoomDetailActivity : AppCompatActivity() {
         setupOwnerInfo(data)
         setupMapSection(address, ward, district)
 
-        // Load dữ liệu phụ qua ViewModel
-        viewModel.loadBookedSlots(currentRoomId)
-        setupActionButtons()
+        val status = data["status"] as? String ?: "pending"
+        if (status == "rented") {
+            btnBooking.isEnabled = false
+            btnBooking.text = "Phòng đã cho thuê"
+            btnBooking.setBackgroundColor(0xFF9E9E9E.toInt())
+            btnSave.visibility = View.GONE
+            // Optional: Thêm thông báo trực quan
+            tvPrice.text = "ĐÃ CHO THUÊ"
+            tvPrice.setTextColor(0xFFE53935.toInt()) // Red color
+        } else {
+            // Load dữ liệu phụ qua ViewModel
+            viewModel.loadBookedSlots(currentRoomId)
+            setupActionButtons()
+        }
     }
 
     private fun setupActionButtons() {
         if (uid == null) {
             btnSave.visibility = View.VISIBLE
             btnBooking.visibility = View.VISIBLE
-            btnSave.text = "Lưu bài viết"
-            btnSave.setBackgroundColor(0xFF1976D2.toInt())
+            btnSave.setIconResource(R.drawable.ic_bookmark)
+            btnSave.setIconTintResource(R.color.primary)
             btnSave.setOnClickListener { promptLogin() }
             btnBooking.setOnClickListener { promptLogin() }
             return
@@ -349,31 +429,74 @@ class RoomDetailActivity : AppCompatActivity() {
     }
 
     private fun renderBookedSlots(slots: List<Map<String, Any>>) {
-        val layoutBooked = findViewById<LinearLayout>(R.id.layoutBookedSlots) ?: return
-        val cardBooked = findViewById<CardView>(R.id.cardBookedSlots) ?: return
-
-        layoutBooked.removeAllViews()
         if (slots.isEmpty()) {
-            cardBooked.visibility = View.GONE
+            cardBookedSlots.visibility = View.GONE
             return
         }
 
-        cardBooked.visibility = View.VISIBLE
-        for (slot in slots) {
+        cardBookedSlots.visibility = View.VISIBLE
+        tvBookedCount.text = "Lịch bận (${slots.size})"
+        layoutBookedSummary.removeAllViews()
+
+        // Hiển thị tối đa 3 slot đầu tiên dạng chip ngang
+        val displayLimit = 3
+        slots.take(displayLimit).forEach { slot ->
             val date = slot["dateDisplay"] as? String ?: slot["date"] as? String ?: ""
             val time = slot["time"] as? String ?: ""
-            val tv = TextView(this).apply {
-                text = "📅 $date  —  ⏰ $time  (Đã có người hẹn)"
-                textSize = 13f
+            
+            val chipView = TextView(this).apply {
+                text = "$time $date"
+                textSize = 12f
                 setTextColor(0xFFE65100.toInt())
-                setPadding(0, dpToPx(4), 0, dpToPx(4))
+                setBackgroundResource(R.drawable.bg_slot_chip)
+                setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.WRAP_CONTENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply {
+                    marginEnd = dpToPx(8)
+                }
             }
-            layoutBooked.addView(tv)
-            layoutBooked.addView(View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1))
-                setBackgroundColor(0xFFF5F5F5.toInt())
-            })
+            layoutBookedSummary.addView(chipView)
         }
+
+        if (slots.size > displayLimit) {
+            val moreView = TextView(this).apply {
+                text = "+${slots.size - displayLimit}"
+                textSize = 12f
+                setTextColor(0xFF999999.toInt())
+                setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6))
+            }
+            layoutBookedSummary.addView(moreView)
+        }
+
+        btnViewAllSlots.setOnClickListener {
+            showAllBookedSlots(slots)
+        }
+    }
+
+    private fun showAllBookedSlots(slots: List<Map<String, Any>>) {
+        val dialog = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.layout_bottom_sheet_list, null)
+        
+        val tvTitle = view.findViewById<TextView>(R.id.tvSheetTitle)
+        val layoutList = view.findViewById<LinearLayout>(R.id.layoutSheetList)
+        
+        tvTitle.text = "Danh sách lịch đã hẹn"
+        
+        slots.forEach { slot ->
+            val date = slot["dateDisplay"] as? String ?: slot["date"] as? String ?: ""
+            val time = slot["time"] as? String ?: ""
+            
+            val itemView = layoutInflater.inflate(R.layout.item_booked_slot_row, layoutList, false)
+            itemView.findViewById<TextView>(R.id.tvSlotTime).text = time
+            itemView.findViewById<TextView>(R.id.tvSlotDate).text = date
+            
+            layoutList.addView(itemView)
+        }
+        
+        dialog.setContentView(view)
+        dialog.show()
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -414,157 +537,147 @@ class RoomDetailActivity : AppCompatActivity() {
 
     private fun setupRoomInfo(data: Map<String, Any>) {
         layoutRoomInfo.removeAllViews()
-        val area = (data["area"] as? Number)?.toInt() ?: 0
-        val peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0
-        val roomType = data["roomType"] as? String ?: ""
+        
         val deposit = (data["depositAmount"] as? Number)?.toLong() ?: 0L
         val depositMonths = (data["depositMonths"] as? Number)?.toInt() ?: 0
+        val electricPrice = (data["electricPrice"] as? Number)?.toLong() ?: 0L
+        val waterPrice = (data["waterPrice"] as? Number)?.toLong() ?: 0L
+        val wifiPrice = (data["wifiPrice"] as? Number)?.toLong() ?: 0L
+
+        // Nhóm Chi phí (đặc biệt quan trọng nên làm nổi bật)
+        if (deposit > 0 || electricPrice > 0 || waterPrice > 0) {
+            val tvHeader = TextView(this).apply {
+                text = "Chi phí dự kiến"
+                textSize = 15f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF1A1A1A.toInt())
+                setPadding(0, dpToPx(16), 0, dpToPx(8))
+            }
+            layoutRoomInfo.addView(tvHeader)
+            
+            if (deposit > 0) addInfoRow("Tiền đặt cọc", "${formatter.format(deposit)} đ")
+            if (depositMonths > 0) addInfoRow("Đặt cọc trước", "$depositMonths tháng")
+            if (electricPrice > 0) addInfoRow("Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
+            if (waterPrice > 0) addInfoRow("Tiền nước", "${formatter.format(waterPrice)} đ/m³")
+            if (wifiPrice > 0) addInfoRow("Tiền wifi", "${formatter.format(wifiPrice)} đ/tháng")
+        }
+
+        // Nhóm Quy định & Khác
         val kitchen = data["kitchen"] as? String ?: ""
         val bathroom = data["bathroom"] as? String ?: ""
         val genderPrefer = data["genderPrefer"] as? String ?: ""
         val curfew = data["curfew"] as? String ?: ""
         val curfewTime = data["curfewTime"] as? String ?: ""
-        val electricPrice = (data["electricPrice"] as? Number)?.toLong() ?: 0L
-        val waterPrice = (data["waterPrice"] as? Number)?.toLong() ?: 0L
-        val wifiPrice = (data["wifiPrice"] as? Number)?.toLong() ?: 0L
-
-        if (area > 0) addInfoRow("Diện tích", "${area} m²")
-        if (peopleCount > 0) addInfoRow("Số người ở", "$peopleCount người")
-        if (roomType.isNotEmpty()) addInfoRow("Dạng phòng", roomType)
-        if (genderPrefer.isNotEmpty()) addInfoRow("Giới tính ưu tiên", genderPrefer)
-        if (kitchen.isNotEmpty()) addInfoRow("Bếp", kitchen)
-        if (bathroom.isNotEmpty()) addInfoRow("Vệ sinh", bathroom)
-        if (electricPrice > 0) addInfoRow("Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
-        if (waterPrice > 0) addInfoRow("Tiền nước", "${formatter.format(waterPrice)} đ/m³")
-        if (wifiPrice > 0) addInfoRow("Tiền wifi", "${formatter.format(wifiPrice)} đ/tháng")
-        if (deposit > 0) addInfoRow("Đặt cọc", "${formatter.format(deposit)} đ")
-        if (depositMonths > 0) addInfoRow("Cọc trước", "$depositMonths tháng")
-
-        if (curfew.isNotEmpty()) {
-            val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) curfewTime else curfew
-            addInfoRow("Giờ đóng cửa", text)
-        }
-
         val pet = data["pet"] as? String ?: ""
-        if (pet.isNotEmpty()) {
-            val petName = data["petName"] as? String ?: ""
-            val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
-            val text = buildString {
-                if (pet == "Cho nuôi") {
-                    append("Cho nuôi")
-                    if (petName.isNotEmpty()) append(": $petName")
-                    if (petCount > 0) append(" (SL: $petCount con)")
-                } else {
-                    append(pet)
-                }
+
+        // Kiểm tra xem có bất kỳ thông tin quy định nào không
+        if (kitchen.isNotEmpty() || bathroom.isNotEmpty() || genderPrefer.isNotEmpty() || curfew.isNotEmpty() || pet.isNotEmpty()) {
+            val tvHeader = TextView(this).apply {
+                text = "Quy định & Cơ sở vật chất"
+                textSize = 15f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(0xFF1A1A1A.toInt())
+                setPadding(0, dpToPx(16), 0, dpToPx(8))
             }
-            addInfoRow("Thú cưng", text)
+            layoutRoomInfo.addView(tvHeader)
+
+            if (genderPrefer.isNotEmpty()) addInfoRow("Ưu tiên giới tính", genderPrefer)
+            if (kitchen.isNotEmpty()) addInfoRow("Phòng bếp", kitchen)
+            if (bathroom.isNotEmpty()) addInfoRow("Phòng vệ sinh", bathroom)
+            
+            if (curfew.isNotEmpty()) {
+                val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Đóng cửa lúc $curfewTime" else curfew
+                addInfoRow("Giờ giấc", text)
+            }
+
+            if (pet.isNotEmpty()) {
+                val petName = data["petName"] as? String ?: ""
+                val text = if (pet == "Cho nuôi" && petName.isNotEmpty()) "Cho nuôi ($petName)" else pet
+                addInfoRow("Thú cưng", text)
+            }
         }
     }
 
     private fun addInfoRow(label: String, value: String) {
         val row = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
-            setPadding(0, dpToPx(6), 0, dpToPx(6))
+            setPadding(0, dpToPx(8), 0, dpToPx(8))
         }
         row.addView(TextView(this).apply {
             text = label
-            textSize = 13f
-            setTextColor(0xFF999999.toInt())
-            layoutParams = LinearLayout.LayoutParams(dpToPx(120), LinearLayout.LayoutParams.WRAP_CONTENT)
+            textSize = 14f
+            setTextColor(0xFF666666.toInt())
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
         })
         row.addView(TextView(this).apply {
             text = value
             textSize = 14f
-            setTextColor(0xFF333333.toInt())
+            setTextColor(0xFF1A1A1A.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.END
         })
         layoutRoomInfo.addView(row)
-        layoutRoomInfo.addView(View(this).apply {
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1))
-            setBackgroundColor(0xFFF5F5F5.toInt())
-        })
     }
 
     private fun setupAmenities(data: Map<String, Any>) {
+        gridAmenities.removeAllViews()
         layoutAmenities.removeAllViews()
 
-        val basicAmenities = mutableListOf<String>()
-        if (data["hasWifi"] == true) basicAmenities.add("Wifi")
-        if (data["hasAirCon"] == true) basicAmenities.add("Điều hòa")
-        if (data["hasWaterHeater"] == true) basicAmenities.add("Máy nước nóng")
-        if (data["hasWasher"] == true) basicAmenities.add("Máy giặt")
-        if (data["hasDryingArea"] == true) basicAmenities.add("Chỗ phơi đồ")
-        if (data["hasWardrobe"] == true) basicAmenities.add("Tủ quần áo")
-        if (data["hasBed"] == true) basicAmenities.add("Giường")
+        val amenitiesNames = mutableListOf<String>()
+        if (data["hasWifi"] == true) amenitiesNames.add("Wifi miễn phí")
+        if (data["hasAirCon"] == true) amenitiesNames.add("Điều hòa")
+        if (data["hasWaterHeater"] == true) amenitiesNames.add("Bình nóng lạnh")
+        if (data["hasWasher"] == true) amenitiesNames.add("Máy giặt")
+        if (data["hasDryingArea"] == true) amenitiesNames.add("Sân phơi đồ")
+        if (data["hasWardrobe"] == true) amenitiesNames.add("Tủ quần áo")
+        if (data["hasBed"] == true) amenitiesNames.add("Giường ngủ")
 
+        if (amenitiesNames.isEmpty() && data["hasMotorbike"] != true && data["hasEBike"] != true && data["hasBicycle"] != true) {
+            val tvEmpty = TextView(this).apply {
+                text = "Không có thông tin tiện ích"
+                textSize = 14f
+                setTextColor(0xFF999999.toInt())
+            }
+            gridAmenities.addView(tvEmpty)
+            return
+        }
+
+        // Hiển thị tiện ích dạng text labels (Không dùng Icon theo yêu cầu)
+        amenitiesNames.forEach { name ->
+            val tvAmenity = TextView(this).apply {
+                text = name
+                textSize = 13f
+                setTextColor(0xFF444444.toInt())
+                setBackgroundResource(R.drawable.bg_spec_item)
+                setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
+                
+                val params = GridLayout.LayoutParams().apply {
+                    width = 0
+                    height = GridLayout.LayoutParams.WRAP_CONTENT
+                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                    setMargins(0, 0, dpToPx(8), dpToPx(8))
+                }
+                layoutParams = params
+            }
+            gridAmenities.addView(tvAmenity)
+        }
+
+        // Các thông tin phí gửi xe
         val motorbikeFee = (data["motorbikeFee"] as? Number)?.toLong() ?: 0L
         val eBikeFee = (data["eBikeFee"] as? Number)?.toLong() ?: 0L
         val bicycleFee = (data["bicycleFee"] as? Number)?.toLong() ?: 0L
 
-        val hasAnyAmenity = basicAmenities.isNotEmpty() ||
-                data["hasMotorbike"] == true ||
-                data["hasEBike"] == true ||
-                data["hasBicycle"] == true
-
-        if (!hasAnyAmenity) {
-            layoutAmenities.addView(TextView(this).apply {
-                text = "Không có thông tin"
-                textSize = 13f
-                setTextColor(0xFF999999.toInt())
-            })
-            return
-        }
-
-        if (basicAmenities.isNotEmpty()) {
-            for (i in basicAmenities.indices step 2) {
-                val row = LinearLayout(this).apply {
-                    orientation = LinearLayout.HORIZONTAL
-                    setPadding(0, dpToPx(5), 0, dpToPx(5))
-                }
-                row.addView(TextView(this).apply {
-                    text = basicAmenities[i]
-                    textSize = 13f
-                    setTextColor(0xFF1A1A2E.toInt())
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                })
-                if (i + 1 < basicAmenities.size) {
-                    row.addView(TextView(this).apply {
-                        text = basicAmenities[i + 1]
-                        textSize = 13f
-                        setTextColor(0xFF1A1A2E.toInt())
-                        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    })
-                } else {
-                    row.addView(android.view.View(this).apply {
-                        layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
-                    })
-                }
-                layoutAmenities.addView(row)
-            }
-        }
-
-        if (basicAmenities.isNotEmpty() &&
-            (data["hasMotorbike"] == true || data["hasEBike"] == true || data["hasBicycle"] == true)) {
-            layoutAmenities.addView(android.view.View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)).apply {
-                    topMargin = dpToPx(6); bottomMargin = dpToPx(6)
-                }
-                setBackgroundColor(0xFFF0F0F0.toInt())
-            })
-        }
-
         if (data["hasMotorbike"] == true) {
-            val feeText = if (motorbikeFee > 0) "${formatter.format(motorbikeFee)} đ/xe/tháng" else "Miễn phí"
-            addAmenityFeeRow("Để xe máy", feeText)
+            val feeText = if (motorbikeFee > 0) "${formatter.format(motorbikeFee)} đ/xe" else "Miễn phí"
+            addAmenityFeeRow("Gửi xe máy", feeText)
         }
         if (data["hasEBike"] == true) {
-            val feeText = if (eBikeFee > 0) "${formatter.format(eBikeFee)} đ/xe/tháng" else "Miễn phí"
-            addAmenityFeeRow("Để xe đạp điện", feeText)
+            val feeText = if (eBikeFee > 0) "${formatter.format(eBikeFee)} đ/xe" else "Miễn phí"
+            addAmenityFeeRow("Gửi xe đạp điện", feeText)
         }
         if (data["hasBicycle"] == true) {
-            val feeText = if (bicycleFee > 0) "${formatter.format(bicycleFee)} đ/xe/tháng" else "Miễn phí"
-            addAmenityFeeRow("Để xe đạp", feeText)
+            val feeText = if (bicycleFee > 0) "${formatter.format(bicycleFee)} đ/xe" else "Miễn phí"
+            addAmenityFeeRow("Gửi xe đạp", feeText)
         }
     }
 
@@ -594,12 +707,32 @@ class RoomDetailActivity : AppCompatActivity() {
 
     private fun setupOwnerInfo(data: Map<String, Any>) {
         layoutOwnerInfo.removeAllViews()
-        val name = data["ownerName"] as? String ?: ""
+        val name = data["ownerName"] as? String ?: "Chủ trọ"
         val phone = data["ownerPhone"] as? String ?: ""
         val gender = data["ownerGender"] as? String ?: ""
-        if (name.isNotEmpty()) addOwnerRow("Họ tên", name)
-        if (phone.isNotEmpty()) addOwnerRow("SĐT", phone, isPhone = true)
-        if (gender.isNotEmpty()) addOwnerRow("Giới tính", gender)
+        
+        // Host Profile Style
+        val hostView = layoutInflater.inflate(R.layout.item_host_info, layoutOwnerInfo, false)
+        val tvHostName = hostView.findViewById<TextView>(R.id.tvHostName)
+        val tvHostStatus = hostView.findViewById<TextView>(R.id.tvHostStatus)
+        val btnCall = hostView.findViewById<MaterialButton>(R.id.btnCallHost)
+        val btnChat = hostView.findViewById<MaterialButton>(R.id.btnChatHost)
+
+        tvHostName.text = name
+        tvHostStatus.text = if (gender.isNotEmpty()) "Chủ nhà • $gender" else "Chủ nhà đã xác minh"
+        
+        btnCall.setOnClickListener {
+            if (phone.isNotEmpty()) {
+                startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
+            }
+        }
+        
+        btnChat.setOnClickListener {
+            // Logic nhắn tin (nếu có)
+            MessageUtils.showSuccessDialog(this, "Thông báo", "Tính năng nhắn tin đang được phát triển")
+        }
+
+        layoutOwnerInfo.addView(hostView)
     }
 
     private fun addOwnerRow(label: String, value: String, isPhone: Boolean = false) {

@@ -12,5 +12,9 @@ data class User(
     val avatarUrl: String = "",
     val role: String = "tenant",
     val isVerified: Boolean = false,
+    val hasAcceptedRules: Boolean = false,
+    val isLocked: Boolean = false,
+    val lockReason: String = "",
+    val lockUntil: Long = 0,
     val createdAt: Long = System.currentTimeMillis()
 )

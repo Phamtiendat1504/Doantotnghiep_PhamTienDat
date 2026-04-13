@@ -93,8 +93,19 @@
     <!-- Status & Messages -->
     <string name="status_pending">⏳ Chờ xác nhận</string>
     <string name="status_confirmed">✓ Đã xác nhận</string>
+    <string name="status_tenant_confirmed">✅ Cả hai đã xác nhận</string>
     <string name="status_rejected">✗ Đã từ chối</string>
     <string name="status_approved">✓ Đã duyệt</string>
+    <string name="status_rented">🏠 Đã cho thuê</string>
+    <string name="status_cancelled_by_tenant">❌ Bạn đã hủy</string>
+    <string name="status_cancelled_by_system">🚫 Đã hủy (phòng hết)</string>
+
+    <!-- Appointment Actions -->
+    <string name="action_confirm_rented">Xác nhận đã cho thuê</string>
+    <string name="action_confirm_rented_dialog_title">Xác nhận cho thuê</string>
+    <string name="action_confirm_rented_dialog_msg">Bạn có chắc chắn muốn đánh dấu phòng này đã được cho thuê bởi khách hàng này? Bài đăng sẽ bị ẩn và các lịch hẹn khác sẽ bị hủy.</string>
+    <string name="action_confirm_rented_success">Đã cập nhật trạng thái cho thuê thành công!</string>
+
 
     <!-- Common Actions -->
     <string name="action_yes">Có</string>
@@ -130,4 +141,37 @@
     <string name="loading_text">Đang tải...</string>
     <string name="uploading_images">Đang tải ảnh: %d%%</string>
     <string name="processing">Đang xử lý dữ liệu...</string>
+    <!-- Post Success Screen -->
+    <string name="post_success_title">Đăng bài thành công!</string>
+    <string name="post_success_subtitle">Bài đăng đã được gửi đến hệ thống</string>
+    <string name="post_process_title">Quy trình xét duyệt</string>
+    <string name="post_step_1_title">Nhập thông tin</string>
+    <string name="post_step_1_desc">Bài đăng đã được gửi thành công</string>
+    <string name="post_step_2_title">Chờ admin duyệt</string>
+    <string name="post_step_2_badge">Đang xử lý</string>
+    <string name="post_step_2_desc">Đội ngũ kiểm duyệt sẽ xem xét nội dung trong vòng 24 giờ tới.</string>
+    <string name="post_step_3_title">Bài đăng hoạt động</string>
+    <string name="post_step_3_desc">Hiển thị cho người thuê tìm kiếm</string>
+    <string name="post_info_title">Thông tin bài đăng</string>
+    <string name="post_info_label_id">Mã bài đăng</string>
+    <string name="post_info_label_title">Tiêu đề</string>
+    <string name="post_info_label_price">Giá thuê</string>
+    <string name="post_info_label_location">Khu vực</string>
+    <string name="post_note_title">Lưu ý về thời hạn bài đăng</string>
+    <string name="post_note_line_1">Bài đăng sẽ hiển thị trong vòng 2 tháng kể từ ngày đăng.</string>
+    <string name="post_note_line_2">Hết 2 tháng, bài sẽ tự động bị ẩn và bạn sẽ nhận thông báo.</string>
+    <string name="post_note_line_3">Bạn có thể gia hạn hoặc đánh dấu \"Đã cho thuê\" để ẩn bài trong mục \"Quản lý bài đăng\".</string>
+    <string name="post_note_line_4">Nếu không thao tác, bài sẽ bị xóa vĩnh viễn sau 1 tháng tiếp theo.</string>
+    <string name="post_btn_my_posts">Xem bài đăng của tôi</string>
+    <string name="post_btn_another">Đăng bài khác</string>
+    <string name="post_notification_note">Bạn sẽ nhận được thông báo qua điện thoại khi bài đăng được phê duyệt.</string>
+    <string name="post_btn_quick_edit">Chỉnh sửa thông tin bài đăng</string>
+    <string name="post_rules_link">Xem quy định đăng bài để tránh bị từ chối</string>
+    <string name="title_reset_password">Đặt Mật Khẩu Mới</string>
+    <string name="desc_reset_password">Tạo mật khẩu mới cho tài khoản của bạn.</string>
+    <string name="label_new_password">Mật khẩu mới</string>
+    <string name="hint_new_password">Nhập mật khẩu mới</string>
+    <string name="label_reset_confirm_password">Xác nhận mật khẩu mới</string>
+    <string name="hint_reset_confirm_password">Nhập lại mật khẩu mới</string>
+    <string name="btn_change_password">Đổi mật khẩu</string>
 </resources>

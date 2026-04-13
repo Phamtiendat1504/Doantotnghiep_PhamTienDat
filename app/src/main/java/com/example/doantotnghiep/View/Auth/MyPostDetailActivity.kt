@@ -7,6 +7,8 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
@@ -44,6 +46,15 @@ class MyPostDetailActivity : AppCompatActivity() {
         viewModel.roomData.observe(this) { data ->
             if (data == null) { finish(); return@observe }
             bindData(data)
+        }
+
+        viewModel.markRentedStatus.observe(this) { success ->
+            if (success) {
+                Toast.makeText(this, "Đã cập nhật trạng thái đã cho thuê", Toast.LENGTH_SHORT).show()
+                finish()
+            } else {
+                Toast.makeText(this, "Cập nhật thất bại", Toast.LENGTH_SHORT).show()
+            }
         }
 
         loadRoomDetail()
@@ -98,6 +109,8 @@ class MyPostDetailActivity : AppCompatActivity() {
         setupAmenities(d)
 
         val btnEdit = findViewById<MaterialButton>(R.id.btnEditPost)
+        val btnMarkRented = findViewById<MaterialButton>(R.id.btnMarkRented)
+
         if (status == "rejected") {
             btnEdit.visibility = View.VISIBLE
             btnEdit.setOnClickListener {
@@ -106,6 +119,26 @@ class MyPostDetailActivity : AppCompatActivity() {
         } else {
             btnEdit.visibility = View.GONE
         }
+
+        if (status == "approved" || status == "expired") {
+            btnMarkRented.visibility = View.VISIBLE
+            btnMarkRented.setOnClickListener {
+                showMarkRentedDialog()
+            }
+        } else {
+            btnMarkRented.visibility = View.GONE
+        }
+    }
+
+    private fun showMarkRentedDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Xác nhận đã cho thuê")
+            .setMessage("Bài đăng sẽ được chuyển vào mục 'Đã cho thuê' và không còn hiển thị trên trang tìm kiếm. \n\nLưu ý: Quản trị viên sẽ quản lý danh sách này. Các bài đăng cũ hơn 2 năm có thể bị xóa để tối ưu hệ thống.")
+            .setPositiveButton("Xác nhận") { _, _ ->
+                viewModel.markAsRented(roomId)
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {

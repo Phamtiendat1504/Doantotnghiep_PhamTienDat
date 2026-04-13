@@ -18,7 +18,7 @@ class RoomRepository {
     fun postRoom(
         room: Room,
         imageUris: List<Uri>,
-        onSuccess: () -> Unit,
+        onSuccess: (String, String?) -> Unit,
         onFailure: (String) -> Unit,
         onProgress: (Int) -> Unit
     ) {
@@ -28,12 +28,12 @@ class RoomRepository {
 
         if (imageUris.isEmpty()) {
             val roomData = room.copy(id = roomId, userId = uid)
-            saveRoomToFirestore(docRef, roomData, onSuccess, onFailure)
+            saveRoomToFirestore(docRef, roomData, { onSuccess(roomId, null) }, onFailure)
         } else {
             uploadImages(roomId, imageUris, onProgress,
                 onComplete = { urls ->
                     val roomData = room.copy(id = roomId, userId = uid, imageUrls = urls)
-                    saveRoomToFirestore(docRef, roomData, onSuccess, onFailure)
+                    saveRoomToFirestore(docRef, roomData, { onSuccess(roomId, urls.firstOrNull()) }, onFailure)
                 },
                 onError = { error ->
                     onFailure(error)
@@ -162,12 +162,19 @@ class RoomRepository {
     ) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
         val baseQuery = db.collection("rooms").whereEqualTo("userId", uid)
+        
+        // Luôn lọc bỏ những bài đã thuê (rented) khỏi danh sách của chủ trọ
         val query = if (filter != "all") {
             baseQuery.whereEqualTo("status", filter)
                 .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
         } else {
-            baseQuery.orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
+            // Đối với filter "all", chúng ta lấy tất cả trừ rented
+            // Firestore không hỗ trợ != trong where cùng lúc với orderBy dễ dàng nếu không có index phức tạp,
+            // nên ta sẽ xử lý lọc ở code sau khi lấy về hoặc dùng list in
+            baseQuery.whereIn("status", listOf("pending", "approved", "rejected", "expired"))
+                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
         }
+
         query.get()
             .addOnSuccessListener { docs -> onSuccess(docs.toList()) }
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi tải dữ liệu") }
@@ -372,23 +379,69 @@ class RoomRepository {
     }
 
     fun deleteRoom(roomId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        val storageRef = storage.reference.child("rooms").child(roomId)
-        storageRef.listAll()
-            .addOnSuccessListener { listResult ->
-                val deleteTasks = listResult.items.map { it.delete() }
-                com.google.android.gms.tasks.Tasks.whenAllComplete(deleteTasks)
-                    .addOnCompleteListener {
-                        db.collection("rooms").document(roomId)
-                            .delete()
-                            .addOnSuccessListener { onSuccess() }
-                            .addOnFailureListener { e -> onFailure("Xóa dữ liệu thất bại: ${e.message}") }
+        db.collection("rooms").document(roomId).get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    onFailure("Bài đăng không tồn tại")
+                    return@addOnSuccessListener
+                }
+                val imageUrls = doc.get("imageUrls") as? List<String> ?: listOf()
+                
+                // Xóa document trong Firestore
+                db.collection("rooms").document(roomId).delete()
+                    .addOnSuccessListener {
+                        // Xóa các ảnh liên quan trong Storage
+                        imageUrls.forEach { url ->
+                            try {
+                                storage.getReferenceFromUrl(url).delete()
+                            } catch (e: Exception) {
+                                android.util.Log.e("RoomRepository", "Lỗi xóa ảnh: ${e.message}")
+                            }
+                        }
+                        // Xóa folder chứa ảnh (nếu có thể/cần thiết) hoặc chỉ xóa các file là đủ
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        onFailure(e.message ?: "Lỗi khi xóa bài đăng")
                     }
             }
             .addOnFailureListener { e ->
-                db.collection("rooms").document(roomId).delete()
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { onFailure(it.message ?: "Lỗi xóa") }
+                onFailure(e.message ?: "Lỗi khi lấy thông tin bài đăng")
             }
+    }
+
+    // Đánh dấu đã cho thuê: Xóa ảnh trên Storage và dọn dẹp dữ liệu bài đăng, chỉ giữ lại thông tin cơ bản cho Admin
+    fun markAsRented(roomId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        val roomRef = db.collection("rooms").document(roomId)
+        roomRef.get().addOnSuccessListener { document ->
+            if (document.exists()) {
+                val imageUrls = document.get("imageUrls") as? List<String> ?: emptyList()
+                
+                // 1. Xóa ảnh trên Storage
+                if (imageUrls.isNotEmpty()) {
+                    imageUrls.forEach { url ->
+                        try {
+                            storage.getReferenceFromUrl(url).delete()
+                        } catch (e: Exception) {
+                            // Bỏ qua lỗi nếu không xóa được một vài ảnh
+                        }
+                    }
+                }
+
+                // 2. Dọn dẹp dữ liệu Firestore
+                roomRef.update(mapOf(
+                    "status" to "rented",
+                    "rentedAt" to System.currentTimeMillis(),
+                    "imageUrls" to emptyList<String>(),
+                    "description" to "Phòng đã cho thuê - Dữ liệu đã được dọn dẹp",
+                    "videoUrl" to null,
+                    "updatedAt" to System.currentTimeMillis()
+                )).addOnSuccessListener { onSuccess() }
+                  .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi cập nhật trạng thái") }
+            } else {
+                onFailure("Không tìm thấy bài đăng")
+            }
+        }.addOnFailureListener { e -> onFailure("Lỗi truy xuất: ${e.message}") }
     }
 
     // Tải dữ liệu phòng dưới dạng Map (dùng cho EditPostViewModel)
@@ -483,6 +536,30 @@ class RoomRepository {
                     ))
                 }
                 batch.commit().addOnSuccessListener { onResult(expiredDocs.size) }
+            }
+    }
+
+    fun listenUnseenNotificationCount(uid: String, onResult: (Int) -> Unit): com.google.firebase.firestore.ListenerRegistration {
+        return db.collection("notifications")
+            .whereEqualTo("userId", uid)
+            .addSnapshotListener { snapshots, e ->
+                if (e != null) {
+                    onResult(0)
+                    return@addSnapshotListener
+                }
+                // Đếm thủ công để đảm bảo tính chính xác tuyệt đối
+                val count = snapshots?.documents?.count { doc ->
+                    val seenValue = doc.get("seen")
+                    val isReadValue = doc.get("isRead")
+                    
+                    // Logic: Chưa đọc khi (seen là false HOẶC seen không tồn tại) 
+                    // VÀ đồng thời (isRead là false HOẶC isRead không tồn tại)
+                    val isNotSeen = (seenValue == false || seenValue == null)
+                    val isNotRead = (isReadValue == false || isReadValue == null)
+                    
+                    isNotSeen && isNotRead
+                } ?: 0
+                onResult(count)
             }
     }
 }

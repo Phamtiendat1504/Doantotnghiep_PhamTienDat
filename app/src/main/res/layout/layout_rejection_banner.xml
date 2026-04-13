@@ -32,7 +32,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="B�I VI?T B? T? CH?I"
+                android:text="BÀI VIẾT BỊ TỪ CHỐI"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/secondary"
@@ -43,7 +43,7 @@
             android:id="@+id/tvRejectReason"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="L? do: ?nh ch�a r? th�ng tin"
+            android:text="Lý do: Ảnh chưa rõ thông tin"
             android:textSize="14sp"
             android:textColor="@color/secondary_dark"
             android:layout_marginTop="6dp" />
@@ -51,7 +51,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Vui l?ng ch?nh s?a c�c th�ng tin theo y�u c?u v� b?m 'C?p nh?t b�i vi?t' �? g?i duy?t l?i."
+            android:text="Vui lòng chỉnh sửa các thông tin theo yêu cầu và bấm 'Cập nhật bài viết' để gửi duyệt lại."
             android:textSize="12sp"
             android:textColor="@color/secondary_dark"
             android:layout_marginTop="8dp"

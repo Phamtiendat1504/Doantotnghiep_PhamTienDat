@@ -19,18 +19,18 @@ class ForgotPasswordViewModel : ViewModel() {
     val errorMessage: LiveData<String> = _errorMessage
 
     fun findEmailByPhone(phone: String) {
-        if (phone.isEmpty()) { _errorMessage.value = "Vui lòng nhập số điện thoại"; return }
-        if (phone.length != 10 || !phone.startsWith("0")) {
-            _errorMessage.value = "Số điện thoại phải có 10 số và bắt đầu bằng 0"; return
+        if (phone.length < 10) {
+            _errorMessage.value = "Số điện thoại không hợp lệ"
+            return
         }
-
         _isLoading.value = true
-        repository.findEmailByPhone(phone,
-            onSuccess = { email ->
+        repository.findEmailByPhone(
+            phone,
+            onSuccess = { email: String ->
                 _isLoading.value = false
                 _emailFound.value = email
             },
-            onFailure = { error ->
+            onFailure = { error: String ->
                 _isLoading.value = false
                 _errorMessage.value = error
             }

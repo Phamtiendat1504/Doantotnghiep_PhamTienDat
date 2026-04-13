@@ -15,6 +15,9 @@ class MyPostDetailViewModel : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
+    private val _markRentedStatus = MutableLiveData<Boolean>()
+    val markRentedStatus: LiveData<Boolean> = _markRentedStatus
+
     fun loadRoomDetail(roomId: String) {
         _isLoading.value = true
         repository.getRoomById(
@@ -26,6 +29,21 @@ class MyPostDetailViewModel : ViewModel() {
             onFailure = {
                 _isLoading.value = false
                 _roomData.value = null
+            }
+        )
+    }
+
+    fun markAsRented(roomId: String) {
+        _isLoading.value = true
+        repository.markAsRented(
+            roomId,
+            onSuccess = {
+                _isLoading.value = false
+                _markRentedStatus.value = true
+            },
+            onFailure = {
+                _isLoading.value = false
+                _markRentedStatus.value = false
             }
         )
     }

@@ -30,6 +30,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private lateinit var layoutFrontPlaceholder: LinearLayout
     private lateinit var layoutBackPlaceholder: LinearLayout
     private lateinit var btnSubmitVerify: com.google.android.material.button.MaterialButton
+    private lateinit var cbCommit: android.widget.CheckBox
     private lateinit var btnBack: ImageView
     private lateinit var progressBar: ProgressBar
 
@@ -111,6 +112,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
         layoutFrontPlaceholder = findViewById(R.id.layoutFrontPlaceholder)
         layoutBackPlaceholder = findViewById(R.id.layoutBackPlaceholder)
         btnSubmitVerify = findViewById(R.id.btnSubmitVerify)
+        cbCommit = findViewById(R.id.cbCommit)
         btnBack = findViewById(R.id.btnBack)
         progressBar = findViewById(R.id.progressBar)
     }
@@ -132,6 +134,10 @@ class VerifyLandlordActivity : AppCompatActivity() {
         }
         if (address.isEmpty() || frontUri == null || backUri == null) {
             MessageUtils.showInfoDialog(this, "Thông tin chưa đủ", "Vui lòng nhập địa chỉ và tải đủ 2 mặt ảnh CCCD.")
+            return
+        }
+        if (!cbCommit.isChecked) {
+            MessageUtils.showInfoDialog(this, "Chưa đồng ý quy định", "Vui lòng đọc và tích vào ô đồng ý với các quy định đăng tin.")
             return
         }
 

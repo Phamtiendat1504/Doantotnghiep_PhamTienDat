@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="24dp">
+
+        <!-- Header -->
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:layout_gravity="center"
+            android:src="@drawable/ic_verified"
+            android:layout_marginBottom="16dp"
+            app:tint="@color/primary" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="QUY ĐỊNH ĐĂNG BÀI &amp; TRÁCH NHIỆM CHỦ TRỌ"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="@color/primary"
+            android:gravity="center"
+            android:layout_marginBottom="24dp" />
+
+        <!-- Phần 1 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Yêu cầu về nội dung bài đăng"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Thông tin bắt buộc chính xác 100% về địa chỉ, giá cho thuê, diện tích và các loại chi phí đi kèm (điện, nước, dịch vụ).\n• Hình ảnh phải là ảnh thực tế tại phòng trọ. Nghiêm cấm sử dụng ảnh mạng, ảnh minh họa hoặc ảnh đã qua chỉnh sửa quá mức gây hiểu lầm.\n• Tiêu đề cần rõ ràng, súc tích. Không chứa ký tự đặc biệt, số điện thoại hoặc từ ngữ nhạy cảm."
+                android:textColor="@color/text_secondary"
+                android:lineSpacingExtra="4dp"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Phần 2 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="2. Trách nhiệm đối với người thuê"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Cam kết giữ đúng giá niêm yết trên ứng dụng khi người thuê đến xem phòng.\n• Phản hồi các yêu cầu đặt lịch hẹn hoặc tin nhắn của người thuê trong vòng tối đa 24 giờ.\n• Cập nhật trạng thái 'Đã cho thuê' ngay khi phòng không còn trống. Nếu cố tình để bài đăng ảo, tài khoản sẽ bị khóa vĩnh viễn."
+                android:textColor="@color/text_secondary"
+                android:lineSpacingExtra="4dp"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Phần 3 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginBottom="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="3. Quy trình kiểm duyệt &amp; Hiển thị"
+                android:textStyle="bold"
+                android:textColor="@color/text_primary"
+                android:textSize="15sp"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Mọi bài đăng mới hoặc chỉnh sửa đều phải qua đội ngũ Admin phê duyệt trong vòng 24 giờ.\n• Bài đăng sẽ tự động ẩn sau 60 ngày để đảm bảo thông tin luôn mới. Bạn có thể gia hạn bất cứ lúc nào.\n• Hệ thống có quyền gỡ bỏ không báo trước nếu bài đăng nhận được nhiều phản hồi tiêu cực hoặc vi phạm pháp luật."
+                android:textColor="@color/text_secondary"
+                android:lineSpacingExtra="4dp"
+                android:textSize="13sp" />
+        </LinearLayout>
+
+        <!-- Footer -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Bằng việc nhấn 'Đồng ý', bạn cam kết tuân thủ mọi quy định của Tìm trọ 24/7 để xây dựng cộng đồng tìm trọ minh bạch, an toàn."
+            android:textSize="12sp"
+            android:textStyle="italic"
+            android:textColor="@color/primary"
+            android:gravity="center"
+            android:layout_marginBottom="20dp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnAcceptRules"
+            android:layout_width="match_parent"
+            android:layout_height="54dp"
+            android:text="TÔI ĐÃ HIỂU VÀ ĐỒNG Ý"
+            android:textStyle="bold"
+            app:cornerRadius="12dp"
+            app:backgroundTint="@color/primary" />
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>

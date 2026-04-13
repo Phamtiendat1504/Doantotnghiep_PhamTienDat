@@ -13,7 +13,7 @@ class VerifyOtpViewModel : ViewModel() {
     val isLoading: LiveData<Boolean> = _isLoading
 
     private val _verifySuccess = MutableLiveData<String>()
-    val verifySuccess: LiveData<String> = _verifySuccess // chứa email để hiển thị dialog
+    val verifySuccess: LiveData<String> = _verifySuccess
 
     private val _invalidOtp = MutableLiveData<Boolean>()
     val invalidOtp: LiveData<Boolean> = _invalidOtp
@@ -21,25 +21,33 @@ class VerifyOtpViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
-    fun verifyOtp(verificationId: String, otp: String, email: String) {
-        if (otp.isEmpty()) { _errorMessage.value = "otp_empty"; return }
-        if (otp.length != 6) { _errorMessage.value = "otp_invalid"; return }
+    fun verifyOtp(verificationId: String, otpInput: String, email: String) {
+        if (otpInput.isEmpty()) { 
+            _errorMessage.value = "otp_empty"
+            return 
+        }
+        if (otpInput.length < 6) {
+            _errorMessage.value = "otp_invalid"
+            return
+        }
 
         _isLoading.value = true
-        repository.verifyOtpAndSendResetEmail(
-            verificationId, otp, email,
-            onSuccess = {
+        
+        // Tạo credential từ mã OTP người dùng nhập
+        val credential = com.google.firebase.auth.PhoneAuthProvider.getCredential(verificationId, otpInput)
+        
+        // Dùng Firebase Auth để xác thực mã này
+        val auth = com.google.firebase.auth.FirebaseAuth.getInstance()
+        auth.signInWithCredential(credential)
+            .addOnSuccessListener {
+                // Xác thực OTP thành công, không cần gửi Email nữa
+                auth.signOut() 
                 _isLoading.value = false
-                _verifySuccess.value = email
-            },
-            onInvalidOtp = {
+                _verifySuccess.value = email // Báo thành công để chuyển màn hình
+            }
+            .addOnFailureListener {
                 _isLoading.value = false
                 _invalidOtp.value = true
-            },
-            onFailure = { error ->
-                _isLoading.value = false
-                _errorMessage.value = error
             }
-        )
     }
 }

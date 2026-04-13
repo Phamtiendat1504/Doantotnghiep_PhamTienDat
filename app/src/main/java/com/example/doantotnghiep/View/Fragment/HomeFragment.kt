@@ -10,6 +10,8 @@ import android.view.inputmethod.EditorInfo
 import android.widget.EditText
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.LinearLayout
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -24,7 +26,9 @@ import com.google.android.material.chip.ChipGroup
 class HomeFragment : Fragment() {
 
     private lateinit var tvGreeting: TextView
-    private lateinit var btnNotification: ImageView
+    private lateinit var tvCurrentDate: TextView
+    private lateinit var btnNotification: View
+    private lateinit var tvNotificationBadge: TextView
     private lateinit var rvFeaturedRooms: RecyclerView
     private lateinit var rvNewRooms: RecyclerView
     private lateinit var tvNoFeatured: TextView
@@ -35,6 +39,9 @@ class HomeFragment : Fragment() {
     private lateinit var btnHomeSearch: ImageView
     private lateinit var chipGroupPopularAreas: ChipGroup
     private lateinit var btnLoadMore: TextView
+    private lateinit var layoutRecentSearch: LinearLayout
+    private lateinit var scrollRecentSearch: View
+    private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
     private lateinit var viewModel: HomeViewModel
 
@@ -48,8 +55,10 @@ class HomeFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        tvGreeting = view.findViewById(R.id.tvGreeting)
-        btnNotification = view.findViewById(R.id.btnNotification)
+        tvGreeting = view.findViewById(R.id.tvGreetingLabel)
+        tvCurrentDate = view.findViewById(R.id.tvCurrentDate)
+        btnNotification = view.findViewById(R.id.btnNotificationContainer)
+        tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge)
         tvNoFeatured = view.findViewById(R.id.tvNoFeatured)
         tvNoNewRooms = view.findViewById(R.id.tvNoNewRooms)
         rvFeaturedRooms = view.findViewById(R.id.rvFeaturedRooms)
@@ -57,16 +66,30 @@ class HomeFragment : Fragment() {
         skeletonFeatured = view.findViewById(R.id.skeletonFeatured)
         skeletonNewRooms = view.findViewById(R.id.skeletonNewRooms)
         edtHomeSearch = view.findViewById(R.id.edtHomeSearch)
-        btnHomeSearch = view.findViewById(R.id.btnHomeSearch)
+        // Icon tìm kiếm đã bị xóa, dùng Label TÌM thay thế
+        val btnSearchLabel: TextView = view.findViewById(R.id.btnSearchLabel)
         chipGroupPopularAreas = view.findViewById(R.id.chipGroupPopularAreas)
         btnLoadMore = view.findViewById(R.id.btnLoadMore)
+        layoutRecentSearch = view.findViewById(R.id.layoutRecentSearch)
+        scrollRecentSearch = view.findViewById(R.id.scrollRecentSearch)
+        swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
 
+        setupSwipeRefresh()
         setupRecyclerViews()
+        setupSearchHistory()
 
         viewModel = ViewModelProvider(this)[HomeViewModel::class.java]
 
         viewModel.userName.observe(viewLifecycleOwner) { name ->
-            tvGreeting.text = "Chào, $name"
+            view.findViewById<TextView>(R.id.tvUserName).text = name
+        }
+
+        viewModel.greeting.observe(viewLifecycleOwner) { greeting ->
+            tvGreeting.text = greeting
+        }
+
+        viewModel.currentDate.observe(viewLifecycleOwner) { date ->
+            tvCurrentDate.text = date
         }
 
         viewModel.popularAreas.observe(viewLifecycleOwner) { areas ->
@@ -93,6 +116,7 @@ class HomeFragment : Fragment() {
         viewModel.isLoadingFeatured.observe(viewLifecycleOwner) { isLoading ->
             skeletonFeatured.visibility = if (isLoading) View.VISIBLE else View.GONE
             if (isLoading) rvFeaturedRooms.visibility = View.GONE
+            checkRefreshStatus()
         }
 
         viewModel.featuredRooms.observe(viewLifecycleOwner) { rooms ->
@@ -111,6 +135,7 @@ class HomeFragment : Fragment() {
         viewModel.isLoadingNew.observe(viewLifecycleOwner) { isLoading ->
             skeletonNewRooms.visibility = if (isLoading) View.VISIBLE else View.GONE
             if (isLoading) { rvNewRooms.visibility = View.GONE; btnLoadMore.visibility = View.GONE }
+            checkRefreshStatus()
         }
 
         viewModel.newRooms.observe(viewLifecycleOwner) { rooms ->
@@ -136,10 +161,21 @@ class HomeFragment : Fragment() {
             btnLoadMore.text = if (isLoading) "Đang tải..." else "Xem thêm"
         }
 
+        viewModel.notificationBadgeCount.observe(viewLifecycleOwner) { count ->
+            if (!isAdded) return@observe
+            if (count > 0) {
+                tvNotificationBadge.text = if (count > 99) "99+" else count.toString()
+                tvNotificationBadge.visibility = View.VISIBLE
+            } else {
+                tvNotificationBadge.visibility = View.GONE
+            }
+        }
+
         viewModel.loadUserName()
         viewModel.loadPopularAreas()
         viewModel.loadFeaturedRooms()
         viewModel.loadNewRooms(isRefresh = true)
+        viewModel.loadNotificationBadge()
 
         btnLoadMore.setOnClickListener {
             val isLoading = viewModel.isLoadingMore.value ?: false
@@ -147,13 +183,16 @@ class HomeFragment : Fragment() {
             if (!isLoading && hasMore) viewModel.loadMoreNewRooms()
         }
 
-        btnNotification.setOnClickListener {
+        val navigateToNotifications = {
             val intent = android.content.Intent(requireContext(),
                 com.example.doantotnghiep.View.Auth.NotificationsActivity::class.java)
             startActivity(intent)
         }
 
-        btnHomeSearch.setOnClickListener { performHomeSearch() }
+        btnNotification.setOnClickListener { navigateToNotifications() }
+        view.findViewById<View>(R.id.btnNotification)?.setOnClickListener { navigateToNotifications() }
+
+        btnSearchLabel.setOnClickListener { performHomeSearch() }
         edtHomeSearch.setOnEditorActionListener { _, actionId, event ->
             if (actionId == EditorInfo.IME_ACTION_SEARCH ||
                 (event?.keyCode == KeyEvent.KEYCODE_ENTER && event.action == KeyEvent.ACTION_DOWN)) {
@@ -162,9 +201,85 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun setupSwipeRefresh() {
+        swipeRefreshLayout.setColorSchemeColors(ContextCompat.getColor(requireContext(), R.color.primary))
+        swipeRefreshLayout.setOnRefreshListener {
+            refreshAllData()
+        }
+    }
+
+    private fun refreshAllData() {
+        viewModel.loadUserName()
+        viewModel.loadPopularAreas()
+        viewModel.loadFeaturedRooms()
+        viewModel.loadNewRooms(isRefresh = true)
+        viewModel.loadNotificationBadge()
+    }
+
+    private fun checkRefreshStatus() {
+        val loadingFeatured = viewModel.isLoadingFeatured.value ?: false
+        val loadingNew = viewModel.isLoadingNew.value ?: false
+        if (!loadingFeatured && !loadingNew) {
+            swipeRefreshLayout.isRefreshing = false
+        }
+    }
+
+    private fun setupSearchHistory() {
+        val sharedPref = requireContext().getSharedPreferences("SearchHistory", android.content.Context.MODE_PRIVATE)
+        
+        fun updateHistoryUI() {
+            val history = sharedPref.getString("queries", "") ?: ""
+            val queries = if (history.isEmpty()) emptyList() else history.split("|").filter { it.isNotBlank() }
+            
+            if (queries.isEmpty()) {
+                scrollRecentSearch.visibility = View.GONE
+            } else {
+                scrollRecentSearch.visibility = View.VISIBLE
+                layoutRecentSearch.removeAllViews()
+                queries.forEach { query ->
+                    val textView = TextView(requireContext()).apply {
+                        text = query
+                        textSize = 12f
+                        setPadding(24, 12, 24, 12)
+                        setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
+                        background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_search_tag)
+                        val params = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.WRAP_CONTENT,
+                            LinearLayout.LayoutParams.WRAP_CONTENT
+                        ).apply { marginEnd = 16 }
+                        layoutParams = params
+                        setOnClickListener {
+                            edtHomeSearch.setText(query)
+                            performHomeSearch()
+                        }
+                    }
+                    layoutRecentSearch.addView(textView)
+                }
+            }
+        }
+
+        updateHistoryUI()
+
+        // Lắng nghe sự kiện focus để hiện/ẩn lịch sử
+        edtHomeSearch.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) updateHistoryUI()
+        }
+    }
+
+    private fun saveSearchQuery(query: String) {
+        val sharedPref = requireContext().getSharedPreferences("SearchHistory", android.content.Context.MODE_PRIVATE)
+        val history = sharedPref.getString("queries", "") ?: ""
+        val queries = history.split("|").toMutableList().filter { it.isNotBlank() && it != query }
+        val newHistory = (listOf(query) + queries).take(5).joinToString("|")
+        sharedPref.edit().putString("queries", newHistory).apply()
+    }
+
     private fun performHomeSearch() {
         val query = edtHomeSearch.text.toString().trim()
         if (query.isEmpty()) { edtHomeSearch.error = "Vui lòng nhập từ khóa tìm kiếm"; return }
+        
+        saveSearchQuery(query) // Lưu lịch sử
+
         val intent = Intent(requireContext(), SearchResultsActivity::class.java)
         intent.putExtra("query", query)
         startActivity(intent)
@@ -184,5 +299,6 @@ class HomeFragment : Fragment() {
         if (viewModel.popularAreas.value.isNullOrEmpty()) viewModel.loadPopularAreas()
         if (viewModel.featuredRooms.value.isNullOrEmpty()) viewModel.loadFeaturedRooms()
         viewModel.loadNewRooms(isRefresh = true)
+        viewModel.loadNotificationBadge() // Tải lại số lượng thông báo khi quay lại
     }
 }

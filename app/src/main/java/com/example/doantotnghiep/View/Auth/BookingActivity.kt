@@ -2,6 +2,7 @@ package com.example.doantotnghiep.View.Auth
 
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.*
@@ -159,6 +160,57 @@ class BookingActivity : AppCompatActivity() {
             return
         }
 
+        val uid = viewModel.getCurrentUserId() ?: return
+        val roomId = intent.getStringExtra("roomId") ?: ""
+
+        // KIỂM TRA LỊCH HẸN ĐÃ TỒN TẠI VÀ COOLDOWN
+        viewModel.checkExistingAppointment(uid, roomId) { exists, _, reason, lastCreatedAt ->
+            if (exists) {
+                val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+                when (reason) {
+                    "active" -> {
+                        builder.setTitle("Bạn đã có lịch hẹn")
+                            .setMessage("Bạn đã gửi một yêu cầu đặt lịch cho phòng này và đang chờ xử lý. Bạn có muốn xem lại danh sách lịch hẹn của mình không?")
+                            .setPositiveButton("Xem lịch hẹn") { _, _ ->
+                                val intent = Intent(this, MyAppointmentsActivity::class.java)
+                                startActivity(intent)
+                                finish()
+                            }
+                            .setNegativeButton("Đóng", null)
+                    }
+                    "rented" -> {
+                        builder.setTitle("Phòng đã được thuê")
+                            .setMessage("Bạn đã hoàn tất việc thuê phòng này. Không thể đặt thêm lịch hẹn mới.")
+                            .setPositiveButton("Đóng", null)
+                    }
+                    "cooldown" -> {
+                        val remainingMs = (3 * 24 * 60 * 60 * 1000L) - (System.currentTimeMillis() - (lastCreatedAt ?: 0L))
+                        val days = remainingMs / (24 * 60 * 60 * 1000L)
+                        val hours = (remainingMs % (24 * 60 * 60 * 1000L)) / (60 * 60 * 1000L)
+                        val minutes = (remainingMs % (60 * 60 * 1000L)) / (60 * 1000L)
+                        
+                        val timeStr = if (days > 0) "$days ngày $hours giờ" else "$hours giờ $minutes phút"
+
+                        builder.setTitle("Vui lòng đợi")
+                            .setMessage("Bạn vừa kết thúc một lịch hẹn cho phòng này. Để tránh spam, vui lòng đợi thêm $timeStr nữa để có thể gửi yêu cầu mới.")
+                            .setPositiveButton("Đóng", null)
+                    }
+                }
+                builder.show()
+            } else {
+                performSubmit()
+            }
+        }
+    }
+
+    private fun performSubmit() {
+        val fullName = edtFullName.text.toString().trim()
+        val phone = edtPhone.text.toString().trim()
+        val gender = when (rgGender.checkedRadioButtonId) {
+            R.id.rbMale -> "Nam"
+            R.id.rbFemale -> "Nữ"
+            else -> ""
+        }
         val uid = viewModel.getCurrentUserId() ?: return
         val roomId = intent.getStringExtra("roomId") ?: ""
         val landlordId = intent.getStringExtra("landlordId") ?: ""

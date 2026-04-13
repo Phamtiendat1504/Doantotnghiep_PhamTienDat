@@ -44,15 +44,35 @@ class BookingViewModel : ViewModel() {
     private val _selectedTenantDetails = MutableLiveData<User?>()
     val selectedTenantDetails: LiveData<User?> = _selectedTenantDetails
 
+    private val _timeConflicts = MutableLiveData<Map<String, Int>>()
+    val timeConflicts: LiveData<Map<String, Int>> = _timeConflicts
+
+    fun checkExistingAppointment(tenantId: String, roomId: String, onResult: (Boolean, String?, String?, Long?) -> Unit) {
+        repository.checkExistingAppointment(tenantId, roomId, onResult)
+    }
+
+    fun listenTimeConflicts(roomId: String) {
+        repository.checkTimeConflicts(roomId) { conflicts ->
+            _timeConflicts.value = conflicts
+        }
+    }
+
     fun clearSelectedDetails() {
         _selectedRoomDetails.value = null
         _selectedTenantDetails.value = null
     }
 
     fun loadUserInfo() {
+        _isLoading.value = true
         authRepository.loadUserObject(
-            onSuccess = { user -> _userData.value = user },
-            onFailure = { e -> _errorMessage.value = e }
+            onSuccess = { user ->
+                _isLoading.value = false
+                _userData.value = user
+            },
+            onFailure = { e ->
+                _isLoading.value = false
+                _errorMessage.value = e
+            }
         )
     }
 
@@ -186,30 +206,17 @@ class BookingViewModel : ViewModel() {
     }
 
     fun markAsRented(
-        appointmentId: String, tenantId: String, roomTitle: String, roomId: String,
-        onSuccess: () -> Unit, onFailure: (String) -> Unit
+        appointmentId: String,
+        roomId: String,
+        tenantId: String,
+        roomTitle: String
     ) {
         _isLoading.value = true
-        repository.sendNotification(
-            userId = tenantId,
-            title = "Phòng đã được cho thuê",
-            message = "Phòng \"$roomTitle\" đã được cho thuê. Cảm ơn bạn đã quan tâm!",
-            type = "room_rented"
-        )
-        repository.deleteAppointment(
-            appointmentId,
+        repository.markAsRented(
+            appointmentId, roomId, tenantId, roomTitle,
             onSuccess = {
-                roomRepository.deleteRoom(
-                    roomId,
-                    onSuccess = {
-                        _isLoading.value = false
-                        onSuccess()
-                    },
-                    onFailure = { error ->
-                        _isLoading.value = false
-                        onFailure(error)
-                    }
-                )
+                _isLoading.value = false
+                _bookingResult.value = true
             },
             onFailure = { e ->
                 _isLoading.value = false

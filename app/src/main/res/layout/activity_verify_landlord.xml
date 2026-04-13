@@ -311,9 +311,101 @@
 
                 </FrameLayout>
 
+                <!-- Thông báo bảo mật -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:padding="10dp"
+                    android:background="@drawable/bg_amenity_row"
+                    android:layout_marginTop="12dp">
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_lock"
+                        app:tint="#2E7D32" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Chúng tôi cam kết bảo mật thông tin cá nhân của bạn và chỉ dùng cho mục đích xác thực chủ trọ."
+                        android:textSize="11sp"
+                        android:textColor="#2E7D32"
+                        android:layout_marginStart="10dp"
+                        android:textStyle="italic" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
         </androidx.cardview.widget.CardView>
+
+        <!-- Quy định & Cam kết -->
+        <androidx.cardview.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="14dp"
+            android:layout_marginEnd="14dp"
+            android:layout_marginBottom="16dp"
+            app:cardCornerRadius="14dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp"
+                android:background="#F8F9FA">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="10dp">
+
+                    <ImageView
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
+                        android:src="@drawable/ic_info"
+                        app:tint="@color/primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Quy định &amp; Trách nhiệm của chủ trọ"
+                        android:textSize="15sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"
+                        android:layout_marginStart="8dp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="1. Cung cấp thông tin phòng trọ và hình ảnh thực tế, chính xác.\n2. Tuyệt đối không đăng tải thông tin sai lệch hoặc gây nhầm lẫn.\n3. Chủ trọ tự chịu trách nhiệm về tính pháp lý và an toàn của căn hộ.\n4. Phản hồi thắc mắc của khách thuê một cách lịch sự, đúng hẹn."
+                    android:textSize="13sp"
+                    android:textColor="#555555"
+                    android:lineSpacingExtra="4dp" />
+
+            </LinearLayout>
+        </androidx.cardview.widget.CardView>
+
+        <!-- Điều khoản cam kết -->
+        <CheckBox
+            android:id="@+id/cbCommit"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginBottom="16dp"
+            android:text="Tôi đã đọc và cam đoan tuân thủ mọi quy định trên."
+            android:textSize="13sp"
+            android:textColor="@color/text_primary"
+            android:buttonTint="#1976D2"
+            android:paddingStart="8dp" />
 
         <!-- Nút gửi -->
         <com.google.android.material.button.MaterialButton

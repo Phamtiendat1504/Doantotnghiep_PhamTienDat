@@ -54,7 +54,19 @@ class VerificationRepository {
                     "status" to "pending",
                     "createdAt" to System.currentTimeMillis()
                 )
-                db.collection("verifications").document(uid).set(data)
+                db.collection("verifications").document(uid).set(data).addOnSuccessListener {
+                    // Thêm thông báo cho Admin
+                    val notif = hashMapOf(
+                        "userId" to "admin_system", // ID giả định để Admin nhận diện
+                        "title" to "Yêu cầu xác minh mới",
+                        "message" to "Người dùng $fullName vừa gửi yêu cầu xác minh chủ trọ.",
+                        "type" to "new_verification",
+                        "isRead" to false,
+                        "createdAt" to System.currentTimeMillis(),
+                        "targetId" to uid
+                    )
+                    db.collection("notifications").add(notif)
+                }
             }
         }.addOnSuccessListener { onSuccess() }
          .addOnFailureListener { e -> onFailure(e.message ?: "Đã có lỗi xảy ra, vui lòng thử lại sau.") }

@@ -26,36 +26,49 @@ class SplashActivity : AppCompatActivity() {
         val imgLogo   = findViewById<View>(R.id.imgLogo)
         val tvAppName = findViewById<View>(R.id.tvAppName)
         val tvSlogan  = findViewById<View>(R.id.tvSlogan)
+        val logoContainer = findViewById<View>(R.id.logoContainer)
         val layoutDots = findViewById<View>(R.id.layoutDots)
         val dot1 = findViewById<View>(R.id.dot1)
         val dot2 = findViewById<View>(R.id.dot2)
         val dot3 = findViewById<View>(R.id.dot3)
 
-        // === Animation logo: fade in + scale up ===
-        val logoAlpha = ObjectAnimator.ofFloat(imgLogo, "alpha", 0f, 1f).apply {
-            duration = 700
+        // === Animation logo container: fade in + scale up ===
+        val logoAlpha = ObjectAnimator.ofFloat(logoContainer, "alpha", 0f, 1f).apply {
+            duration = 800
             startDelay = 200
         }
-        val logoScaleX = ObjectAnimator.ofFloat(imgLogo, "scaleX", 0.5f, 1f).apply {
-            duration = 700
+        val logoScaleX = ObjectAnimator.ofFloat(logoContainer, "scaleX", 0.7f, 1f).apply {
+            duration = 800
             startDelay = 200
-            interpolator = DecelerateInterpolator()
+            interpolator = android.view.animation.OvershootInterpolator()
         }
-        val logoScaleY = ObjectAnimator.ofFloat(imgLogo, "scaleY", 0.5f, 1f).apply {
-            duration = 700
+        val logoScaleY = ObjectAnimator.ofFloat(logoContainer, "scaleY", 0.7f, 1f).apply {
+            duration = 800
             startDelay = 200
-            interpolator = DecelerateInterpolator()
+            interpolator = android.view.animation.OvershootInterpolator()
         }
 
-        // === Animation tên app: fade in + trượt lên ===
-        tvAppName.translationY = 30f
-        val nameAlpha = ObjectAnimator.ofFloat(tvAppName, "alpha", 0f, 1f).apply {
-            duration = 600
-            startDelay = 700
+        // === Hiệu ứng "Pulse" (nhịp thở) cho Logo lặp vô tận ===
+        val pulseX = ObjectAnimator.ofFloat(imgLogo, "scaleX", 1f, 1.1f, 1f).apply {
+            duration = 2000
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
         }
-        val nameTranslate = ObjectAnimator.ofFloat(tvAppName, "translationY", 30f, 0f).apply {
-            duration = 600
-            startDelay = 700
+        val pulseY = ObjectAnimator.ofFloat(imgLogo, "scaleY", 1f, 1.1f, 1f).apply {
+            duration = 2000
+            repeatCount = ObjectAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
+        }
+
+        // === Animation tên app: hiện ra với khoảng cách chữ rộng dần ===
+        tvAppName.translationY = 40f
+        val nameAlpha = ObjectAnimator.ofFloat(tvAppName, "alpha", 0f, 1f).apply {
+            duration = 800
+            startDelay = 600
+        }
+        val nameTranslate = ObjectAnimator.ofFloat(tvAppName, "translationY", 40f, 0f).apply {
+            duration = 800
+            startDelay = 600
             interpolator = DecelerateInterpolator()
         }
 
@@ -75,6 +88,10 @@ class SplashActivity : AppCompatActivity() {
             playTogether(logoAlpha, logoScaleX, logoScaleY, nameAlpha, nameTranslate, sloganAlpha, dotsAlpha)
             start()
         }
+
+        // Chạy hiệu ứng Pulse sau khi logo đã hiện xong
+        pulseX.start()
+        pulseY.start()
 
         // === Nhấp nháy dots loading ===
         val handler = Handler(Looper.getMainLooper())

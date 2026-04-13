@@ -9,6 +9,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -30,7 +31,8 @@ class ProfileFragment : Fragment() {
     private lateinit var btnAppointments: LinearLayout
     private lateinit var tvAppointmentBadge: TextView
     private lateinit var btnLogout: LinearLayout
-    private lateinit var btnNotification: ImageView
+    private lateinit var btnNotification: View
+    private lateinit var tvNotificationBadge: TextView
     private lateinit var btnChangeAvatar: androidx.cardview.widget.CardView
     private lateinit var cardMyPosts: androidx.cardview.widget.CardView
     private lateinit var btnMyPosts: LinearLayout
@@ -43,11 +45,9 @@ class ProfileFragment : Fragment() {
     private var currentAvatarUrl: String = ""
 
     private val pickImageLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { viewModel.uploadAvatar(it) }
-        }
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        uri?.let { viewModel.uploadAvatar(it) }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -72,6 +72,7 @@ class ProfileFragment : Fragment() {
             setupObservers()
             viewModel.loadUserInfo()
             viewModel.loadAppointmentBadge()
+            viewModel.loadNotificationBadge()
         }
     }
 
@@ -154,18 +155,34 @@ class ProfileFragment : Fragment() {
             Glide.with(this).load(url).circleCrop().into(imgAvatar)
             imgAvatar.setPadding(0, 0, 0, 0)
             imgAvatar.imageTintList = null
+            
             MessageUtils.showSuccessDialog(requireContext(), "Cập nhật thành công", "Ảnh đại diện đã được cập nhật")
+            viewModel.resetAvatarUploadState() // Reset để không hiện lại Dialog đang xử lý
         }
 
         viewModel.isUploadingAvatar.observe(viewLifecycleOwner) { isUploading ->
             if (isUploading == true && isAdded) {
-                MessageUtils.showInfoDialog(requireContext(), "Đang xử lý", "Ảnh đang được tải lên, vui lòng chờ...")
+                // Chỉ hiện thông báo nếu chưa có kết quả thành công
+                if (viewModel.newAvatarUrl.value.isNullOrEmpty()) {
+                    MessageUtils.showInfoDialog(requireContext(), "Đang xử lý", "Ảnh đang được tải lên, vui lòng chờ...")
+                }
             }
         }
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             if (!error.isNullOrEmpty() && isAdded) {
                 MessageUtils.showErrorDialog(requireContext(), "Lỗi cập nhật ảnh", error)
+            }
+        }
+
+        viewModel.notificationBadgeCount.observe(viewLifecycleOwner) { count ->
+            if (!isAdded) return@observe
+            val badge = view?.findViewById<TextView>(R.id.tvNotificationBadge)
+            if (count > 0) {
+                badge?.text = if (count > 99) "99+" else count.toString()
+                badge?.visibility = View.VISIBLE
+            } else {
+                badge?.visibility = View.GONE
             }
         }
     }
@@ -191,7 +208,8 @@ class ProfileFragment : Fragment() {
         btnAppointments = view.findViewById(R.id.btnAppointments)
         tvAppointmentBadge = view.findViewById(R.id.tvAppointmentBadge)
         btnLogout = view.findViewById(R.id.btnLogout)
-        btnNotification = view.findViewById(R.id.btnNotification)
+        btnNotification = view.findViewById(R.id.btnNotificationContainer)
+        tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge)
         btnChangeAvatar = view.findViewById(R.id.btnChangeAvatar)
         cardMyPosts = view.findViewById(R.id.cardMyPosts)
         btnMyPosts = view.findViewById(R.id.btnMyPosts)
@@ -208,12 +226,14 @@ class ProfileFragment : Fragment() {
             }
         }
         btnChangeAvatar.setOnClickListener {
-            val intent = Intent(Intent.ACTION_GET_CONTENT).apply { type = "image/*"; addCategory(Intent.CATEGORY_OPENABLE) }
-            pickImageLauncher.launch(intent)
+            pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
         }
         btnPersonalInfo.setOnClickListener { startActivity(Intent(requireContext(), PersonalInfoActivity::class.java)) }
         btnChangePassword.setOnClickListener { startActivity(Intent(requireContext(), ChangePasswordActivity::class.java)) }
-        btnNotification.setOnClickListener { startActivity(Intent(requireContext(), NotificationsActivity::class.java)) }
+        btnNotification.setOnClickListener {
+            val intent = Intent(requireContext(), NotificationsActivity::class.java)
+            startActivity(intent)
+        }
         btnSavedPosts.setOnClickListener { startActivity(Intent(requireContext(), SavedPostsActivity::class.java)) }
         btnMyPosts.setOnClickListener {
             tvMyPostsBadge.visibility = View.GONE
@@ -251,6 +271,7 @@ class ProfileFragment : Fragment() {
             viewModel.loadUserInfo()
             viewModel.loadAppointmentBadge()
             viewModel.loadMyPostsBadge(requireContext())
+            viewModel.loadNotificationBadge()
         }
     }
 }

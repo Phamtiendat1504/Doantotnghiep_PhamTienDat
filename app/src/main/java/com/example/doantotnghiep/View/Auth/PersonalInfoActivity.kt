@@ -124,7 +124,7 @@ class PersonalInfoActivity : AppCompatActivity() {
             if (email != originalEmail) {
                 showPasswordDialogToUpdateEmail(email, fullName, phone, address, birthday, gender, occupation)
             } else {
-                viewModel.updateUserInfo(fullName, email, phone, address, birthday, gender, occupation)
+                viewModel.updateUserInfo(fullName, phone, address, birthday, gender, occupation)
             }
         }
 
@@ -165,25 +165,19 @@ class PersonalInfoActivity : AppCompatActivity() {
 
         viewModel.updateResult.observe(this) { success ->
             if (success) {
-                val fullName = edtFullName.text.toString().trim()
-                val phone = edtPhone.text.toString().trim()
-                val address = edtAddress.text.toString().trim()
-                val occupation = edtOccupation.text.toString().trim()
-                val birthday = if (tvBirthday.text.toString() == "Chưa cập nhật") "" else tvBirthday.text.toString()
-                val gender = when (rgGender.checkedRadioButtonId) {
+                originalFullName = edtFullName.text.toString().trim()
+                originalPhone = edtPhone.text.toString().trim()
+                originalAddress = edtAddress.text.toString().trim()
+                originalOccupation = edtOccupation.text.toString().trim()
+                originalBirthday = if (tvBirthday.text.toString() == "Chưa cập nhật") "" else tvBirthday.text.toString()
+                originalGender = when (rgGender.checkedRadioButtonId) {
                     R.id.rbMale -> "Nam"
                     R.id.rbFemale -> "Nữ"
                     else -> ""
                 }
-                originalFullName = fullName
-                originalPhone = phone
-                originalAddress = address
-                originalBirthday = birthday
-                originalGender = gender
-                originalOccupation = occupation
                 isEditing = false
                 enableEditing(false)
-                MessageUtils.showSuccessDialog(this, "Cập nhật thành công", "Thông tin cá nhân của bạn đã được cập nhật trên hệ thống.")
+                MessageUtils.showSuccessDialog(this, "Cập nhật thành công", "Thông tin cá nhân của bạn đã được cập nhật.")
             }
         }
 
@@ -191,21 +185,19 @@ class PersonalInfoActivity : AppCompatActivity() {
             if (success) {
                 val newEmail = edtEmail.text.toString().trim()
                 viewModel.updateUserInfo(
-                    edtFullName.text.toString().trim(), newEmail,
-                    edtPhone.text.toString().trim(), edtAddress.text.toString().trim(),
+                    edtFullName.text.toString().trim(),
+                    edtPhone.text.toString().trim(),
+                    edtAddress.text.toString().trim(),
                     if (tvBirthday.text.toString() == "Chưa cập nhật") "" else tvBirthday.text.toString(),
                     when (rgGender.checkedRadioButtonId) { R.id.rbMale -> "Nam"; R.id.rbFemale -> "Nữ"; else -> "" },
                     edtOccupation.text.toString().trim()
                 )
-                MessageUtils.showSuccessDialog(
-                    this, "Xác nhận email mới",
-                    "Một email xác nhận đã được gửi đến $newEmail. Vui lòng kiểm tra hộp thư và xác nhận để hoàn tất đổi email."
-                )
+                MessageUtils.showSuccessDialog(this, "Xác nhận email mới", "Email xác nhận đã được gửi đến $newEmail.")
             }
         }
 
         viewModel.wrongPassword.observe(this) { wrong ->
-            if (wrong) MessageUtils.showErrorDialog(this, "Xác thực thất bại", "Mật khẩu bạn nhập không chính xác.")
+            if (wrong) MessageUtils.showErrorDialog(this, "Xác thực thất bại", "Mật khẩu không chính xác.")
         }
 
         viewModel.errorMessage.observe(this) { msg ->
@@ -219,23 +211,17 @@ class PersonalInfoActivity : AppCompatActivity() {
     ) {
         val input = EditText(this)
         input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "Nhập mật khẩu hiện tại"
+        input.hint = "Nhập mật khẩu"
         input.setPadding(50, 30, 50, 30)
 
         AlertDialog.Builder(this)
             .setTitle("Xác nhận đổi email")
-            .setMessage("Để thay đổi email, vui lòng nhập mật khẩu hiện tại của bạn.")
             .setView(input)
             .setPositiveButton("Xác nhận") { _, _ ->
                 val password = input.text.toString().trim()
-                if (password.isEmpty()) {
-                    MessageUtils.showInfoDialog(this, "Thông tin thiếu", "Vui lòng nhập mật khẩu để xác nhận.")
-                    return@setPositiveButton
-                }
-                viewModel.reauthenticateAndUpdateEmail(originalEmail, password, newEmail)
+                if (password.isNotEmpty()) viewModel.reauthenticateAndUpdateEmail(password, newEmail)
             }
             .setNegativeButton("Hủy", null)
-            .setCancelable(false)
             .show()
     }
 
@@ -252,54 +238,24 @@ class PersonalInfoActivity : AppCompatActivity() {
 
     private fun enableEditing(enabled: Boolean) {
         edtFullName.isEnabled = enabled
-        edtEmail.isEnabled = false
         edtPhone.isEnabled = enabled
         edtAddress.isEnabled = enabled
         edtOccupation.isEnabled = enabled
         rbMale.isEnabled = enabled
         rbFemale.isEnabled = enabled
         btnPickDate.visibility = if (enabled) View.VISIBLE else View.GONE
-
-        if (enabled) {
-            btnEdit.visibility = View.GONE
-            btnSave.visibility = View.VISIBLE
-            btnCancel.visibility = View.VISIBLE
-            edtFullName.requestFocus()
-        } else {
-            btnEdit.visibility = View.VISIBLE
-            btnSave.visibility = View.GONE
-            btnCancel.visibility = View.GONE
-        }
+        btnEdit.visibility = if (enabled) View.GONE else View.VISIBLE
+        btnSave.visibility = if (enabled) View.VISIBLE else View.GONE
+        btnCancel.visibility = if (enabled) View.VISIBLE else View.GONE
     }
 
     private fun showDatePicker() {
         val calendar = Calendar.getInstance()
-        if (originalBirthday.isNotEmpty()) {
-            val parts = originalBirthday.split("/")
-            if (parts.size == 3) {
-                calendar.set(Calendar.DAY_OF_MONTH, parts[0].toIntOrNull() ?: 1)
-                calendar.set(Calendar.MONTH, (parts[1].toIntOrNull() ?: 1) - 1)
-                calendar.set(Calendar.YEAR, parts[2].toIntOrNull() ?: 2000)
-            }
-        } else {
-            calendar.set(2000, 0, 1)
-        }
-
-        val datePicker = DatePickerDialog(
-            this,
-            { _, year, month, dayOfMonth ->
-                val selectedDate = String.format("%02d/%02d/%04d", dayOfMonth, month + 1, year)
-                tvBirthday.text = selectedDate
-                tvBirthday.setTextColor(0xFF333333.toInt())
-            },
-            calendar.get(Calendar.YEAR),
-            calendar.get(Calendar.MONTH),
-            calendar.get(Calendar.DAY_OF_MONTH)
-        )
-        datePicker.datePicker.maxDate = System.currentTimeMillis()
-        val minCal = Calendar.getInstance()
-        minCal.set(1950, 0, 1)
-        datePicker.datePicker.minDate = minCal.timeInMillis
+        val datePicker = DatePickerDialog(this, { _, year, month, day ->
+            val selectedDate = String.format("%02d/%02d/%04d", day, month + 1, year)
+            tvBirthday.text = selectedDate
+            tvBirthday.setTextColor(0xFF333333.toInt())
+        }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH))
         datePicker.show()
     }
 

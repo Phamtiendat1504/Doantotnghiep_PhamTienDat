@@ -15,6 +15,12 @@ class HomeViewModel : ViewModel() {
     private val _userName = MutableLiveData<String>()
     val userName: LiveData<String> = _userName
 
+    private val _greeting = MutableLiveData<String>()
+    val greeting: LiveData<String> = _greeting
+
+    private val _currentDate = MutableLiveData<String>()
+    val currentDate: LiveData<String> = _currentDate
+
     private val _popularAreas = MutableLiveData<List<Pair<String, Int>>>()
     val popularAreas: LiveData<List<Pair<String, Int>>> = _popularAreas
 
@@ -36,17 +42,35 @@ class HomeViewModel : ViewModel() {
     private val _isLoadingMore = MutableLiveData<Boolean>()
     val isLoadingMore: LiveData<Boolean> = _isLoadingMore
 
+    private val _notificationBadgeCount = MutableLiveData<Int>()
+    val notificationBadgeCount: LiveData<Int> = _notificationBadgeCount
+
+    private var notificationListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var lastNewRoomDoc: DocumentSnapshot? = null
     private var lastLoadTime = 0L
     private val REFRESH_INTERVAL = 2 * 60 * 60 * 1000L
 
     fun loadUserName() {
+        updateGreetingAndDate()
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) {
             _userName.value = "Khách"
             return
         }
         repository.loadUserName(uid) { name -> _userName.value = name }
+    }
+
+    private fun updateGreetingAndDate() {
+        val calendar = java.util.Calendar.getInstance()
+        val hour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+        _greeting.value = when (hour) {
+            in 5..11 -> "CHÀO BUỔI SÁNG,"
+            in 12..17 -> "CHÀO BUỔI CHIỀU,"
+            else -> "CHÀO BUỔI TỐI,"
+        }
+
+        val sdf = java.text.SimpleDateFormat("EEEE, dd/MM/yyyy", java.util.Locale("vi", "VN"))
+        _currentDate.value = sdf.format(calendar.time)
     }
 
     fun loadPopularAreas() {
@@ -184,5 +208,22 @@ class HomeViewModel : ViewModel() {
             },
             onFailure = { _isLoadingMore.value = false }
         )
+    }
+
+    fun startNotificationListener() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        notificationListener?.remove()
+        notificationListener = repository.listenUnseenNotificationCount(uid) { count ->
+            _notificationBadgeCount.postValue(count)
+        }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        notificationListener?.remove()
+    }
+
+    fun loadNotificationBadge() {
+        startNotificationListener()
     }
 }

@@ -39,6 +39,7 @@ class MyPostsActivity : AppCompatActivity() {
     private lateinit var chipExpired: Chip
     private lateinit var edtSearchPost: EditText
     private lateinit var btnClearSearch: ImageView
+    private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
     private lateinit var viewModel: MyPostsViewModel
     private var allPosts = listOf<DocumentSnapshot>()
@@ -65,14 +66,20 @@ class MyPostsActivity : AppCompatActivity() {
         chipExpired = findViewById(R.id.chipExpired)
         edtSearchPost = findViewById(R.id.edtSearchPost)
         btnClearSearch = findViewById(R.id.btnClearSearch)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
 
         btnBack.setOnClickListener { finish() }
 
         viewModel = ViewModelProvider(this)[MyPostsViewModel::class.java]
 
         viewModel.isLoading.observe(this) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            progressBar.visibility = if (isLoading && !swipeRefreshLayout.isRefreshing) View.VISIBLE else View.GONE
+            if (!isLoading) swipeRefreshLayout.isRefreshing = false
             if (isLoading) { layoutPosts.removeAllViews(); tvEmpty.visibility = View.GONE }
+        }
+
+        swipeRefreshLayout.setOnRefreshListener {
+            refreshList()
         }
 
         viewModel.posts.observe(this) { posts ->
@@ -248,6 +255,22 @@ class MyPostsActivity : AppCompatActivity() {
             }
         }
         bottomLayout.addView(btnDelete)
+
+        if (status == "approved") {
+            // Nút "Đã cho thuê" đã được loại bỏ khỏi danh sách thẻ bài đăng để đơn giản hóa giao diện.
+            // Landlord có thể vào chi tiết bài đăng để thực hiện thao tác này nếu cần.
+        }
+
+        if (status == "pending") {
+            val btnEditPending = TextView(this).apply {
+                text = "Chỉnh sửa"; textSize = 13f; setTextColor(0xFF1976D2.toInt())
+                setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
+                setOnClickListener {
+                    startActivity(Intent(this@MyPostsActivity, EditPostActivity::class.java).apply { putExtra("roomId", docId) })
+                }
+            }
+            bottomLayout.addView(btnEditPending)
+        }
         mainLayout.addView(bottomLayout)
 
         if (status == "rejected" && rejectReason.isNotEmpty()) {
@@ -272,42 +295,15 @@ class MyPostsActivity : AppCompatActivity() {
                 text = "⚠️ Bài đăng đã ẩn khỏi kết quả tìm kiếm sau 2 tháng. Bài sẽ tự động xóa sau 1 tháng nữa."
                 textSize = 12f; setTextColor(0xFF795548.toInt()); setPadding(dpToPx(12), 0, dpToPx(12), dpToPx(8))
             })
-            val actionRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(dpToPx(12), 0, dpToPx(12), dpToPx(12)) }
-            actionRow.addView(TextView(this).apply {
-                text = "🔄 Gia hạn 2 tháng"; textSize = 13f; setTextColor(0xFFFFFFFF.toInt())
+            val btnRenew = TextView(this).apply {
+                text = "🔄 Gia hạn bài đăng thêm 2 tháng"; textSize = 14f; setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER
-                setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
-                background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1976D2.toInt()); cornerRadius = dpToPx(8).toFloat() }
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginEnd = dpToPx(6) }
+                setPadding(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
+                background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1976D2.toInt()); cornerRadius = dpToPx(10).toFloat() }
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply { setMargins(dpToPx(12), 0, dpToPx(12), dpToPx(12)) }
                 setOnClickListener { viewModel.renewPost(docId) }
-            })
-            actionRow.addView(TextView(this).apply {
-                text = "✓ Đã cho thuê"; textSize = 13f; setTextColor(0xFFFFFFFF.toInt())
-                setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER
-                setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
-                background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF388E3C.toInt()); cornerRadius = dpToPx(8).toFloat() }
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f).apply { marginStart = dpToPx(6) }
-                setOnClickListener {
-                    androidx.appcompat.app.AlertDialog.Builder(this@MyPostsActivity)
-                        .setTitle("Xác nhận đã cho thuê")
-                        .setMessage("Bài đăng này sẽ bị xóa khỏi hệ thống. Bạn có chắc chắn phòng đã được cho thuê?")
-                        .setPositiveButton("Đã cho thuê") { _, _ ->
-                            progressBar.visibility = View.VISIBLE
-                            viewModel.deletePost(docId,
-                                onSuccess = {
-                                    progressBar.visibility = View.GONE
-                                    MessageUtils.showSuccessDialog(this@MyPostsActivity, "Đã xóa bài đăng", "Bài đăng đã được xóa khỏi hệ thống. Chúc mừng bạn đã cho thuê phòng!") { refreshList() }
-                                },
-                                onFailure = { error ->
-                                    progressBar.visibility = View.GONE
-                                    MessageUtils.showErrorDialog(this@MyPostsActivity, "Lỗi", error)
-                                }
-                            )
-                        }
-                        .setNegativeButton("Hủy", null).show()
-                }
-            })
-            mainLayout.addView(actionRow)
+            }
+            mainLayout.addView(btnRenew)
         }
 
         card.addView(mainLayout)
