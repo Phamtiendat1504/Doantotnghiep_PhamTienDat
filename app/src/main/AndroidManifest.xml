@@ -42,10 +42,6 @@
             android:name=".MainActivity"
             android:exported="false" />
 
-        <activity
-            android:name=".View.Auth.VerifyOtpActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustPan" />
 
         <activity
             android:name=".View.Auth.ResetPasswordActivity"
@@ -105,7 +101,27 @@
             android:exported="false" />
 
 
+
+        <activity
+            android:name=".View.Auth.ChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".View.Auth.ConversationsActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".View.Auth.SearchProfileActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".View.Auth.UserProfileActivity"
+            android:exported="false" />
+
         <!-- Firebase Messaging Service - nhận Push Notification từ FCM -->
+
         <service
             android:name=".Utils.MyFirebaseMessagingService"
             android:exported="false">
@@ -114,6 +130,17 @@
             </intent-filter>
         </service>
 
+
+        <!-- Cấu hình FileProvider cho Camera -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="com.example.doantotnghiep.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
     </application>
 

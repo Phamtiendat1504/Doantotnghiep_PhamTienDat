@@ -72,9 +72,16 @@ class SavedPostsActivity : AppCompatActivity() {
             viewModel.loadSavedPosts()
         }
 
-        viewModel.roomCheckResult.observe(this) { (savedDocId, exists) ->
+        viewModel.roomCheckResult.observe(this) { result ->
+            if (result == null) return@observe
+            val (savedDocId, exists) = result
+            
+            // Xóa state để tránh lỗi LiveData trigger lại khi resume Activity
+            viewModel.clearRoomCheckResult()
+            
             progressBar.visibility = View.GONE
             val post = viewModel.savedPosts.value?.find { it.savedDocId == savedDocId } ?: return@observe
+            
             if (exists) {
                 startActivity(Intent(this, RoomDetailActivity::class.java).apply {
                     putExtra("roomId", post.roomId)

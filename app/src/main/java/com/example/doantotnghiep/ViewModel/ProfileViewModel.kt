@@ -4,12 +4,17 @@ import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.repository.AppointmentRepository
 import com.example.doantotnghiep.repository.AuthRepository
+import com.example.doantotnghiep.repository.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.ListenerRegistration
 
 class ProfileViewModel : ViewModel() {
 
-    private val repository = AuthRepository()
+    private val authRepository = AuthRepository()
+    private val roomRepository = RoomRepository()
+    private val appointmentRepository = AppointmentRepository()
 
     data class UserInfo(
         val fullName: String,
@@ -46,7 +51,9 @@ class ProfileViewModel : ViewModel() {
     private val _notificationBadgeCount = MutableLiveData<Int>()
     val notificationBadgeCount: LiveData<Int> = _notificationBadgeCount
 
-    private var notificationListener: com.google.firebase.firestore.ListenerRegistration? = null
+    private var notificationListener: ListenerRegistration? = null
+    private var appointmentListener: ListenerRegistration? = null
+    private var postBadgeListener: ListenerRegistration? = null
 
     fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
 
@@ -57,11 +64,11 @@ class ProfileViewModel : ViewModel() {
     fun isLoggedIn(): Boolean = FirebaseAuth.getInstance().currentUser != null
 
     fun loadUserInfo() {
-        repository.loadUserProfile(
+        authRepository.loadUserProfile(
             onSuccess = { fullName, email, avatarUrl, role, isVerified ->
                 val info = UserInfo(fullName, email, avatarUrl, role, isVerified)
                 _userInfo.value = info
-                if (role == "landlord" && !isVerified || role == "tenant") {
+                if (!isVerified) {
                     checkVerificationStatus()
                 }
             },
@@ -70,7 +77,7 @@ class ProfileViewModel : ViewModel() {
     }
 
     fun checkVerificationStatus() {
-        repository.loadVerificationStatusDetail(
+        authRepository.loadVerificationStatusDetail(
             onSuccess = { status, rejectReason ->
                 _verificationStatus.value = status
                 if (status == "rejected") _verifyRejectReason.value = rejectReason ?: ""
@@ -86,7 +93,7 @@ class ProfileViewModel : ViewModel() {
 
     fun uploadAvatar(imageUri: Uri) {
         _isUploadingAvatar.value = true
-        repository.uploadAvatar(
+        authRepository.uploadAvatar(
             imageUri,
             onSuccess = { url ->
                 _isUploadingAvatar.value = false
@@ -99,26 +106,75 @@ class ProfileViewModel : ViewModel() {
         )
     }
 
-    fun loadMyPostsBadge(context: android.content.Context) {
+    /**
+     * Lắng nghe badge bài đăng chưa đọc (chỉ dành cho Chủ trọ).
+     * Dùng cờ cloud `hasUnreadUpdate` thay vì SharedPreferences — đồng bộ mọi thiết bị.
+     */
+    fun loadMyPostsBadge() {
         val uid = getCurrentUserId() ?: return
-        repository.loadMyPostsBadge(uid, context) { count -> _myPostsBadgeCount.value = count }
+        postBadgeListener?.remove()
+        postBadgeListener = roomRepository.listenPostBadge(uid) { count ->
+            _myPostsBadgeCount.postValue(count)
+        }
     }
 
-    fun loadAppointmentBadge() {
+    /**
+     * Lắng nghe badge lịch hẹn theo đúng vai trò người dùng.
+     * Chỉ tạo 1 listener (không phải 2 như cũ), tiết kiệm chi phí đọc Firestore.
+     */
+    fun loadAppointmentBadge(role: String) {
         val uid = getCurrentUserId() ?: return
-        repository.loadAppointmentBadge(uid) { count -> _appointmentBadgeCount.value = count }
+        appointmentListener?.remove()
+        appointmentListener = appointmentRepository.listenBadge(uid, role) { count ->
+            _appointmentBadgeCount.postValue(count)
+        }
     }
 
     fun loadNotificationBadge() {
         val uid = getCurrentUserId() ?: return
         notificationListener?.remove()
-        notificationListener = com.example.doantotnghiep.repository.RoomRepository().listenUnseenNotificationCount(uid) { count ->
+        notificationListener = roomRepository.listenUnseenNotificationCount(uid) { count ->
             _notificationBadgeCount.postValue(count)
         }
+    }
+
+    private val _messagesBadgeInfo = MutableLiveData<Pair<Int, Int>>()
+    val messagesBadgeInfo: LiveData<Pair<Int, Int>> = _messagesBadgeInfo
+    private var chatBadgeListener: com.google.firebase.firestore.ListenerRegistration? = null
+
+    fun loadMessagesBadge() {
+        val uid = getCurrentUserId() ?: return
+        chatBadgeListener?.remove()
+        chatBadgeListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("chats")
+            .whereArrayContains("participants", uid)
+            .addSnapshotListener { snap, _ ->
+                if (snap == null) return@addSnapshotListener
+                var numPeople = 0
+                var numMessages = 0
+                for (doc in snap.documents) {
+                    val deletedMap = doc.get("deletedFor") as? Map<String, Long> ?: mapOf()
+                    val myDeletedAt = deletedMap[uid] ?: 0L
+                    val lastMsgAt = doc.getLong("lastMessageAt") ?: 0L
+                    if (myDeletedAt > 0L && lastMsgAt <= myDeletedAt) {
+                        continue // Chat đã bị xóa
+                    }
+
+                    val unreadCount = doc.get("unreadCount.$uid") as? Long ?: 0L
+                    if (unreadCount > 0) {
+                        numPeople++
+                        numMessages += unreadCount.toInt()
+                    }
+                }
+                _messagesBadgeInfo.postValue(Pair(numPeople, numMessages))
+            }
     }
 
     override fun onCleared() {
         super.onCleared()
         notificationListener?.remove()
+        appointmentListener?.remove()
+        postBadgeListener?.remove()
+        chatBadgeListener?.remove()
     }
 }

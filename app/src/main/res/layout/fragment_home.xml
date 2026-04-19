@@ -147,8 +147,71 @@
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
                     </androidx.cardview.widget.CardView>
+
                 </LinearLayout>
             </FrameLayout>
+
+            <!-- Banner Tra Cứu Chủ Trọ (Thiết kế chuyên nghiệp dạng Card) -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="-16dp"
+                app:cardBackgroundColor="#EAF2FF"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:id="@+id/btnSearchProfileView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="16dp"
+                    android:paddingVertical="14dp"
+                    android:gravity="center_vertical"
+                    android:background="?attr/selectableItemBackground">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Hồ sơ Chủ trọ"
+                            android:textColor="@color/primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:letterSpacing="0.05"/>
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Xem độ uy tín và phòng đang trống"
+                            android:textColor="#555555"
+                            android:textSize="12sp"
+                            android:maxLines="1"
+                            android:ellipsize="end"/>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnSearchProfile"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="TRA CỨU"
+                        android:textColor="@color/white"
+                        android:textStyle="bold"
+                        android:textSize="11sp"
+                        android:background="@drawable/bg_badge_red"
+                        android:backgroundTint="@color/primary"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="6dp"
+                        android:layout_marginStart="8dp"/>
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
 
             <!-- Sections with Typography Focus -->
             <LinearLayout

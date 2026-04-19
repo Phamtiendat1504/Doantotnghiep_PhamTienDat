@@ -37,7 +37,7 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Xác minh chủ trọ"
+                android:text="Mở khóa quyền đăng bài"
                 android:textSize="20sp"
                 android:textStyle="bold"
                 android:textColor="@color/white"
@@ -330,7 +330,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Chúng tôi cam kết bảo mật thông tin cá nhân của bạn và chỉ dùng cho mục đích xác thực chủ trọ."
+                        android:text="Chúng tôi cam kết bảo mật thông tin cá nhân của bạn và chỉ dùng cho mục đích xác thực danh tính."
                         android:textSize="11sp"
                         android:textColor="#2E7D32"
                         android:layout_marginStart="10dp"
@@ -375,7 +375,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Quy định &amp; Trách nhiệm của chủ trọ"
+                        android:text="Quy định &amp; Trách nhiệm của người đăng bài"
                         android:textSize="15sp"
                         android:textStyle="bold"
                         android:textColor="@color/primary"
@@ -385,7 +385,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="1. Cung cấp thông tin phòng trọ và hình ảnh thực tế, chính xác.\n2. Tuyệt đối không đăng tải thông tin sai lệch hoặc gây nhầm lẫn.\n3. Chủ trọ tự chịu trách nhiệm về tính pháp lý và an toàn của căn hộ.\n4. Phản hồi thắc mắc của khách thuê một cách lịch sự, đúng hẹn."
+                    android:text="1. Cung cấp thông tin phòng trọ và hình ảnh thực tế, chính xác.\n2. Tuyệt đối không đăng tải thông tin sai lệch hoặc gây nhầm lẫn.\n3. Người đăng tự chịu trách nhiệm về tính pháp lý và an toàn của căn hộ.\n4. Phản hồi thắc mắc của khách thuê một cách lịch sự, đúng hẹn."
                     android:textSize="13sp"
                     android:textColor="#555555"
                     android:lineSpacingExtra="4dp" />

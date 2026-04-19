@@ -55,6 +55,9 @@ class VerificationRepository {
                     "createdAt" to System.currentTimeMillis()
                 )
                 db.collection("verifications").document(uid).set(data).addOnSuccessListener {
+                    // CẬP NHẬT QUAN TRỌNG: Đổi role sang "pending" ngay lập tức để UI hiển thị trạng thái đang phê duyệt
+                    db.collection("users").document(uid).update("role", "pending")
+
                     // Thêm thông báo cho Admin
                     val notif = hashMapOf(
                         "userId" to "admin_system", // ID giả định để Admin nhận diện

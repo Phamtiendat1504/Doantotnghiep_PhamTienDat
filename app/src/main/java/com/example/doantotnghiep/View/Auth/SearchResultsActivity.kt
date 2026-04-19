@@ -46,10 +46,8 @@ class SearchResultsActivity : AppCompatActivity() {
     enum class SortType { NONE, PRICE_ASC, PRICE_DESC, NEWEST, OLDEST }
     private var currentSort = SortType.NEWEST
 
-    private lateinit var chipSortPriceAsc: TextView
-    private lateinit var chipSortPriceDesc: TextView
-    private lateinit var chipSortNewest: TextView
-    private lateinit var chipSortOldest: TextView
+    private lateinit var tvCurrentSort: TextView
+    private lateinit var btnSortDropdown: FrameLayout
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -64,16 +62,13 @@ class SearchResultsActivity : AppCompatActivity() {
         tvResultCount = findViewById(R.id.tvResultCount)
         tvSearchArea = findViewById(R.id.tvSearchArea)
         btnBack = findViewById(R.id.btnBack)
-        chipSortPriceAsc = findViewById(R.id.chipSortPriceAsc)
-        chipSortPriceDesc = findViewById(R.id.chipSortPriceDesc)
-        chipSortNewest = findViewById(R.id.chipSortNewest)
-        chipSortOldest = findViewById(R.id.chipSortOldest)
+        
+        tvCurrentSort = findViewById(R.id.tvCurrentSort)
+        btnSortDropdown = findViewById(R.id.btnSortDropdown)
 
         btnBack.setOnClickListener { finish() }
 
-        listOf(chipSortPriceAsc, chipSortPriceDesc, chipSortNewest, chipSortOldest).forEach { chip ->
-            chip.setOnClickListener { onSortChipClick(chip) }
-        }
+        btnSortDropdown.setOnClickListener { showSortMenu() }
 
         observeViewModel()
 
@@ -86,8 +81,9 @@ class SearchResultsActivity : AppCompatActivity() {
 
         tvSearchArea.text = when {
             query.isNotEmpty() -> "\"$query\""
-            ward.isEmpty() -> "Tất cả khu vực"
+            // Check district mode FIRST (same fix as SearchViewModel)
             searchMode == "district" && district.isNotEmpty() -> district
+            ward.isEmpty() -> "Tất cả khu vực"
             district.isNotEmpty() -> "$ward ($district)"
             else -> ward
         }
@@ -126,36 +122,39 @@ class SearchResultsActivity : AppCompatActivity() {
         }
     }
 
-    private fun onSortChipClick(selected: TextView) {
-        val newSort = when (selected) {
-            chipSortPriceAsc -> SortType.PRICE_ASC
-            chipSortPriceDesc -> SortType.PRICE_DESC
-            chipSortNewest -> SortType.NEWEST
-            chipSortOldest -> SortType.OLDEST
-            else -> SortType.NONE
+    private fun showSortMenu() {
+        val popup = androidx.appcompat.widget.PopupMenu(this, btnSortDropdown)
+        popup.menu.add("Mới nhất")
+        popup.menu.add("Cũ nhất")
+        popup.menu.add("Giá thấp đến cao")
+        popup.menu.add("Giá cao đến thấp")
+
+        popup.setOnMenuItemClickListener { item ->
+            val newSort = when (item.title) {
+                "Giá thấp đến cao" -> SortType.PRICE_ASC
+                "Giá cao đến thấp" -> SortType.PRICE_DESC
+                "Mới nhất" -> SortType.NEWEST
+                "Cũ nhất" -> SortType.OLDEST
+                else -> SortType.NEWEST
+            }
+            currentSort = newSort
+            tvCurrentSort.text = item.title
+            
+            currentPage = 1
+            val results = viewModel.searchResults.value ?: return@setOnMenuItemClickListener true
+            applySortAndDisplay(results)
+            true
         }
-        currentSort = if (currentSort == newSort) SortType.NONE else newSort
-        updateChipUI()
-        currentPage = 1
-        val results = viewModel.searchResults.value ?: return
-        applySortAndDisplay(results)
+        popup.show()
     }
 
-    private fun updateChipUI() {
-        val chips = mapOf(
-            chipSortPriceAsc to SortType.PRICE_ASC,
-            chipSortPriceDesc to SortType.PRICE_DESC,
-            chipSortNewest to SortType.NEWEST,
-            chipSortOldest to SortType.OLDEST
-        )
-        chips.forEach { (chip, sort) ->
-            if (currentSort == sort) {
-                chip.setBackgroundResource(R.drawable.bg_chip_selected)
-                chip.setTextColor(0xFFFFFFFF.toInt())
-            } else {
-                chip.setBackgroundResource(R.drawable.bg_chip_unselected)
-                chip.setTextColor(0xFF1976D2.toInt())
-            }
+    private fun updateSortUI() {
+        tvCurrentSort.text = when (currentSort) {
+            SortType.PRICE_ASC -> "Giá thấp đến cao"
+            SortType.PRICE_DESC -> "Giá cao đến thấp"
+            SortType.NEWEST -> "Mới nhất"
+            SortType.OLDEST -> "Cũ nhất"
+            else -> "Mới nhất"
         }
     }
 
@@ -330,23 +329,58 @@ class SearchResultsActivity : AppCompatActivity() {
     private fun displayPagination(currentPage: Int, totalPages: Int, items: List<SearchViewModel.RoomItem>) {
         layoutPagination.removeAllViews()
         if (totalPages <= 1) return
-        for (i in 1..totalPages) {
-            val tv = TextView(this).apply {
-                text = "$i"
-                setPadding(dpToPx(12), dpToPx(8), dpToPx(12), dpToPx(8))
-                if (i == currentPage) {
-                    setTextColor(0xFFFFFFFF.toInt())
-                    background = android.graphics.drawable.GradientDrawable().apply {
-                        setColor(0xFF1976D2.toInt()); cornerRadius = dpToPx(8).toFloat()
-                    }
-                }
+
+        layoutPagination.gravity = android.view.Gravity.CENTER
+
+        // Nút Previous (<)
+        val btnPrev = TextView(this).apply {
+            text = "Trước"
+            textSize = 14f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+            setTextColor(if (currentPage > 1) 0xFF1976D2.toInt() else 0xFFBDBDBD.toInt())
+            if (currentPage > 1) {
                 setOnClickListener {
-                    this@SearchResultsActivity.currentPage = i
+                    this@SearchResultsActivity.currentPage = currentPage - 1
                     applySortAndDisplay(items)
                 }
             }
-            layoutPagination.addView(tv)
         }
+        layoutPagination.addView(btnPrev)
+
+        // Text Trang hiện tại (VD: 1)
+        val tvCurrent = TextView(this).apply {
+            text = "$currentPage"
+            textSize = 16f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+            setTextColor(0xFFFFFFFF.toInt())
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFF1976D2.toInt())
+                cornerRadius = dpToPx(8).toFloat()
+            }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+                marginStart = dpToPx(4)
+                marginEnd = dpToPx(4)
+            }
+        }
+        layoutPagination.addView(tvCurrent)
+
+        // Nút Next (>)
+        val btnNext = TextView(this).apply {
+            text = "Sau"
+            textSize = 14f
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
+            setTextColor(if (currentPage < totalPages) 0xFF1976D2.toInt() else 0xFFBDBDBD.toInt())
+            if (currentPage < totalPages) {
+                setOnClickListener {
+                    this@SearchResultsActivity.currentPage = currentPage + 1
+                    applySortAndDisplay(items)
+                }
+            }
+        }
+        layoutPagination.addView(btnNext)
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

@@ -1,20 +1,22 @@
 package com.example.doantotnghiep.Model
 
 data class User(
-    val uid: String = "",
-    val fullName: String = "",
-    val email: String = "",
-    val phone: String = "",
-    val address: String = "",
-    val birthday: String = "",
-    val gender: String = "",
-    val occupation: String = "",
-    val avatarUrl: String = "",
-    val role: String = "tenant",
-    val isVerified: Boolean = false,
-    val hasAcceptedRules: Boolean = false,
-    val isLocked: Boolean = false,
-    val lockReason: String = "",
-    val lockUntil: Long = 0,
-    val createdAt: Long = System.currentTimeMillis()
+    var uid: String = "",
+    var fullName: String = "",
+    var email: String = "",
+    var phone: String = "",
+    var address: String = "",
+    var birthday: String = "",
+    var gender: String = "",
+    var occupation: String = "",
+    var avatarUrl: String = "",
+    var role: String = "tenant",
+    // Firestore yêu cầu var (không phải val) để có thể deserialize đúng qua reflection.
+    // Nếu dùng val, Firestore sẽ bỏ qua các field Boolean và lúc nào cũng trả về giá trị default (false).
+    var isVerified: Boolean = false,
+    var hasAcceptedRules: Boolean = false,
+    var isLocked: Boolean = false,
+    var lockReason: String = "",
+    var lockUntil: Long = 0,
+    var createdAt: Long = 0
 )

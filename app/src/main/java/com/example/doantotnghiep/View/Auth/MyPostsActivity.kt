@@ -32,13 +32,9 @@ class MyPostsActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
     private lateinit var btnBack: ImageView
-    private lateinit var chipAll: Chip
-    private lateinit var chipPending: Chip
-    private lateinit var chipApproved: Chip
-    private lateinit var chipRejected: Chip
-    private lateinit var chipExpired: Chip
-    private lateinit var edtSearchPost: EditText
-    private lateinit var btnClearSearch: ImageView
+    private lateinit var menuFilter: android.widget.AutoCompleteTextView
+    private lateinit var edtSearchPost: com.google.android.material.textfield.TextInputEditText
+    private var currentFilterIndex = 0
     private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
     private lateinit var viewModel: MyPostsViewModel
@@ -59,13 +55,9 @@ class MyPostsActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvEmpty = findViewById(R.id.tvEmpty)
         btnBack = findViewById(R.id.btnBack)
-        chipAll = findViewById(R.id.chipAll)
-        chipPending = findViewById(R.id.chipPending)
-        chipApproved = findViewById(R.id.chipApproved)
-        chipRejected = findViewById(R.id.chipRejected)
-        chipExpired = findViewById(R.id.chipExpired)
+        menuFilter = findViewById(R.id.menuFilter)
         edtSearchPost = findViewById(R.id.edtSearchPost)
-        btnClearSearch = findViewById(R.id.btnClearSearch)
+        setupFilterMenu()
         swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
 
         btnBack.setOnClickListener { finish() }
@@ -105,31 +97,35 @@ class MyPostsActivity : AppCompatActivity() {
         }
 
         val uid = viewModel.getCurrentUserId()
-        if (uid != null) viewModel.markPostsAsSeen(uid, this)
-
-        chipAll.setOnClickListener { clearChips(); chipAll.isChecked = true; viewModel.loadPosts("all") }
-        chipPending.setOnClickListener { clearChips(); chipPending.isChecked = true; viewModel.loadPosts("pending") }
-        chipApproved.setOnClickListener { clearChips(); chipApproved.isChecked = true; viewModel.loadPosts("approved") }
-        chipRejected.setOnClickListener { clearChips(); chipRejected.isChecked = true; viewModel.loadPosts("rejected") }
-        chipExpired.setOnClickListener { clearChips(); chipExpired.isChecked = true; viewModel.loadPosts("expired") }
+        // Đánh dấu đã đọc trên Firebase (cờ cloud) để badge biến mất ngay trên mọi thiết bị
+        if (uid != null) viewModel.markPostsAsRead(uid)
 
         edtSearchPost.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val keyword = s?.toString()?.trim() ?: ""
-                btnClearSearch.visibility = if (keyword.isNotEmpty()) View.VISIBLE else View.GONE
                 applySearchFilter(keyword)
             }
         })
-        btnClearSearch.setOnClickListener { edtSearchPost.setText("") }
 
         viewModel.loadPosts("all")
     }
 
-    private fun clearChips() {
-        chipAll.isChecked = false; chipPending.isChecked = false
-        chipApproved.isChecked = false; chipRejected.isChecked = false; chipExpired.isChecked = false
+    private fun setupFilterMenu() {
+        val options = arrayOf("Tất cả", "Chờ duyệt", "Đã duyệt", "Bị từ chối", "Hết hạn")
+        val adapter = android.widget.ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, options)
+        menuFilter.setAdapter(adapter)
+
+        if (menuFilter.text.toString().isEmpty()) {
+            menuFilter.setText(options[currentFilterIndex], false)
+        }
+
+        menuFilter.setOnItemClickListener { _, _, position, _ ->
+            currentFilterIndex = position
+            refreshList()
+            menuFilter.clearFocus()
+        }
     }
 
     private fun applySearchFilter(keyword: String) {
@@ -328,11 +324,11 @@ class MyPostsActivity : AppCompatActivity() {
     }
 
     private fun refreshList() {
-        when {
-            chipPending.isChecked -> viewModel.loadPosts("pending")
-            chipApproved.isChecked -> viewModel.loadPosts("approved")
-            chipRejected.isChecked -> viewModel.loadPosts("rejected")
-            chipExpired.isChecked -> viewModel.loadPosts("expired")
+        when (currentFilterIndex) {
+            1 -> viewModel.loadPosts("pending")
+            2 -> viewModel.loadPosts("approved")
+            3 -> viewModel.loadPosts("rejected")
+            4 -> viewModel.loadPosts("expired")
             else -> viewModel.loadPosts("all")
         }
     }

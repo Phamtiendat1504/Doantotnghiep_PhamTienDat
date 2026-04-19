@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Tin nhắn GỬI ĐI - bên PHẢI màu xanh primary -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingTop="2dp"
+    android:paddingBottom="2dp">
+
+    <!-- Thời gian (ẩn mặc định, chỉ hiện theo điều kiện) -->
+    <TextView
+        android:id="@+id/tvTimeSent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:textSize="11sp"
+        android:textColor="#AAAAAA"
+        android:paddingTop="8dp"
+        android:paddingBottom="4dp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <!-- Tick đã đọc -->
+        <TextView
+            android:id="@+id/tvSeen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:text="✓✓"
+            android:textSize="10sp"
+            android:textColor="#1976D2"
+            android:layout_marginEnd="4dp"
+            android:layout_marginBottom="6dp"
+            android:visibility="gone" />
+
+        <!-- Vùng chứa Tin nhắn (Hình + Chữ) -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginEnd="8dp"
+            android:layout_marginStart="56dp"
+            android:layout_marginBottom="2dp"
+            android:gravity="end">
+
+            <!-- Hình ảnh -->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardImageSent"
+                xmlns:app="http://schemas.android.com/apk/res-auto"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:cardBackgroundColor="#E0E0E0"
+                android:layout_marginBottom="4dp"
+                android:visibility="gone">
+                
+                <ImageView
+                    android:id="@+id/ivImageSent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:adjustViewBounds="true"
+                    android:maxWidth="250dp"
+                    android:maxHeight="300dp"
+                    android:scaleType="centerCrop" />
+            </androidx.cardview.widget.CardView>
+
+            <!-- Bubble tin nhắn -->
+            <TextView
+                android:id="@+id/tvMessageSent"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tin nhắn mẫu"
+                android:textSize="15sp"
+                android:textColor="@android:color/white"
+                android:background="@drawable/bg_bubble_sent"
+                android:paddingStart="14dp"
+                android:paddingEnd="14dp"
+                android:paddingTop="10dp"
+                android:paddingBottom="10dp"
+                android:maxWidth="280dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Emoji Reactions (hiện bên phải, sát bubble) -->
+    <TextView
+        android:id="@+id/tvReactionsSent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end"
+        android:layout_marginEnd="10dp"
+        android:layout_marginTop="-6dp"
+        android:textSize="14sp"
+        android:background="#FFFFFF"
+        android:elevation="2dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp"
+        android:paddingTop="1dp"
+        android:paddingBottom="1dp"
+        android:visibility="gone" />
+
+</LinearLayout>

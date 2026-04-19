@@ -27,6 +27,7 @@ class AppointmentRepository {
     ) {
         appointment["status"] = "pending"
         appointment["createdAt"] = System.currentTimeMillis()
+        appointment["hasUnreadUpdate"] = true
 
         db.collection("appointments").add(appointment)
             .addOnSuccessListener { apptRef ->
@@ -89,6 +90,47 @@ class AppointmentRepository {
             }
     }
 
+    /**
+     * Lắng nghe CẢ 2 chiều lịch hẹn cùng lúc cho user đã xác minh:
+     *  - Lịch hẹn HỌ ĐẶT (tenantId = uid)
+     *  - Lịch hẹn KHÁCH ĐẶT PHÒNG CỦA HỌ (landlordId = uid)
+     * Kết quả được gọi riêng biệt qua 2 callback để Activity phân tab.
+     */
+    fun listenBothAppointments(
+        onTenantUpdate: (List<Map<String, Any>>) -> Unit,
+        onLandlordUpdate: (List<Map<String, Any>>) -> Unit,
+        onError: (String) -> Unit
+    ): Pair<ListenerRegistration, ListenerRegistration> {
+        val uid = auth.currentUser?.uid
+        val empty = object : ListenerRegistration { override fun remove() {} }
+        if (uid == null) return Pair(empty, empty)
+
+        val tenantListener = db.collection("appointments")
+            .whereEqualTo("tenantId", uid)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { value, error ->
+                if (error != null) { onError(error.message ?: "Lỗi"); return@addSnapshotListener }
+                val list = value?.map { doc ->
+                    val data = doc.data.toMutableMap(); data["id"] = doc.id; data
+                } ?: emptyList()
+                onTenantUpdate(list)
+            }
+
+        val landlordListener = db.collection("appointments")
+            .whereEqualTo("landlordId", uid)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { value, error ->
+                if (error != null) { onError(error.message ?: "Lỗi"); return@addSnapshotListener }
+                val list = value?.map { doc ->
+                    val data = doc.data.toMutableMap(); data["id"] = doc.id; data
+                } ?: emptyList()
+                onLandlordUpdate(list)
+            }
+
+        return Pair(tenantListener, landlordListener)
+    }
+
+
     // Lấy role người dùng hiện tại
     fun getCurrentUserRole(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
@@ -122,6 +164,7 @@ class AppointmentRepository {
         db.collection("appointments").document(appointmentId)
             .update(mapOf(
                 "status" to "tenant_confirmed",
+                "hasUnreadUpdate" to true,
                 "updatedAt" to System.currentTimeMillis() // Ghi nhận lúc xác nhận đi xem
             ))
             .addOnSuccessListener {
@@ -143,7 +186,10 @@ class AppointmentRepository {
         onSuccess: () -> Unit, onFailure: (String) -> Unit
     ) {
         db.collection("appointments").document(appointmentId)
-            .update("status", "confirmed")
+            .update(mapOf(
+                "status" to "confirmed",
+                "hasUnreadUpdate" to true
+            ))
             .addOnSuccessListener {
                 db.collection("bookedSlots").document(appointmentId).update("status", "confirmed")
                 sendNotification(
@@ -166,6 +212,7 @@ class AppointmentRepository {
             .update(mapOf(
                 "status" to "rejected",
                 "rejectReason" to reason,
+                "hasUnreadUpdate" to true,
                 "updatedAt" to System.currentTimeMillis() // Ghi nhận lúc từ chối
             ))
             .addOnSuccessListener {
@@ -245,27 +292,55 @@ class AppointmentRepository {
         }.addOnFailureListener { e -> onFailure("Lỗi truy xuất bài đăng: ${e.message}") }
     }
 
+    /**
+     * Tìm tất cả lịch hẹn còn hoạt động của phòng này (trừ cái vừa chốt),
+     * gửi thông báo cho từng người thuê và hủy lịch của họ.
+     *
+     * KHÔNG dùng .whereIn() để tránh bắt buộc phải tạo Composite Index trên Firebase Console.
+     * Thay vào đó, lấy toàn bộ lịch hẹn của phòng rồi lọc status bằng code.
+     */
     private fun notifyOtherAppointments(roomId: String, currentApptId: String, roomTitle: String) {
+        val activeStatuses = setOf("pending", "confirmed", "tenant_confirmed")
+
         db.collection("appointments")
-            .whereEqualTo("roomId", roomId)
-            .whereIn("status", listOf("pending", "confirmed", "tenant_confirmed"))
+            .whereEqualTo("roomId", roomId)  // Chỉ 1 điều kiện → không cần Composite Index
             .get()
             .addOnSuccessListener { snapshots ->
                 for (doc in snapshots) {
+                    // Bỏ qua lịch hẹn vừa được chốt thuê thành công
                     if (doc.id == currentApptId) continue
-                    
+
+                    val status = doc.getString("status") ?: ""
+                    // Lọc status bằng code thay vì whereIn
+                    if (status !in activeStatuses) continue
+
                     val otherTenantId = doc.getString("tenantId") ?: continue
+
+                    // Gửi thông báo cho người thuê bị hủy lịch
                     sendNotification(
                         userId = otherTenantId,
                         title = "Phòng đã có người thuê",
-                        message = "Phòng \"$roomTitle\" mà bạn hẹn xem đã có người thuê khác chốt trước. Lịch hẹn của bạn sẽ bị hủy.",
+                        message = "Phòng \"$roomTitle\" mà bạn hẹn xem đã được thuê bởi người khác. Lịch hẹn của bạn đã bị hủy tự động.",
                         type = "room_already_rented"
                     )
-                    // Tự động chuyển các lịch hẹn này thành "cancelled_by_system"
-                    db.collection("appointments").document(doc.id).update("status", "cancelled_by_system")
+
+                    // Cập nhật trạng thái lịch hẹn thành hủy hệ thống
+                    db.collection("appointments").document(doc.id)
+                        .update(mapOf(
+                            "status" to "cancelled_by_system",
+                            "hasUnreadUpdate" to true
+                        ))
+
+                    // FIX LỖI 2: Xóa slot đặt lịch — tránh rác dữ liệu treo vĩnh viễn
+                    db.collection("bookedSlots").document(doc.id).delete()
                 }
             }
+            .addOnFailureListener { e ->
+                // FIX: Thêm log lỗi thay vì im lặng thất bại
+                android.util.Log.e("AppointmentRepo", "notifyOtherAppointments thất bại: ${e.message}")
+            }
     }
+
 
     // Người thuê hủy lịch hẹn đang pending
     fun cancelPendingAppointment(
@@ -315,6 +390,7 @@ class AppointmentRepository {
         db.collection("appointments").document(appointmentId)
             .update(mapOf(
                 "status" to "cancelled_by_tenant",
+                "hasUnreadUpdate" to true,
                 "updatedAt" to System.currentTimeMillis() // Ghi nhận lúc hủy
             ))
             .addOnSuccessListener {
@@ -407,5 +483,59 @@ class AppointmentRepository {
                 "createdAt" to System.currentTimeMillis()
             )
         )
+    }
+
+    /**
+     * Lắng nghe số lịch hẹn cần xử lý theo vai trò.
+     * - Chủ trọ/Admin: đếm lịch hẹn gửi đến đang ở trạng thái cần hành động (pending, tenant_confirmed).
+     * - Người thuê: đếm lịch hẹn của mình đang chờ xác nhận đi xem (confirmed).
+     * Chỉ tạo 1 listener thay vì 2, tiết kiệm 50% chi phí đọc Firebase.
+     */
+    /**
+     * Badge lịch hẹn: chỉ đếm những lịch hẹn có CẬP NHẬT MỚI chưa xem.
+     * Field `hasUnreadUpdate` được set = true khi có status mới, reset = false khi user vào xem.
+     */
+    fun listenBadge(
+        uid: String,
+        role: String,
+        onResult: (Int) -> Unit
+    ): ListenerRegistration {
+        return if (role == "landlord" || role == "admin") {
+            db.collection("appointments")
+                .whereEqualTo("landlordId", uid)
+                .whereIn("status", listOf("pending", "tenant_confirmed"))
+                .whereEqualTo("hasUnreadUpdate", true)
+                .addSnapshotListener { snap, _ ->
+                    onResult(snap?.size() ?: 0)
+                }
+        } else {
+            db.collection("appointments")
+                .whereEqualTo("tenantId", uid)
+                .whereEqualTo("status", "confirmed")
+                .whereEqualTo("hasUnreadUpdate", true)
+                .addSnapshotListener { snap, _ ->
+                    onResult(snap?.size() ?: 0)
+                }
+        }
+    }
+
+    /**
+     * Đánh dấu tất cả lịch hẹn của user là đã đọc (reset hasUnreadUpdate = false).
+     * Gọi khi user vào màn hình MyAppointmentsActivity.
+     */
+    fun markAllAppointmentsRead(uid: String, role: String) {
+        val field = if (role == "landlord" || role == "admin") "landlordId" else "tenantId"
+        db.collection("appointments")
+            .whereEqualTo(field, uid)
+            .whereEqualTo("hasUnreadUpdate", true)
+            .get()
+            .addOnSuccessListener { snap ->
+                if (snap.isEmpty) return@addOnSuccessListener
+                val batch = db.batch()
+                snap.documents.forEach { doc ->
+                    batch.update(doc.reference, "hasUnreadUpdate", false)
+                }
+                batch.commit()
+            }
     }
 }

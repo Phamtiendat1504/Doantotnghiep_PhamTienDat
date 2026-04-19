@@ -187,15 +187,10 @@ class RoomDetailActivity : AppCompatActivity() {
             }
         }
 
-        // Role người dùng → ẩn/hiện nút
-        viewModel.userRole.observe(this) { role ->
-            if (role == "landlord" || role == "admin") {
-                btnSave.visibility = View.GONE
-                btnBooking.visibility = View.GONE
-            } else {
-                btnSave.visibility = View.VISIBLE
-                btnBooking.visibility = View.VISIBLE
-            }
+        // Thay vì ẩn nút theo role, giờ chỉ ẩn nút Lưu/Đặt lịch
+        // khi user đang xem CHÍNH phòng của mình (tránh tự đặt lịch với mình)
+        viewModel.userRole.observe(this) { _ ->
+            // Không còn dùng role để ẩn nút — xử lý trong displayRoomDetail
         }
 
         // Slot đã đặt
@@ -268,16 +263,25 @@ class RoomDetailActivity : AppCompatActivity() {
         setupMapSection(address, ward, district)
 
         val status = data["status"] as? String ?: "pending"
+        // Lấy chủ sở hữu bài đăng
+        val roomOwnerId = data["userId"] as? String ?: ""
+        val isOwner = uid != null && uid == roomOwnerId
+
         if (status == "rented") {
             btnBooking.isEnabled = false
             btnBooking.text = "Phòng đã cho thuê"
             btnBooking.setBackgroundColor(0xFF9E9E9E.toInt())
             btnSave.visibility = View.GONE
-            // Optional: Thêm thông báo trực quan
             tvPrice.text = "ĐÃ CHO THUÊ"
-            tvPrice.setTextColor(0xFFE53935.toInt()) // Red color
+            tvPrice.setTextColor(0xFFE53935.toInt())
+        } else if (isOwner) {
+            // Chủ phòng xem phòng của chính mình → ẩn Lưu và Đặt lịch
+            btnSave.visibility = View.GONE
+            btnBooking.visibility = View.GONE
         } else {
-            // Load dữ liệu phụ qua ViewModel
+            // Người dùng khác → hiện nút và load thêm dữ liệu
+            btnSave.visibility = View.VISIBLE
+            btnBooking.visibility = View.VISIBLE
             viewModel.loadBookedSlots(currentRoomId)
             setupActionButtons()
         }
@@ -710,6 +714,7 @@ class RoomDetailActivity : AppCompatActivity() {
         val name = data["ownerName"] as? String ?: "Chủ trọ"
         val phone = data["ownerPhone"] as? String ?: ""
         val gender = data["ownerGender"] as? String ?: ""
+        val landlordId = data["userId"] as? String ?: ""
         
         // Host Profile Style
         val hostView = layoutInflater.inflate(R.layout.item_host_info, layoutOwnerInfo, false)
@@ -717,9 +722,29 @@ class RoomDetailActivity : AppCompatActivity() {
         val tvHostStatus = hostView.findViewById<TextView>(R.id.tvHostStatus)
         val btnCall = hostView.findViewById<MaterialButton>(R.id.btnCallHost)
         val btnChat = hostView.findViewById<MaterialButton>(R.id.btnChatHost)
+        val ivAvatar = hostView.findViewById<ImageView>(R.id.ivHostAvatar)
 
         tvHostName.text = name
         tvHostStatus.text = if (gender.isNotEmpty()) "Chủ nhà • $gender" else "Chủ nhà đã xác minh"
+        
+        // Retrieve owner avatar (ưu tiên lấy trực tiếp từ data bài đăng)
+        var savedAvatarUrl = data["ownerAvatarUrl"] as? String ?: ""
+        if (savedAvatarUrl.isNotEmpty()) {
+            ivAvatar.setPadding(0, 0, 0, 0)
+            ivAvatar.imageTintList = null
+            Glide.with(this).load(savedAvatarUrl).circleCrop().into(ivAvatar)
+        } else if (landlordId.isNotEmpty()) {
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(landlordId).get()
+                .addOnSuccessListener { doc ->
+                    if (doc.exists() && doc.getString("avatarUrl")?.isNotEmpty() == true) {
+                        savedAvatarUrl = doc.getString("avatarUrl")!!
+                        ivAvatar.setPadding(0, 0, 0, 0)
+                        ivAvatar.imageTintList = null
+                        Glide.with(this).load(savedAvatarUrl).circleCrop().into(ivAvatar)
+                    }
+                }
+        }
         
         btnCall.setOnClickListener {
             if (phone.isNotEmpty()) {
@@ -728,11 +753,117 @@ class RoomDetailActivity : AppCompatActivity() {
         }
         
         btnChat.setOnClickListener {
-            // Logic nhắn tin (nếu có)
-            MessageUtils.showSuccessDialog(this, "Thông báo", "Tính năng nhắn tin đang được phát triển")
+            val currentUid = uid
+            if (currentUid == null) {
+                startActivity(Intent(this, LoginActivity::class.java))
+                return@setOnClickListener
+            }
+            if (currentUid == landlordId) return@setOnClickListener  // không tự nhắn mình
+            startActivity(
+                Intent(this, ChatActivity::class.java).apply {
+                    putExtra(ChatActivity.EXTRA_OTHER_UID,    landlordId)
+                    putExtra(ChatActivity.EXTRA_OTHER_NAME,   name)
+                    putExtra(ChatActivity.EXTRA_OTHER_AVATAR, savedAvatarUrl)
+                }
+            )
+        }
+
+        // Hiện BottomSheet thông tin chủ trọ khi click vào
+        hostView.setOnClickListener {
+            showHostProfileBottomSheet(landlordId, data)
         }
 
         layoutOwnerInfo.addView(hostView)
+    }
+
+    private fun showHostProfileBottomSheet(landlordId: String, roomData: Map<String, Any>) {
+        if (landlordId.isEmpty()) return
+        
+        val dialog = BottomSheetDialog(this)
+        val view = layoutInflater.inflate(R.layout.layout_host_profile_bottom_sheet, null)
+        
+        val ivSheetAvatar = view.findViewById<ImageView>(R.id.ivSheetAvatar)
+        val tvSheetName = view.findViewById<TextView>(R.id.tvSheetName)
+        val tvSheetStatus = view.findViewById<TextView>(R.id.tvSheetStatus)
+        val tvSheetPhone = view.findViewById<TextView>(R.id.tvSheetPhone)
+        val tvSheetEmail = view.findViewById<TextView>(R.id.tvSheetEmail)
+        val tvSheetJoinDate = view.findViewById<TextView>(R.id.tvSheetJoinDate)
+        val tvSheetVerified = view.findViewById<TextView>(R.id.tvSheetVerified)
+        val btnSheetChat = view.findViewById<MaterialButton>(R.id.btnSheetChat)
+        val btnSheetCall = view.findViewById<MaterialButton>(R.id.btnSheetCall)
+        
+        // Gán dữ liệu cơ bản từ phòng
+        val name = roomData["ownerName"] as? String ?: "Chủ trọ"
+        val phone = roomData["ownerPhone"] as? String ?: ""
+        val gender = roomData["ownerGender"] as? String ?: ""
+        
+        tvSheetName.text = name
+        tvSheetStatus.text = if (gender.isNotEmpty()) "Chủ nhà • $gender" else "Chủ nhà"
+        tvSheetPhone.text = if (phone.isNotEmpty()) phone else "Đang cập nhật"
+        
+        // Gán liền ảnh đại diện nều có
+        var savedSheetAvatarUrl = roomData["ownerAvatarUrl"] as? String ?: ""
+        if (savedSheetAvatarUrl.isNotEmpty()) {
+            ivSheetAvatar.setPadding(0, 0, 0, 0)
+            ivSheetAvatar.imageTintList = null
+            Glide.with(this).load(savedSheetAvatarUrl).circleCrop().into(ivSheetAvatar)
+        }
+
+        // Gọi Firebase lấy dữ liệu chi tiết còn thiếu (email, ngày tham gia)
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(landlordId).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    // Nếu lúc trước chưa có hình, fallback
+                    if (savedSheetAvatarUrl.isEmpty()) {
+                        val avatarUrl = doc.getString("avatarUrl") ?: ""
+                        if (avatarUrl.isNotEmpty()) {
+                            savedSheetAvatarUrl = avatarUrl
+                            ivSheetAvatar.setPadding(0, 0, 0, 0)
+                            ivSheetAvatar.imageTintList = null
+                            Glide.with(this).load(avatarUrl).circleCrop().into(ivSheetAvatar)
+                        }
+                    }
+                    
+                    val email = doc.getString("email") ?: "Đang cập nhật"
+
+                    tvSheetEmail.text = email
+                    
+                    val isVerified = doc.getBoolean("isVerified") ?: false
+                    tvSheetVerified.text = if (isVerified) "Đã xác nhận" else "Chưa xác minh"
+                    if (!isVerified) tvSheetVerified.setTextColor(0xFF9E9E9E.toInt())
+                    
+                    val joinedAt = doc.getLong("createdAt") ?: 0L
+                    if (joinedAt > 0) {
+                        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
+                        tvSheetJoinDate.text = "Tham gia từ: ${sdf.format(java.util.Date(joinedAt))}"
+                    }
+                }
+            }
+            
+        btnSheetCall.setOnClickListener {
+            if (phone.isNotEmpty()) startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
+        }
+        
+        btnSheetChat.setOnClickListener {
+            dialog.dismiss()
+            val currentUid = uid
+            if (currentUid == null) {
+                startActivity(Intent(this, LoginActivity::class.java))
+                return@setOnClickListener
+            }
+            if (currentUid == landlordId) return@setOnClickListener
+            startActivity(
+                Intent(this, ChatActivity::class.java).apply {
+                    putExtra(ChatActivity.EXTRA_OTHER_UID,    landlordId)
+                    putExtra(ChatActivity.EXTRA_OTHER_NAME,   name)
+                    putExtra(ChatActivity.EXTRA_OTHER_AVATAR, savedSheetAvatarUrl)
+                }
+            )
+        }
+        
+        dialog.setContentView(view)
+        dialog.show()
     }
 
     private fun addOwnerRow(label: String, value: String, isPhone: Boolean = false) {

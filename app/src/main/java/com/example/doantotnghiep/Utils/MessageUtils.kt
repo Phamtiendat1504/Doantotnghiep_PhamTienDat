@@ -35,4 +35,13 @@ object MessageUtils {
             }
             .show()
     }
+
+    fun showLoadingDialog(context: Context, message: String): AlertDialog {
+        val builder = AlertDialog.Builder(context)
+        builder.setMessage(message)
+        builder.setCancelable(false)
+        val dialog = builder.create()
+        dialog.show()
+        return dialog
+    }
 }

@@ -109,11 +109,25 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="0 đ/tháng"
-                        android:textSize="13sp"
+                        android:textSize="12.5sp"
                         android:textStyle="bold"
+                        android:maxLines="1"
+                        android:ellipsize="end"
                         android:textColor="@color/secondary" />
 
                 </LinearLayout>
+
+                <!-- Trạng thái badge -->
+                <TextView
+                    android:id="@+id/tvRoomStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="6dp"
+                    android:text="Còn phòng"
+                    android:textSize="11sp"
+                    android:textColor="@color/primary"
+                    android:textStyle="bold"
+                    android:visibility="gone" />
 
                 <!-- Diện tích badge -->
                 <TextView
@@ -121,8 +135,8 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_chip_info"
-                    android:paddingStart="8dp"
-                    android:paddingEnd="8dp"
+                    android:paddingStart="6dp"
+                    android:paddingEnd="6dp"
                     android:paddingTop="3dp"
                     android:paddingBottom="3dp"
                     android:text="0 m²"

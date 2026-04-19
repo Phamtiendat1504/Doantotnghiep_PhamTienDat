@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -36,73 +37,84 @@
 
     </LinearLayout>
 
-    <!-- Tab lọc trạng thái -->
-    <HorizontalScrollView
+    <!-- Khu vực Lọc và Tìm kiếm -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:scrollbars="none"
-        android:background="@color/bg_white"
-        android:paddingTop="10dp"
-        android:paddingBottom="10dp"
-        android:paddingStart="14dp">
+        android:background="#FFFFFF"
+        android:orientation="vertical"
+        android:paddingHorizontal="16dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp">
 
-        <com.google.android.material.chip.ChipGroup
-            android:id="@+id/chipGroup"
-            android:layout_width="wrap_content"
+        <!-- Thanh tìm kiếm -->
+        <com.google.android.material.textfield.TextInputLayout
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:singleSelection="true"
-            app:selectionRequired="true"
-            xmlns:app="http://schemas.android.com/apk/res-auto">
+            android:layout_marginBottom="12dp"
+            app:boxCornerRadiusTopStart="8dp"
+            app:boxCornerRadiusTopEnd="8dp"
+            app:boxCornerRadiusBottomStart="8dp"
+            app:boxCornerRadiusBottomEnd="8dp"
+            app:boxStrokeColor="@color/primary"
+            app:startIconDrawable="@android:drawable/ic_menu_search"
+            android:hint="Tìm kiếm tên, số điện thoại, tên phòng...">
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipAll"
-                android:layout_width="wrap_content"
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edtSearch"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tất cả"
-                android:textSize="13sp"
-                android:checked="true"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
+                android:inputType="text"
+                android:maxLines="1"
+                android:textSize="14sp" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipPending"
-                android:layout_width="wrap_content"
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <!-- Bộ lọc trạng thái dạng Dropdown Menu -->
+
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/menuFilterLayout"
+            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:boxCornerRadiusTopStart="8dp"
+            app:boxCornerRadiusTopEnd="8dp"
+            app:boxCornerRadiusBottomStart="8dp"
+            app:boxCornerRadiusBottomEnd="8dp"
+            app:boxStrokeColor="@color/primary"
+            android:hint="Trạng thái lịch hẹn">
+
+            <AutoCompleteTextView
+                android:id="@+id/menuFilter"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Cần xác nhận"
-                android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
+                android:inputType="none"
+                android:textSize="15sp"
+                android:textColor="#333333"
+                android:fontFamily="sans-serif-medium"
+                android:paddingTop="14dp"
+                android:paddingBottom="14dp" />
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipWaitingTenant"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Chờ khách xác nhận"
-                android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
+        </com.google.android.material.textfield.TextInputLayout>
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipTenantConfirmed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Khách sẽ đến"
-                android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
+    </LinearLayout>
 
-            <com.google.android.material.chip.Chip
-                android:id="@+id/chipHistory"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Lịch sử"
-                android:textSize="13sp"
-                style="@style/Widget.MaterialComponents.Chip.Choice"
-                app:chipBackgroundColor="@color/chip_bg_color" />
-
-        </com.google.android.material.chip.ChipGroup>
-
-    </HorizontalScrollView>
+    <!-- Tab chuyển đổi vai trò (chỉ hiện với user đã xác minh có cả 2 chiều lịch hẹn) -->
+    <com.google.android.material.tabs.TabLayout
+        android:id="@+id/tabLayoutRole"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/white"
+        android:visibility="gone"
+        app:tabGravity="fill"
+        app:tabMode="fixed"
+        app:tabSelectedTextColor="@color/primary"
+        app:tabTextColor="@color/text_hint"
+        app:tabIndicatorColor="@color/primary"
+        app:tabIndicatorHeight="3dp"
+        app:tabRippleColor="@color/primary" />
 
     <View
         android:layout_width="match_parent"

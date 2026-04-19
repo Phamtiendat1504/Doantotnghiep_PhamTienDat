@@ -18,14 +18,19 @@ class ResetPasswordViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
+    /**
+     * Gửi lại email đặt lại mật khẩu nếu người dùng cần.
+     * Luồng mới: Firebase gửi link → người dùng click link trên email → đổi mật khẩu trên web Firebase.
+     */
     fun resetPassword(email: String, newPass: String, confirmPass: String) {
-        if (newPass.isEmpty()) { _errorMessage.value = "Vui lòng nhập mật khẩu mới"; return }
-        if (newPass.length < 6) { _errorMessage.value = "Mật khẩu quá ngắn"; return }
-        if (newPass != confirmPass) { _errorMessage.value = "Mật khẩu không khớp"; return }
+        if (email.isBlank()) {
+            _errorMessage.value = "Không xác định được email. Vui lòng thử lại từ đầu."
+            return
+        }
 
         _isLoading.value = true
-        repository.updatePasswordAfterOtp(
-            email, newPass,
+        repository.sendPasswordResetEmail(
+            email = email,
             onSuccess = {
                 _isLoading.postValue(false)
                 _resetResult.postValue(true)

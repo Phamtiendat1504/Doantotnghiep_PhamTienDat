@@ -440,7 +440,7 @@ mà không cần đăng nhập"
                         android:id="@+id/tvRoleBadge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Người thuê trọ"
+                        android:text="Thành viên tiêu chuẩn"
                         android:textSize="12sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_secondary"
@@ -793,7 +793,77 @@ mà không cần đăng nhập"
 
             </androidx.cardview.widget.CardView>
 
-            <!-- Bài đăng của tôi (chỉ hiện cho chủ trọ) -->
+            <!-- Tin nhắn -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                app:cardCornerRadius="14dp"
+                app:cardElevation="2dp"
+                app:cardBackgroundColor="@color/bg_white">
+
+                <LinearLayout
+                    android:id="@+id/btnMessages"
+                    android:layout_width="match_parent"
+                    android:layout_height="60dp"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingStart="14dp"
+                    android:paddingEnd="14dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:clickable="true"
+                    android:focusable="true">
+
+                    <androidx.cardview.widget.CardView
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        app:cardCornerRadius="12dp"
+                        app:cardElevation="0dp"
+                        app:cardBackgroundColor="#E3F2FD">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_ai"
+                            app:tint="#1565C0" />
+
+                    </androidx.cardview.widget.CardView>
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Tin nhắn"
+                        android:textSize="15sp"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginStart="14dp" />
+
+                    <TextView
+                        android:id="@+id/tvMessagesBadge"
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:gravity="center"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/white"
+                        android:background="@drawable/bg_badge_red"
+                        android:layout_marginEnd="8dp"
+                        android:visibility="gone" />
+
+                    <ImageView
+                        android:layout_width="18dp"
+                        android:layout_height="18dp"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="#CCCCCC" />
+
+                </LinearLayout>
+
+            </androidx.cardview.widget.CardView>
+
+
+            <!-- Bài đăng của tôi (chỉ hiện cho người dùng đã xác minh) -->
+
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardMyPosts"
                 android:layout_width="match_parent"

@@ -17,6 +17,8 @@ import com.example.doantotnghiep.Model.Room
 import com.example.doantotnghiep.Utils.AddressData
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.Utils.NumberFormatUtils
+import com.example.doantotnghiep.View.Auth.LoginActivity
+import com.example.doantotnghiep.View.Auth.RegisterActivity
 import com.example.doantotnghiep.View.Auth.VerifyLandlordActivity
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.Utils.PostNotificationHelper
@@ -30,6 +32,7 @@ class PostFragment : Fragment() {
 
     private var verifyRequiredView: View? = null
     private var postFormView: View? = null
+    private var layoutGuest: View? = null
 
     private val imageUris = mutableListOf<Uri>()
     private val MAX_PHOTOS = 10
@@ -41,6 +44,7 @@ class PostFragment : Fragment() {
     private var lastPostedTitle = ""
     private var lastPostedPrice = 0L
     private var lastPostedLocation = ""
+    private var currentOwnerAvatarUrl = ""
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -66,10 +70,13 @@ class PostFragment : Fragment() {
 
         verifyRequiredView = inflater.inflate(R.layout.layout_verify_required, container, false)
         postFormView = inflater.inflate(R.layout.fragment_post, container, false)
+        layoutGuest = inflater.inflate(R.layout.layout_guest_post, container, false)
 
         verifyRequiredView?.visibility = View.GONE
         postFormView?.visibility = View.GONE
+        layoutGuest?.visibility = View.GONE
 
+        layoutGuest?.let { frameLayout.addView(it) }
         frameLayout.addView(verifyRequiredView)
         frameLayout.addView(postFormView)
         return frameLayout
@@ -80,39 +87,58 @@ class PostFragment : Fragment() {
 
         viewModel = ViewModelProvider(this)[PostViewModel::class.java]
 
+        val isLoggedIn = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null
+        if (!isLoggedIn) {
+            showLoginRequired()
+            return
+        }
+
         viewModel.userObject.observe(viewLifecycleOwner) { user ->
             if (user == null) return@observe
             userRoleChecked = true
-            
-            // Logic cũ: role == "landlord" hoặc role == "admin" thì được đăng
-            // Logic mới của bạn là "owner" nhưng có vẻ project dùng "landlord"
-            val isPrivileged = user.role == "landlord" || user.role == "admin" || user.role == "owner"
-            
+
+            // Mô hình mới: isVerified=true là chìa khóa mở quyền đăng bài,
+            // không cần bắt buộc role phải là "landlord"
+            val isPrivileged = user.role == "landlord" || user.role == "admin"
+                    || user.role == "owner" || user.isVerified
+
             if (isPrivileged) {
-                // Kiểm tra thêm trạng thái xác minh nếu cần (isVerified)
-                // Tuy nhiên, nếu tài khoản đã là landlord/admin thường là đã duyệt rồi
                 showPostForm()
                 if (!user.hasAcceptedRules) {
                     showRulesDialog(isFirstTime = true)
                 }
             } else {
-                // Nếu là tenant hoặc role khác, kiểm tra status xác minh
                 when (user.role) {
                     "pending" -> showPendingStatus()
-                    "rejected" -> showRejectedStatus(user.occupation) 
+                    "rejected" -> showRejectedStatus(user.occupation)
                     else -> showVerifyRequired()
                 }
             }
         }
 
-        viewModel.ownerInfo.observe(viewLifecycleOwner) { (name, phone) ->
+
+        viewModel.ownerInfo.observe(viewLifecycleOwner) { (name, phone, avatarUrl) ->
             val v = postFormView ?: return@observe
             v.findViewById<EditText>(R.id.edtOwnerName)?.setText(name)
             v.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(phone)
+            currentOwnerAvatarUrl = avatarUrl
         }
 
         checkUserRole()
         setupVerifyButton()
+    }
+
+    private fun showLoginRequired() {
+        layoutGuest?.visibility = View.VISIBLE
+        verifyRequiredView?.visibility = View.GONE
+        postFormView?.visibility = View.GONE
+        
+        layoutGuest?.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnGuestLogin)?.setOnClickListener {
+            startActivity(Intent(requireContext(), LoginActivity::class.java))
+        }
+        layoutGuest?.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnGuestRegister)?.setOnClickListener {
+            startActivity(Intent(requireContext(), RegisterActivity::class.java))
+        }
     }
 
     private fun checkUserRole() {
@@ -125,17 +151,14 @@ class PostFragment : Fragment() {
         
         val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
-        val ivVerifyIcon = verifyRequiredView?.findViewById<ImageView>(R.id.ivVerifyIcon)
         val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
         val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
 
-        tvVerifyTitle?.text = "Xác minh chủ trọ"
-        tvVerifyStatus?.text = "Bạn cần xác minh danh tính chủ trọ để có thể đăng tin cho thuê phòng trên hệ thống."
-        ivVerifyIcon?.setImageResource(R.drawable.ic_verify_required)
-        ivVerifyIcon?.imageTintList = android.content.res.ColorStateList.valueOf(resources.getColor(R.color.primary))
+        tvVerifyTitle?.text = "Xác minh\nChủ cho thuê"
+        tvVerifyStatus?.text = "Để tham gia vào cộng đồng tìm trọ minh bạch, bạn vui lòng hoàn tất xác minh danh tính. Việc này giúp tăng độ tin cậy đối với khách hàng và đảm bảo quyền lợi pháp lý cho bạn."
         
         btnStartVerify?.visibility = View.VISIBLE
-        btnStartVerify?.text = "Bắt đầu xác minh ngay"
+        btnStartVerify?.text = "BẮT ĐẦU XÁC MINH NGAY"
         tvViewRules?.visibility = View.VISIBLE
     }
 
@@ -145,14 +168,11 @@ class PostFragment : Fragment() {
 
         val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
-        val ivVerifyIcon = verifyRequiredView?.findViewById<ImageView>(R.id.ivVerifyIcon)
         val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
         val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
 
-        tvVerifyTitle?.text = "Đang chờ phê duyệt"
-        tvVerifyStatus?.text = "Yêu cầu xác minh của bạn đã được gửi thành công. Admin đang kiểm tra và phê duyệt thông tin của bạn. Vui lòng quay lại sau."
-        ivVerifyIcon?.setImageResource(R.drawable.ic_verify_pending)
-        ivVerifyIcon?.imageTintList = android.content.res.ColorStateList.valueOf(resources.getColor(R.color.secondary))
+        tvVerifyTitle?.text = "Đang chờ\nPhê duyệt"
+        tvVerifyStatus?.text = "Hồ sơ của bạn đã được gửi thành công. Đội ngũ kiểm duyệt đang tiến hành xác minh thông tin. Vui lòng quay lại sau 24-48h làm việc."
         
         btnStartVerify?.visibility = View.GONE
         tvViewRules?.visibility = View.VISIBLE
@@ -164,17 +184,14 @@ class PostFragment : Fragment() {
 
         val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
-        val ivVerifyIcon = verifyRequiredView?.findViewById<ImageView>(R.id.ivVerifyIcon)
         val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
         val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
 
-        tvVerifyTitle?.text = "Xác minh bị từ chối"
-        tvVerifyStatus?.text = "Rất tiếc, yêu cầu xác minh của bạn không được phê duyệt.\nLý do: $reason\n\nVui lòng kiểm tra lại thông tin và gửi lại yêu cầu."
-        ivVerifyIcon?.setImageResource(R.drawable.ic_verify_required)
-        ivVerifyIcon?.imageTintList = android.content.res.ColorStateList.valueOf(resources.getColor(android.R.color.holo_red_dark))
+        tvVerifyTitle?.text = "Xác minh\nBị từ chối"
+        tvVerifyStatus?.text = "Rất tiếc, hồ sơ của bạn chưa đáp ứng đủ điều kiện.\nLý do: $reason\n\nVui lòng cập nhật lại thông tin chính xác để gửi lại yêu cầu."
         
         btnStartVerify?.visibility = View.VISIBLE
-        btnStartVerify?.text = "Gửi lại yêu cầu xác minh"
+        btnStartVerify?.text = "GỬI LẠI YÊU CẦU"
         tvViewRules?.visibility = View.VISIBLE
     }
 
@@ -393,6 +410,7 @@ class PostFragment : Fragment() {
                 ownerName = edtOwnerName.text.toString().trim(),
                 ownerPhone = edtOwnerPhone.text.toString().trim(),
                 ownerGender = when (rgOwnerGender.checkedRadioButtonId) { R.id.rbOwnerMale -> "Nam"; R.id.rbOwnerFemale -> "Nữ"; else -> "" },
+                ownerAvatarUrl = currentOwnerAvatarUrl,
                 title = edtTitle.text.toString().trim(),
                 ward = wardName, district = districtName,
                 address = edtAddress.text.toString().trim(),
@@ -558,6 +576,21 @@ class PostFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        if (!userRoleChecked) checkUserRole()
+        // Luôn làm mới trạng thái khi quay lại màn hình này để cập nhật ngay lập tức
+        // trạng thái "Đang phê duyệt" hoặc "Đã phê duyệt" sau khi Admin duyệt.
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            viewModel.loadUserObject()
+            viewModel.loadOwnerInfo()
+            
+            // Cập nhật Badge Lịch hẹn (Shared ViewModel chuẩn MVVM)
+            val mainViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[com.example.doantotnghiep.ViewModel.MainViewModel::class.java]
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(currentUser.uid).get()
+                .addOnSuccessListener { doc ->
+                    val role = doc.getString("role") ?: "tenant"
+                    mainViewModel.loadAppointmentBadge(currentUser.uid, role)
+                }
+        }
     }
 }

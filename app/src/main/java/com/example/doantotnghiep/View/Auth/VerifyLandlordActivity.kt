@@ -66,6 +66,53 @@ class VerifyLandlordActivity : AppCompatActivity() {
         initViews()
         viewModel = ViewModelProvider(this)[VerifyLandlordViewModel::class.java]
 
+        // Kiểm tra trạng thái hiện tại ngay khi mở màn hình
+        // (lấy thẳng từ Server để tránh đọc cache cũ)
+        checkCurrentStatusBeforeShow()
+    }
+
+    private fun checkCurrentStatusBeforeShow() {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) { finish(); return }
+        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+
+        // Bước 1: Kiểm tra user document (isVerified)
+        db.collection("users").document(uid)
+            .get(com.google.firebase.firestore.Source.SERVER)
+            .addOnSuccessListener { userDoc ->
+                val isVerified = userDoc.getBoolean("isVerified") ?: false
+                if (isVerified) {
+                    // Đã được xác minh rồi, không cho nộp lại
+                    MessageUtils.showSuccessDialog(
+                        this,
+                        "Đã xác minh",
+                        "Tài khoản của bạn đã được xác minh. Bạn có thể đăng tin cho thuê ngay!"
+                    ) { finish() }
+                    return@addOnSuccessListener
+                }
+
+                // Bước 2: Kiểm tra document verifications — nếu đang "pending" thì không cho nộp lại
+                db.collection("verifications").document(uid)
+                    .get(com.google.firebase.firestore.Source.SERVER)
+                    .addOnSuccessListener { verifyDoc ->
+                        val status = if (verifyDoc.exists()) verifyDoc.getString("status") else null
+                        if (status == "pending") {
+                            MessageUtils.showInfoDialog(
+                                this,
+                                "Đang chờ phê duyệt",
+                                "Hồ sơ của bạn đã được gửi và đang chờ Admin phê duyệt. Vui lòng quay lại sau 24-48h làm việc."
+                            ) { finish() }
+                        } else {
+                            // Chưa nộp hoặc đã bị từ chối → cho phép nộp (lại)
+                            setupForm()
+                        }
+                    }
+                    .addOnFailureListener { setupForm() } // Lỗi mạng → vẫn cho hiển form
+            }
+            .addOnFailureListener { setupForm() } // Lỗi mạng → vẫn cho hiển form
+    }
+
+    private fun setupForm() {
         viewModel.ownerInfo.observe(this) { (fullName, phone) ->
             edtFullName.setText(fullName)
             edtPhone.setText(phone)

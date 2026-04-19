@@ -191,17 +191,32 @@ class RoomRepository {
             .addOnFailureListener { e -> onFailure("Không thể gia hạn: ${e.message}") }
     }
 
-    // Đánh dấu các bài đăng đã được xem (lưu vào SharedPreferences)
-    fun markPostsAsSeen(uid: String, context: android.content.Context) {
+    /**
+     * Lắng nghe số bài đăng có cập nhật chưa đọc (approved/rejected/expired).
+     * Đây là Badge thông báo cho Chủ trọ, dùng cờ cloud `hasUnreadUpdate` thay vì SharedPreferences.
+     */
+    fun listenPostBadge(uid: String, onResult: (Int) -> Unit): com.google.firebase.firestore.ListenerRegistration {
+        return db.collection("rooms")
+            .whereEqualTo("userId", uid)
+            .whereEqualTo("hasUnreadUpdate", true)
+            .addSnapshotListener { snap, _ ->
+                onResult(snap?.size() ?: 0)
+            }
+    }
+
+    /**
+     * Đánh dấu đã đọc tất cả bài đăng: xóa cờ `hasUnreadUpdate` trên Firebase.
+     * Gọi khi Chủ trọ mở màn hình "Bài đăng của tôi".
+     */
+    fun markPostsAsRead(uid: String) {
         db.collection("rooms")
             .whereEqualTo("userId", uid)
-            .whereIn("status", listOf("approved", "rejected"))
+            .whereEqualTo("hasUnreadUpdate", true)
             .get()
             .addOnSuccessListener { docs ->
-                val ids = docs.map { it.id }.toSet()
-                val prefs = context.getSharedPreferences("post_seen_$uid", android.content.Context.MODE_PRIVATE)
-                val existing = prefs.getStringSet("seen_ids", emptySet()) ?: emptySet()
-                prefs.edit().putStringSet("seen_ids", existing + ids).apply()
+                val batch = db.batch()
+                docs.forEach { batch.update(it.reference, "hasUnreadUpdate", false) }
+                if (!docs.isEmpty) batch.commit()
             }
     }
 
@@ -385,7 +400,7 @@ class RoomRepository {
                     onFailure("Bài đăng không tồn tại")
                     return@addOnSuccessListener
                 }
-                val imageUrls = doc.get("imageUrls") as? List<String> ?: listOf()
+                val imageUrls = (doc.get("imageUrls") as? List<*>)?.filterIsInstance<String>() ?: listOf()
                 
                 // Xóa document trong Firestore
                 db.collection("rooms").document(roomId).delete()
@@ -415,8 +430,10 @@ class RoomRepository {
         val roomRef = db.collection("rooms").document(roomId)
         roomRef.get().addOnSuccessListener { document ->
             if (document.exists()) {
-                val imageUrls = document.get("imageUrls") as? List<String> ?: emptyList()
-                
+                val roomTitle = document.getString("title") ?: "Phòng trọ"
+                // Fix warning: dùng filterIsInstance thay vì unchecked cast
+                val imageUrls = (document.get("imageUrls") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
+
                 // 1. Xóa ảnh trên Storage
                 if (imageUrls.isNotEmpty()) {
                     imageUrls.forEach { url ->
@@ -436,12 +453,63 @@ class RoomRepository {
                     "description" to "Phòng đã cho thuê - Dữ liệu đã được dọn dẹp",
                     "videoUrl" to null,
                     "updatedAt" to System.currentTimeMillis()
-                )).addOnSuccessListener { onSuccess() }
-                  .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi cập nhật trạng thái") }
+                )).addOnSuccessListener {
+                    // FIX LỖI 3: Hủy và thông báo tất cả lịch hẹn còn lại của phòng này.
+                    // Luồng này khởi động khi Chủ trọ bấm "Đã cho thuê" từ màn hình Bài đăng,
+                    // khác với luồng từ Lịch hẹn (đã biết tenantId và appointmentId cụ thể).
+                    cancelAllAppointmentsForRoom(roomId, roomTitle)
+                    onSuccess()
+                }.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi cập nhật trạng thái") }
             } else {
                 onFailure("Không tìm thấy bài đăng")
             }
         }.addOnFailureListener { e -> onFailure("Lỗi truy xuất: ${e.message}") }
+    }
+
+    /**
+     * Tìm và hủy tất cả lịch hẹn đang mở (pending/confirmed/tenant_confirmed) của một phòng,
+     * xóa bookedSlots tương ứng và gửi thông báo cho từng người thuê bị ảnh hưởng.
+     *
+     * Gọi khi Chủ trọ ấn nút "Đã cho thuê" từ màn hình Bài đăng (không có appointmentId cụ thể).
+     * KHAI THÁC 1 whereEqualTo duy nhất — không cần Composite Index trên Firebase.
+     */
+    private fun cancelAllAppointmentsForRoom(roomId: String, roomTitle: String) {
+        val activeStatuses = setOf("pending", "confirmed", "tenant_confirmed")
+
+        db.collection("appointments")
+            .whereEqualTo("roomId", roomId)
+            .get()
+            .addOnSuccessListener { snapshots ->
+                for (doc in snapshots) {
+                    val status = doc.getString("status") ?: ""
+                    // Lọc status bằng code — tránh phục thuộc whereIn
+                    if (status !in activeStatuses) continue
+
+                    val tenantId = doc.getString("tenantId") ?: continue
+
+                    // Gửi thông báo cho người thuê
+                    db.collection("notifications").add(
+                        hashMapOf(
+                            "userId" to tenantId,
+                            "title" to "Phòng đã có người thuê",
+                            "message" to "Phòng \"$roomTitle\" bạn hẹn xem đã được chủ trọ cho thuê. Lịch hẹn của bạn đã bị hủy tự động.",
+                            "type" to "room_already_rented",
+                            "seen" to false,
+                            "createdAt" to System.currentTimeMillis()
+                        )
+                    )
+
+                    // Hủy lịch hẹn
+                    db.collection("appointments").document(doc.id)
+                        .update("status", "cancelled_by_system")
+
+                    // Xóa slot đặt lịch — tránh rác dữ liệu
+                    db.collection("bookedSlots").document(doc.id).delete()
+                }
+            }
+            .addOnFailureListener { e ->
+                android.util.Log.e("RoomRepository", "cancelAllAppointmentsForRoom thất bại: ${e.message}")
+            }
     }
 
     // Tải dữ liệu phòng dưới dạng Map (dùng cho EditPostViewModel)
@@ -536,6 +604,12 @@ class RoomRepository {
                     ))
                 }
                 batch.commit().addOnSuccessListener { onResult(expiredDocs.size) }
+                // Ghi cờ hasUnreadUpdate=true để Badge hiển thị ngay cho chủ trọ
+                val flagBatch = db.batch()
+                for (doc in expiredDocs) {
+                    flagBatch.update(doc.reference, "hasUnreadUpdate", true)
+                }
+                flagBatch.commit()
             }
     }
 

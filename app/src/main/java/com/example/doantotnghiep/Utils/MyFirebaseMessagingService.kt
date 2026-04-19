@@ -37,19 +37,32 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         super.onMessageReceived(remoteMessage)
 
         // KIỂM TRA BẢO MẬT: Chỉ hiện thông báo nếu thiết bị đang đăng nhập đúng tài khoản được gửi
-        val targetUid = remoteMessage.data["userId"] // UID người nhận được đính kèm trong data của message
+        val targetUid = remoteMessage.data["userId"]
         val currentUid = FirebaseAuth.getInstance().currentUser?.uid
 
         if (targetUid != null && currentUid != null && targetUid != currentUid) {
-            android.util.Log.w("FCM", "Từ chối hiển thị thông báo: Nhầm tài khoản (Target: $targetUid, Current: $currentUid)")
+            android.util.Log.w("FCM", "Từ chối hiển thị thông báo: Nhầm tài khoản")
             return
         }
 
-        val title = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "Thông báo mới"
-        val body = remoteMessage.notification?.body ?: remoteMessage.data["message"] ?: ""
+        val type    = remoteMessage.data["type"] ?: "general"
+        val senderId = remoteMessage.data["senderId"] ?: ""
 
-        showNotification(title, body)
+        // KIỂM TRA MÀN HÌNH CHAT ĐANG MỞ: Nếu người dùng đang nhắn tin với người gửi, bỏ qua Pop-up
+        if (type == "new_message" &&
+            com.example.doantotnghiep.View.Auth.ChatActivity.currentOpenedChatOtherUid == senderId
+        ) {
+            return // Đang chat với người này rồi, không hiện thông báo nữa.
+        }
+
+        val title   = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "Thông báo mới"
+        val body    = remoteMessage.notification?.body  ?: remoteMessage.data["message"] ?: ""
+        val chatId  = remoteMessage.data["chatId"] ?: ""
+
+        showNotification(title, body, type, chatId, senderId)
     }
+
+
 
     /**
      * Lưu FCM Token lên Firestore vào document của User hiện tại.
@@ -71,13 +84,22 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     /**
      * Vẽ và hiển thị thông báo dạng Pop-up khi App đang được mở.
      */
-    private fun showNotification(title: String, body: String) {
+    private fun showNotification(title: String, body: String, type: String = "general", chatId: String = "", senderId: String = "") {
         createNotificationChannel()
 
-        // Khi bấm vào thông báo => mở lại MainActivity kèm lệnh mở MyAppointmentsActivity
-        val intent = Intent(this, MainActivity::class.java)
-        intent.flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        intent.putExtra("action", "open_appointments")
+        val intent: Intent
+        if (type == "new_message" && senderId.isNotEmpty()) {
+            intent = Intent(this, com.example.doantotnghiep.View.Auth.ChatActivity::class.java).apply {
+                putExtra(com.example.doantotnghiep.View.Auth.ChatActivity.EXTRA_OTHER_UID, senderId)
+                putExtra(com.example.doantotnghiep.View.Auth.ChatActivity.EXTRA_OTHER_NAME, title.replace("Tin nhắn mới từ ", ""))
+            }
+        } else {
+            // Mặc định mở MainActivity kèm lệnh mở MyAppointmentsActivity
+            intent = Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                putExtra("action", "open_appointments")
+            }
+        }
 
         val pendingIntent = PendingIntent.getActivity(
             this, System.currentTimeMillis().toInt(), intent,
@@ -98,6 +120,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         manager.notify(System.currentTimeMillis().toInt(), notification)
     }
+
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

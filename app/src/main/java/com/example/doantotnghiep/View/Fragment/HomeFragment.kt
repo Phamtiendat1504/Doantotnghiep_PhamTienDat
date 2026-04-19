@@ -19,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.View.Adapter.RoomAdapter
 import com.example.doantotnghiep.View.Auth.SearchResultsActivity
+import com.example.doantotnghiep.View.Auth.SearchProfileActivity
 import com.example.doantotnghiep.ViewModel.HomeViewModel
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
@@ -199,6 +200,14 @@ class HomeFragment : Fragment() {
                 performHomeSearch(); true
             } else false
         }
+
+        // Nút thẻ (Banner) tìm kiếm trang cá nhân người dùng
+        view.findViewById<View>(R.id.btnSearchProfileView)?.setOnClickListener {
+            startActivity(Intent(requireContext(), SearchProfileActivity::class.java))
+        }
+        view.findViewById<View>(R.id.btnSearchProfile)?.setOnClickListener {
+            startActivity(Intent(requireContext(), SearchProfileActivity::class.java))
+        }
     }
 
     private fun setupSwipeRefresh() {
@@ -300,5 +309,17 @@ class HomeFragment : Fragment() {
         if (viewModel.featuredRooms.value.isNullOrEmpty()) viewModel.loadFeaturedRooms()
         viewModel.loadNewRooms(isRefresh = true)
         viewModel.loadNotificationBadge() // Tải lại số lượng thông báo khi quay lại
+        
+        // Cập nhật Badge Lịch hẹn (Shared ViewModel chuẩn MVVM)
+        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            val mainViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[com.example.doantotnghiep.ViewModel.MainViewModel::class.java]
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(currentUser.uid).get()
+                .addOnSuccessListener { doc ->
+                    val role = doc.getString("role") ?: "tenant"
+                    mainViewModel.loadAppointmentBadge(currentUser.uid, role)
+                }
+        }
     }
 }

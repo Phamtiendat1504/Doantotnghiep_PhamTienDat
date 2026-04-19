@@ -1,118 +1,93 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@drawable/bg_header_wave">
+    android:background="@color/primary">
 
-    <!-- Logo + Tên app (giữa màn hình) -->
-    <LinearLayout
-        android:id="@+id/layoutCenter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:gravity="center"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+    <!-- Phần nền trắng phía trên chiếm 70% màn hình để có đủ không gian -->
+    <View
+        android:id="@+id/topBackground"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:background="@drawable/bg_white_bottom_curve"
+        app:layout_constraintHeight_percent="0.7"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Logo: Nằm ở giữa nửa trên của màn hình -->
+    <ImageView
+        android:id="@+id/imgLogo"
+        android:layout_width="140dp"
+        android:layout_height="140dp"
+        android:src="@drawable/ic_logo"
+        android:contentDescription="Logo"
+        app:layout_constraintBottom_toTopOf="@+id/layoutText"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_chainStyle="packed" />
 
-        <!-- Logo Container với Shadow -->
-        <FrameLayout
-            android:id="@+id/logoContainer"
-            android:layout_width="140dp"
-            android:layout_height="140dp"
-            android:background="@drawable/bg_circle_white_alpha"
-            android:padding="15dp"
-            android:alpha="0">
+    <!-- Cụm tên App và Slogan: Nằm ngay dưới Logo, trong vùng nền trắng -->
+    <LinearLayout
+        android:id="@+id/layoutText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:layout_marginTop="16dp"
+        app:layout_constraintBottom_toBottomOf="@+id/topBackground"
+        app:layout_constraintTop_toBottomOf="@+id/imgLogo">
 
-            <ImageView
-                android:id="@+id/imgLogo"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:src="@drawable/ic_logo"
-                android:contentDescription="Logo" />
-        </FrameLayout>
-
-        <!-- Tên app với hiệu ứng chữ -->
         <TextView
             android:id="@+id/tvAppName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="TÌM TRỌ 24/7"
-            android:textSize="34sp"
-            android:textStyle="bold"
-            android:textColor="@color/white"
-            android:layout_marginTop="24dp"
+            android:fontFamily="sans-serif-medium"
             android:letterSpacing="0.1"
-            android:alpha="0"
-            android:shadowColor="#40000000"
-            android:shadowDx="2"
-            android:shadowDy="2"
-            android:shadowRadius="4" />
+            android:text="TÌM TRỌ 24/7"
+            android:textColor="@color/primary"
+            android:textSize="32sp"
+            android:textStyle="bold" />
 
-        <!-- Slogan -->
         <TextView
             android:id="@+id/tvSlogan"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Nâng tầm trải nghiệm tìm kiếm"
-            android:textSize="14sp"
-            android:textColor="#CCFFFFFF"
             android:layout_marginTop="8dp"
-            android:alpha="0"
-            android:letterSpacing="0.05" />
+            android:alpha="0.8"
+            android:fontFamily="sans-serif-medium"
+            android:text="Nâng tầm trải nghiệm tìm kiếm"
+            android:textColor="#555555"
+            android:textSize="14sp" />
 
     </LinearLayout>
 
-    <!-- Loading dots phía dưới -->
-    <LinearLayout
-        android:id="@+id/layoutDots"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center"
-        android:alpha="0"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginBottom="60dp">
-
-        <View
-            android:id="@+id/dot1"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/bg_dot_white"
-            android:layout_marginEnd="6dp" />
-
-        <View
-            android:id="@+id/dot2"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/bg_dot_white"
-            android:layout_marginEnd="6dp"
-            android:alpha="0.4" />
-
-        <View
-            android:id="@+id/dot3"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/bg_dot_white"
-            android:alpha="0.4" />
-
-    </LinearLayout>
-
-    <!-- Version nhỏ góc dưới -->
+    <!-- Credit nhà phát triển: Đặt ở đáy màn hình, trong vùng nền xanh -->
     <TextView
+        android:id="@+id/tvDeveloper"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="v1.0.0"
-        android:textSize="11sp"
-        android:textColor="@color/white"
         android:layout_marginBottom="16dp"
+        android:alpha="0.9"
+        android:fontFamily="sans-serif-medium"
+        android:text="Phát triển bởi Phạm Tiến Đạt"
+        android:textColor="@color/white"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/progressBar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <!-- Progress Bar mỏng ở đáy cùng -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
+        android:layout_width="120dp"
+        android:layout_height="3dp"
+        android:layout_marginBottom="32dp"
+        android:indeterminate="true"
+        android:indeterminateTint="@color/white"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        android:layout_marginEnd="16dp" />
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

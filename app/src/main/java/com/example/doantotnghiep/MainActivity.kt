@@ -36,6 +36,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mainViewModel: MainViewModel
     private var userStatusListener: ListenerRegistration? = null
+    private var appointmentListenerL: ListenerRegistration? = null
+    private var appointmentListenerT: ListenerRegistration? = null
     private val authRepository = com.example.doantotnghiep.repository.AuthRepository()
 
     // Launcher xin quyền thông báo (Android 13+)
@@ -49,9 +51,14 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+    private lateinit var bottomNav: BottomNavigationView
+    
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        bottomNav = findViewById(R.id.bottomNav)
+        val fabAI = findViewById<FloatingActionButton>(R.id.fabAI)
 
         observeNetworkStatus()
 
@@ -61,6 +68,18 @@ class MainActivity : AppCompatActivity() {
         setupFcmNotifications()
 
         mainViewModel = ViewModelProvider(this)[MainViewModel::class.java]
+
+        mainViewModel.appointmentBadgeCount.observe(this) { count ->
+            val badge = bottomNav.getOrCreateBadge(R.id.nav_profile)
+            if (count > 0) {
+                badge.isVisible = true
+                badge.number = count
+                badge.backgroundColor = ContextCompat.getColor(this, R.color.secondary)
+                badge.badgeTextColor = ContextCompat.getColor(this, R.color.white)
+            } else {
+                badge.isVisible = false
+            }
+        }
 
         mainViewModel.expiredPostsCount.observe(this) { count ->
             if (count > 0) {
@@ -82,10 +101,8 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.checkAndExpirePosts(currentUser.uid)
             }
             startListeningUserStatus(currentUser.uid)
+            loadBadgeWithRole(currentUser.uid)
         }
-
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
-        val fabAI = findViewById<FloatingActionButton>(R.id.fabAI)
 
         val openTab = intent.getStringExtra("openTab")
         val action = intent.getStringExtra("action")
@@ -111,7 +128,6 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_search -> loadFragment(SearchFragment())
                 R.id.nav_ai -> return@setOnItemSelectedListener false
                 R.id.nav_post -> {
-                    if (!isLoggedIn) { promptLogin(); return@setOnItemSelectedListener false }
                     loadFragment(PostFragment())
                 }
                 R.id.nav_profile -> loadFragment(ProfileFragment())
@@ -128,7 +144,6 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent) // Cập nhật intent mới cho Activity
 
-        val bottomNav = findViewById<BottomNavigationView>(R.id.bottomNav)
         val action = intent.getStringExtra("action")
 
         if (action == "open_appointments") {
@@ -147,7 +162,24 @@ class MainActivity : AppCompatActivity() {
         if (currentUser != null) {
             setupFcmNotifications()
             startListeningUserStatus(currentUser.uid)
+            loadBadgeWithRole(currentUser.uid)
         }
+    }
+
+    /**
+     * Lấy role từ Firestore rồi gọi loadAppointmentBadge đúng vai trò.
+     * Giảm 50% Firestore reads so với cách mở 2 listeners song song trước đây.
+     */
+    private fun loadBadgeWithRole(uid: String) {
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val role = doc.getString("role") ?: "tenant"
+                mainViewModel.loadAppointmentBadge(uid, role)
+            }
+            .addOnFailureListener {
+                // Fallback: nếu không lấy được role, dùng tenant (chỉ ngịe confirmed)
+                mainViewModel.loadAppointmentBadge(uid, "tenant")
+            }
     }
 
     private fun startListeningUserStatus(uid: String) {
@@ -181,6 +213,16 @@ class MainActivity : AppCompatActivity() {
                 }
             )
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        com.example.doantotnghiep.Utils.PresenceManager.goOnline()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        com.example.doantotnghiep.Utils.PresenceManager.goOffline()
     }
 
     override fun onDestroy() {

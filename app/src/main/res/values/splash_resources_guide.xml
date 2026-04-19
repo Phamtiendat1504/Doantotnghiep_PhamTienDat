@@ -1,0 +1,148 @@
+<!-- ═══════════════════════════════════════════════════════════════
+     File: res/values/colors_splash.xml
+     Thêm các màu này vào file colors.xml hiện có của bạn
+     ═══════════════════════════════════════════════════════════════ -->
+
+<resources>
+
+    <!-- ── Màu nền chính (xanh đậm navy) ── -->
+    <color name="splash_bg">#0A1628</color>
+
+    <!-- ── Primary brand (xanh nước biển sáng) ── -->
+    <color name="splash_primary">#1E88E5</color>
+
+    <!-- ── Accent (xanh sáng hơn cho highlight) ── -->
+    <color name="splash_accent">#42A5F5</color>
+
+    <!-- ── Typography ── -->
+    <color name="splash_text_primary">#FFFFFF</color>
+    <color name="splash_text_secondary">#90CAF9</color>   <!-- xanh nhạt -->
+    <color name="splash_text_hint">#B0BEC5</color>         <!-- xám nhạt -->
+
+    <!-- ── Helpers ── -->
+    <color name="splash_accent_line">#1E88E5</color>
+    <color name="splash_progress_bg">#1A2A4A</color>
+    <color name="splash_circle_outline">#1E3A5F</color>
+    <color name="splash_circle_fill">#0D1F3C</color>
+
+</resources>
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         File: res/drawable/bg_splash_gradient.xml
+         (Nền gradient nếu muốn dùng thay cho solid color)
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!--
+    <?xml version="1.0" encoding="utf-8"?>
+    <shape xmlns:android="http://schemas.android.com/apk/res/android">
+        <gradient
+            android:startColor="#0A1628"
+            android:centerColor="#0D2040"
+            android:endColor="#071020"
+            android:angle="135"
+            android:type="linear" />
+    </shape>
+    -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         File: res/drawable/shape_circle_outline.xml
+         Vòng tròn viền mỏng dùng cho decor
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!--
+    <?xml version="1.0" encoding="utf-8"?>
+    <shape xmlns:android="http://schemas.android.com/apk/res/android"
+        android:shape="oval">
+        <stroke
+            android:width="1.5dp"
+            android:color="@color/splash_circle_outline" />
+        <solid android:color="@android:color/transparent" />
+    </shape>
+    -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         File: res/drawable/shape_circle_filled_light.xml
+         Vòng tròn fill mờ dùng cho decor lồng vào
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!--
+    <?xml version="1.0" encoding="utf-8"?>
+    <shape xmlns:android="http://schemas.android.com/apk/res/android"
+        android:shape="oval">
+        <solid android:color="@color/splash_circle_fill" />
+    </shape>
+    -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         File: res/drawable/shape_logo_ring.xml
+         Khung tròn sáng bao quanh logo
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!--
+    <?xml version="1.0" encoding="utf-8"?>
+    <shape xmlns:android="http://schemas.android.com/apk/res/android"
+        android:shape="oval">
+        <stroke
+            android:width="2dp"
+            android:color="@color/splash_primary" />
+        <solid android:color="#0F1E3A" />
+        <padding
+            android:bottom="4dp"
+            android:left="4dp"
+            android:right="4dp"
+            android:top="4dp" />
+    </shape>
+    -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         File: res/drawable/shape_divider_gradient.xml
+         Đường kẻ ngang gradient xanh → trong suốt
+         ═══════════════════════════════════════════════════════════════ -->
+
+    <!--
+    <?xml version="1.0" encoding="utf-8"?>
+    <shape xmlns:android="http://schemas.android.com/apk/res/android">
+        <gradient
+            android:startColor="@android:color/transparent"
+            android:centerColor="@color/splash_primary"
+            android:endColor="@android:color/transparent"
+            android:angle="0"
+            android:type="linear" />
+        <size android:height="2dp" android:width="180dp" />
+    </shape>
+    -->
+
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         HƯỚNG DẪN CÀI ĐẶT FONT (res/font/)
+         ═══════════════════════════════════════════════════════════════
+
+         Tải các font Montserrat tại:
+         https://fonts.google.com/specimen/Montserrat
+
+         Các file cần:
+           res/font/montserrat_bold.ttf
+           res/font/montserrat_medium.ttf
+           res/font/montserrat_light.ttf
+
+         Hoặc dùng Google Fonts trong build.gradle:
+         ─────────────────────────────────────────────
+         dependencies {
+             implementation "androidx.core:core-ktx:1.12.0"
+         }
+
+         Trong res/font/montserrat.xml (Downloadable Font):
+         ─────────────────────────────────────────────
+         <?xml version="1.0" encoding="utf-8"?>
+         <font-family xmlns:app="http://schemas.android.com/apk/res-auto"
+             app:fontProviderAuthority="com.google.android.gms.fonts"
+             app:fontProviderPackage="com.google.android.gms"
+             app:fontProviderQuery="Montserrat"
+             app:fontProviderCerts="@array/com_google_android_gms_fonts_certs" />
+
+         ═══════════════════════════════════════════════════════════════ -->

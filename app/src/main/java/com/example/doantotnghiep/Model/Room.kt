@@ -46,6 +46,7 @@ data class Room(
     val ownerName: String = "",
     val ownerPhone: String = "",
     val ownerGender: String = "",
+    val ownerAvatarUrl: String = "",
     val status: String = "pending",
     val isFeatured: Boolean = false,
     val createdAt: Long = System.currentTimeMillis()

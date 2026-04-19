@@ -9,6 +9,19 @@
 **Giáo viên hướng dẫn:** TS. Nguyễn Văn Thẩm  
 
 ---
+Công nghệ sử dụng
+Ngôn ngữ Code: Kotlin (Ngôn ngữ lập trình hiện đại, được Google khuyến khích sử dụng kết hợp với kiến trúc MVVM để tối ưu hóa hiệu suất và tính an toàn của mã nguồn).
+Kiến trúc ứng dụng: MVVM (Model-View-ViewModel) – Mô hình kiến trúc giúp tách biệt rõ ràng giữa logic nghiệp vụ, dữ liệu và giao diện người dùng, giúp ứng dụng dễ dàng mở rộng và bảo trì.
+Nền tảng xây dựng phát triển: Android Studio – Môi trường phát triển tích hợp (IDE) chuyên dụng và mạnh mẽ nhất để xây dựng các ứng dụng trên hệ điều hành Android.
+Backend: Firebase Console – Nền tảng đám mây của Google cung cấp các dịch vụ Backend-as-a-Service (BaaS), cụ thể bao gồm:
+Firebase Authentication: Xác thực và quản lý người dùng.
+Cloud Firestore: Cơ sở dữ liệu NoSQL lưu trữ dữ liệu theo thời gian thực.
+Firebase Cloud Messaging (FCM): Gửi thông báo đẩy (push notification).
+Firebase Storage: Lưu trữ hình ảnh phòng trọ.
+Công nghệ tích hợp khác:
+Google Maps API: Tích hợp bản đồ và định vị vị trí.
+Artificial Intelligence (AI): Các thuật toán hỗ trợ tìm kiếm và gợi ý phòng trọ thông minh.
+
 
 ## TÓM TẮT ĐỀ TÀI
 

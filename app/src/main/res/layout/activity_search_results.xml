@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -94,83 +95,66 @@
     </LinearLayout>
 
     <!-- Thanh sắp xếp -->
-    <HorizontalScrollView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/bg_white"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="10dp"
-        android:scrollbars="none">
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:paddingBottom="12dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
 
-        <LinearLayout
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
+            android:text="Sắp xếp theo:"
+            android:textSize="13sp"
+            android:textColor="@color/text_secondary"
+            android:layout_marginEnd="12dp" />
+
+        <FrameLayout
+            android:id="@+id/btnSortDropdown"
+            android:layout_width="match_parent"
+            android:layout_height="38dp"
+            android:background="@drawable/bg_chip_unselected"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:clickable="true"
+            android:focusable="true">
 
             <TextView
+                android:id="@+id/tvCurrentSort"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Sắp xếp:"
-                android:textSize="12sp"
-                android:textColor="@color/text_secondary"
-                android:layout_marginEnd="8dp" />
-
-            <TextView
-                android:id="@+id/chipSortPriceAsc"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="Giá ↑"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:layout_marginEnd="8dp"
-                android:textColor="@color/primary"
-                android:background="@drawable/bg_chip_unselected" />
-
-            <TextView
-                android:id="@+id/chipSortPriceDesc"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="Giá ↑"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:layout_marginEnd="8dp"
-                android:textColor="@color/primary"
-                android:background="@drawable/bg_chip_unselected" />
-
-            <TextView
-                android:id="@+id/chipSortNewest"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
+                android:layout_gravity="center_vertical"
                 android:text="Mới nhất"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:layout_marginEnd="8dp"
+                android:textSize="13sp"
                 android:textColor="@color/primary"
-                android:background="@drawable/bg_chip_unselected" />
+                android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/chipSortOldest"
-                android:layout_width="wrap_content"
-                android:layout_height="32dp"
-                android:text="Cũ nhất"
-                android:textSize="12sp"
-                android:gravity="center"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:textColor="@color/primary"
-                android:background="@drawable/bg_chip_unselected" />
+            <ImageView
+                android:layout_width="16dp"
+                android:layout_height="16dp"
+                android:layout_gravity="center_vertical|end"
+                android:src="@drawable/ic_chevron_right"
+                android:rotation="90"
+                app:tint="@color/primary" />
 
-        </LinearLayout>
+        </FrameLayout>
 
-    </HorizontalScrollView>
+    </LinearLayout>
+
+    <!-- Hidden Chips for Logic (Optional, or remove from code) -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:visibility="gone">
+        <TextView android:id="@+id/chipSortPriceAsc" android:layout_width="0dp" android:layout_height="0dp" />
+        <TextView android:id="@+id/chipSortPriceDesc" android:layout_width="0dp" android:layout_height="0dp" />
+        <TextView android:id="@+id/chipSortNewest" android:layout_width="0dp" android:layout_height="0dp" />
+        <TextView android:id="@+id/chipSortOldest" android:layout_width="0dp" android:layout_height="0dp" />
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"

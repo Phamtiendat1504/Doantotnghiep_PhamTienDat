@@ -18,10 +18,21 @@ class MyAppointmentsActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var btnBack: ImageView
     private lateinit var progressBar: ProgressBar
-    private lateinit var chipGroup: com.google.android.material.chip.ChipGroup
+    private lateinit var menuFilter: AutoCompleteTextView
+    private lateinit var edtSearch: com.google.android.material.textfield.TextInputEditText
+    private lateinit var tabLayoutRole: com.google.android.material.tabs.TabLayout
+    private var currentFilterIndex = 0
+    private var searchQuery = ""
+    private var isDualMode = false      // true khi user đã xác minh (à 2 tab)
+    private var currentTab = 0          // 0 = Lịch tôi đặt | 1 = Khách hẹn phòng tôi
 
     private val bookingViewModel: BookingViewModel by viewModels()
-    private var allAppointments = listOf<Map<String, Any>>()
+    // Lưu riêng biệt 2 list để tránh bị ghi đè khi chuyển tab
+    private var tenantList = listOf<Map<String, Any>>()
+    private var landlordList = listOf<Map<String, Any>>()
+    // allAppointments luôn trỏ vào đúng list theo tab hiện tại
+    private val allAppointments: List<Map<String, Any>>
+        get() = if (isDualMode && currentTab == 1) landlordList else tenantList
 
     private enum class PendingAction {
         NONE, CONFIRM_LANDLORD, REJECT_LANDLORD, TENANT_CONFIRM, TENANT_CANCEL, MARK_AS_RENTED
@@ -41,11 +52,29 @@ class MyAppointmentsActivity : AppCompatActivity() {
         btnBack.setOnClickListener { finish() }
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid != null) {
-            bookingViewModel.fetchAppointmentsByRole()
-        } else {
-            finish()
-        }
+        if (uid == null) { finish(); return }
+
+        // Kiểm tra isVerified trước để quyết định dual-tab hay single-tab
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val isVerified = doc.getBoolean("isVerified") ?: false
+                val role = doc.getString("role") ?: "tenant"
+                val effectiveRole = if (isVerified || role == "admin") "landlord" else "tenant"
+
+                // Đánh dấu đã đọc tất cả lịch hẹn → badge điện thoại tự biến mất
+                com.example.doantotnghiep.repository.AppointmentRepository()
+                    .markAllAppointmentsRead(uid, effectiveRole)
+
+                if (isVerified || role == "admin") {
+                    isDualMode = true
+                    setupDualTabs()
+                    bookingViewModel.fetchBothAppointments()
+                } else {
+                    bookingViewModel.fetchAppointmentsByRole()
+                }
+            }
+            .addOnFailureListener { bookingViewModel.fetchAppointmentsByRole() }
     }
 
     private fun initViews() {
@@ -53,32 +82,71 @@ class MyAppointmentsActivity : AppCompatActivity() {
         tvEmpty = findViewById(R.id.tvEmpty)
         btnBack = findViewById(R.id.btnBack)
         progressBar = findViewById(R.id.progressBar)
-        chipGroup = findViewById(R.id.chipGroup)
+        menuFilter = findViewById(R.id.menuFilter)
+        edtSearch = findViewById(R.id.edtSearch)
+        tabLayoutRole = findViewById(R.id.tabLayoutRole)
+
+        edtSearch.addTextChangedListener(object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                searchQuery = s.toString().trim()
+                updateListByTab()
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        })
 
         val swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         swipeRefreshLayout.setOnRefreshListener {
-            bookingViewModel.fetchAppointmentsByRole()
+            if (isDualMode) bookingViewModel.fetchBothAppointments()
+            else bookingViewModel.fetchAppointmentsByRole()
             swipeRefreshLayout.isRefreshing = false
-        }
-
-        chipGroup.setOnCheckedStateChangeListener { group, checkedIds ->
-            updateListByTab()
         }
     }
 
+    /** Hiện TabLayout 2 tab cho user đã xác minh */
+    private fun setupDualTabs() {
+        tabLayoutRole.visibility = android.view.View.VISIBLE
+        tabLayoutRole.addTab(tabLayoutRole.newTab().setText("📅 Lịch tôi đặt"))
+        tabLayoutRole.addTab(tabLayoutRole.newTab().setText("🏠 Khách hẹn phòng tôi"))
+        tabLayoutRole.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
+                currentTab = tab?.position ?: 0
+                // Không cần gán allAppointments vì getter tự trỏ đúng list
+                updateFilterMenu(currentTab == 1)
+                updateListByTab()
+            }
+            override fun onTabUnselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+            override fun onTabReselected(tab: com.google.android.material.tabs.TabLayout.Tab?) {}
+        })
+    }
+
     private fun updateListByTab() {
-        val role = bookingViewModel.userRole.value ?: "tenant"
-        val isLandlord = role == "landlord" || role == "admin"
-        
-        val filtered = when (chipGroup.checkedChipId) {
-            R.id.chipPending -> allAppointments.filter { it["status"] == "pending" }
-            R.id.chipWaitingTenant -> allAppointments.filter { it["status"] == "confirmed" }
-            R.id.chipTenantConfirmed -> allAppointments.filter { it["status"] == "tenant_confirmed" }
-            R.id.chipHistory -> allAppointments.filter { 
+        val isLandlordView = if (isDualMode) currentTab == 1
+                             else (bookingViewModel.userRole.value ?: "tenant").let { it == "landlord" || it == "admin" }
+        var filtered = when (currentFilterIndex) {
+            1 -> allAppointments.filter { it["status"] == "pending" }
+            2 -> allAppointments.filter { it["status"] == "confirmed" }
+            3 -> allAppointments.filter { it["status"] == "tenant_confirmed" }
+            4 -> allAppointments.filter { 
                 val s = it["status"] as? String ?: ""
                 s != "pending" && s != "confirmed" && s != "tenant_confirmed"
             }
-            else -> allAppointments // chipAll
+            else -> allAppointments // 0 - chipAll
+        }
+
+        if (searchQuery.isNotEmpty()) {
+            val q = searchQuery.lowercase()
+            filtered = filtered.filter { doc ->
+                val tenantName = (doc["tenantName"] as? String ?: "").lowercase()
+                val tenantPhone = (doc["tenantPhone"] as? String ?: "").lowercase()
+                val landlordName = (doc["landlordName"] as? String ?: "").lowercase()
+                val landlordPhone = (doc["landlordPhone"] as? String ?: "").lowercase()
+                val roomTitle = (doc["roomTitle"] as? String ?: "").lowercase()
+                
+                tenantName.contains(q) || tenantPhone.contains(q) ||
+                landlordName.contains(q) || landlordPhone.contains(q) ||
+                roomTitle.contains(q)
+            }
         }
 
         layoutAppointments.removeAllViews()
@@ -88,7 +156,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
             tvEmpty.visibility = View.GONE
             
             // Sắp xếp: Thời gian sớm nhất lên đầu cho các tab đang xử lý
-            val isHistory = chipGroup.checkedChipId == R.id.chipHistory
+            val isHistory = currentFilterIndex == 4
             val sorted = if (isHistory) {
                 filtered.sortedByDescending { it["createdAt"] as? Long ?: 0L }
             } else {
@@ -96,7 +164,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
             }
 
             for (doc in sorted) {
-                addAppointmentToLayout(doc, isLandlord)
+                addAppointmentToLayout(doc, isLandlordView)
             }
         }
     }
@@ -117,14 +185,14 @@ class MyAppointmentsActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        // Quan sát danh sách lịch hẹn từ ViewModel
+        // Quan sát danh sách lịch hẹn từ ViewModel (chế độ single-role)
         bookingViewModel.appointments.observe(this) { appointmentList ->
-            allAppointments = appointmentList
+            if (isDualMode) return@observe  // dual-tab dùng observer riêng bên dưới
+            tenantList = appointmentList
             val role = bookingViewModel.userRole.value ?: "tenant"
             val isLandlord = role == "landlord" || role == "admin"
 
-            // Cập nhật tên Chip dựa trên vai trò
-            updateChipLabels(isLandlord)
+            updateFilterMenu(isLandlord)
 
             if (isLandlord) {
                 val hasNewlyConfirmed = appointmentList.any { it["status"] == "tenant_confirmed" }
@@ -136,6 +204,30 @@ class MyAppointmentsActivity : AppCompatActivity() {
             }
 
             updateListByTab()
+        }
+
+        // Quan sát lịch hẹn TÔI ĐẶT (tab 0 - chế độ dual-tab)
+        bookingViewModel.tenantAppointments.observe(this) { list ->
+            if (!isDualMode) return@observe
+            tenantList = list  // Luôn cập nhật, dù đang ở tab nào
+            if (currentTab == 0) {
+                updateFilterMenu(isLandlord = false)
+                updateListByTab()
+            }
+        }
+
+        // Quan sát lịch hẹn KHÁCH HẸN PHÒNG TÔI (tab 1 - chế độ dual-tab)
+        bookingViewModel.landlordAppointments.observe(this) { list ->
+            if (!isDualMode) return@observe
+            landlordList = list  // Luôn cập nhật, dù đang ở tab nào
+            if (currentTab == 1) {
+                updateFilterMenu(isLandlord = true)
+                val hasNewlyConfirmed = list.any { it["status"] == "tenant_confirmed" }
+                if (hasNewlyConfirmed && !isReminderShown) showTenantConfirmedReminderDialog()
+                val roomIds = list.mapNotNull { it["roomId"] as? String }.distinct()
+                roomIds.forEach { rid -> bookingViewModel.listenTimeConflicts(rid) }
+                updateListByTab()
+            }
         }
 
         // Quan sát xung đột thời gian
@@ -188,15 +280,26 @@ class MyAppointmentsActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun updateChipLabels(isLandlord: Boolean) {
-        findViewById<com.google.android.material.chip.Chip>(R.id.chipPending).text = 
-            if (isLandlord) "Cần xác nhận" else "Đang chờ duyệt"
-            
-        findViewById<com.google.android.material.chip.Chip>(R.id.chipWaitingTenant).text = 
-            if (isLandlord) "Chờ khách xác nhận" else "Chờ bạn xác nhận"
-            
-        findViewById<com.google.android.material.chip.Chip>(R.id.chipTenantConfirmed).text = 
-            if (isLandlord) "Khách sẽ đến" else "Bạn đã xác nhận"
+    private fun updateFilterMenu(isLandlord: Boolean) {
+        val options = if (isLandlord) {
+            arrayOf("Tất cả", "Cần xác nhận", "Chờ khách xác nhận", "Khách sẽ đến", "Lịch sử")
+        } else {
+            arrayOf("Tất cả", "Đang chờ duyệt", "Chờ bạn xác nhận", "Bạn đã xác nhận", "Lịch sử")
+        }
+        
+        val adapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, options)
+        menuFilter.setAdapter(adapter)
+
+        if (menuFilter.text.toString().isEmpty()) {
+            menuFilter.setText(options[currentFilterIndex], false)
+        }
+
+        menuFilter.setOnItemClickListener { _, _, position, _ ->
+            currentFilterIndex = position
+            updateListByTab()
+            // Ẩn bàn phím/focus sau khi chọn
+            menuFilter.clearFocus()
+        }
     }
 
     private fun addSectionHeader(title: String, isVisible: Boolean) {
