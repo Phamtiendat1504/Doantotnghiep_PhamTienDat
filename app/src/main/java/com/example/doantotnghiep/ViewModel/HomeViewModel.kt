@@ -90,7 +90,8 @@ class HomeViewModel : ViewModel() {
                     ward = doc.getString("ward") ?: "",
                     district = doc.getString("district") ?: "",
                     area = doc.getLong("area")?.toInt() ?: 0,
-                    imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull()
+                    imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                    createdAt = doc.getLong("createdAt") ?: 0L
                 )
             }.toMutableList()
 
@@ -116,7 +117,8 @@ class HomeViewModel : ViewModel() {
                                     ward = doc.getString("ward") ?: "",
                                     district = doc.getString("district") ?: "",
                                     area = doc.getLong("area")?.toInt() ?: 0,
-                                    imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull()
+                                    imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                                    createdAt = doc.getLong("createdAt") ?: 0L
                                 )
                             }
                         featuredList.addAll(extras)
@@ -132,10 +134,10 @@ class HomeViewModel : ViewModel() {
         }
     }
 
-    fun loadNewRooms(isRefresh: Boolean = false) {
+    fun loadNewRooms(isRefresh: Boolean = false, force: Boolean = false) {
         val currentList = _newRooms.value
         if (!isRefresh && !currentList.isNullOrEmpty()) return
-        if (isRefresh && !currentList.isNullOrEmpty()) {
+        if (isRefresh && !force && !currentList.isNullOrEmpty()) {
             val elapsed = System.currentTimeMillis() - lastLoadTime
             if (elapsed < REFRESH_INTERVAL) return
         }
@@ -166,7 +168,8 @@ class HomeViewModel : ViewModel() {
                         ward = doc.getString("ward") ?: "",
                         district = doc.getString("district") ?: "",
                         area = doc.getLong("area")?.toInt() ?: 0,
-                        imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull()
+                        imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                        createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 }
             },
@@ -200,7 +203,8 @@ class HomeViewModel : ViewModel() {
                         ward = doc.getString("ward") ?: "",
                         district = doc.getString("district") ?: "",
                         area = doc.getLong("area")?.toInt() ?: 0,
-                        imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull()
+                        imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                        createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 }
                 val currentList = _newRooms.value?.toMutableList() ?: mutableListOf()

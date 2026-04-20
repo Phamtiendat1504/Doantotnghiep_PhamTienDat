@@ -3,8 +3,8 @@ package com.example.doantotnghiep.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.Utils.LocationNormalizer
 import com.example.doantotnghiep.repository.RoomRepository
-import java.util.Locale
 
 class SearchViewModel : ViewModel() {
 
@@ -38,17 +38,17 @@ class SearchViewModel : ViewModel() {
         repository.searchApprovedRooms(
             onSuccess = { docs ->
                 _isLoading.value = false
-                val lowerQuery = query.lowercase().trim()
+                val normalizedQuery = LocationNormalizer.normalizeRaw(query)
                 val matched = docs.filter { doc ->
                     val data = doc.data
-                    val title = (data["title"] as? String ?: "").lowercase()
-                    val ward = (data["ward"] as? String ?: "").lowercase()
-                    val district = (data["district"] as? String ?: "").lowercase()
-                    val address = (data["address"] as? String ?: "").lowercase()
-                    val description = (data["description"] as? String ?: "").lowercase()
-                    title.contains(lowerQuery) || ward.contains(lowerQuery) ||
-                    district.contains(lowerQuery) || address.contains(lowerQuery) ||
-                    description.contains(lowerQuery)
+                    val title = LocationNormalizer.normalizeRaw(data["title"] as? String ?: "")
+                    val ward = LocationNormalizer.normalizeWard(data["ward"] as? String ?: "")
+                    val district = LocationNormalizer.normalizeDistrict(data["district"] as? String ?: "")
+                    val address = LocationNormalizer.normalizeRaw(data["address"] as? String ?: "")
+                    val description = LocationNormalizer.normalizeRaw(data["description"] as? String ?: "")
+                    title.contains(normalizedQuery) || ward.contains(normalizedQuery) ||
+                        district.contains(normalizedQuery) || address.contains(normalizedQuery) ||
+                        description.contains(normalizedQuery)
                 }.map { doc -> mapToRoomItem(doc.id, doc.data) }
                 _searchResults.value = matched
             },
@@ -62,17 +62,17 @@ class SearchViewModel : ViewModel() {
 
     fun searchByFilters(ward: String, district: String, searchMode: String, minPrice: Long, maxPrice: Long) {
         _isLoading.value = true
-        val wardFilter = normalizeLocationValue(ward)
-        val districtFilter = normalizeLocationValue(district)
-        val mode = searchMode.trim().lowercase(Locale.ROOT)
+        val wardFilter = LocationNormalizer.normalizeWard(ward)
+        val districtFilter = LocationNormalizer.normalizeDistrict(district)
+        val mode = LocationNormalizer.normalizeRaw(searchMode)
         repository.searchApprovedRooms(
             onSuccess = { docs ->
                 _isLoading.value = false
                 val matched = docs.filter { doc ->
                     val data = doc.data
                     val roomPrice = data["price"] as? Long ?: 0
-                    val roomWard = normalizeLocationValue(data["ward"] as? String ?: "")
-                    val roomDistrict = normalizeLocationValue(data["district"] as? String ?: "")
+                    val roomWard = LocationNormalizer.normalizeWard(data["ward"] as? String ?: "")
+                    val roomDistrict = LocationNormalizer.normalizeDistrict(data["district"] as? String ?: "")
                     val priceMatch = (minPrice == 0L || roomPrice >= minPrice) &&
                                      (maxPrice == 0L || roomPrice <= maxPrice)
                     val locationMatch = when {
@@ -92,12 +92,6 @@ class SearchViewModel : ViewModel() {
                 _searchResults.value = emptyList()
             }
         )
-    }
-
-    private fun normalizeLocationValue(value: String): String {
-        return value.trim()
-            .replace(Regex("\\s+"), " ")
-            .lowercase(Locale("vi", "VN"))
     }
 
     private fun mapToRoomItem(roomId: String, data: Map<String, Any>): RoomItem {

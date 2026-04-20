@@ -173,12 +173,14 @@ class MainActivity : AppCompatActivity() {
     private fun loadBadgeWithRole(uid: String) {
         FirebaseFirestore.getInstance().collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
-                val role = doc.getString("role") ?: "tenant"
-                mainViewModel.loadAppointmentBadge(uid, role)
+                val role = doc.getString("role") ?: ""
+                val isVerified = doc.getBoolean("isVerified") ?: false
+                val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
+                mainViewModel.loadAppointmentBadge(uid, effectiveRole)
             }
             .addOnFailureListener {
                 // Fallback: nếu không lấy được role, dùng tenant (chỉ ngịe confirmed)
-                mainViewModel.loadAppointmentBadge(uid, "tenant")
+                mainViewModel.loadAppointmentBadge(uid, "user")
             }
     }
 

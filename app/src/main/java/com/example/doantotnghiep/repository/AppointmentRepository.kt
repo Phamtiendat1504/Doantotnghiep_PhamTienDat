@@ -135,7 +135,16 @@ class AppointmentRepository {
     fun getCurrentUserRole(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
         db.collection("users").document(uid).get()
-            .addOnSuccessListener { doc -> onSuccess(doc.getString("role") ?: "tenant") }
+            .addOnSuccessListener { doc ->
+                val role = doc.getString("role") ?: ""
+                val isVerified = doc.getBoolean("isVerified") ?: false
+                val effectiveRole = when {
+                    role == "admin" -> "admin"
+                    isVerified -> "landlord"
+                    else -> "user"
+                }
+                onSuccess(effectiveRole)
+            }
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
     }
 
@@ -227,7 +236,7 @@ class AppointmentRepository {
             .addOnFailureListener { e -> onFailure("Từ chối thất bại: ${e.message}") }
     }
 
-    // Đánh dấu đã cho thuê — Xóa ảnh Storage và cập nhật status bài đăng
+    // Đánh dấu đã cho thuê — Xóa ảnh Storage và xóa hẳn bài đăng khỏi Firestore
     fun markAsRented(
         appointmentId: String, roomId: String, tenantId: String, roomTitle: String,
         onSuccess: () -> Unit,
@@ -252,21 +261,15 @@ class AppointmentRepository {
                     }
                 }
 
-                // 3. Thực hiện Batch update để dọn dẹp dữ liệu bài đăng
+                // 3. Thực hiện Batch update + xóa room
                 val batch = db.batch()
 
                 // Cập nhật lịch hẹn thành công
                 val apptRef = db.collection("appointments").document(appointmentId)
                 batch.update(apptRef, "status", "completed_rented")
 
-                // Cập nhật phòng: Giữ lại thông tin cơ bản cho Admin, xóa sạch "nội dung nặng"
-                batch.update(roomRef, mapOf(
-                    "status" to "rented",
-                    "rentedAt" to System.currentTimeMillis(),
-                    "imageUrls" to emptyList<String>(), // Xóa link ảnh
-                    "description" to "Phòng đã cho thuê - Dữ liệu đã được dọn dẹp", // Xóa mô tả
-                    "videoUrl" to null // Xóa video nếu có
-                ))
+                // Xóa hẳn room để tránh phình dữ liệu
+                batch.delete(roomRef)
 
                 // Xóa slot đặt lịch
                 val slotRef = db.collection("bookedSlots").document(appointmentId)
@@ -274,6 +277,7 @@ class AppointmentRepository {
 
                 batch.commit()
                     .addOnSuccessListener {
+                        deleteSavedPostsByRoom(roomId)
                         // Gửi thông báo cho người thuê
                         sendNotification(
                             userId = tenantId,
@@ -290,6 +294,18 @@ class AppointmentRepository {
                 onFailure("Không tìm thấy bài đăng")
             }
         }.addOnFailureListener { e -> onFailure("Lỗi truy xuất bài đăng: ${e.message}") }
+    }
+
+    private fun deleteSavedPostsByRoom(roomId: String) {
+        db.collection("savedPosts")
+            .whereEqualTo("roomId", roomId)
+            .get()
+            .addOnSuccessListener { docs ->
+                if (docs.isEmpty) return@addOnSuccessListener
+                val batch = db.batch()
+                docs.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+            }
     }
 
     /**
@@ -500,7 +516,8 @@ class AppointmentRepository {
         role: String,
         onResult: (Int) -> Unit
     ): ListenerRegistration {
-        return if (role == "landlord" || role == "admin") {
+        val isHostAccess = role == "landlord" || role == "admin" || role == "owner" || role == "verified"
+        return if (isHostAccess) {
             db.collection("appointments")
                 .whereEqualTo("landlordId", uid)
                 .whereIn("status", listOf("pending", "tenant_confirmed"))
@@ -524,7 +541,8 @@ class AppointmentRepository {
      * Gọi khi user vào màn hình MyAppointmentsActivity.
      */
     fun markAllAppointmentsRead(uid: String, role: String) {
-        val field = if (role == "landlord" || role == "admin") "landlordId" else "tenantId"
+        val isHostAccess = role == "landlord" || role == "admin" || role == "owner" || role == "verified"
+        val field = if (isHostAccess) "landlordId" else "tenantId"
         db.collection("appointments")
             .whereEqualTo(field, uid)
             .whereEqualTo("hasUnreadUpdate", true)

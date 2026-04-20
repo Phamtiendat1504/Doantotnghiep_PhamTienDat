@@ -65,18 +65,47 @@ class UserRepository {
     }
 
     /**
-     * Đếm tổng số bài đăng được duyệt của một người dùng.
+     * Đếm số bài đăng công khai của một người dùng (đúng theo quyền người khác được xem hồ sơ):
+     * approved + expired.
      */
-    fun countApprovedRooms(
+    fun countPublicRooms(
         userId: String,
         onResult: (Int) -> Unit
     ) {
-        FirebaseFirestore.getInstance()
-            .collection("rooms")
+        val firestore = FirebaseFirestore.getInstance()
+        var approvedCount = 0
+        var expiredCount = 0
+        var completed = 0
+
+        fun finishIfDone() {
+            completed++
+            if (completed == 2) {
+                onResult(approvedCount + expiredCount)
+            }
+        }
+
+        firestore.collection("rooms")
             .whereEqualTo("userId", userId)
             .whereEqualTo("status", "approved")
             .get()
-            .addOnSuccessListener { docs -> onResult(docs.size()) }
-            .addOnFailureListener { onResult(0) }
+            .addOnSuccessListener { docs ->
+                approvedCount = docs.size()
+                finishIfDone()
+            }
+            .addOnFailureListener {
+                finishIfDone()
+            }
+
+        firestore.collection("rooms")
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("status", "expired")
+            .get()
+            .addOnSuccessListener { docs ->
+                expiredCount = docs.size()
+                finishIfDone()
+            }
+            .addOnFailureListener {
+                finishIfDone()
+            }
     }
 }

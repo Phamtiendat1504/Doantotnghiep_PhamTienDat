@@ -11,6 +11,9 @@ import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.BookingViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.Query
 
 class MyAppointmentsActivity : AppCompatActivity() {
 
@@ -41,6 +44,8 @@ class MyAppointmentsActivity : AppCompatActivity() {
     private var pendingAction = PendingAction.NONE
     private val conflictMap = mutableMapOf<String, Int>()
     private var isReminderShown = false
+    private var roomRentedNoticeListener: ListenerRegistration? = null
+    private var isRentedDialogShowing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,14 +58,15 @@ class MyAppointmentsActivity : AppCompatActivity() {
 
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         if (uid == null) { finish(); return }
+        listenRoomRentedNotices(uid)
 
         // Kiểm tra isVerified trước để quyết định dual-tab hay single-tab
         com.google.firebase.firestore.FirebaseFirestore.getInstance()
             .collection("users").document(uid).get()
             .addOnSuccessListener { doc ->
                 val isVerified = doc.getBoolean("isVerified") ?: false
-                val role = doc.getString("role") ?: "tenant"
-                val effectiveRole = if (isVerified || role == "admin") "landlord" else "tenant"
+                val role = doc.getString("role") ?: ""
+                val effectiveRole = if (isVerified || role == "admin") "verified" else "user"
 
                 // Đánh dấu đã đọc tất cả lịch hẹn → badge điện thoại tự biến mất
                 com.example.doantotnghiep.repository.AppointmentRepository()
@@ -75,6 +81,43 @@ class MyAppointmentsActivity : AppCompatActivity() {
                 }
             }
             .addOnFailureListener { bookingViewModel.fetchAppointmentsByRole() }
+    }
+
+    private fun listenRoomRentedNotices(uid: String) {
+        roomRentedNoticeListener?.remove()
+        roomRentedNoticeListener = FirebaseFirestore.getInstance()
+            .collection("notifications")
+            .whereEqualTo("userId", uid)
+            .whereEqualTo("type", "room_already_rented")
+            .whereEqualTo("seen", false)
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(1)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null || snapshots == null || snapshots.isEmpty) return@addSnapshotListener
+                if (isRentedDialogShowing) return@addSnapshotListener
+
+                val doc = snapshots.documents.firstOrNull() ?: return@addSnapshotListener
+                val title = doc.getString("title") ?: "Lịch hẹn đã bị hủy"
+                val message = doc.getString("message")
+                    ?: "Phòng đã có người thuê. Lịch hẹn của bạn đã bị hủy tự động."
+
+                isRentedDialogShowing = true
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle(title)
+                    .setMessage(message)
+                    .setCancelable(false)
+                    .setPositiveButton("Đã hiểu") { _, _ ->
+                        doc.reference.update(
+                            mapOf(
+                                "seen" to true,
+                                "isRead" to true
+                            )
+                        )
+                        isRentedDialogShowing = false
+                    }
+                    .setOnDismissListener { isRentedDialogShowing = false }
+                    .show()
+            }
     }
 
     private fun initViews() {
@@ -122,7 +165,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
 
     private fun updateListByTab() {
         val isLandlordView = if (isDualMode) currentTab == 1
-                             else (bookingViewModel.userRole.value ?: "tenant").let { it == "landlord" || it == "admin" }
+                             else (bookingViewModel.userRole.value ?: "user").let { it == "landlord" || it == "admin" || it == "verified" }
         var filtered = when (currentFilterIndex) {
             1 -> allAppointments.filter { it["status"] == "pending" }
             2 -> allAppointments.filter { it["status"] == "confirmed" }
@@ -189,8 +232,8 @@ class MyAppointmentsActivity : AppCompatActivity() {
         bookingViewModel.appointments.observe(this) { appointmentList ->
             if (isDualMode) return@observe  // dual-tab dùng observer riêng bên dưới
             tenantList = appointmentList
-            val role = bookingViewModel.userRole.value ?: "tenant"
-            val isLandlord = role == "landlord" || role == "admin"
+            val role = bookingViewModel.userRole.value ?: "user"
+            val isLandlord = role == "landlord" || role == "admin" || role == "verified"
 
             updateFilterMenu(isLandlord)
 
@@ -674,5 +717,10 @@ class MyAppointmentsActivity : AppCompatActivity() {
 
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
+    }
+
+    override fun onDestroy() {
+        roomRentedNoticeListener?.remove()
+        super.onDestroy()
     }
 }

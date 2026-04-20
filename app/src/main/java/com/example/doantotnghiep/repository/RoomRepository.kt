@@ -273,6 +273,29 @@ class RoomRepository {
             .addOnFailureListener { e -> onFailure("Không thể tải thông tin phòng: ${e.message}") }
     }
 
+    fun loadOwnerPostedRooms(userId: String, onSuccess: (List<com.google.firebase.firestore.DocumentSnapshot>) -> Unit, onFailure: (String) -> Unit) {
+        val currentUid = auth.currentUser?.uid
+        val visibleStatuses = if (currentUid == userId) {
+            // Chủ tài khoản tự xem: thấy toàn bộ bài còn hiệu lực trong hệ thống (trừ rented).
+            listOf("pending", "approved", "rejected", "expired")
+        } else {
+            // Người khác xem hồ sơ chủ trọ: chỉ được thấy bài công khai theo Firestore Rules.
+            listOf("approved", "expired")
+        }
+
+        db.collection("rooms")
+            .whereEqualTo("userId", userId)
+            .whereIn("status", visibleStatuses)
+            .get()
+            .addOnSuccessListener { docs ->
+                val filtered = docs.documents
+                    .filter { (it.getString("status") ?: "").lowercase(Locale("vi", "VN")) != "rented" }
+                    .sortedByDescending { it.getLong("createdAt") ?: 0L }
+                onSuccess(filtered)
+            }
+            .addOnFailureListener { e -> onFailure("Không thể tải bài đăng của chủ trọ: ${e.message}") }
+    }
+
     fun loadSingleRoomDoc(roomId: String, onSuccess: (com.google.firebase.firestore.DocumentSnapshot?) -> Unit, onFailure: (String) -> Unit) {
         db.collection("rooms").document(roomId).get()
             .addOnSuccessListener { doc -> onSuccess(if (doc.exists()) doc else null) }
@@ -438,7 +461,7 @@ class RoomRepository {
             }
     }
 
-    // Đánh dấu đã cho thuê: Xóa ảnh trên Storage và dọn dẹp dữ liệu bài đăng, chỉ giữ lại thông tin cơ bản cho Admin
+    // Đánh dấu đã cho thuê: Xóa ảnh và xóa hẳn bài đăng trên Firestore để tránh phình dữ liệu
     fun markAsRented(roomId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val roomRef = db.collection("rooms").document(roomId)
         roomRef.get().addOnSuccessListener { document ->
@@ -458,25 +481,31 @@ class RoomRepository {
                     }
                 }
 
-                // 2. Dọn dẹp dữ liệu Firestore
-                roomRef.update(mapOf(
-                    "status" to "rented",
-                    "rentedAt" to System.currentTimeMillis(),
-                    "imageUrls" to emptyList<String>(),
-                    "description" to "Phòng đã cho thuê - Dữ liệu đã được dọn dẹp",
-                    "videoUrl" to null,
-                    "updatedAt" to System.currentTimeMillis()
-                )).addOnSuccessListener {
+                // 2. Xóa hẳn bài đăng và dọn dữ liệu liên quan
+                roomRef.delete().addOnSuccessListener {
+                    deleteSavedPostsByRoom(roomId)
                     // FIX LỖI 3: Hủy và thông báo tất cả lịch hẹn còn lại của phòng này.
                     // Luồng này khởi động khi Chủ trọ bấm "Đã cho thuê" từ màn hình Bài đăng,
                     // khác với luồng từ Lịch hẹn (đã biết tenantId và appointmentId cụ thể).
                     cancelAllAppointmentsForRoom(roomId, roomTitle)
                     onSuccess()
-                }.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi cập nhật trạng thái") }
+                }.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi xóa bài đăng đã cho thuê") }
             } else {
                 onFailure("Không tìm thấy bài đăng")
             }
         }.addOnFailureListener { e -> onFailure("Lỗi truy xuất: ${e.message}") }
+    }
+
+    private fun deleteSavedPostsByRoom(roomId: String) {
+        db.collection("savedPosts")
+            .whereEqualTo("roomId", roomId)
+            .get()
+            .addOnSuccessListener { docs ->
+                if (docs.isEmpty) return@addOnSuccessListener
+                val batch = db.batch()
+                docs.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+            }
     }
 
     /**
@@ -514,7 +543,12 @@ class RoomRepository {
 
                     // Hủy lịch hẹn
                     db.collection("appointments").document(doc.id)
-                        .update("status", "cancelled_by_system")
+                        .update(
+                            mapOf(
+                                "status" to "cancelled_by_system",
+                                "hasUnreadUpdate" to true
+                            )
+                        )
 
                     // Xóa slot đặt lịch — tránh rác dữ liệu
                     db.collection("bookedSlots").document(doc.id).delete()

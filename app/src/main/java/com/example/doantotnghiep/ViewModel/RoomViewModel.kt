@@ -84,7 +84,7 @@ class RoomViewModel : ViewModel() {
     fun loadUserRole(uid: String) {
         authRepository.getUserRole(
             onSuccess = { role -> _userRole.value = role },
-            onFailure = { _userRole.value = "tenant" }
+            onFailure = { _userRole.value = "user" }
         )
     }
 

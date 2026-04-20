@@ -125,10 +125,11 @@ class ProfileViewModel : ViewModel() {
      * Lắng nghe badge lịch hẹn theo đúng vai trò người dùng.
      * Chỉ tạo 1 listener (không phải 2 như cũ), tiết kiệm chi phí đọc Firestore.
      */
-    fun loadAppointmentBadge(role: String) {
+    fun loadAppointmentBadge(role: String, isVerified: Boolean) {
         val uid = getCurrentUserId() ?: return
+        val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
         appointmentListener?.remove()
-        appointmentListener = appointmentRepository.listenBadge(uid, role) { count ->
+        appointmentListener = appointmentRepository.listenBadge(uid, effectiveRole) { count ->
             _appointmentBadgeCount.postValue(count)
         }
     }

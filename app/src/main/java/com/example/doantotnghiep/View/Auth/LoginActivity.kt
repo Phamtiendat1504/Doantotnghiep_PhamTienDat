@@ -2,10 +2,7 @@ package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.View
-import android.widget.CheckBox
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -17,8 +14,6 @@ import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKeys
 import com.example.doantotnghiep.MainActivity
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -36,21 +31,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var tvGoToRegister: TextView
     private lateinit var viewModel: AuthViewModel
 
-    private val KEY_REMEMBER = "remember_password"
     private var loginLoadingDialog: AlertDialog? = null
     private var pendingLockCheck = false
-
-    // Sử dụng EncryptedSharedPreferences để bảo mật cấp độ 1
-    private val prefs by lazy {
-        val masterKeyAlias = MasterKeys.getOrCreate(MasterKeys.AES256_GCM_SPEC)
-        EncryptedSharedPreferences.create(
-            "secure_login_prefs",
-            masterKeyAlias,
-            this,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

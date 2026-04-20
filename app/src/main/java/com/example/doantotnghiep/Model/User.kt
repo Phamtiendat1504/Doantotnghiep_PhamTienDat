@@ -10,7 +10,7 @@ data class User(
     var gender: String = "",
     var occupation: String = "",
     var avatarUrl: String = "",
-    var role: String = "tenant",
+    var role: String = "user",
     // Firestore yêu cầu var (không phải val) để có thể deserialize đúng qua reflection.
     // Nếu dùng val, Firestore sẽ bỏ qua các field Boolean và lúc nào cũng trả về giá trị default (false).
     var isVerified: Boolean = false,

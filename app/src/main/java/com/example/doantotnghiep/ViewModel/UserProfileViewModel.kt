@@ -35,8 +35,8 @@ class UserProfileViewModel : ViewModel() {
             onFailure = { msg -> _errorMessage.value = msg }
         )
 
-        // Tải danh sách bài đăng đã approved của user đó
-        roomRepo.loadOwnerRooms(
+        // Tải toàn bộ bài đăng hiện có của chủ tài khoản đó (đã loại rented).
+        roomRepo.loadOwnerPostedRooms(
             userId = userId,
             onSuccess = { docs ->
                 val items = docs.mapNotNull { doc ->
@@ -47,7 +47,20 @@ class UserProfileViewModel : ViewModel() {
                     val district = doc.getString("district") ?: ""
                     val area = doc.getLong("area")?.toInt() ?: 0
                     val imageUrl = (doc.get("imageUrls") as? List<*>)?.filterIsInstance<String>()?.firstOrNull()
-                    RoomItem(id, title, price, ward, district, area, imageUrl)
+                    val status = doc.getString("status") ?: "approved"
+                    val isAvailable = status != "rented"
+                    val createdAt = doc.getLong("createdAt") ?: 0L
+                    RoomItem(
+                        id = id,
+                        title = title,
+                        price = price,
+                        ward = ward,
+                        district = district,
+                        area = area,
+                        imageUrl = imageUrl,
+                        isAvailable = isAvailable,
+                        createdAt = createdAt
+                    )
                 }
                 _rooms.value = items
                 _isLoading.value = false

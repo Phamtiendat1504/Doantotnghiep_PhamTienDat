@@ -13,6 +13,8 @@ import com.example.doantotnghiep.R
 import com.example.doantotnghiep.View.Auth.RoomDetailActivity
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 data class RoomItem(
@@ -22,17 +24,20 @@ data class RoomItem(
     val ward: String,
     val district: String,
     val area: Int,
-    val imageUrl: String?
+    val imageUrl: String?,
+    val isAvailable: Boolean = true,
+    val createdAt: Long = 0L
 )
 
 class RoomAdapter(
     private val items: MutableList<RoomItem> = mutableListOf(),
-    private val viewType: Int = VIEW_TYPE_HORIZONTAL
+    private val viewType: Int = VIEW_TYPE_HORIZONTAL,
+    private val showAvailabilityBadge: Boolean = false
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     companion object {
-        const val VIEW_TYPE_HORIZONTAL = 0  // Phòng nổi bật (card ngang)
-        const val VIEW_TYPE_VERTICAL = 1    // Phòng mới (list dọc)
+        const val VIEW_TYPE_HORIZONTAL = 0
+        const val VIEW_TYPE_VERTICAL = 1
     }
 
     private val formatter: DecimalFormat by lazy {
@@ -40,8 +45,8 @@ class RoomAdapter(
         symbols.groupingSeparator = '.'
         DecimalFormat("#,###", symbols)
     }
+    private val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
 
-    // ViewHolder cho card nằm ngang (Phòng nổi bật)
     inner class HorizontalViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val imgRoom: ImageView = itemView.findViewById(R.id.imgRoom)
         val tvPrice: TextView = itemView.findViewById(R.id.tvPrice)
@@ -49,13 +54,14 @@ class RoomAdapter(
         val tvLocation: TextView = itemView.findViewById(R.id.tvLocation)
     }
 
-    // ViewHolder cho list dọc (Phòng mới đăng)
     inner class VerticalViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val imgRoom: ImageView = itemView.findViewById(R.id.imgRoom)
         val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
         val tvLocation: TextView = itemView.findViewById(R.id.tvLocation)
+        val tvPostedDate: TextView = itemView.findViewById(R.id.tvPostedDate)
         val tvPrice: TextView = itemView.findViewById(R.id.tvPrice)
         val tvArea: TextView = itemView.findViewById(R.id.tvArea)
+        val tvRoomStatus: TextView = itemView.findViewById(R.id.tvRoomStatus)
     }
 
     override fun getItemViewType(position: Int) = viewType
@@ -106,14 +112,29 @@ class RoomAdapter(
                 holder.tvTitle.text = item.title
                 holder.tvLocation.text = "${item.ward}, ${item.district}"
                 holder.tvPrice.text = "${formatter.format(item.price)} đ/tháng"
+                if (item.createdAt > 0L) {
+                    holder.tvPostedDate.text = "Đăng ngày ${dateFormatter.format(Date(item.createdAt))}"
+                    holder.tvPostedDate.visibility = View.VISIBLE
+                } else {
+                    holder.tvPostedDate.visibility = View.GONE
+                }
+
                 if (item.area > 0) {
                     holder.tvArea.text = "${item.area} m²"
                     holder.tvArea.visibility = View.VISIBLE
+                } else {
+                    holder.tvArea.visibility = View.GONE
+                }
+
+                if (showAvailabilityBadge && item.isAvailable) {
+                    holder.tvRoomStatus.visibility = View.VISIBLE
+                    holder.tvRoomStatus.text = "Còn phòng"
+                } else {
+                    holder.tvRoomStatus.visibility = View.GONE
                 }
             }
         }
 
-        // Click vào item mở RoomDetailActivity
         holder.itemView.setOnClickListener {
             val intent = Intent(holder.itemView.context, RoomDetailActivity::class.java)
             intent.putExtra("roomId", item.id)
@@ -123,7 +144,6 @@ class RoomAdapter(
 
     override fun getItemCount() = items.size
 
-    // Cập nhật dữ liệu mới vào adapter dùng DiffUtil để tránh redraw toàn bộ list
     fun getItems(): List<RoomItem> = items.toList()
 
     fun submitList(newItems: List<RoomItem>) {

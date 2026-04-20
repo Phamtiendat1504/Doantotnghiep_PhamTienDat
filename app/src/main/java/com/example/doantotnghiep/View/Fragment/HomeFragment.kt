@@ -47,7 +47,10 @@ class HomeFragment : Fragment() {
     private lateinit var viewModel: HomeViewModel
 
     private val featuredAdapter = RoomAdapter(viewType = RoomAdapter.VIEW_TYPE_HORIZONTAL)
-    private val newRoomsAdapter = RoomAdapter(viewType = RoomAdapter.VIEW_TYPE_VERTICAL)
+    private val newRoomsAdapter = RoomAdapter(
+        viewType = RoomAdapter.VIEW_TYPE_VERTICAL,
+        showAvailabilityBadge = true
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_home, container, false)
@@ -175,7 +178,7 @@ class HomeFragment : Fragment() {
         viewModel.loadUserName()
         viewModel.loadPopularAreas()
         viewModel.loadFeaturedRooms()
-        viewModel.loadNewRooms(isRefresh = true)
+        viewModel.loadNewRooms(isRefresh = true, force = true)
         viewModel.loadNotificationBadge()
 
         btnLoadMore.setOnClickListener {
@@ -221,7 +224,7 @@ class HomeFragment : Fragment() {
         viewModel.loadUserName()
         viewModel.loadPopularAreas()
         viewModel.loadFeaturedRooms()
-        viewModel.loadNewRooms(isRefresh = true)
+        viewModel.loadNewRooms(isRefresh = true, force = true)
         viewModel.loadNotificationBadge()
     }
 
@@ -317,8 +320,10 @@ class HomeFragment : Fragment() {
             com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 .collection("users").document(currentUser.uid).get()
                 .addOnSuccessListener { doc ->
-                    val role = doc.getString("role") ?: "tenant"
-                    mainViewModel.loadAppointmentBadge(currentUser.uid, role)
+                    val role = doc.getString("role") ?: ""
+                    val isVerified = doc.getBoolean("isVerified") ?: false
+                    val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
+                    mainViewModel.loadAppointmentBadge(currentUser.uid, effectiveRole)
                 }
         }
     }

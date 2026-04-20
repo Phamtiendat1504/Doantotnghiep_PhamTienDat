@@ -4,7 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.ProgressBar
+import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -14,9 +17,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.View.Adapter.RoomAdapter
+import com.example.doantotnghiep.View.Adapter.RoomItem
 import com.example.doantotnghiep.ViewModel.UserProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
 import de.hdodenhof.circleimageview.CircleImageView
+import kotlin.math.min
 
 class UserProfileActivity : AppCompatActivity() {
 
@@ -35,11 +40,31 @@ class UserProfileActivity : AppCompatActivity() {
     private lateinit var progressRooms: ProgressBar
     private lateinit var tvNoRooms: TextView
     private lateinit var tvRoomCount: TextView
+    private lateinit var spinnerRoomSort: Spinner
+    private lateinit var btnPrevRoomPage: TextView
+    private lateinit var tvRoomPageInfo: TextView
+    private lateinit var btnNextRoomPage: TextView
+    private lateinit var layoutRoomControls: View
+    private lateinit var layoutRoomPagination: View
     private lateinit var toolbar: Toolbar
 
     private lateinit var roomAdapter: RoomAdapter
+    private val allRooms = mutableListOf<RoomItem>()
+    private var currentPage = 1
+    private val pageSize = 10
+    private var selectedSort = SortMode.NEWEST
     private var userId: String = ""
     private var userPhone: String = ""
+
+    private enum class SortMode {
+        NEWEST,
+        OLDEST,
+        PRICE_ASC,
+        PRICE_DESC,
+        AREA_ASC,
+        AREA_DESC,
+        TITLE_ASC
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,6 +96,12 @@ class UserProfileActivity : AppCompatActivity() {
         progressRooms = findViewById(R.id.progressRooms)
         tvNoRooms = findViewById(R.id.tvNoRooms)
         tvRoomCount = findViewById(R.id.tvRoomCount)
+        spinnerRoomSort = findViewById(R.id.spinnerRoomSort)
+        btnPrevRoomPage = findViewById(R.id.btnPrevRoomPage)
+        tvRoomPageInfo = findViewById(R.id.tvRoomPageInfo)
+        btnNextRoomPage = findViewById(R.id.btnNextRoomPage)
+        layoutRoomControls = findViewById(R.id.layoutRoomControls)
+        layoutRoomPagination = findViewById(R.id.layoutRoomPagination)
         toolbar = findViewById(R.id.toolbarProfile)
     }
 
@@ -82,10 +113,117 @@ class UserProfileActivity : AppCompatActivity() {
     }
 
     private fun setupRoomList() {
-        roomAdapter = RoomAdapter(viewType = RoomAdapter.VIEW_TYPE_VERTICAL)
+        roomAdapter = RoomAdapter(
+            viewType = RoomAdapter.VIEW_TYPE_VERTICAL,
+            showAvailabilityBadge = true
+        )
         rvRooms.layoutManager = LinearLayoutManager(this)
         rvRooms.adapter = roomAdapter
         rvRooms.isNestedScrollingEnabled = false
+        setupSortAndPaginationControls()
+    }
+
+    private fun setupSortAndPaginationControls() {
+        val labels = listOf(
+            "Mới nhất",
+            "Cũ nhất",
+            "Giá tăng dần",
+            "Giá giảm dần",
+            "Diện tích tăng dần",
+            "Diện tích giảm dần",
+            "Tên A-Z"
+        )
+
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, labels)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerRoomSort.adapter = spinnerAdapter
+
+        spinnerRoomSort.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                selectedSort = when (position) {
+                    0 -> SortMode.NEWEST
+                    1 -> SortMode.OLDEST
+                    2 -> SortMode.PRICE_ASC
+                    3 -> SortMode.PRICE_DESC
+                    4 -> SortMode.AREA_ASC
+                    5 -> SortMode.AREA_DESC
+                    else -> SortMode.TITLE_ASC
+                }
+                currentPage = 1
+                renderRooms()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) = Unit
+        }
+
+        btnPrevRoomPage.setOnClickListener {
+            if (currentPage > 1) {
+                currentPage--
+                renderRooms()
+            }
+        }
+
+        btnNextRoomPage.setOnClickListener {
+            val totalPages = calculateTotalPages(allRooms.size)
+            if (currentPage < totalPages) {
+                currentPage++
+                renderRooms()
+            }
+        }
+    }
+
+    private fun calculateTotalPages(totalItems: Int): Int {
+        if (totalItems <= 0) return 1
+        return ((totalItems - 1) / pageSize) + 1
+    }
+
+    private fun sortRooms(items: List<RoomItem>): List<RoomItem> {
+        return when (selectedSort) {
+            SortMode.NEWEST -> items.sortedByDescending { it.createdAt }
+            SortMode.OLDEST -> items.sortedBy { it.createdAt }
+            SortMode.PRICE_ASC -> items.sortedBy { it.price }
+            SortMode.PRICE_DESC -> items.sortedByDescending { it.price }
+            SortMode.AREA_ASC -> items.sortedBy { it.area }
+            SortMode.AREA_DESC -> items.sortedByDescending { it.area }
+            SortMode.TITLE_ASC -> items.sortedBy { it.title.lowercase() }
+        }
+    }
+
+    private fun renderRooms() {
+        val sorted = sortRooms(allRooms)
+        val totalPages = calculateTotalPages(sorted.size)
+
+        if (currentPage > totalPages) currentPage = totalPages
+        if (currentPage < 1) currentPage = 1
+
+        if (sorted.isEmpty()) {
+            tvNoRooms.visibility = View.VISIBLE
+            rvRooms.visibility = View.GONE
+            layoutRoomControls.visibility = View.GONE
+            layoutRoomPagination.visibility = View.GONE
+            roomAdapter.submitList(emptyList())
+            return
+        }
+
+        layoutRoomControls.visibility = View.VISIBLE
+        layoutRoomPagination.visibility = View.VISIBLE
+        tvNoRooms.visibility = View.GONE
+        rvRooms.visibility = View.VISIBLE
+
+        val fromIndex = (currentPage - 1) * pageSize
+        val toIndex = min(fromIndex + pageSize, sorted.size)
+        val pageItems = sorted.subList(fromIndex, toIndex)
+        roomAdapter.submitList(pageItems)
+
+        tvRoomPageInfo.text = "Trang $currentPage/$totalPages"
+
+        val canPrev = currentPage > 1
+        btnPrevRoomPage.isEnabled = canPrev
+        btnPrevRoomPage.alpha = if (canPrev) 1f else 0.5f
+
+        val canNext = currentPage < totalPages
+        btnNextRoomPage.isEnabled = canNext
+        btnNextRoomPage.alpha = if (canNext) 1f else 0.5f
     }
 
     private fun observeViewModel() {
@@ -119,7 +257,11 @@ class UserProfileActivity : AppCompatActivity() {
 
             tvEmail.text = if (user.email.isNotEmpty()) user.email else "Chưa cập nhật email"
             
-            val roleStr = if (user.role == "landlord") "Chủ trọ" else if (user.role == "admin") "Quản trị viên" else "Khách thuê"
+            val roleStr = when {
+                user.role == "admin" -> "Quản trị viên"
+                user.isVerified -> "Tài khoản đã xác minh"
+                else -> "Tài khoản chưa xác minh"
+            }
             val genderStr = if (user.gender.isNotEmpty()) " • ${user.gender}" else ""
             tvRole.text = "$roleStr$genderStr"
             
@@ -148,15 +290,11 @@ class UserProfileActivity : AppCompatActivity() {
         }
 
         viewModel.rooms.observe(this) { rooms ->
-            tvRoomCount.text = "${rooms.size}"
-            if (rooms.isEmpty()) {
-                tvNoRooms.visibility = View.VISIBLE
-                rvRooms.visibility = View.GONE
-            } else {
-                tvNoRooms.visibility = View.GONE
-                rvRooms.visibility = View.VISIBLE
-                roomAdapter.submitList(rooms)
-            }
+            allRooms.clear()
+            allRooms.addAll(rooms)
+            tvRoomCount.text = "${allRooms.size}"
+            currentPage = 1
+            renderRooms()
         }
 
         viewModel.errorMessage.observe(this) { msg ->

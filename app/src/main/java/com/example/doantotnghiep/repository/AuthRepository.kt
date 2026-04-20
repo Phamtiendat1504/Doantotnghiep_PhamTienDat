@@ -16,7 +16,7 @@ class AuthRepository {
     fun register(fullName: String, email: String, phone: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener { result ->
             val uid = result.user?.uid ?: ""
-            val user = User(uid = uid, fullName = fullName, email = email, phone = phone, role = "tenant", createdAt = System.currentTimeMillis())
+            val user = User(uid = uid, fullName = fullName, email = email, phone = phone, role = "user", createdAt = System.currentTimeMillis())
             db.collection("users").document(uid).set(user).addOnSuccessListener { onSuccess() }.addOnFailureListener { e -> onFailure("Lưu thất bại: ${e.message}") }
         }.addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
     }
@@ -89,7 +89,7 @@ class AuthRepository {
                         doc.getString("fullName") ?: "",
                         doc.getString("email") ?: "",
                         doc.getString("avatarUrl") ?: "",
-                        doc.getString("role") ?: "tenant",
+                        doc.getString("role") ?: "user",
                         doc.getBoolean("isVerified") ?: false
                     )
                 } else {
@@ -105,7 +105,7 @@ class AuthRepository {
                                 doc.getString("fullName") ?: "",
                                 doc.getString("email") ?: "",
                                 doc.getString("avatarUrl") ?: "",
-                                doc.getString("role") ?: "tenant",
+                                doc.getString("role") ?: "user",
                                 doc.getBoolean("isVerified") ?: false
                             )
                         } else {
@@ -136,7 +136,7 @@ class AuthRepository {
                     gender        = doc.getString("gender") ?: "",
                     occupation    = doc.getString("occupation") ?: "",
                     avatarUrl     = doc.getString("avatarUrl") ?: "",
-                    role          = doc.getString("role") ?: "tenant",
+                    role          = doc.getString("role") ?: "user",
                     isVerified    = doc.getBoolean("isVerified") ?: false,   // đọc trực tiếp theo tên field
                     hasAcceptedRules = doc.getBoolean("hasAcceptedRules") ?: false,
                     isLocked      = doc.getBoolean("isLocked") ?: false,
@@ -160,7 +160,7 @@ class AuthRepository {
                             gender        = doc.getString("gender") ?: "",
                             occupation    = doc.getString("occupation") ?: "",
                             avatarUrl     = doc.getString("avatarUrl") ?: "",
-                            role          = doc.getString("role") ?: "tenant",
+                            role          = doc.getString("role") ?: "user",
                             isVerified    = doc.getBoolean("isVerified") ?: false,
                             hasAcceptedRules = doc.getBoolean("hasAcceptedRules") ?: false,
                             isLocked      = doc.getBoolean("isLocked") ?: false,
@@ -187,7 +187,7 @@ class AuthRepository {
                 gender        = doc.getString("gender") ?: "",
                 occupation    = doc.getString("occupation") ?: "",
                 avatarUrl     = doc.getString("avatarUrl") ?: "",
-                role          = doc.getString("role") ?: "tenant",
+                role          = doc.getString("role") ?: "user",
                 isVerified    = doc.getBoolean("isVerified") ?: false,
                 hasAcceptedRules = doc.getBoolean("hasAcceptedRules") ?: false,
                 isLocked      = doc.getBoolean("isLocked") ?: false,
@@ -200,9 +200,12 @@ class AuthRepository {
     }
 
     fun getUserRole(onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
-        val uid = auth.currentUser?.uid ?: return onSuccess("tenant")
+        val uid = auth.currentUser?.uid ?: return onSuccess("user")
         db.collection("users").document(uid).get().addOnSuccessListener { doc ->
-            onSuccess(doc.getString("role") ?: "tenant")
+            val role = doc.getString("role") ?: ""
+            val isVerified = doc.getBoolean("isVerified") ?: false
+            val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
+            onSuccess(effectiveRole)
         }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
     }
 

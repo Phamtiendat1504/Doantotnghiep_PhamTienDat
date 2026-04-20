@@ -101,8 +101,7 @@ class PostFragment : Fragment() {
 
             // Mô hình mới: isVerified=true là chìa khóa mở quyền đăng bài,
             // không cần bắt buộc role phải là "landlord"
-            val isPrivileged = user.role == "landlord" || user.role == "admin"
-                    || user.role == "owner" || user.isVerified
+            val isPrivileged = user.role == "admin" || user.isVerified
 
             if (isPrivileged) {
                 showPostForm()
@@ -617,8 +616,10 @@ class PostFragment : Fragment() {
             com.google.firebase.firestore.FirebaseFirestore.getInstance()
                 .collection("users").document(currentUser.uid).get()
                 .addOnSuccessListener { doc ->
-                    val role = doc.getString("role") ?: "tenant"
-                    mainViewModel.loadAppointmentBadge(currentUser.uid, role)
+                    val role = doc.getString("role") ?: ""
+                    val isVerified = doc.getBoolean("isVerified") ?: false
+                    val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
+                    mainViewModel.loadAppointmentBadge(currentUser.uid, effectiveRole)
                 }
         }
     }

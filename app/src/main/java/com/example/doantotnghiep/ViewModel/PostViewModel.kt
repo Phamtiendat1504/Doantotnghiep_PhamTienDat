@@ -45,7 +45,7 @@ class PostViewModel : ViewModel() {
     fun loadUserObject() {
         authRepository.loadUserObject(
             onSuccess = { user: User? -> 
-                if (user != null && user.role != "landlord" && user.role != "admin" && user.role != "owner") {
+                if (user != null && !user.isVerified && user.role != "admin") {
                     authRepository.loadVerificationStatusDetail(
                         onSuccess = { status: String?, reason: String? ->
                             if (status == "pending") {
@@ -82,17 +82,17 @@ class PostViewModel : ViewModel() {
 
     fun checkUserRole() {
         val uid = getCurrentUserId() ?: run {
-            _userRole.value = "tenant"
+            _userRole.value = "user"
             return
         }
         authRepository.getUserRole(
             onSuccess = { role: String ->
                 _userRole.value = role
-                if (role != "landlord" && role != "admin") {
+                if (role != "landlord" && role != "admin" && role != "verified") {
                     checkVerificationStatus(uid)
                 }
             },
-            onFailure = { _: String -> _userRole.value = "tenant" }
+            onFailure = { _: String -> _userRole.value = "user" }
         )
     }
 

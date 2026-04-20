@@ -1,9 +1,22 @@
-package com.example.doantotnghiep.Utils
+﻿package com.example.doantotnghiep.Utils
 
 object AddressData {
 
+    // Bo loc mo rong: giu danh muc cu de tuong thich du lieu bai dang da co,
+    // dong thoi bo sung ward moi sau sap xep de nguoi dung chon dung ten hien hanh.
     val phuongList = arrayOf(
         "-- Chọn Phường --",
+
+        // Ward moi (sau sap xep)
+        "Hoàn Kiếm (Hà Nội)", "Cửa Nam (Hà Nội)", "Ba Đình (Hà Nội)",
+        "Ngọc Hà (Hà Nội)", "Giảng Võ (Hà Nội)", "Hai Bà Trưng (Hà Nội)",
+        "Vĩnh Tuy (Hà Nội)", "Bạch Mai (Hà Nội)", "Đống Đa (Hà Nội)",
+        "Kim Liên (Hà Nội)", "Văn Miếu - Quốc Tử Giám (Hà Nội)", "Láng (Hà Nội)",
+        "Ô Chợ Dừa (Hà Nội)", "Hồng Hà (Hà Nội)", "Lĩnh Nam (Hà Nội)",
+        "Hoàng Mai (Hà Nội)", "Vĩnh Hưng (Hà Nội)", "Tương Mai (Hà Nội)",
+        "Định Công (Hà Nội)",
+
+        // Danh muc cu (de giu tuong thich voi du lieu dang co)
         "Hàng Bạc (Hoàn Kiếm)", "Hàng Đào (Hoàn Kiếm)", "Đồng Xuân (Hoàn Kiếm)",
         "Cửa Đông (Hoàn Kiếm)", "Tràng Tiền (Hoàn Kiếm)", "Phan Chu Trinh (Hoàn Kiếm)",
         "Kim Liên (Đống Đa)", "Láng Hạ (Đống Đa)", "Láng Thượng (Đống Đa)",

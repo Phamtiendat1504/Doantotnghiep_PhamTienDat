@@ -100,7 +100,7 @@ class ProfileFragment : Fragment() {
 
             cardMyPosts.visibility = View.VISIBLE
             btnSavedPosts.visibility = View.VISIBLE
-            viewModel.loadAppointmentBadge(role)
+            viewModel.loadAppointmentBadge(role, isVerified)
             viewModel.loadMyPostsBadge()
         }
 

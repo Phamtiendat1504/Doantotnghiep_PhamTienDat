@@ -64,17 +64,6 @@ class ChangePasswordActivity : AppCompatActivity() {
 
         authViewModel.changePasswordResult.observe(this) { success ->
             if (success) {
-                // Cập nhật mật khẩu mới vào SharedPreferences nếu đang nhớ mật khẩu
-                val prefs = getSharedPreferences("login_prefs", MODE_PRIVATE)
-                val isRemember = prefs.getBoolean("remember_password", false)
-                if (isRemember) {
-                    val currentEmail = authViewModel.getCurrentUserEmail() ?: ""
-                    val newPassword = edtNewPassword.text.toString().trim()
-                    if (currentEmail.isNotEmpty()) {
-                        prefs.edit().putString("pwd_$currentEmail", newPassword).apply()
-                    }
-                }
-
                 MessageUtils.showSuccessDialog(this, "Thành công", "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.") {
                     authViewModel.logOut()
                     val intent = Intent(this, LoginActivity::class.java)

@@ -45,7 +45,7 @@ class SearchProfileViewModel : ViewModel() {
 
                 var remaining = rawUsers.size
                 rawUsers.forEachIndexed { index, user ->
-                    userRepository.countApprovedRooms(user.uid) { count ->
+                    userRepository.countPublicRooms(user.uid) { count ->
                         result[index] = result[index].copy(roomCount = count)
                         remaining--
                         if (remaining == 0) {

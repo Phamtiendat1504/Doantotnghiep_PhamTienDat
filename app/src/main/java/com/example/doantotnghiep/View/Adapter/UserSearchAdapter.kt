@@ -49,7 +49,7 @@ class UserSearchAdapter(
         val item = getItem(position)
         holder.tvUserName.text = item.fullName
         holder.tvRoomCount.text = if (item.roomCount > 0) {
-            "${item.roomCount} bài đăng đang hiển thị"
+            "${item.roomCount} bài đăng công khai"
         } else {
             "Chưa có bài đăng"
         }

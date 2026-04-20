@@ -174,4 +174,56 @@
     <string name="label_reset_confirm_password">Xác nhận mật khẩu mới</string>
     <string name="hint_reset_confirm_password">Nhập lại mật khẩu mới</string>
     <string name="btn_change_password">Đổi mật khẩu</string>
+
+    <!-- Search Screen V2 -->
+    <string name="search_screen_title">Tìm phòng trọ</string>
+    <string name="search_screen_subtitle">Thiết lập bộ lọc để tìm phòng phù hợp</string>
+    <string name="search_section_area">Khu vực</string>
+    <string name="search_area_type">Loại khu vực</string>
+    <string name="search_area_type_ward">Phường (nội thành)</string>
+    <string name="search_area_type_xa">Xã (ngoại thành)</string>
+    <string name="search_scope">Phạm vi tìm kiếm</string>
+    <string name="search_scope_ward">Theo phường / xã</string>
+    <string name="search_scope_district">Toàn quận / huyện</string>
+    <string name="search_area_picker_label">Chọn phường / xã</string>
+    <string name="search_area_picker_hint">-- Chọn Phường --</string>
+    <string name="search_address_optional">Số nhà, tên đường (tùy chọn)</string>
+    <string name="search_address_hint">VD: 12 Nguyễn Trãi</string>
+    <string name="search_section_price">Giá thuê / tháng</string>
+    <string name="search_price_1">1-3 tr</string>
+    <string name="search_price_2">3-6 tr</string>
+    <string name="search_price_3">6-9 tr</string>
+    <string name="search_price_4">9-12 tr</string>
+    <string name="search_price_5">12+ tr</string>
+    <string name="search_price_custom">Giá khác</string>
+    <string name="search_price_custom_hint">Nhập giá mong muốn (VNĐ)</string>
+    <string name="search_section_room">Loại / thông tin phòng</string>
+    <string name="search_room_type">Kiểu phòng</string>
+    <string name="search_room_shared">Ở ghép</string>
+    <string name="search_room_private">Riêng tư</string>
+    <string name="search_area_m2">Diện tích (m²)</string>
+    <string name="search_area_hint">VD: 20</string>
+    <string name="search_people">Số người</string>
+    <string name="search_people_hint">VD: 2</string>
+    <string name="search_section_utility">Tiện ích / chi phí</string>
+    <string name="search_wifi_price_hint">Giá wifi (VNĐ)</string>
+    <string name="search_electric">Điện</string>
+    <string name="search_electric_price_hint">Giá điện (VNĐ/kWh)</string>
+    <string name="search_water">Nước</string>
+    <string name="search_water_price_hint">Giá nước (VNĐ/m³)</string>
+    <string name="search_curfew">Giờ giấc</string>
+    <string name="search_curfew_free">Tự do</string>
+    <string name="search_curfew_custom">Tùy chọn</string>
+    <string name="search_curfew_hint">VD: 23:00</string>
+    <string name="search_reset_filter">Đặt lại bộ lọc</string>
+    <string name="search_submit">Tìm phòng</string>
+
+    <!-- Guest Post Screen -->
+    <string name="guest_post_badge">Dành cho chủ cho thuê</string>
+    <string name="guest_post_title">Đăng tin nhanh, đúng người thuê</string>
+    <string name="guest_post_subtitle">Đăng nhập để bắt đầu đăng bài và quản lý lịch hẹn xem phòng.</string>
+    <string name="guest_post_point_1">Xác minh rõ ràng, tăng độ tin cậy</string>
+    <string name="guest_post_point_2">Quản lý bài đăng ngay trên điện thoại</string>
+    <string name="guest_post_login_cta">Đăng nhập</string>
+    <string name="guest_post_register_cta">Tạo tài khoản</string>
 </resources>

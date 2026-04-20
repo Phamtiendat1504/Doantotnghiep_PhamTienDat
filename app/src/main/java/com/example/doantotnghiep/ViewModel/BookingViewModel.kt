@@ -126,7 +126,7 @@ class BookingViewModel : ViewModel() {
         repository.getCurrentUserRole(
             onSuccess = { role ->
                 _userRole.value = role
-                val isLandlord = role == "landlord" || role == "admin"
+                val isLandlord = role == "landlord" || role == "admin" || role == "verified"
                 fetchAppointments(isLandlord)
             },
             onFailure = { e ->
