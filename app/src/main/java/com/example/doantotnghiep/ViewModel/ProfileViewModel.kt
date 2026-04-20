@@ -50,7 +50,6 @@ class ProfileViewModel : ViewModel() {
 
     private val _notificationBadgeCount = MutableLiveData<Int>()
     val notificationBadgeCount: LiveData<Int> = _notificationBadgeCount
-
     private var notificationListener: ListenerRegistration? = null
     private var appointmentListener: ListenerRegistration? = null
     private var postBadgeListener: ListenerRegistration? = null

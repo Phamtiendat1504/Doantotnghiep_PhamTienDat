@@ -21,7 +21,7 @@
             android:paddingStart="20dp"
             android:paddingTop="44dp"
             android:paddingEnd="20dp"
-            android:paddingBottom="28dp">
+            android:paddingBottom="22dp">
 
             <TextView
                 android:layout_width="wrap_content"
@@ -44,11 +44,11 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="-16dp"
+            android:layout_marginTop="-12dp"
             android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="@android:color/white"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
+            app:cardElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -56,35 +56,19 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_location"
-                        app:tint="@color/primary" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/search_section_area"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:text="Khu vực"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
-                    android:text="@string/search_area_type"
+                    android:layout_marginTop="10dp"
+                    android:text="Loại khu vực"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
 
@@ -92,7 +76,7 @@
                     android:id="@+id/chipGroupAreaType"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginTop="6dp"
                     app:selectionRequired="true"
                     app:singleSelection="true">
 
@@ -103,8 +87,6 @@
                         android:layout_height="wrap_content"
                         android:checked="true"
                         android:text="@string/search_area_type_ward"
-                        android:textSize="13sp"
-                        app:checkedIconVisible="true"
                         app:chipBackgroundColor="@color/chip_bg_color" />
 
                     <com.google.android.material.chip.Chip
@@ -113,16 +95,14 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_area_type_xa"
-                        android:textSize="13sp"
-                        app:checkedIconVisible="true"
                         app:chipBackgroundColor="@color/chip_bg_color" />
                 </com.google.android.material.chip.ChipGroup>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
-                    android:text="@string/search_scope"
+                    android:layout_marginTop="10dp"
+                    android:text="Phạm vi tìm kiếm"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
 
@@ -130,7 +110,7 @@
                     android:id="@+id/chipGroupSearchScope"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginTop="6dp"
                     app:selectionRequired="true"
                     app:singleSelection="true">
 
@@ -141,8 +121,6 @@
                         android:layout_height="wrap_content"
                         android:checked="true"
                         android:text="@string/search_scope_ward"
-                        android:textSize="13sp"
-                        app:checkedIconVisible="true"
                         app:chipBackgroundColor="@color/chip_bg_color" />
 
                     <com.google.android.material.chip.Chip
@@ -151,15 +129,13 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_scope_district"
-                        android:textSize="13sp"
-                        app:checkedIconVisible="true"
                         app:chipBackgroundColor="@color/chip_bg_color" />
                 </com.google.android.material.chip.ChipGroup>
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
+                    android:layout_marginTop="10dp"
                     android:text="@string/search_area_picker_label"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
@@ -168,7 +144,7 @@
                     style="@style/OutlinedBoxRounded"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginTop="6dp"
                     app:endIconMode="dropdown_menu"
                     app:hintEnabled="false">
 
@@ -188,7 +164,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
+                    android:layout_marginTop="10dp"
                     android:text="@string/search_address_optional"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
@@ -197,10 +173,12 @@
                     android:id="@+id/edtAddress"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
+                    android:layout_marginTop="6dp"
                     android:background="@drawable/bg_spinner_new"
                     android:hint="@string/search_address_hint"
                     android:inputType="text"
                     android:paddingStart="12dp"
+                    android:paddingEnd="12dp"
                     android:textSize="14sp" />
             </LinearLayout>
         </androidx.cardview.widget.CardView>
@@ -211,9 +189,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="@android:color/white"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
+            app:cardElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -221,35 +199,19 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_info"
-                        app:tint="@color/primary" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/search_section_price"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:text="Giá thuê"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupPrice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginTop="10dp"
                     app:singleSelection="true">
 
                     <com.google.android.material.chip.Chip
@@ -258,7 +220,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_price_1"
-                        android:textSize="13sp"
                         app:chipBackgroundColor="@color/chip_bg_color" />
 
                     <com.google.android.material.chip.Chip
@@ -267,7 +228,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_price_2"
-                        android:textSize="13sp"
                         app:chipBackgroundColor="@color/chip_bg_color" />
 
                     <com.google.android.material.chip.Chip
@@ -276,7 +236,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_price_3"
-                        android:textSize="13sp"
                         app:chipBackgroundColor="@color/chip_bg_color" />
 
                     <com.google.android.material.chip.Chip
@@ -285,7 +244,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_price_4"
-                        android:textSize="13sp"
                         app:chipBackgroundColor="@color/chip_bg_color" />
 
                     <com.google.android.material.chip.Chip
@@ -294,7 +252,6 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:text="@string/search_price_5"
-                        android:textSize="13sp"
                         app:chipBackgroundColor="@color/chip_bg_color" />
                 </com.google.android.material.chip.ChipGroup>
 
@@ -303,15 +260,15 @@
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="8dp"
+                    android:layout_marginTop="4dp"
                     android:text="@string/search_price_custom"
-                    android:textSize="13sp"
                     app:chipBackgroundColor="@color/chip_bg_color" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/OutlinedBoxRounded"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
                     android:hint="@string/search_price_custom_hint"
                     app:errorEnabled="false">
 
@@ -331,9 +288,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="@android:color/white"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
+            app:cardElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -341,34 +298,18 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_home_document"
-                        app:tint="@color/primary" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/search_section_room"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:text="Thông tin phòng"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
+                    android:layout_marginTop="10dp"
                     android:text="@string/search_room_type"
                     android:textColor="@color/text_hint"
                     android:textSize="12sp" />
@@ -377,18 +318,19 @@
                     android:id="@+id/rgRoomStyle"
                     android:layout_width="match_parent"
                     android:layout_height="48dp"
-                    android:layout_marginBottom="14dp"
+                    android:layout_marginTop="6dp"
                     android:background="@drawable/bg_spinner_new"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="12dp">
+                    android:paddingStart="12dp"
+                    android:paddingEnd="12dp">
 
                     <RadioButton
                         android:id="@+id/rbShared"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:buttonTint="#1976D2"
+                        android:buttonTint="@color/primary"
                         android:text="@string/search_room_shared"
                         android:textSize="14sp" />
 
@@ -397,7 +339,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:buttonTint="#1976D2"
+                        android:buttonTint="@color/primary"
                         android:text="@string/search_room_private"
                         android:textSize="14sp" />
                 </RadioGroup>
@@ -405,6 +347,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
                     android:orientation="horizontal">
 
                     <LinearLayout
@@ -417,7 +360,6 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginBottom="6dp"
                             android:text="@string/search_area_m2"
                             android:textColor="@color/text_hint"
                             android:textSize="12sp" />
@@ -426,8 +368,8 @@
                             android:id="@+id/edtRoomArea"
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
+                            android:layout_marginTop="6dp"
                             android:background="@drawable/bg_spinner_new"
-                            android:gravity="center_vertical"
                             android:hint="@string/search_area_hint"
                             android:inputType="number"
                             android:paddingStart="12dp"
@@ -444,7 +386,6 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginBottom="6dp"
                             android:text="@string/search_people"
                             android:textColor="@color/text_hint"
                             android:textSize="12sp" />
@@ -453,8 +394,8 @@
                             android:id="@+id/edtPeopleCount"
                             android:layout_width="match_parent"
                             android:layout_height="48dp"
+                            android:layout_marginTop="6dp"
                             android:background="@drawable/bg_spinner_new"
-                            android:gravity="center_vertical"
                             android:hint="@string/search_people_hint"
                             android:inputType="number"
                             android:paddingStart="12dp"
@@ -470,9 +411,9 @@
             android:layout_marginStart="16dp"
             android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
-            app:cardBackgroundColor="#FFFFFF"
+            app:cardBackgroundColor="@android:color/white"
             app:cardCornerRadius="16dp"
-            app:cardElevation="4dp">
+            app:cardElevation="2dp">
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -480,34 +421,18 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <LinearLayout
-                    android:layout_width="match_parent"
+                <TextView
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
-
-                    <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_check_circle"
-                        app:tint="@color/primary" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="@string/search_section_utility"
-                        android:textColor="@color/text_primary"
-                        android:textSize="15sp"
-                        android:textStyle="bold" />
-                </LinearLayout>
+                    android:text="Tiện ích"
+                    android:textColor="@color/text_primary"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginTop="10dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -516,7 +441,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="0.35"
-                        android:buttonTint="#1976D2"
+                        android:buttonTint="@color/primary"
                         android:text="Wifi"
                         android:textSize="14sp" />
 
@@ -527,7 +452,6 @@
                         android:layout_weight="0.65"
                         android:background="@drawable/bg_spinner_new"
                         android:enabled="false"
-                        android:gravity="center_vertical"
                         android:hint="@string/search_wifi_price_hint"
                         android:inputType="number"
                         android:paddingStart="10dp"
@@ -537,7 +461,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginTop="8dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -546,7 +470,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="0.35"
-                        android:buttonTint="#1976D2"
+                        android:buttonTint="@color/primary"
                         android:text="@string/search_electric"
                         android:textSize="14sp" />
 
@@ -557,7 +481,6 @@
                         android:layout_weight="0.65"
                         android:background="@drawable/bg_spinner_new"
                         android:enabled="false"
-                        android:gravity="center_vertical"
                         android:hint="@string/search_electric_price_hint"
                         android:inputType="number"
                         android:paddingStart="10dp"
@@ -567,7 +490,7 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="14dp"
+                    android:layout_marginTop="8dp"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -576,7 +499,7 @@
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="0.35"
-                        android:buttonTint="#1976D2"
+                        android:buttonTint="@color/primary"
                         android:text="@string/search_water"
                         android:textSize="14sp" />
 
@@ -587,67 +510,42 @@
                         android:layout_weight="0.65"
                         android:background="@drawable/bg_spinner_new"
                         android:enabled="false"
-                        android:gravity="center_vertical"
                         android:hint="@string/search_water_price_hint"
                         android:inputType="number"
                         android:paddingStart="10dp"
                         android:textSize="13sp" />
                 </LinearLayout>
 
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginBottom="14dp"
-                    android:background="@color/gray_200" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginBottom="6dp"
-                    android:text="@string/search_curfew"
-                    android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
-
-                <RadioGroup
-                    android:id="@+id/rgCurfew"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:background="@drawable/bg_spinner_new"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingStart="12dp">
-
-                    <RadioButton
-                        android:id="@+id/rbCurfewFree"
-                        android:layout_width="0dp"
+                    <RadioGroup
+                        android:id="@+id/rgCurfew"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:buttonTint="#1976D2"
-                        android:text="@string/search_curfew_free"
-                        android:textSize="14sp" />
+                        android:orientation="horizontal">
 
-                    <RadioButton
-                        android:id="@+id/rbCurfewCustom"
-                        android:layout_width="0dp"
+                        <RadioButton
+                            android:id="@+id/rbCurfewFree"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/search_curfew_free" />
+
+                        <RadioButton
+                            android:id="@+id/rbCurfewCustom"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/search_curfew_custom" />
+                    </RadioGroup>
+
+                    <EditText
+                        android:id="@+id/edtCurfewTime"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:buttonTint="#1976D2"
-                        android:text="@string/search_curfew_custom"
-                        android:textSize="14sp" />
-                </RadioGroup>
-
-                <EditText
-                    android:id="@+id/edtCurfewTime"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="10dp"
-                    android:background="@drawable/bg_spinner_new"
-                    android:gravity="center_vertical"
-                    android:hint="@string/search_curfew_hint"
-                    android:inputType="text"
-                    android:paddingStart="12dp"
-                    android:textSize="14sp"
-                    android:visibility="gone" />
+                        android:hint="@string/search_curfew_hint" />
+                </LinearLayout>
             </LinearLayout>
         </androidx.cardview.widget.CardView>
 
@@ -657,34 +555,33 @@
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:layout_marginEnd="16dp"
             android:text="@string/search_reset_filter"
             android:textAllCaps="false"
             android:textColor="@color/primary"
-            android:textSize="15sp"
-            app:cornerRadius="16dp"
-            app:strokeColor="#1976D2"
-            app:strokeWidth="1.5dp" />
+            app:cornerRadius="14dp"
+            app:strokeColor="@color/primary"
+            app:strokeWidth="1.2dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSearch"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_marginStart="16dp"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="12dp"
             android:layout_marginEnd="16dp"
             android:text="@string/search_submit"
             android:textAllCaps="false"
-            android:textSize="16sp"
-            app:backgroundTint="#1976D2"
-            app:cornerRadius="16dp"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            app:backgroundTint="@color/primary"
+            app:cornerRadius="14dp"
             app:icon="@drawable/ic_search"
             app:iconGravity="textStart"
             app:iconPadding="8dp"
-            app:iconTint="#FFFFFF" />
+            app:iconTint="@android:color/white" />
+
     </LinearLayout>
 
 </ScrollView>
-
-

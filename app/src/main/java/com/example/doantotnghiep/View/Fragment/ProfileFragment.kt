@@ -33,6 +33,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnAppointments: LinearLayout
     private lateinit var btnMessages: LinearLayout
     private lateinit var tvAppointmentBadge: TextView
+    private lateinit var tvMessagesBadge: TextView
     private lateinit var btnLogout: LinearLayout
     private lateinit var btnNotification: View
     private lateinit var tvNotificationBadge: TextView
@@ -80,6 +81,7 @@ class ProfileFragment : Fragment() {
             setupObservers()
             viewModel.loadUserInfo()
             viewModel.loadNotificationBadge()
+            viewModel.loadMessagesBadge()
         }
     }
 
@@ -127,6 +129,16 @@ class ProfileFragment : Fragment() {
                 tvAppointmentBadge.visibility = View.VISIBLE
             } else {
                 tvAppointmentBadge.visibility = View.GONE
+            }
+        }
+
+        viewModel.messagesBadgeInfo.observe(viewLifecycleOwner) { (_, unreadMessages) ->
+            if (!isAdded) return@observe
+            if (unreadMessages > 0) {
+                tvMessagesBadge.text = if (unreadMessages > 99) "99+" else unreadMessages.toString()
+                tvMessagesBadge.visibility = View.VISIBLE
+            } else {
+                tvMessagesBadge.visibility = View.GONE
             }
         }
 
@@ -261,6 +273,7 @@ class ProfileFragment : Fragment() {
         btnAppointments = view.findViewById(R.id.btnAppointments)
         btnMessages = view.findViewById(R.id.btnMessages)
         tvAppointmentBadge = view.findViewById(R.id.tvAppointmentBadge)
+        tvMessagesBadge = view.findViewById(R.id.tvMessagesBadge)
         btnLogout = view.findViewById(R.id.btnLogout)
         btnNotification = view.findViewById(R.id.btnNotificationContainer)
         tvNotificationBadge = view.findViewById(R.id.tvNotificationBadge)
@@ -298,6 +311,7 @@ class ProfileFragment : Fragment() {
             startActivity(Intent(requireContext(), MyAppointmentsActivity::class.java))
         }
         btnMessages.setOnClickListener {
+            tvMessagesBadge.visibility = View.GONE
             startActivity(Intent(requireContext(), ConversationsActivity::class.java))
         }
         btnLogout.setOnClickListener {
@@ -329,6 +343,7 @@ class ProfileFragment : Fragment() {
         if (viewModel.isLoggedIn() && ::viewModel.isInitialized) {
             viewModel.loadUserInfo()
             viewModel.loadNotificationBadge()
+            viewModel.loadMessagesBadge()
         }
     }
 

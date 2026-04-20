@@ -121,30 +121,34 @@ class SearchFragment : Fragment() {
 
     private fun setupAreaPickerBehavior() {
         autoArea.setOnClickListener { autoArea.showDropDown() }
-        autoArea.setOnFocusChangeListener { _, hasFocus -> if (hasFocus) autoArea.showDropDown() }
+        autoArea.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) autoArea.showDropDown()
+        }
     }
 
     private fun submitSearch() {
         val selectedItem = autoArea.text?.toString()?.trim().orEmpty()
         if (selectedItem.isEmpty()) {
             showInfoDialog(
-                title = "\u0043\u0068\u01b0\u0061\u0020\u0063\u0068\u1ecd\u006e\u0020\u006b\u0068\u0075\u0020\u0076\u1ef1\u0063",
-                message = "\u0056\u0075\u0069\u0020\u006c\u00f2\u006e\u0067\u0020\u0063\u0068\u1ecd\u006e\u0020\u006b\u0068\u0075\u0020\u0076\u1ef1\u0063\u0020\u0111\u1ec3\u0020\u0074\u00ec\u006d\u0020\u006b\u0069\u1ebf\u006d\u002e"
+                title = "\u0043\u0068\u01b0\u0061 \u0063\u0068\u1ecd\u006e \u006b\u0068\u0075 \u0076\u1ef1\u0063",
+                message = "\u0056\u0075\u0069 \u006c\u00f2\u006e\u0067 \u0063\u0068\u1ecd\u006e \u006b\u0068\u0075 \u0076\u1ef1\u0063 \u0111\u1ec3 \u0074\u00ec\u006d \u006b\u0069\u1ebf\u006d\u002e"
             )
             return
         }
 
         if (selectedItem !in currentAreaOptions) {
             showInfoDialog(
-                title = "\u004b\u0068\u0075\u0020\u0076\u1ef1\u0063\u0020\u006b\u0068\u00f4\u006e\u0067\u0020\u0068\u1ee3\u0070\u0020\u006c\u1ec7",
-                message = "\u0056\u0075\u0069\u0020\u006c\u00f2\u006e\u0067\u0020\u0063\u0068\u1ecd\u006e\u0020\u0074\u1eeb\u0020\u0064\u0061\u006e\u0068\u0020\u0073\u00e1\u0063\u0068\u0020\u0067\u1ee3\u0069\u0020\u00fd\u002e"
+                title = "\u004b\u0068\u0075 \u0076\u1ef1\u0063 \u006b\u0068\u00f4\u006e\u0067 \u0068\u1ee3\u0070 \u006c\u1ec7",
+                message = "\u0056\u0075\u0069 \u006c\u00f2\u006e\u0067 \u0063\u0068\u1ecd\u006e \u0074\u1eeb \u0064\u0061\u006e\u0068 \u0073\u00e1\u0063\u0068 \u0067\u1ee3\u0069 \u00fd\u002e"
             )
             return
         }
 
         val (wardName, districtName) = parseAreaSelection(selectedItem)
         val searchMode = if (chipScopeDistrict.isChecked) "district" else "ward"
-        val districtForSearch = if (searchMode == "district" && districtName.equals("Hà Nội", ignoreCase = true)) {
+        val districtForSearch = if (
+            searchMode == "district" && districtName.equals("\u0048\u00e0 \u004e\u1ed9\u0069", ignoreCase = true)
+        ) {
             wardName
         } else {
             districtName
@@ -154,6 +158,7 @@ class SearchFragment : Fragment() {
         intent.putExtra("ward", wardName)
         intent.putExtra("district", districtForSearch)
         intent.putExtra("searchMode", searchMode)
+        intent.putExtra("addressKeyword", edtAddress.text?.toString()?.trim().orEmpty())
 
         var minPrice = 0L
         var maxPrice = 0L
@@ -166,11 +171,26 @@ class SearchFragment : Fragment() {
             maxPrice = customPrice + 500_000L
         } else {
             when (chipGroupPrice.checkedChipId) {
-                R.id.chipPrice1 -> { minPrice = 1_000_000L; maxPrice = 3_000_000L }
-                R.id.chipPrice2 -> { minPrice = 3_000_000L; maxPrice = 6_000_000L }
-                R.id.chipPrice3 -> { minPrice = 6_000_000L; maxPrice = 9_000_000L }
-                R.id.chipPrice4 -> { minPrice = 9_000_000L; maxPrice = 12_000_000L }
-                R.id.chipPrice5 -> { minPrice = 12_000_000L; maxPrice = 0L }
+                R.id.chipPrice1 -> {
+                    minPrice = 1_000_000L
+                    maxPrice = 3_000_000L
+                }
+                R.id.chipPrice2 -> {
+                    minPrice = 3_000_000L
+                    maxPrice = 6_000_000L
+                }
+                R.id.chipPrice3 -> {
+                    minPrice = 6_000_000L
+                    maxPrice = 9_000_000L
+                }
+                R.id.chipPrice4 -> {
+                    minPrice = 9_000_000L
+                    maxPrice = 12_000_000L
+                }
+                R.id.chipPrice5 -> {
+                    minPrice = 12_000_000L
+                    maxPrice = 0L
+                }
             }
         }
         intent.putExtra("minPrice", minPrice)
@@ -185,17 +205,27 @@ class SearchFragment : Fragment() {
             intent.putExtra("maxArea", 0)
         }
 
+        intent.putExtra("desiredPeople", edtPeopleCount.text.toString().toIntOrNull() ?: 0)
+
+        val roomType = when (rgRoomStyle.checkedRadioButtonId) {
+            R.id.rbShared -> "\u1ede gh\u00e9p"
+            R.id.rbPrivate -> "Ri\u00eang t\u01b0"
+            else -> ""
+        }
+        intent.putExtra("roomType", roomType)
+
         intent.putExtra("hasWifi", cbWifi.isChecked)
         intent.putExtra("hasElectric", cbElectric.isChecked)
         intent.putExtra("hasWater", cbWater.isChecked)
 
         val curfew = when (rgCurfew.checkedRadioButtonId) {
-            R.id.rbCurfewFree -> "Tự do"
-            R.id.rbCurfewCustom -> "Tùy chọn"
+            R.id.rbCurfewFree -> "\u0054\u1ef1 do"
+            R.id.rbCurfewCustom -> "T\u00f9y ch\u1ecdn"
             else -> ""
         }
         intent.putExtra("curfew", curfew)
         intent.putExtra("genderPrefer", "")
+
         startActivity(intent)
     }
 
@@ -215,7 +245,7 @@ class SearchFragment : Fragment() {
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setMessage(message)
-            .setPositiveButton("\u0110\u00e3\u0020\u0068\u0069\u1ec3\u0075", null)
+            .setPositiveButton("\u0110\u00e3 \u0068\u0069\u1ec3\u0075", null)
             .show()
     }
 
@@ -258,4 +288,3 @@ class SearchFragment : Fragment() {
         autoArea.setText("")
     }
 }
-

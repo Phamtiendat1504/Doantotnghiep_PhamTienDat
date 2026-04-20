@@ -3,170 +3,177 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bg_top_rounded_white"
     android:orientation="vertical"
-    android:padding="24dp"
-    android:background="@drawable/bg_top_rounded_white">
+    android:padding="22dp">
 
     <View
-        android:layout_width="40dp"
+        android:layout_width="42dp"
         android:layout_height="4dp"
         android:layout_gravity="center_horizontal"
-        android:background="#E0E0E0"
-        android:layout_marginBottom="24dp" />
+        android:layout_marginBottom="20dp"
+        android:background="#D5DBE2" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="24dp">
+        android:orientation="horizontal"
+        android:layout_marginBottom="18dp">
 
         <androidx.cardview.widget.CardView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            app:cardCornerRadius="40dp"
-            app:cardElevation="0dp"
-            app:cardBackgroundColor="#F5F5F5">
+            android:layout_width="78dp"
+            android:layout_height="78dp"
+            app:cardBackgroundColor="#EEF2F6"
+            app:cardCornerRadius="39dp"
+            app:cardElevation="0dp">
+
             <ImageView
                 android:id="@+id/ivSheetAvatar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                android:src="@drawable/ic_person"
                 android:scaleType="centerCrop"
-                app:tint="#BDBDBD"/>
+                android:src="@drawable/ic_person"
+                app:tint="#9AA7B2" />
         </androidx.cardview.widget.CardView>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical"
-            android:layout_marginStart="16dp">
+            android:layout_marginStart="14dp"
+            android:orientation="vertical">
 
             <TextView
                 android:id="@+id/tvSheetName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Tên chủ trọ"
+                android:textColor="#111827"
                 android:textSize="20sp"
-                android:textStyle="bold"
-                android:textColor="#1A1A1A"/>
+                android:textStyle="bold" />
 
             <TextView
                 android:id="@+id/tvSheetStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
                 android:text="Chủ nhà"
-                android:textSize="14sp"
-                android:textColor="#666666"
-                android:layout_marginTop="4dp"/>
+                android:textColor="#4B5563"
+                android:textSize="14sp" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="8dp"
                 android:background="@drawable/bg_badge_tenant"
+                android:backgroundTint="#E8F5E9"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:paddingStart="8dp"
-                android:paddingEnd="8dp"
                 android:paddingTop="2dp"
-                android:paddingBottom="2dp"
-                android:backgroundTint="#E8F5E9">
+                android:paddingEnd="8dp"
+                android:paddingBottom="2dp">
+
                 <ImageView
                     android:layout_width="12dp"
                     android:layout_height="12dp"
-                    android:src="@drawable/ic_check_circle"
-                    />
+                    android:src="@drawable/ic_check_circle" />
+
                 <TextView
                     android:id="@+id/tvSheetVerified"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
                     android:text="Đã xác minh"
-                    android:textSize="12sp"
                     android:textColor="#2E7D32"
-                    android:layout_marginStart="4dp"/>
+                    android:textSize="12sp" />
             </LinearLayout>
-
         </LinearLayout>
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="#EEEEEE"
-        android:layout_marginBottom="16dp" />
+        android:layout_marginBottom="14dp"
+        android:background="#E8ECF1" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
         android:text="Thông tin liên hệ"
+        android:textColor="#111827"
         android:textSize="16sp"
-        android:textStyle="bold"
-        android:textColor="#1A1A1A"
-        android:layout_marginBottom="12dp"/>
+        android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:layout_marginBottom="12dp">
+
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_phone"
-            app:tint="#666666"/>
+            app:tint="#6B7280" />
+
         <TextView
             android:id="@+id/tvSheetPhone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:text="0999 999 999"
-            android:textSize="15sp"
-            android:textColor="#333333"
-            android:layout_marginStart="12dp"/>
+            android:textColor="#1F2937"
+            android:textSize="15sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
+        android:orientation="horizontal"
         android:layout_marginBottom="12dp">
+
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_email"
-            app:tint="#666666"/>
+            app:tint="#6B7280" />
+
         <TextView
             android:id="@+id/tvSheetEmail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
             android:text="email@example.com"
-            android:textSize="15sp"
-            android:textColor="#333333"
-            android:layout_marginStart="12dp"/>
+            android:textColor="#1F2937"
+            android:textSize="15sp" />
     </LinearLayout>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginBottom="24dp">
+        android:orientation="horizontal"
+        android:layout_marginBottom="22dp">
+
         <ImageView
             android:layout_width="20dp"
             android:layout_height="20dp"
             android:src="@drawable/ic_calendar_clear"
-            app:tint="#666666"/>
+            app:tint="#6B7280" />
+
         <TextView
             android:id="@+id/tvSheetJoinDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Ngày tham gia: 01/01/2023"
-            android:textSize="15sp"
-            android:textColor="#333333"
-            android:layout_marginStart="12dp"/>
+            android:layout_marginStart="12dp"
+            android:text="Tham gia từ: 01/01/2023"
+            android:textColor="#1F2937"
+            android:textSize="15sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -178,31 +185,30 @@
             android:id="@+id/btnSheetChat"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_marginEnd="8dp"
+            android:layout_weight="1"
             android:text="Nhắn tin"
             android:textAllCaps="false"
+            app:cornerRadius="12dp"
             app:icon="@drawable/ic_ai"
             app:iconGravity="textStart"
-            app:cornerRadius="12dp"
-            app:strokeColor="#E0E0E0"
-            android:textColor="@color/primary"
-            app:iconTint="@color/primary"/>
+            app:iconTint="@color/primary"
+            app:strokeColor="#DCE3EA"
+            android:textColor="@color/primary" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSheetCall"
             android:layout_width="0dp"
-            android:layout_weight="1"
-            android:layout_height="54dp"
+            android:layout_height="52dp"
             android:layout_marginStart="8dp"
+            android:layout_weight="1"
             android:text="Gọi điện"
             android:textAllCaps="false"
-            app:icon="@drawable/ic_phone"
-            app:iconGravity="textStart"
+            app:backgroundTint="@color/primary"
             app:cornerRadius="12dp"
-            app:backgroundTint="@color/primary"/>
-
+            app:icon="@drawable/ic_phone"
+            app:iconGravity="textStart" />
     </LinearLayout>
 
 </LinearLayout>
