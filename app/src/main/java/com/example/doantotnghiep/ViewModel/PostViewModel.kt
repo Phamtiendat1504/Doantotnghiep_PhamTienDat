@@ -36,8 +36,8 @@ class PostViewModel : ViewModel() {
     private val _verifyRejectReason = MutableLiveData<String>()
     val verifyRejectReason: LiveData<String> = _verifyRejectReason
 
-    private val _ownerInfo = MutableLiveData<Pair<String, String>>()
-    val ownerInfo: LiveData<Pair<String, String>> = _ownerInfo
+    private val _ownerInfo = MutableLiveData<Triple<String, String, String>>()
+    val ownerInfo: LiveData<Triple<String, String, String>> = _ownerInfo
 
     private val _userObject = MutableLiveData<User?>()
     val userObject: LiveData<User?> = _userObject
@@ -115,7 +115,7 @@ class PostViewModel : ViewModel() {
             uid,
             onSuccess = { user: User? ->
                 user?.let {
-                    _ownerInfo.value = Pair(it.fullName, it.phone)
+                    _ownerInfo.value = Triple(it.fullName, it.phone, it.avatarUrl)
                 }
             },
             onFailure = { _: String -> /* ignore */ }

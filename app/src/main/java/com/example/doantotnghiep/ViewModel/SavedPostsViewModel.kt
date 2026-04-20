@@ -88,4 +88,8 @@ class SavedPostsViewModel : ViewModel() {
     fun autoDeleteSavedPost(savedDocId: String) {
         repository.deleteSavedPostById(savedDocId, onSuccess = {}, onFailure = {})
     }
+
+    fun clearRoomCheckResult() {
+        _roomCheckResult.value = null
+    }
 }

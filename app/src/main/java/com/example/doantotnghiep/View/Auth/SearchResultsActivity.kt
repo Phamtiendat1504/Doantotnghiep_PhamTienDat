@@ -48,6 +48,7 @@ class SearchResultsActivity : AppCompatActivity() {
 
     private lateinit var tvCurrentSort: TextView
     private lateinit var btnSortDropdown: FrameLayout
+    private lateinit var ivSortArrow: ImageView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,10 +66,15 @@ class SearchResultsActivity : AppCompatActivity() {
         
         tvCurrentSort = findViewById(R.id.tvCurrentSort)
         btnSortDropdown = findViewById(R.id.btnSortDropdown)
+        ivSortArrow = findViewById(R.id.ivSortArrow)
 
         btnBack.setOnClickListener { finish() }
 
-        btnSortDropdown.setOnClickListener { showSortMenu() }
+        btnSortDropdown.setOnClickListener {
+            ivSortArrow.animate().rotation(270f).setDuration(140).start()
+            showSortMenu()
+        }
+        updateSortUI()
 
         observeViewModel()
 
@@ -138,12 +144,15 @@ class SearchResultsActivity : AppCompatActivity() {
                 else -> SortType.NEWEST
             }
             currentSort = newSort
-            tvCurrentSort.text = item.title
+            updateSortUI()
             
             currentPage = 1
             val results = viewModel.searchResults.value ?: return@setOnMenuItemClickListener true
             applySortAndDisplay(results)
             true
+        }
+        popup.setOnDismissListener {
+            ivSortArrow.animate().rotation(90f).setDuration(140).start()
         }
         popup.show()
     }

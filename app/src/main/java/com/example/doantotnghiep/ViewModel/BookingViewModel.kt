@@ -35,6 +35,12 @@ class BookingViewModel : ViewModel() {
     private val _appointments = MutableLiveData<List<Map<String, Any>>>()
     val appointments: LiveData<List<Map<String, Any>>> = _appointments
 
+    private val _tenantAppointments = MutableLiveData<List<Map<String, Any>>>(emptyList())
+    val tenantAppointments: LiveData<List<Map<String, Any>>> = _tenantAppointments
+
+    private val _landlordAppointments = MutableLiveData<List<Map<String, Any>>>(emptyList())
+    val landlordAppointments: LiveData<List<Map<String, Any>>> = _landlordAppointments
+
     private val _userRole = MutableLiveData<String>()
     val userRole: LiveData<String> = _userRole
 
@@ -128,6 +134,33 @@ class BookingViewModel : ViewModel() {
                 _errorMessage.value = e
             }
         )
+    }
+
+    fun fetchBothAppointments() {
+        _isLoading.value = true
+        appointmentListener?.remove()
+
+        val listeners = repository.listenBothAppointments(
+            onTenantUpdate = { list ->
+                _tenantAppointments.value = list
+                _isLoading.value = false
+            },
+            onLandlordUpdate = { list ->
+                _landlordAppointments.value = list
+                _isLoading.value = false
+            },
+            onError = { e ->
+                _isLoading.value = false
+                _errorMessage.value = e
+            }
+        )
+
+        appointmentListener = object : ListenerRegistration {
+            override fun remove() {
+                listeners.first.remove()
+                listeners.second.remove()
+            }
+        }
     }
 
     fun fetchAppointmentDetails(roomId: String, tenantId: String) {

@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
@@ -58,16 +57,15 @@ class ResetPasswordActivity : AppCompatActivity() {
 
         viewModel.resetResult.observe(this) { success ->
             if (success) {
-                AlertDialog.Builder(this)
-                    .setTitle("Thành công")
-                    .setMessage("Mật khẩu đã được đổi thành công! Vui lòng đăng nhập lại.")
-                    .setPositiveButton("Đăng nhập") { _, _ ->
+                MessageUtils.showSuccessDialog(
+                    this,
+                    "Thành công",
+                    "Mật khẩu đã được đổi thành công! Vui lòng đăng nhập lại."
+                ) {
                         val intent = Intent(this, LoginActivity::class.java)
                         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         startActivity(intent)
                     }
-                    .setCancelable(false)
-                    .show()
             }
         }
 

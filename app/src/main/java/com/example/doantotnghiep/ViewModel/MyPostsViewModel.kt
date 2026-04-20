@@ -70,8 +70,8 @@ class MyPostsViewModel : ViewModel() {
         repository.markAsRented(docId, onSuccess = onSuccess, onFailure = onFailure)
     }
 
-    fun markPostsAsSeen(uid: String, context: android.content.Context) {
-        repository.markPostsAsSeen(uid, context)
+    fun markPostsAsRead(uid: String) {
+        repository.markPostsAsRead(uid)
     }
 
     fun resetRenewResult() { _renewResult.value = false }

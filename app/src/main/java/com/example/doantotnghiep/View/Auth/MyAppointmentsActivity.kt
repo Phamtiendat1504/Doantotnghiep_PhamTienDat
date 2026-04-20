@@ -647,7 +647,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
         
         tvDate.setOnClickListener {
             val cal = java.util.Calendar.getInstance()
-            android.app.DatePickerDialog(this, android.R.style.Theme_Holo_Light_Dialog_NoActionBar, { _, y, m, d ->
+            android.app.DatePickerDialog(this, { _, y, m, d ->
                 val c = java.util.Calendar.getInstance().apply { set(y, m, d) }
                 selectedDate = String.format("%02d/%02d/%04d", d, m + 1, y)
                 selectedDateDisplay = "${java.text.SimpleDateFormat("EEEE", java.util.Locale("vi", "VN")).format(c.time)}, $selectedDate"
@@ -656,7 +656,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
         }
         tvTime.setOnClickListener {
             val cal = java.util.Calendar.getInstance()
-            android.app.TimePickerDialog(this, android.R.style.Theme_Holo_Light_Dialog_NoActionBar, { _, h, min ->
+            android.app.TimePickerDialog(this, { _, h, min ->
                 selectedTime = String.format("%02d:%02d", h, min)
                 tvTime.text = "⏰ $selectedTime"
             }, cal.get(java.util.Calendar.HOUR_OF_DAY), cal.get(java.util.Calendar.MINUTE), true).show()

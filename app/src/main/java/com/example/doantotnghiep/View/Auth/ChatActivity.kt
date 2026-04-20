@@ -102,23 +102,24 @@ class ChatActivity : AppCompatActivity() {
     private val pickImageLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri: android.net.Uri? ->
         if (uri != null) {
             // Không upload ngay mà gửi qua ViewModel
-            val pd = android.app.ProgressDialog(this)
-            pd.setMessage("Đang gửi ảnh...")
-            pd.setCancelable(false)
-            pd.show()
+            val loadingDialog = MessageUtils.showLoadingDialog(
+                context = this,
+                title = "\u0110ang g\u1eedi \u1ea3nh",
+                message = "\u1ea2nh \u0111ang \u0111\u01b0\u1ee3c t\u1ea3i l\u00ean, vui l\u00f2ng ch\u1edd."
+            )
 
             viewModel.sendImageMessage(
                 imageUri = uri,
                 text = etInput.text.toString().trim(),
                 onSuccess = {
-                    pd.dismiss()
+                    loadingDialog.dismiss()
                     etInput.text.clear()
                     if (adapter.itemCount > 0) {
                         rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
                     }
                 },
                 onFailure = { err ->
-                    pd.dismiss()
+                    loadingDialog.dismiss()
                     MessageUtils.showErrorDialog(this, "Lỗi", "Không thể gửi ảnh: $err")
                 }
             )
@@ -131,23 +132,23 @@ class ChatActivity : AppCompatActivity() {
     private val takePictureLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.TakePicture()) { success: Boolean ->
         if (success) {
             tempCameraUri?.let { uri ->
-                val pd = android.app.ProgressDialog(this).apply {
-                    setMessage("Đang gửi ảnh...")
-                    setCancelable(false)
-                    show()
-                }
+                val loadingDialog = MessageUtils.showLoadingDialog(
+                    context = this,
+                    title = "\u0110ang g\u1eedi \u1ea3nh",
+                    message = "\u1ea2nh \u0111ang \u0111\u01b0\u1ee3c t\u1ea3i l\u00ean, vui l\u00f2ng ch\u1edd."
+                )
                 viewModel.sendImageMessage(
                     imageUri = uri,
                     text = etInput.text.toString().trim(),
                     onSuccess = {
-                        pd.dismiss()
+                        loadingDialog.dismiss()
                         etInput.text.clear()
                         if (adapter.itemCount > 0) {
                             rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
                         }
                     },
                     onFailure = { err ->
-                        pd.dismiss()
+                        loadingDialog.dismiss()
                         MessageUtils.showErrorDialog(this, "Lỗi", "Không thể gửi ảnh: $err")
                     }
                 )

@@ -8,9 +8,11 @@ import android.view.View
 import android.widget.CheckBox
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
@@ -35,6 +37,8 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var viewModel: AuthViewModel
 
     private val KEY_REMEMBER = "remember_password"
+    private var loginLoadingDialog: AlertDialog? = null
+    private var pendingLockCheck = false
 
     // Sử dụng EncryptedSharedPreferences để bảo mật cấp độ 1
     private val prefs by lazy {
@@ -68,16 +72,31 @@ class LoginActivity : AppCompatActivity() {
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnLogin.isEnabled = !isLoading
+            if (isLoading) {
+                showLoginLoadingDialog(
+                    title = "\u0110ang \u0111\u0103ng nh\u1eadp",
+                    message = "\u0110ang x\u00e1c th\u1ef1c t\u00e0i kho\u1ea3n, vui l\u00f2ng ch\u1edd."
+                )
+            } else if (!pendingLockCheck) {
+                dismissLoginLoadingDialog()
+            }
         }
 
         viewModel.loginResult.observe(this) { success ->
             if (success) {
+                pendingLockCheck = true
+                showLoginLoadingDialog(
+                    title = "\u0110ang \u0111\u0103ng nh\u1eadp",
+                    message = "\u0110ang ki\u1ec3m tra tr\u1ea1ng th\u00e1i t\u00e0i kho\u1ea3n..."
+                )
                 viewModel.resetLoginResult()
                 viewModel.checkLockStatus()
             }
         }
 
         viewModel.lockInfo.observe(this) { pair ->
+            pendingLockCheck = false
+            dismissLoginLoadingDialog()
             val isLocked = pair.first
             val (reason, until, lockDays) = pair.second
 
@@ -144,6 +163,8 @@ class LoginActivity : AppCompatActivity() {
         }
 
         viewModel.errorMessage.observe(this) { message ->
+            pendingLockCheck = false
+            dismissLoginLoadingDialog()
             clearErrors()
             when {
                 message.contains("nhập email", ignoreCase = true) -> tilEmail.error = message
@@ -164,6 +185,7 @@ class LoginActivity : AppCompatActivity() {
 
         btnLogin.setOnClickListener {
             clearErrors()
+            pendingLockCheck = false
             val email = edtEmail.text.toString().trim()
             val password = edtPassword.text.toString().trim()
             viewModel.login(email, password)
@@ -188,6 +210,31 @@ class LoginActivity : AppCompatActivity() {
             flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
         }
         startActivity(intent)
+        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
         finish()
+    }
+
+    private fun showLoginLoadingDialog(title: String, message: String) {
+        val current = loginLoadingDialog
+        if (current != null && current.isShowing) {
+            current.findViewById<TextView>(R.id.tvLoadingTitle)?.text = title
+            current.findViewById<TextView>(R.id.tvLoadingMessage)?.text = message
+            return
+        }
+        loginLoadingDialog = MessageUtils.showLoadingDialog(
+            context = this,
+            title = title,
+            message = message
+        )
+    }
+
+    private fun dismissLoginLoadingDialog() {
+        loginLoadingDialog?.dismiss()
+        loginLoadingDialog = null
+    }
+
+    override fun onDestroy() {
+        dismissLoginLoadingDialog()
+        super.onDestroy()
     }
 }

@@ -1,4 +1,4 @@
-package com.example.doantotnghiep.ViewModel
+﻿package com.example.doantotnghiep.ViewModel
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -12,27 +12,64 @@ class ForgotPasswordViewModel : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    private val _emailFound = MutableLiveData<String>()
-    val emailFound: LiveData<String> = _emailFound
+    private val _emailError = MutableLiveData<String?>()
+    val emailError: LiveData<String?> = _emailError
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    private val _phoneError = MutableLiveData<String?>()
+    val phoneError: LiveData<String?> = _phoneError
 
-    fun findEmailByPhone(phone: String) {
-        if (phone.length < 10) {
-            _errorMessage.value = "Số điện thoại không hợp lệ"
+    private val _generalError = MutableLiveData<String?>()
+    val generalError: LiveData<String?> = _generalError
+
+    private val _sendEmailSuccess = MutableLiveData<String>()
+    val sendEmailSuccess: LiveData<String> = _sendEmailSuccess
+
+    fun requestPasswordReset(email: String, phone: String) {
+        _emailError.value = null
+        _phoneError.value = null
+        _generalError.value = null
+
+        if (email.isBlank()) {
+            _emailError.value = "Vui lòng nhập email"
             return
         }
+        if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            _emailError.value = "Email không hợp lệ"
+            return
+        }
+        if (phone.isBlank()) {
+            _phoneError.value = "Vui lòng nhập số điện thoại"
+            return
+        }
+        if (phone.length < 10) {
+            _phoneError.value = "Số điện thoại không hợp lệ"
+            return
+        }
+
         _isLoading.value = true
-        repository.findEmailByPhone(
-            phone,
-            onSuccess = { email: String ->
-                _isLoading.value = false
-                _emailFound.value = email
+        repository.verifyEmailAndPhone(
+            email = email,
+            phone = phone,
+            onFound = {
+                repository.sendPasswordResetEmail(
+                    email = email,
+                    onSuccess = {
+                        _isLoading.value = false
+                        _sendEmailSuccess.value = email
+                    },
+                    onFailure = { error ->
+                        _isLoading.value = false
+                        _generalError.value = error
+                    }
+                )
             },
-            onFailure = { error: String ->
+            onNotFound = {
                 _isLoading.value = false
-                _errorMessage.value = error
+                _generalError.value = "Email và số điện thoại không khớp với tài khoản nào"
+            },
+            onFailure = { error ->
+                _isLoading.value = false
+                _generalError.value = error
             }
         )
     }

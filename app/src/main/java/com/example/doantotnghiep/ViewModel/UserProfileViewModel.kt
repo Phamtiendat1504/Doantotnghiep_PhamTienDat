@@ -47,8 +47,7 @@ class UserProfileViewModel : ViewModel() {
                     val district = doc.getString("district") ?: ""
                     val area = doc.getLong("area")?.toInt() ?: 0
                     val imageUrl = (doc.get("imageUrls") as? List<*>)?.filterIsInstance<String>()?.firstOrNull()
-                    val status = doc.getString("status") ?: "approved"
-                    RoomItem(id, title, price, ward, district, area, imageUrl, status)
+                    RoomItem(id, title, price, ward, district, area, imageUrl)
                 }
                 _rooms.value = items
                 _isLoading.value = false

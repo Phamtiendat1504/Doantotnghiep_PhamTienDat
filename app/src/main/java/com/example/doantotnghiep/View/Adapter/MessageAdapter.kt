@@ -1,6 +1,5 @@
 package com.example.doantotnghiep.View.Adapter
 
-import android.app.AlertDialog
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -175,7 +174,7 @@ class MessageAdapter(
             return
         }
 
-        android.app.AlertDialog.Builder(context)
+        androidx.appcompat.app.AlertDialog.Builder(context)
             .setTitle(null)
             .setItems(options.toTypedArray()) { _, which ->
                 actions[which].invoke()

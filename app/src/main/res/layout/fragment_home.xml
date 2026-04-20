@@ -151,68 +151,6 @@
                 </LinearLayout>
             </FrameLayout>
 
-            <!-- Banner Tra Cứu Chủ Trọ (Thiết kế chuyên nghiệp dạng Card) -->
-            <androidx.cardview.widget.CardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="-16dp"
-                app:cardBackgroundColor="#EAF2FF"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="0dp">
-
-                <LinearLayout
-                    android:id="@+id/btnSearchProfileView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="14dp"
-                    android:gravity="center_vertical"
-                    android:background="?attr/selectableItemBackground">
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="Hồ sơ Chủ trọ"
-                            android:textColor="@color/primary"
-                            android:textSize="14sp"
-                            android:textStyle="bold"
-                            android:letterSpacing="0.05"/>
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="2dp"
-                            android:text="Xem độ uy tín và phòng đang trống"
-                            android:textColor="#555555"
-                            android:textSize="12sp"
-                            android:maxLines="1"
-                            android:ellipsize="end"/>
-                    </LinearLayout>
-
-                    <TextView
-                        android:id="@+id/btnSearchProfile"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="TRA CỨU"
-                        android:textColor="@color/white"
-                        android:textStyle="bold"
-                        android:textSize="11sp"
-                        android:background="@drawable/bg_badge_red"
-                        android:backgroundTint="@color/primary"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="6dp"
-                        android:layout_marginStart="8dp"/>
-                </LinearLayout>
-            </androidx.cardview.widget.CardView>
-
             <!-- Sections with Typography Focus -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -238,12 +176,87 @@
                     app:chipSpacingHorizontal="10dp" />
             </LinearLayout>
 
+            <!-- Tra cứu hồ sơ chủ trọ -->
+            <androidx.cardview.widget.CardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="24dp"
+                android:layout_marginTop="14dp"
+                app:cardBackgroundColor="#EEF5FF"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp">
+
+                <LinearLayout
+                    android:id="@+id/btnSearchProfileView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="14dp"
+                    android:paddingVertical="12dp">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/bg_icon_circle_light_blue"
+                        android:foreground="?attr/selectableItemBackgroundBorderless">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@null"
+                            android:src="@drawable/ic_shield_check"
+                            app:tint="@color/primary" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Tra cứu hồ sơ chủ trọ"
+                            android:textColor="@color/text_primary"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:maxLines="2"
+                            android:text="Kiểm tra độ uy tín trước khi đặt lịch xem phòng"
+                            android:textColor="@color/text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/btnSearchProfile"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/bg_badge_blue"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="7dp"
+                        android:text="Xem hồ sơ"
+                        android:textColor="@color/white"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </androidx.cardview.widget.CardView>
+
             <!-- Featured Rooms -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="40dp">
+                android:layout_marginTop="28dp">
 
                 <RelativeLayout
                     android:layout_width="match_parent"

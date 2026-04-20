@@ -7,6 +7,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
 import java.util.Date
+import java.util.Locale
 import java.util.UUID
 
 class RoomRepository {
@@ -356,14 +357,26 @@ class RoomRepository {
     }
 
     fun loadPopularAreas(onSuccess: (List<Pair<String, Int>>) -> Unit) {
-        db.collection("rooms").whereEqualTo("status", "approved").limit(200).get()
+        db.collection("rooms").whereEqualTo("status", "approved").get()
             .addOnSuccessListener { documents ->
                 val districtCount = mutableMapOf<String, Int>()
+                val districtDisplay = mutableMapOf<String, String>()
                 for (doc in documents) {
-                    val district = doc.getString("district") ?: continue
-                    if (district.isNotEmpty()) districtCount[district] = (districtCount[district] ?: 0) + 1
+                    val rawDistrict = doc.getString("district") ?: continue
+                    val district = rawDistrict.trim().replace(Regex("\\s+"), " ")
+                    if (district.isEmpty()) continue
+                    val key = district.lowercase(Locale("vi", "VN"))
+                    districtCount[key] = (districtCount[key] ?: 0) + 1
+                    if (!districtDisplay.containsKey(key)) {
+                        districtDisplay[key] = district
+                    }
                 }
-                val top6 = districtCount.entries.sortedByDescending { it.value }.take(6).map { Pair(it.key, it.value) }
+                val top6 = districtCount.entries
+                    .sortedByDescending { it.value }
+                    .take(6)
+                    .map { entry ->
+                        Pair(districtDisplay[entry.key] ?: entry.key, entry.value)
+                    }
                 onSuccess(top6)
             }
             .addOnFailureListener { onSuccess(emptyList()) }

@@ -123,7 +123,7 @@ class BookingActivity : AppCompatActivity() {
 
     private fun showDatePicker() {
         val calendar = Calendar.getInstance()
-        val picker = DatePickerDialog(this, android.R.style.Theme_Holo_Light_Dialog_NoActionBar,
+        val picker = DatePickerDialog(this,
             { _, year, month, day ->
                 val cal = Calendar.getInstance()
                 cal.set(year, month, day)
@@ -138,7 +138,7 @@ class BookingActivity : AppCompatActivity() {
 
     private fun showTimePicker() {
         val calendar = Calendar.getInstance()
-        val picker = TimePickerDialog(this, android.R.style.Theme_Holo_Light_Dialog_NoActionBar,
+        val picker = TimePickerDialog(this,
             { _, hour, minute ->
                 selectedTime = String.format("%02d:%02d", hour, minute)
                 tvSelectTime.text = selectedTime

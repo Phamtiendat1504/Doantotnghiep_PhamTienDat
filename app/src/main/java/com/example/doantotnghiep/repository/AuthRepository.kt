@@ -81,17 +81,39 @@ class AuthRepository {
 
     fun loadUserProfile(onSuccess: (String, String, String, String, Boolean) -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        db.collection("users").document(uid).get().addOnSuccessListener { doc ->
-            if (doc.exists()) {
-                onSuccess(
-                    doc.getString("fullName") ?: "",
-                    doc.getString("email") ?: "",
-                    doc.getString("avatarUrl") ?: "",
-                    doc.getString("role") ?: "tenant",
-                    doc.getBoolean("isVerified") ?: false
-                )
+        db.collection("users").document(uid)
+            .get(com.google.firebase.firestore.Source.SERVER)
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    onSuccess(
+                        doc.getString("fullName") ?: "",
+                        doc.getString("email") ?: "",
+                        doc.getString("avatarUrl") ?: "",
+                        doc.getString("role") ?: "tenant",
+                        doc.getBoolean("isVerified") ?: false
+                    )
+                } else {
+                    onFailure("Không tìm thấy thông tin người dùng")
+                }
             }
-        }.addOnFailureListener { onFailure(it.message ?: "Lỗi") }
+            .addOnFailureListener {
+                // Fallback cache khi mất mạng
+                db.collection("users").document(uid).get()
+                    .addOnSuccessListener { doc ->
+                        if (doc.exists()) {
+                            onSuccess(
+                                doc.getString("fullName") ?: "",
+                                doc.getString("email") ?: "",
+                                doc.getString("avatarUrl") ?: "",
+                                doc.getString("role") ?: "tenant",
+                                doc.getBoolean("isVerified") ?: false
+                            )
+                        } else {
+                            onFailure("Không tìm thấy thông tin người dùng")
+                        }
+                    }
+                    .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
+            }
     }
 
     fun loadUserObject(onSuccess: (User?) -> Unit, onFailure: (String) -> Unit) {

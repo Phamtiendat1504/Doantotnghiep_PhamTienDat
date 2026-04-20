@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
@@ -45,6 +46,7 @@ class PostFragment : Fragment() {
     private var lastPostedPrice = 0L
     private var lastPostedLocation = ""
     private var currentOwnerAvatarUrl = ""
+    private var postLoadingDialog: AlertDialog? = null
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -344,12 +346,18 @@ class PostFragment : Fragment() {
             layoutProgress.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnPostRoom.isEnabled = !isLoading
             btnPostRoom.text = if (isLoading) "Đang đăng bài..." else "Đăng bài cho thuê"
-            if (isLoading) PostNotificationHelper.showProgress(requireContext(), 0)
+            if (isLoading) {
+                PostNotificationHelper.showProgress(requireContext(), 0)
+                showPostLoadingDialog()
+            } else {
+                dismissPostLoadingDialog()
+            }
         }
 
         viewModel.uploadProgress.observe(viewLifecycleOwner) { progress ->
             tvProgressPercent.text = "Đang đăng bài: $progress%"
             PostNotificationHelper.showProgress(requireContext(), progress)
+            updatePostLoadingDialog(progress)
         }
 
         viewModel.postResult.observe(viewLifecycleOwner) { result ->
@@ -371,6 +379,7 @@ class PostFragment : Fragment() {
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             if (!error.isNullOrEmpty()) {
+                dismissPostLoadingDialog()
                 PostNotificationHelper.cancel(requireContext())
                 MessageUtils.showErrorDialog(requireContext(), "Lỗi đăng bài", error)
             }
@@ -555,7 +564,7 @@ class PostFragment : Fragment() {
 
     private fun showRulesDialog(isFirstTime: Boolean = false) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_rules, null)
-        val dialog = android.app.AlertDialog.Builder(requireContext())
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setView(dialogView)
             .setCancelable(!isFirstTime) // Nếu là lần đầu, bắt buộc phải nhấn nút đồng ý
             .create()
@@ -573,6 +582,26 @@ class PostFragment : Fragment() {
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
+
+    private fun showPostLoadingDialog() {
+        if (!isAdded) return
+        if (postLoadingDialog?.isShowing == true) return
+        postLoadingDialog = MessageUtils.showLoadingDialog(
+            requireContext(),
+            title = "Đang đăng bài",
+            message = "Bài đăng đang được tải lên và gửi đến quản trị viên để duyệt."
+        )
+    }
+
+    private fun updatePostLoadingDialog(progress: Int) {
+        postLoadingDialog?.findViewById<TextView>(R.id.tvLoadingMessage)?.text =
+            "Đang tải ảnh và gửi quản trị viên duyệt... $progress%"
+    }
+
+    private fun dismissPostLoadingDialog() {
+        postLoadingDialog?.dismiss()
+        postLoadingDialog = null
+    }
 
     override fun onResume() {
         super.onResume()
@@ -592,5 +621,10 @@ class PostFragment : Fragment() {
                     mainViewModel.loadAppointmentBadge(currentUser.uid, role)
                 }
         }
+    }
+
+    override fun onDestroyView() {
+        dismissPostLoadingDialog()
+        super.onDestroyView()
     }
 }

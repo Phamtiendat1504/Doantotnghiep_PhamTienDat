@@ -48,7 +48,8 @@ class HomeViewModel : ViewModel() {
     private var notificationListener: com.google.firebase.firestore.ListenerRegistration? = null
     private var lastNewRoomDoc: DocumentSnapshot? = null
     private var lastLoadTime = 0L
-    private val REFRESH_INTERVAL = 2 * 60 * 60 * 1000L
+    private val REFRESH_INTERVAL = 60 * 60 * 1000L
+    private val NEW_ROOMS_PAGE_SIZE = 10L
 
     fun loadUserName() {
         updateGreetingAndDate()
@@ -145,7 +146,7 @@ class HomeViewModel : ViewModel() {
 
         repository.loadApprovedRoomsPage(
             startAfter = null,
-            limit = 10,
+            limit = NEW_ROOMS_PAGE_SIZE,
             onSuccess = { docs, lastDoc ->
                 _isLoadingNew.value = false
                 if (docs.isEmpty()) {
@@ -155,7 +156,7 @@ class HomeViewModel : ViewModel() {
                 }
                 lastLoadTime = System.currentTimeMillis()
                 lastNewRoomDoc = lastDoc
-                _hasMoreRooms.value = docs.size == 10
+                _hasMoreRooms.value = docs.size.toLong() == NEW_ROOMS_PAGE_SIZE
                 @Suppress("UNCHECKED_CAST")
                 _newRooms.value = docs.map { doc ->
                     RoomItem(
@@ -181,7 +182,7 @@ class HomeViewModel : ViewModel() {
         _isLoadingMore.value = true
         repository.loadApprovedRoomsPage(
             startAfter = lastDoc,
-            limit = 10,
+            limit = NEW_ROOMS_PAGE_SIZE,
             onSuccess = { docs, newLastDoc ->
                 _isLoadingMore.value = false
                 if (docs.isEmpty()) {
@@ -189,7 +190,7 @@ class HomeViewModel : ViewModel() {
                     return@loadApprovedRoomsPage
                 }
                 lastNewRoomDoc = newLastDoc
-                _hasMoreRooms.value = docs.size == 10
+                _hasMoreRooms.value = docs.size.toLong() == NEW_ROOMS_PAGE_SIZE
                 @Suppress("UNCHECKED_CAST")
                 val newItems = docs.map { doc ->
                     RoomItem(

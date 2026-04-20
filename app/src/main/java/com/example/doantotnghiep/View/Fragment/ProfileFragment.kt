@@ -1,4 +1,4 @@
-package com.example.doantotnghiep.View.Fragment
+﻿package com.example.doantotnghiep.View.Fragment
 
 import android.app.Activity
 import android.content.Intent
@@ -11,6 +11,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.bumptech.glide.Glide
@@ -19,6 +20,7 @@ import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.View.Auth.*
 import com.example.doantotnghiep.ViewModel.ProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
+import java.util.Locale
 
 class ProfileFragment : Fragment() {
 
@@ -29,6 +31,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnChangePassword: LinearLayout
     private lateinit var btnSavedPosts: LinearLayout
     private lateinit var btnAppointments: LinearLayout
+    private lateinit var btnMessages: LinearLayout
     private lateinit var tvAppointmentBadge: TextView
     private lateinit var btnLogout: LinearLayout
     private lateinit var btnNotification: View
@@ -43,6 +46,7 @@ class ProfileFragment : Fragment() {
 
     private lateinit var viewModel: ProfileViewModel
     private var currentAvatarUrl: String = ""
+    private var avatarLoadingDialog: AlertDialog? = null
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.PickVisualMedia()
@@ -60,7 +64,7 @@ class ProfileFragment : Fragment() {
 
         viewModel = ViewModelProvider(this)[ProfileViewModel::class.java]
 
-        // Dùng isLoggedIn() từ ViewModel thay vì gọi FirebaseAuth trực tiếp
+        // DĂ¹ng isLoggedIn() tá»« ViewModel thay vĂ¬ gá»i FirebaseAuth trá»±c tiáº¿p
         if (!viewModel.isLoggedIn()) {
             layoutGuest.visibility = View.VISIBLE
             layoutProfile.visibility = View.GONE
@@ -68,10 +72,13 @@ class ProfileFragment : Fragment() {
         } else {
             layoutGuest.visibility = View.GONE
             layoutProfile.visibility = View.VISIBLE
+            applyUnverifiedBadgePlaceholder()
+            // Luon hien du 4 muc hoat dong cho moi tai khoan da dang nhap.
+            cardMyPosts.visibility = View.VISIBLE
+            btnSavedPosts.visibility = View.VISIBLE
             setupClickListeners()
             setupObservers()
             viewModel.loadUserInfo()
-            viewModel.loadAppointmentBadge()
             viewModel.loadNotificationBadge()
         }
     }
@@ -89,44 +96,18 @@ class ProfileFragment : Fragment() {
             }
             val role = info.role
             val isVerified = info.isVerified
-            when {
-                role == "landlord" && isVerified -> {
-                    tvRoleBadge.text = "✓ Chủ trọ đã xác minh"
-                    tvRoleBadge.setTextColor(0xFF2E7D32.toInt())
-                    tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_landlord)
-                }
-                role == "admin" -> {
-                    tvRoleBadge.text = "★ Quản trị viên"
-                    tvRoleBadge.setTextColor(0xFF1976D2.toInt())
-                    tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
-                }
-                else -> {
-                    // tenant or unverified landlord — observe verificationStatus
-                }
-            }
-            cardMyPosts.visibility = if (role == "landlord" || role == "admin") View.VISIBLE else View.GONE
-            btnSavedPosts.visibility = if (role == "landlord" || role == "admin") View.GONE else View.VISIBLE
+            renderRoleBadge(role, isVerified, viewModel.verificationStatus.value)
+
+            cardMyPosts.visibility = View.VISIBLE
+            btnSavedPosts.visibility = View.VISIBLE
+            viewModel.loadAppointmentBadge(role)
+            viewModel.loadMyPostsBadge()
         }
 
         viewModel.verificationStatus.observe(viewLifecycleOwner) { status ->
             if (!isAdded) return@observe
-            when (status) {
-                "pending" -> {
-                    tvRoleBadge.text = "⏳ Đang chờ xác minh"
-                    tvRoleBadge.setTextColor(0xFFE65100.toInt())
-                    tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
-                }
-                "rejected" -> {
-                    tvRoleBadge.text = "✗ Xác minh bị từ chối"
-                    tvRoleBadge.setTextColor(0xFFD32F2F.toInt())
-                    tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
-                }
-                else -> {
-                    tvRoleBadge.text = "Người thuê trọ"
-                    tvRoleBadge.setTextColor(0xFF666666.toInt())
-                    tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
-                }
-            }
+            val info = viewModel.userInfo.value
+            renderRoleBadge(info?.role, info?.isVerified, status)
         }
 
         viewModel.myPostsBadgeCount.observe(viewLifecycleOwner) { count ->
@@ -151,27 +132,36 @@ class ProfileFragment : Fragment() {
 
         viewModel.newAvatarUrl.observe(viewLifecycleOwner) { url ->
             if (!isAdded || url.isNullOrEmpty()) return@observe
+            dismissAvatarLoadingDialog()
             currentAvatarUrl = url
             Glide.with(this).load(url).circleCrop().into(imgAvatar)
             imgAvatar.setPadding(0, 0, 0, 0)
             imgAvatar.imageTintList = null
             
-            MessageUtils.showSuccessDialog(requireContext(), "Cập nhật thành công", "Ảnh đại diện đã được cập nhật")
-            viewModel.resetAvatarUploadState() // Reset để không hiện lại Dialog đang xử lý
+            MessageUtils.showSuccessDialog(
+                requireContext(),
+                "C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng",
+                "\u1ea2nh \u0111\u1ea1i di\u1ec7n \u0111\u00e3 \u0111\u01b0\u1ee3c c\u1eadp nh\u1eadt"
+            )
+            viewModel.resetAvatarUploadState() // Reset Ä‘á»ƒ khĂ´ng hiá»‡n láº¡i Dialog Ä‘ang xá»­ lĂ½
         }
 
         viewModel.isUploadingAvatar.observe(viewLifecycleOwner) { isUploading ->
             if (isUploading == true && isAdded) {
-                // Chỉ hiện thông báo nếu chưa có kết quả thành công
-                if (viewModel.newAvatarUrl.value.isNullOrEmpty()) {
-                    MessageUtils.showInfoDialog(requireContext(), "Đang xử lý", "Ảnh đang được tải lên, vui lòng chờ...")
-                }
+                showAvatarLoadingDialog()
+            } else {
+                dismissAvatarLoadingDialog()
             }
         }
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             if (!error.isNullOrEmpty() && isAdded) {
-                MessageUtils.showErrorDialog(requireContext(), "Lỗi cập nhật ảnh", error)
+                dismissAvatarLoadingDialog()
+                MessageUtils.showErrorDialog(
+                    requireContext(),
+                    "L\u1ed7i c\u1eadp nh\u1eadt \u1ea3nh",
+                    error
+                )
             }
         }
 
@@ -196,6 +186,69 @@ class ProfileFragment : Fragment() {
         }
     }
 
+    private fun showAvatarLoadingDialog() {
+        if (!isAdded) return
+        val current = avatarLoadingDialog
+        if (current != null && current.isShowing) return
+        avatarLoadingDialog = MessageUtils.showLoadingDialog(
+            requireContext(),
+            message = "\u1ea2nh \u0111\u1ea1i di\u1ec7n \u0111ang \u0111\u01b0\u1ee3c t\u1ea3i l\u00ean, vui l\u00f2ng ch\u1edd trong gi\u00e2y l\u00e1t.",
+            title = "\u0110ang c\u1eadp nh\u1eadt \u1ea3nh"
+        )
+    }
+
+    private fun dismissAvatarLoadingDialog() {
+        avatarLoadingDialog?.dismiss()
+        avatarLoadingDialog = null
+    }
+
+    private fun applyUnverifiedBadgePlaceholder() {
+        tvRoleBadge.text = "T\u00e0i kho\u1ea3n ch\u01b0a x\u00e1c minh"
+        tvRoleBadge.setTextColor(0xFF666666.toInt())
+        tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+    }
+
+    private fun applyVerifiedBadge() {
+        tvRoleBadge.text = "\u2713 T\u00e0i kho\u1ea3n \u0111\u00e3 x\u00e1c minh"
+        tvRoleBadge.setTextColor(0xFF2E7D32.toInt())
+        tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_landlord)
+    }
+
+    private fun renderRoleBadge(role: String?, isVerified: Boolean?, verificationStatus: String?) {
+        val normalizedRole = role?.trim()?.lowercase(Locale.ROOT).orEmpty()
+        val normalizedStatus = verificationStatus?.trim()?.lowercase(Locale.ROOT)
+        val isVerifiedAccount =
+            (isVerified == true) ||
+            normalizedRole == "landlord" ||
+            normalizedRole == "owner" ||
+            normalizedStatus == "approved" ||
+            normalizedStatus == "verified"
+
+        when {
+            normalizedRole == "admin" -> {
+                tvRoleBadge.text = "\u2605 Qu\u1ea3n tr\u1ecb vi\u00ean"
+                tvRoleBadge.setTextColor(0xFF1976D2.toInt())
+                tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+            }
+
+            isVerifiedAccount -> applyVerifiedBadge()
+
+            normalizedStatus == "pending" || normalizedStatus == "submitted" || normalizedStatus == "processing" -> {
+                tvRoleBadge.text = "\u23f3 \u0110ang ch\u1edd x\u00e1c minh"
+                tvRoleBadge.setTextColor(0xFFE65100.toInt())
+                tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
+            }
+
+            normalizedStatus == "rejected" -> {
+                tvRoleBadge.text = "\u2717 X\u00e1c minh b\u1ecb t\u1eeb ch\u1ed1i"
+                tvRoleBadge.setTextColor(0xFFD32F2F.toInt())
+                tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
+            }
+
+            else -> applyUnverifiedBadgePlaceholder()
+        }
+    }
+
     private fun initViews(view: View) {
         layoutGuest = view.findViewById(R.id.layoutGuest)
         layoutProfile = view.findViewById(R.id.layoutProfile)
@@ -206,6 +259,7 @@ class ProfileFragment : Fragment() {
         btnChangePassword = view.findViewById(R.id.btnChangePassword)
         btnSavedPosts = view.findViewById(R.id.btnSavedPosts)
         btnAppointments = view.findViewById(R.id.btnAppointments)
+        btnMessages = view.findViewById(R.id.btnMessages)
         tvAppointmentBadge = view.findViewById(R.id.tvAppointmentBadge)
         btnLogout = view.findViewById(R.id.btnLogout)
         btnNotification = view.findViewById(R.id.btnNotificationContainer)
@@ -243,35 +297,45 @@ class ProfileFragment : Fragment() {
             tvAppointmentBadge.visibility = View.GONE
             startActivity(Intent(requireContext(), MyAppointmentsActivity::class.java))
         }
+        btnMessages.setOnClickListener {
+            startActivity(Intent(requireContext(), ConversationsActivity::class.java))
+        }
         btnLogout.setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
-                .setTitle("Đăng xuất")
-                .setMessage("Bạn có chắc chắn muốn đăng xuất?")
-                .setPositiveButton("Đăng xuất") { _, _ ->
+                .setTitle("\u0110\u0103ng xu\u1ea5t")
+                .setMessage("B\u1ea1n c\u00f3 ch\u1eafc ch\u1eafn mu\u1ed1n \u0111\u0103ng xu\u1ea5t?")
+                .setPositiveButton("\u0110\u0103ng xu\u1ea5t") { _, _ ->
                     viewModel.logOut()
                     val intent = Intent(requireContext(), com.example.doantotnghiep.MainActivity::class.java).apply {
                         flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
                     }
                     startActivity(intent)
                 }
-                .setNegativeButton("Hủy", null).show()
+                .setNegativeButton("H\u1ee7y", null).show()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        // Dùng isLoggedIn() từ ViewModel thay vì gọi FirebaseAuth trực tiếp
+        // DĂ¹ng isLoggedIn() tá»« ViewModel thay vĂ¬ gá»i FirebaseAuth trá»±c tiáº¿p
         if (viewModel.isLoggedIn() && layoutGuest.visibility == View.VISIBLE) {
             layoutGuest.visibility = View.GONE
             layoutProfile.visibility = View.VISIBLE
+            cardMyPosts.visibility = View.VISIBLE
+            btnSavedPosts.visibility = View.VISIBLE
             setupClickListeners()
             setupObservers()
         }
         if (viewModel.isLoggedIn() && ::viewModel.isInitialized) {
             viewModel.loadUserInfo()
-            viewModel.loadAppointmentBadge()
-            viewModel.loadMyPostsBadge(requireContext())
             viewModel.loadNotificationBadge()
         }
     }
+
+    override fun onDestroyView() {
+        dismissAvatarLoadingDialog()
+        super.onDestroyView()
+    }
 }
+
+

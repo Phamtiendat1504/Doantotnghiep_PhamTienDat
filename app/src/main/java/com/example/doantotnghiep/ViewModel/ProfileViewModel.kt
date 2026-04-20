@@ -70,6 +70,9 @@ class ProfileViewModel : ViewModel() {
                 _userInfo.value = info
                 if (!isVerified) {
                     checkVerificationStatus()
+                } else {
+                    // Tranh giu status cu (pending/rejected) de khong ghi de badge da xac minh.
+                    _verificationStatus.value = null
                 }
             },
             onFailure = { e -> _errorMessage.value = e }

@@ -4,6 +4,7 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.doantotnghiep.repository.RoomRepository
+import java.util.Locale
 
 class SearchViewModel : ViewModel() {
 
@@ -61,20 +62,25 @@ class SearchViewModel : ViewModel() {
 
     fun searchByFilters(ward: String, district: String, searchMode: String, minPrice: Long, maxPrice: Long) {
         _isLoading.value = true
+        val wardFilter = normalizeLocationValue(ward)
+        val districtFilter = normalizeLocationValue(district)
+        val mode = searchMode.trim().lowercase(Locale.ROOT)
         repository.searchApprovedRooms(
             onSuccess = { docs ->
                 _isLoading.value = false
                 val matched = docs.filter { doc ->
                     val data = doc.data
                     val roomPrice = data["price"] as? Long ?: 0
+                    val roomWard = normalizeLocationValue(data["ward"] as? String ?: "")
+                    val roomDistrict = normalizeLocationValue(data["district"] as? String ?: "")
                     val priceMatch = (minPrice == 0L || roomPrice >= minPrice) &&
                                      (maxPrice == 0L || roomPrice <= maxPrice)
                     val locationMatch = when {
-                        ward.isEmpty() -> true
-                        searchMode == "district" && district.isNotEmpty() ->
-                            (data["district"] as? String ?: "").equals(district, ignoreCase = true)
-                        else ->
-                            (data["ward"] as? String ?: "").equals(ward, ignoreCase = true)
+                        mode == "district" && districtFilter.isNotEmpty() -> roomDistrict == districtFilter
+                        mode == "ward" && wardFilter.isNotEmpty() -> roomWard == wardFilter
+                        wardFilter.isNotEmpty() -> roomWard == wardFilter
+                        districtFilter.isNotEmpty() -> roomDistrict == districtFilter
+                        else -> true
                     }
                     priceMatch && locationMatch
                 }.map { doc -> mapToRoomItem(doc.id, doc.data) }
@@ -86,6 +92,12 @@ class SearchViewModel : ViewModel() {
                 _searchResults.value = emptyList()
             }
         )
+    }
+
+    private fun normalizeLocationValue(value: String): String {
+        return value.trim()
+            .replace(Regex("\\s+"), " ")
+            .lowercase(Locale("vi", "VN"))
     }
 
     private fun mapToRoomItem(roomId: String, data: Map<String, Any>): RoomItem {
