@@ -102,7 +102,9 @@
                     android:paddingStart="12dp"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="textPersonName"
-                    android:enabled="true"
+                    android:enabled="false"
+                    android:textColor="@color/text_primary"
+                    android:alpha="0.85"
                     android:layout_marginBottom="12dp" />
 
                 <!-- Số CCCD -->
@@ -146,7 +148,33 @@
                     android:paddingStart="12dp"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="phone"
-                    android:enabled="true"
+                    android:enabled="false"
+                    android:textColor="@color/text_primary"
+                    android:alpha="0.85"
+                    android:layout_marginBottom="12dp" />
+
+                <!-- Email (tự động lấy từ tài khoản, không đổi được) -->
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Email đăng ký *"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:layout_marginBottom="4dp" />
+
+                <EditText
+                    android:id="@+id/edtEmail"
+                    android:layout_width="match_parent"
+                    android:layout_height="46dp"
+                    android:hint="Email tài khoản của bạn"
+                    android:textSize="14sp"
+                    android:paddingStart="12dp"
+                    android:background="@drawable/bg_edit_post"
+                    android:inputType="textEmailAddress"
+                    android:enabled="false"
+                    android:textColor="@color/text_primary"
+                    android:alpha="0.85"
                     android:layout_marginBottom="12dp" />
 
                 <!-- Địa chỉ thường trú -->
@@ -163,7 +191,7 @@
                     android:id="@+id/edtAddress"
                     android:layout_width="match_parent"
                     android:layout_height="46dp"
-                    android:hint="Nhập địa chỉ thường trú"
+                    android:hint="Địa chỉ thường trú (tự điền nếu đã cập nhật)"
                     android:textSize="14sp"
                     android:paddingStart="12dp"
                     android:background="@drawable/bg_edit_post"

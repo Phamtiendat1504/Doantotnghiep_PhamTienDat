@@ -9,7 +9,7 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.ProgressBar
+import androidx.appcompat.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -22,6 +22,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private lateinit var edtFullName: EditText
     private lateinit var edtCccdNumber: EditText
     private lateinit var edtPhone: EditText
+    private lateinit var edtEmail: EditText
     private lateinit var edtAddress: EditText
     private lateinit var frameFront: FrameLayout
     private lateinit var frameBack: FrameLayout
@@ -32,7 +33,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private lateinit var btnSubmitVerify: com.google.android.material.button.MaterialButton
     private lateinit var cbCommit: android.widget.CheckBox
     private lateinit var btnBack: ImageView
-    private lateinit var progressBar: ProgressBar
+    private var loadingDialog: AlertDialog? = null
 
     private lateinit var viewModel: VerifyLandlordViewModel
 
@@ -113,13 +114,27 @@ class VerifyLandlordActivity : AppCompatActivity() {
     }
 
     private fun setupForm() {
-        viewModel.ownerInfo.observe(this) { (fullName, phone) ->
-            edtFullName.setText(fullName)
-            edtPhone.setText(phone)
+        viewModel.ownerInfo.observe(this) { user ->
+            edtFullName.setText(user.fullName)
+            edtPhone.setText(user.phone)
+            edtEmail.setText(user.email)
+            // Tự điền địa chỉ nếu người dùng đã cập nhật trong profile
+            if (user.address.isNotEmpty()) {
+                edtAddress.setText(user.address)
+            }
         }
 
         viewModel.isLoading.observe(this) { isLoading ->
-            progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
+            if (isLoading) {
+                loadingDialog = MessageUtils.showLoadingDialog(
+                    context = this,
+                    title = "Đang gửi yêu cầu",
+                    message = "Vui lòng chờ trong giây lát..."
+                )
+            } else {
+                loadingDialog?.dismiss()
+                loadingDialog = null
+            }
             btnSubmitVerify.isEnabled = !isLoading
         }
 
@@ -151,6 +166,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
         edtFullName = findViewById(R.id.edtFullName)
         edtCccdNumber = findViewById(R.id.edtCccdNumber)
         edtPhone = findViewById(R.id.edtPhone)
+        edtEmail = findViewById(R.id.edtEmail)
         edtAddress = findViewById(R.id.edtAddress)
         frameFront = findViewById(R.id.frameFront)
         frameBack = findViewById(R.id.frameBack)
@@ -161,7 +177,6 @@ class VerifyLandlordActivity : AppCompatActivity() {
         btnSubmitVerify = findViewById(R.id.btnSubmitVerify)
         cbCommit = findViewById(R.id.cbCommit)
         btnBack = findViewById(R.id.btnBack)
-        progressBar = findViewById(R.id.progressBar)
     }
 
     private fun pickImage() {

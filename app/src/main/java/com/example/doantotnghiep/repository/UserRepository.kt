@@ -2,6 +2,7 @@ package com.example.doantotnghiep.repository
 
 import com.example.doantotnghiep.Model.User
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 
 class UserRepository {
 
@@ -15,8 +16,9 @@ class UserRepository {
         onSuccess: (User) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        // Sử dụng Query thay vì lấy Document trực tiếp để bypass rule nếu Firebase khóa đọc Document của người khác
-        db.collection("users").whereEqualTo(com.google.firebase.firestore.FieldPath.documentId(), uid).get()
+        // Dùng Source.SERVER để tránh cache cũ (ví dụ: isVerified vẫn false dù đã được admin duyệt)
+        db.collection("users").whereEqualTo(com.google.firebase.firestore.FieldPath.documentId(), uid)
+            .get(Source.SERVER)
             .addOnSuccessListener { docs ->
                 if (!docs.isEmpty) {
                     val doc = docs.documents[0]
@@ -48,8 +50,9 @@ class UserRepository {
         // Vì Firebase mặc định là Case-Sensitive (phân biệt hoa thường) và Model của bạn
         // không có trường lưu `fullNameLowerCase`, nên chúng ta chạy Lọc ở phía Client
         // Dùng `contains(ignoreCase = true)` hỗ trợ tìm cả chuỗi con và không phân biệt HOA/thường.
+        // D\u00f9ng Source.SERVER \u0111\u1ec3 \u0111\u1ea3m b\u1ea3o l\u1ea5y isVerified m\u1edbi nh\u1ea5t, tr\u00e1nh cache c\u0169
         db.collection("users")
-            .get()
+            .get(Source.SERVER)
             .addOnSuccessListener { docs ->
                 val users = docs.mapNotNull { doc ->
                     doc.toObject(User::class.java).copy(uid = doc.id)

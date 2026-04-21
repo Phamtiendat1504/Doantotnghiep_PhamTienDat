@@ -1,7 +1,8 @@
-﻿package com.example.doantotnghiep.View.Fragment
+package com.example.doantotnghiep.View.Fragment
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -65,7 +66,7 @@ class ProfileFragment : Fragment() {
 
         viewModel = ViewModelProvider(this)[ProfileViewModel::class.java]
 
-        // DĂ¹ng isLoggedIn() tá»« ViewModel thay vĂ¬ gá»i FirebaseAuth trá»±c tiáº¿p
+        // DĂ„â€Ă‚Â¹ng isLoggedIn() tÄ‚Â¡Ă‚Â»Ă‚Â« ViewModel thay vĂ„â€Ă‚Â¬ gÄ‚Â¡Ă‚Â»Ă‚Âi FirebaseAuth trÄ‚Â¡Ă‚Â»Ă‚Â±c tiÄ‚Â¡Ă‚ÂºĂ‚Â¿p
         if (!viewModel.isLoggedIn()) {
             layoutGuest.visibility = View.VISIBLE
             layoutProfile.visibility = View.GONE
@@ -155,7 +156,7 @@ class ProfileFragment : Fragment() {
                 "C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng",
                 "\u1ea2nh \u0111\u1ea1i di\u1ec7n \u0111\u00e3 \u0111\u01b0\u1ee3c c\u1eadp nh\u1eadt"
             )
-            viewModel.resetAvatarUploadState() // Reset Ä‘á»ƒ khĂ´ng hiá»‡n láº¡i Dialog Ä‘ang xá»­ lĂ½
+            viewModel.resetAvatarUploadState() // Reset Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă†â€™ khĂ„â€Ă‚Â´ng hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n lÄ‚Â¡Ă‚ÂºĂ‚Â¡i Dialog Ä‚â€Ă¢â‚¬Ëœang xÄ‚Â¡Ă‚Â»Ă‚Â­ lĂ„â€Ă‚Â½
         }
 
         viewModel.isUploadingAvatar.observe(viewLifecycleOwner) { isUploading ->
@@ -215,15 +216,32 @@ class ProfileFragment : Fragment() {
     }
 
     private fun applyUnverifiedBadgePlaceholder() {
-        tvRoleBadge.text = "T\u00e0i kho\u1ea3n ch\u01b0a x\u00e1c minh"
-        tvRoleBadge.setTextColor(0xFF666666.toInt())
-        tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+        setRoleBadge(
+            text = "T\u00e0i kho\u1ea3n ch\u01b0a x\u00e1c minh",
+            textColor = 0xFF616161.toInt(),
+            bgColor = 0xFFECEFF1.toInt()
+        )
     }
 
     private fun applyVerifiedBadge() {
-        tvRoleBadge.text = "\u2713 T\u00e0i kho\u1ea3n \u0111\u00e3 x\u00e1c minh"
-        tvRoleBadge.setTextColor(0xFF2E7D32.toInt())
-        tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_landlord)
+        setRoleBadge(
+            text = "\u2713 T\u00e0i kho\u1ea3n \u0111\u00e3 x\u00e1c minh",
+            textColor = 0xFF1B5E20.toInt(),
+            bgColor = 0xFFE8F5E9.toInt()
+        )
+    }
+
+    private fun setRoleBadge(text: String, textColor: Int, bgColor: Int) {
+        tvRoleBadge.text = text
+        tvRoleBadge.setTextColor(textColor)
+        tvRoleBadge.alpha = 1f
+        tvRoleBadge.visibility = View.VISIBLE
+        tvRoleBadge.minHeight = dpToPx(28)
+        tvRoleBadge.background = GradientDrawable().apply {
+            shape = GradientDrawable.RECTANGLE
+            cornerRadius = dpToPx(999).toFloat()
+            setColor(bgColor)
+        }
     }
 
     private fun renderRoleBadge(role: String?, isVerified: Boolean?, verificationStatus: String?) {
@@ -238,23 +256,29 @@ class ProfileFragment : Fragment() {
 
         when {
             normalizedRole == "admin" -> {
-                tvRoleBadge.text = "\u2605 Qu\u1ea3n tr\u1ecb vi\u00ean"
-                tvRoleBadge.setTextColor(0xFF1976D2.toInt())
-                tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_tenant)
+                setRoleBadge(
+                    text = "Qu\u1ea3n tr\u1ecb vi\u00ean",
+                    textColor = 0xFF1565C0.toInt(),
+                    bgColor = 0xFFE3F2FD.toInt()
+                )
             }
 
             isVerifiedAccount -> applyVerifiedBadge()
 
             normalizedStatus == "pending" || normalizedStatus == "submitted" || normalizedStatus == "processing" -> {
-                tvRoleBadge.text = "\u23f3 \u0110ang ch\u1edd x\u00e1c minh"
-                tvRoleBadge.setTextColor(0xFFE65100.toInt())
-                tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
+                setRoleBadge(
+                    text = "\u0110ang ch\u1edd x\u00e1c minh",
+                    textColor = 0xFFE65100.toInt(),
+                    bgColor = 0xFFFFF3E0.toInt()
+                )
             }
 
             normalizedStatus == "rejected" -> {
-                tvRoleBadge.text = "\u2717 X\u00e1c minh b\u1ecb t\u1eeb ch\u1ed1i"
-                tvRoleBadge.setTextColor(0xFFD32F2F.toInt())
-                tvRoleBadge.setBackgroundResource(R.drawable.bg_badge_pending)
+                setRoleBadge(
+                    text = "X\u00e1c minh b\u1ecb t\u1eeb ch\u1ed1i",
+                    textColor = 0xFFC62828.toInt(),
+                    bgColor = 0xFFFFEBEE.toInt()
+                )
             }
 
             else -> applyUnverifiedBadgePlaceholder()
@@ -331,7 +355,7 @@ class ProfileFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // DĂ¹ng isLoggedIn() tá»« ViewModel thay vĂ¬ gá»i FirebaseAuth trá»±c tiáº¿p
+        // DĂ„â€Ă‚Â¹ng isLoggedIn() tÄ‚Â¡Ă‚Â»Ă‚Â« ViewModel thay vĂ„â€Ă‚Â¬ gÄ‚Â¡Ă‚Â»Ă‚Âi FirebaseAuth trÄ‚Â¡Ă‚Â»Ă‚Â±c tiÄ‚Â¡Ă‚ÂºĂ‚Â¿p
         if (viewModel.isLoggedIn() && layoutGuest.visibility == View.VISIBLE) {
             layoutGuest.visibility = View.GONE
             layoutProfile.visibility = View.VISIBLE
@@ -351,6 +375,8 @@ class ProfileFragment : Fragment() {
         dismissAvatarLoadingDialog()
         super.onDestroyView()
     }
+
+    private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
 
 

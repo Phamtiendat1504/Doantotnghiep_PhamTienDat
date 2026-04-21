@@ -239,54 +239,21 @@ class UserProfileActivity : AppCompatActivity() {
                     .placeholder(R.drawable.ic_person).into(ivAvatar)
             }
 
-            if (user.isVerified) {
-                tvVerified.visibility = View.VISIBLE
-            }
-
-            if (user.phone.isNotEmpty()) {
-                userPhone = user.phone
-                tvPhone.text = user.phone
-                btnCall.visibility = View.VISIBLE
-                btnCall.setOnClickListener {
-                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
-                    startActivity(intent)
-                }
-            } else {
-                tvPhone.text = "Chưa cập nhật số điện thoại"
-            }
-
-            tvEmail.text = if (user.email.isNotEmpty()) user.email else "Chưa cập nhật email"
-            
-            val roleStr = when {
-                user.role == "admin" -> "Quản trị viên"
-                user.isVerified -> "Tài khoản đã xác minh"
-                else -> "Tài khoản chưa xác minh"
-            }
-            val genderStr = if (user.gender.isNotEmpty()) " • ${user.gender}" else ""
-            tvRole.text = "$roleStr$genderStr"
-            
-            if (user.createdAt > 0) {
-                val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                val dateStr = sdf.format(java.util.Date(user.createdAt))
-                tvJoinDate.text = "Tham gia: $dateStr"
-            } else {
-                tvJoinDate.text = "Tham gia: Không rõ"
-            }
-
-            // Nút Nhắn tin - Không hiện nếu là trang của chính mình
             val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
-            if (user.uid != myUid) {
-                btnChat.visibility = View.VISIBLE
-                btnChat.setOnClickListener {
-                    val intent = Intent(this, ChatActivity::class.java)
-                    intent.putExtra(ChatActivity.EXTRA_OTHER_UID, user.uid)
-                    intent.putExtra(ChatActivity.EXTRA_OTHER_NAME, user.fullName)
-                    intent.putExtra(ChatActivity.EXTRA_OTHER_AVATAR, user.avatarUrl)
-                    startActivity(intent)
+
+            // Luôn đọc lại isVerified từ server cho mọi trường hợp (cả hồ sơ mình lẫn người khác)
+            // để tránh Firestore cache trả về giá trị cũ (isVerified = false dù đã được duyệt)
+            com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                .collection("users").document(user.uid)
+                .get(com.google.firebase.firestore.Source.SERVER)
+                .addOnSuccessListener { doc ->
+                    val verified = doc.getBoolean("isVerified") ?: false
+                    applyUserDisplay(user.copy(isVerified = verified), myUid)
                 }
-            } else {
-                btnChat.visibility = View.GONE
-            }
+                .addOnFailureListener {
+                    // Lỗi mạng: dùng dữ liệu sẵn có
+                    applyUserDisplay(user, myUid)
+                }
         }
 
         viewModel.rooms.observe(this) { rooms ->
@@ -303,4 +270,62 @@ class UserProfileActivity : AppCompatActivity() {
             }
         }
     }
+
+    /**
+     * Áp dụng toàn bộ thông tin hiển thị của user lên UI.
+     * Tách ra để có thể gọi sau khi xác nhận isVerified chính xác từ server.
+     */
+    private fun applyUserDisplay(user: com.example.doantotnghiep.Model.User, myUid: String) {
+        // Badge xác minh ở header
+        tvVerified.visibility = if (user.isVerified) View.VISIBLE else View.GONE
+
+        // Số điện thoại
+        if (user.phone.isNotEmpty()) {
+            userPhone = user.phone
+            tvPhone.text = user.phone
+            btnCall.visibility = View.VISIBLE
+            btnCall.setOnClickListener {
+                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${user.phone}"))
+                startActivity(intent)
+            }
+        } else {
+            tvPhone.text = "Chưa cập nhật số điện thoại"
+            btnCall.visibility = View.GONE
+        }
+
+        // Email
+        tvEmail.text = if (user.email.isNotEmpty()) user.email else "Chưa cập nhật email"
+
+        // Trạng thái tài khoản
+        val roleStr = when {
+            user.role == "admin" -> "Quản trị viên"
+            user.isVerified -> "Tài khoản đã xác minh"
+            else -> "Tài khoản chưa xác minh"
+        }
+        val genderStr = if (user.gender.isNotEmpty()) " • ${user.gender}" else ""
+        tvRole.text = "$roleStr$genderStr"
+
+        // Ngày tham gia
+        if (user.createdAt > 0) {
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+            tvJoinDate.text = "Tham gia: ${sdf.format(java.util.Date(user.createdAt))}"
+        } else {
+            tvJoinDate.text = "Tham gia: Không rõ"
+        }
+
+        // Nút Nhắn tin — ẩn khi xem hồ sơ chính mình
+        if (user.uid != myUid) {
+            btnChat.visibility = View.VISIBLE
+            btnChat.setOnClickListener {
+                val intent = Intent(this, ChatActivity::class.java)
+                intent.putExtra(ChatActivity.EXTRA_OTHER_UID, user.uid)
+                intent.putExtra(ChatActivity.EXTRA_OTHER_NAME, user.fullName)
+                intent.putExtra(ChatActivity.EXTRA_OTHER_AVATAR, user.avatarUrl)
+                startActivity(intent)
+            }
+        } else {
+            btnChat.visibility = View.GONE
+        }
+    }
 }
+

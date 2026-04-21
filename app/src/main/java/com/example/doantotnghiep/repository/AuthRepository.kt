@@ -14,11 +14,38 @@ class AuthRepository {
     private val storage = FirebaseStorage.getInstance()
 
     fun register(fullName: String, email: String, phone: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        auth.createUserWithEmailAndPassword(email, password).addOnSuccessListener { result ->
-            val uid = result.user?.uid ?: ""
-            val user = User(uid = uid, fullName = fullName, email = email, phone = phone, role = "user", createdAt = System.currentTimeMillis())
-            db.collection("users").document(uid).set(user).addOnSuccessListener { onSuccess() }.addOnFailureListener { e -> onFailure("Lưu thất bại: ${e.message}") }
-        }.addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+        // Bước 1: Kiểm tra số điện thoại đã được đăng ký chưa (Firestore)
+        // Firebase Auth chỉ tự check trùng email, không kiểm tra số điện thoại
+        db.collection("users")
+            .whereEqualTo("phone", phone)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { snapshot ->
+                if (!snapshot.isEmpty) {
+                    onFailure("Số điện thoại này đã được đăng ký cho tài khoản khác")
+                    return@addOnSuccessListener
+                }
+                // Bước 2: Phone chưa trùng → tiến hành tạo tài khoản Firebase Auth
+                auth.createUserWithEmailAndPassword(email, password)
+                    .addOnSuccessListener { result ->
+                        val uid = result.user?.uid ?: ""
+                        val user = User(
+                            uid = uid,
+                            fullName = fullName,
+                            email = email,
+                            phone = phone,
+                            role = "user",
+                            createdAt = System.currentTimeMillis()
+                        )
+                        db.collection("users").document(uid).set(user)
+                            .addOnSuccessListener { onSuccess() }
+                            .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+                    }
+                    .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+            }
+            .addOnFailureListener { e ->
+                onFailure("Lỗi kiểm tra số điện thoại: ${e.message}")
+            }
     }
 
     fun login(email: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {

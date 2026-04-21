@@ -47,6 +47,7 @@ class PostFragment : Fragment() {
     private var lastPostedLocation = ""
     private var currentOwnerAvatarUrl = ""
     private var postLoadingDialog: AlertDialog? = null
+    private var rulesDialogShown = false  // Tránh show dialog quy định 2 lần do observer trigger lại
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -105,7 +106,8 @@ class PostFragment : Fragment() {
 
             if (isPrivileged) {
                 showPostForm()
-                if (!user.hasAcceptedRules) {
+                if (!user.hasAcceptedRules && !rulesDialogShown) {
+                    rulesDialogShown = true
                     showRulesDialog(isFirstTime = true)
                 }
             } else {
