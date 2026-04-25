@@ -140,7 +140,7 @@ class AppointmentRepository {
                 val isVerified = doc.getBoolean("isVerified") ?: false
                 val effectiveRole = when {
                     role == "admin" -> "admin"
-                    isVerified -> "landlord"
+                    isVerified -> "verified"
                     else -> "user"
                 }
                 onSuccess(effectiveRole)
@@ -516,7 +516,7 @@ class AppointmentRepository {
         role: String,
         onResult: (Int) -> Unit
     ): ListenerRegistration {
-        val isHostAccess = role == "landlord" || role == "admin" || role == "owner" || role == "verified"
+        val isHostAccess = role == "admin" || role == "verified"
         return if (isHostAccess) {
             db.collection("appointments")
                 .whereEqualTo("landlordId", uid)
@@ -541,7 +541,7 @@ class AppointmentRepository {
      * Gọi khi user vào màn hình MyAppointmentsActivity.
      */
     fun markAllAppointmentsRead(uid: String, role: String) {
-        val isHostAccess = role == "landlord" || role == "admin" || role == "owner" || role == "verified"
+        val isHostAccess = role == "admin" || role == "verified"
         val field = if (isHostAccess) "landlordId" else "tenantId"
         db.collection("appointments")
             .whereEqualTo(field, uid)

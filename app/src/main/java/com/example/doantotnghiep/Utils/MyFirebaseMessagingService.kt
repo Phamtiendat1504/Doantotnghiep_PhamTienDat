@@ -48,6 +48,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val type    = remoteMessage.data["type"] ?: "general"
         val senderId = remoteMessage.data["senderId"] ?: ""
 
+        if (!AppSettings.shouldShowNotification(this, type)) {
+            return
+        }
+
         // KIỂM TRA MÀN HÌNH CHAT ĐANG MỞ: Nếu người dùng đang nhắn tin với người gửi, bỏ qua Pop-up
         if (type == "new_message" &&
             com.example.doantotnghiep.View.Auth.ChatActivity.currentOpenedChatOtherUid == senderId

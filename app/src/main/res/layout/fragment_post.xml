@@ -14,7 +14,6 @@
         android:orientation="vertical"
         android:paddingBottom="32dp">
 
-        <!-- ===== HEADER ===== -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -68,7 +67,6 @@
 
             </LinearLayout>
 
-            <!-- Thanh bước -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -123,9 +121,6 @@
 
         </LinearLayout>
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- CARD 1: THÔNG TIN CHỦ TRỌ              -->
-        <!-- ═══════════════════════════════════════ -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -142,7 +137,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Section Header -->
                 <LinearLayout
                     android:id="@+id/llHeaderCard1"
                     android:layout_width="match_parent"
@@ -185,7 +179,6 @@
 
                 </LinearLayout>
 
-                <!-- Nội dung -->
                 <LinearLayout
                     android:id="@+id/llContentCard1"
                     android:layout_width="match_parent"
@@ -193,7 +186,6 @@
                     android:orientation="vertical"
                     android:padding="16dp">
 
-                    <!-- Họ và tên -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -214,7 +206,6 @@
                         android:inputType="textPersonName"
                         android:layout_marginBottom="14dp" />
 
-                    <!-- SĐT + Giới tính -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -296,7 +287,6 @@
 
                     </LinearLayout>
 
-                    <!-- Nút Tiếp Tục -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnNextCard1"
                         android:layout_width="wrap_content"
@@ -312,9 +302,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- CARD 2: THÔNG TIN BÀI ĐĂNG             -->
-        <!-- ═══════════════════════════════════════ -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -330,7 +317,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Section Header -->
                 <LinearLayout
                     android:id="@+id/llHeaderCard2"
                     android:layout_width="match_parent"
@@ -381,7 +367,6 @@
                     android:visibility="gone"
                     android:padding="16dp">
 
-                    <!-- Tiêu đề -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -402,7 +387,6 @@
                         android:inputType="text"
                         android:layout_marginBottom="14dp" />
 
-                    <!-- Ngày đăng + Khu vực (2 cột) -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -464,7 +448,6 @@
 
                     </LinearLayout>
 
-                    <!-- Địa chỉ cụ thể -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -478,14 +461,35 @@
                         android:id="@+id/edtAddress"
                         android:layout_width="match_parent"
                         android:layout_height="48dp"
-                        android:hint="Số nhà, tên đường, ngõ/ngách..."
-                        android:textSize="14sp"
-                        android:paddingStart="14dp"
+                        android:layout_marginBottom="8dp"
                         android:background="@drawable/bg_edit_post"
-                        android:inputType="text"
-                        android:layout_marginBottom="14dp" />
+                        android:hint="Số nhà, tên đường..."
+                        android:inputType="textPostalAddress"
+                        android:paddingStart="14dp"
+                        android:textSize="14sp" />
 
-                    <!-- Mô tả -->
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnPickLocation"
+                        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginBottom="8dp"
+                        android:text="Chọn vị trí trên bản đồ"
+                        android:textAllCaps="false"
+                        app:cornerRadius="12dp" />
+
+                    <TextView
+                        android:id="@+id/tvPickedLocation"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="14dp"
+                        android:background="@drawable/bg_input_disabled"
+                        android:padding="10dp"
+                        android:text="Chưa chọn vị trí chính xác"
+                        android:textColor="@color/text_secondary"
+                        android:textSize="12sp" />
+
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -507,7 +511,6 @@
                         android:gravity="top"
                         android:layout_marginBottom="16dp" />
 
-                    <!-- Ảnh phòng trọ -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -551,7 +554,6 @@
                             android:layout_height="wrap_content"
                             android:orientation="horizontal">
 
-                            <!-- Nút thêm ảnh -->
                             <androidx.cardview.widget.CardView
                                 android:id="@+id/btnAddPhoto"
                                 android:layout_width="100dp"
@@ -598,7 +600,6 @@
 
                     </HorizontalScrollView>
 
-                    <!-- Nút Tiếp Tục -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnNextCard2"
                         android:layout_width="wrap_content"
@@ -615,9 +616,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- CARD 3: CHI TIẾT PHÒNG TRỌ             -->
-        <!-- ═══════════════════════════════════════ -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -633,7 +631,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Section Header -->
                 <LinearLayout
                     android:id="@+id/llHeaderCard3"
                     android:layout_width="match_parent"
@@ -684,7 +681,6 @@
                     android:visibility="gone"
                     android:padding="16dp">
 
-                    <!-- Giá + Diện tích -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -749,7 +745,6 @@
 
                     </LinearLayout>
 
-                    <!-- Số người + Dạng phòng -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -834,7 +829,6 @@
 
                     </LinearLayout>
 
-                    <!-- Đặt cọc -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -905,7 +899,6 @@
 
                     </LinearLayout>
 
-                    <!-- Nút Tiếp Tục -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnNextCard3"
                         android:layout_width="wrap_content"
@@ -922,9 +915,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- CARD 4: TIỆN ÍCH & CHI PHÍ             -->
-        <!-- ═══════════════════════════════════════ -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -940,7 +930,6 @@
                 android:layout_height="wrap_content"
                 android:orientation="vertical">
 
-                <!-- Section Header -->
                 <LinearLayout
                     android:id="@+id/llHeaderCard4"
                     android:layout_width="match_parent"
@@ -991,7 +980,6 @@
                     android:visibility="gone"
                     android:padding="16dp">
 
-                    <!-- Chi phí hàng tháng -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
@@ -1001,7 +989,6 @@
                         android:textColor="@color/text_primary"
                         android:layout_marginBottom="10dp" />
 
-                    <!-- Wrapper chi phí -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -1010,7 +997,6 @@
                         android:padding="12dp"
                         android:layout_marginBottom="14dp">
 
-                        <!-- Wifi -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -1041,7 +1027,6 @@
 
                         </LinearLayout>
 
-                        <!-- Điện -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -1072,7 +1057,6 @@
 
                         </LinearLayout>
 
-                        <!-- Nước -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -1104,7 +1088,6 @@
 
                     </LinearLayout>
 
-                    <!-- Nội thất & Dịch vụ -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -1130,7 +1113,6 @@
 
                     </LinearLayout>
 
-                    <!-- Amenity Grid wrapper -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -1218,7 +1200,6 @@
 
                     </LinearLayout>
 
-                    <!-- Bếp / Vệ sinh / Cho thuê / Giờ ra vào -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -1227,7 +1208,6 @@
                         android:padding="12dp"
                         android:layout_marginBottom="14dp">
 
-                        <!-- Bếp -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
@@ -1281,7 +1261,6 @@
 
                         </LinearLayout>
 
-                        <!-- Vệ sinh -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
@@ -1324,7 +1303,6 @@
 
                         </LinearLayout>
 
-                        <!-- Thú cưng -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
@@ -1368,7 +1346,6 @@
 
                     </LinearLayout>
 
-                    <!-- Chi tiết thú cưng -->
                     <LinearLayout
                         android:id="@+id/layoutPetDetail"
                         android:layout_width="match_parent"
@@ -1404,7 +1381,6 @@
 
                     </LinearLayout>
 
-                    <!-- Giới tính ưu tiên -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -1465,7 +1441,6 @@
 
                         </LinearLayout>
 
-                        <!-- Giờ ra vào -->
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="44dp"
@@ -1519,7 +1494,6 @@
                         android:visibility="gone"
                         android:layout_marginBottom="14dp">
 
-                        <!-- Giờ -->
                         <NumberPicker
                             android:id="@+id/pickerHour"
                             android:layout_width="0dp"
@@ -1535,21 +1509,18 @@
                             android:paddingStart="4dp"
                             android:paddingEnd="4dp" />
 
-                        <!-- Phút -->
                         <NumberPicker
                             android:id="@+id/pickerMinute"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1" />
 
-                        <!-- AM/PM -->
                         <NumberPicker
                             android:id="@+id/pickerAmPm"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1" />
 
-                        <!-- Hidden TextView để đọc giá trị -->
                         <TextView
                             android:id="@+id/edtCurfewTime"
                             android:layout_width="0dp"
@@ -1558,7 +1529,6 @@
 
                     </LinearLayout>
 
-                    <!-- Chỗ để xe -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -1591,7 +1561,6 @@
                         android:background="@drawable/bg_amenity_row"
                         android:padding="12dp">
 
-                        <!-- Xe máy -->
                         <CheckBox
                             android:id="@+id/cbMotorbike"
                             android:layout_width="wrap_content"
@@ -1644,7 +1613,6 @@
                             android:layout_marginStart="28dp"
                             android:layout_marginBottom="8dp" />
 
-                        <!-- Xe đạp điện -->
                         <CheckBox
                             android:id="@+id/cbEBike"
                             android:layout_width="wrap_content"
@@ -1697,7 +1665,6 @@
                             android:layout_marginStart="28dp"
                             android:layout_marginBottom="8dp" />
 
-                        <!-- Xe đạp -->
                         <CheckBox
                             android:id="@+id/cbBicycle"
                             android:layout_width="wrap_content"
@@ -1757,9 +1724,6 @@
 
         </androidx.cardview.widget.CardView>
 
-        <!-- ═══════════════════════════════════════ -->
-        <!-- NÚT ĐĂNG BÀI + PROGRESS                -->
-        <!-- ═══════════════════════════════════════ -->
         <androidx.cardview.widget.CardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -1776,7 +1740,6 @@
                 android:orientation="vertical"
                 android:padding="16dp">
 
-                <!-- Lưu ý -->
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -1808,14 +1771,13 @@
                     android:id="@+id/btnPostRoom"
                     android:layout_width="match_parent"
                     android:layout_height="52dp"
-                    android:text="📤  Đăng bài cho thuê"
+                    android:text=" Đăng bài cho thuê"
                     android:textSize="16sp"
                     android:textAllCaps="false"
                     android:textStyle="bold"
                     app:backgroundTint="@color/primary"
                     app:cornerRadius="14dp" />
 
-                <!-- Quy định đăng bài -->
                 <TextView
                     android:id="@+id/tvRulesLink"
                     android:layout_width="wrap_content"
@@ -1828,7 +1790,6 @@
                     android:padding="8dp"
                     android:background="?attr/selectableItemBackground" />
 
-                <!-- Progress upload -->
                 <LinearLayout
                     android:id="@+id/layoutProgress"
                     android:layout_width="match_parent"

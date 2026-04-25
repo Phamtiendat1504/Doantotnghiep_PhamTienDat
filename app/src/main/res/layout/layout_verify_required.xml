@@ -6,12 +6,11 @@
     android:layout_height="match_parent"
     android:background="#F0F6FF">
 
-    <!-- ===== SCROLLABLE CONTENT ===== -->
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:fillViewport="true"
         android:clipToPadding="false"
+        android:fillViewport="true"
         android:paddingBottom="120dp">
 
         <LinearLayout
@@ -19,16 +18,15 @@
             android:layout_height="wrap_content"
             android:orientation="vertical">
 
-            <!-- ===== HEADER CARD ===== -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
                 android:layout_marginTop="24dp"
+                android:layout_marginEnd="20dp"
+                app:cardBackgroundColor="#2A7FCA"
                 app:cardCornerRadius="24dp"
-                app:cardElevation="0dp"
-                app:cardBackgroundColor="#2A7FCA">
+                app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -40,26 +38,26 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:background="@drawable/bg_badge_blue"
+                        android:fontFamily="sans-serif-black"
+                        android:letterSpacing="0.15"
                         android:paddingStart="14dp"
-                        android:paddingEnd="14dp"
                         android:paddingTop="6dp"
+                        android:paddingEnd="14dp"
                         android:paddingBottom="6dp"
                         android:text="QUY TRÌNH MỚI"
                         android:textColor="#FFFFFF"
-                        android:textSize="10sp"
-                        android:fontFamily="sans-serif-black"
-                        android:letterSpacing="0.15" />
+                        android:textSize="10sp" />
 
                     <TextView
                         android:id="@+id/tvVerifyTitle"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:lineSpacingExtra="2dp"
                         android:text="Xác minh\nChủ cho thuê"
                         android:textColor="#FFFFFF"
                         android:textSize="36sp"
-                        android:fontFamily="sans-serif-medium"
-                        android:lineSpacingExtra="2dp"
                         android:textStyle="bold" />
 
                     <View
@@ -73,71 +71,72 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="20dp"
+                        android:fontFamily="sans-serif-light"
+                        android:lineSpacingExtra="6dp"
                         android:text="Chỉ mất 2 phút để hoàn tất hồ sơ. Thông tin của bạn sẽ giúp xây dựng cộng đồng thuê trọ an toàn, uy tín hơn."
                         android:textColor="#CCE8FF"
-                        android:textSize="15sp"
-                        android:fontFamily="sans-serif-light"
-                        android:lineSpacingExtra="6dp" />
+                        android:textSize="15sp" />
 
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- ===== SECTION TITLE ===== -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="24dp"
                 android:layout_marginTop="32dp"
+                android:fontFamily="sans-serif-medium"
+                android:letterSpacing="0.05"
                 android:text="Các bước thực hiện"
                 android:textColor="#1A5FA0"
-                android:textSize="13sp"
-                android:fontFamily="sans-serif-medium"
-                android:letterSpacing="0.05" />
+                android:textSize="13sp" />
 
-            <!-- ===== STEP 1: INFO ===== -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
                 android:layout_marginTop="12dp"
+                android:layout_marginEnd="20dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     android:padding="20dp">
 
                     <FrameLayout
                         android:layout_width="52dp"
                         android:layout_height="52dp"
                         android:background="@drawable/bg_icon_circle_light_blue">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
+                            android:fontFamily="sans-serif-black"
                             android:text="01"
                             android:textColor="#2A7FCA"
-                            android:textSize="18sp"
-                            android:fontFamily="sans-serif-black" />
+                            android:textSize="18sp" />
                     </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="20dp">
+                        android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
                             android:text="Thông tin cá nhân"
                             android:textColor="#0D2D52"
-                            android:textSize="16sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:textSize="16sp" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -149,50 +148,52 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- ===== STEP 2: CCCD ===== -->
             <androidx.cardview.widget.CardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="20dp"
-                android:layout_marginEnd="20dp"
                 android:layout_marginTop="12dp"
+                android:layout_marginEnd="20dp"
                 app:cardCornerRadius="16dp"
                 app:cardElevation="0dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="horizontal"
                     android:gravity="center_vertical"
+                    android:orientation="horizontal"
                     android:padding="20dp">
 
                     <FrameLayout
                         android:layout_width="52dp"
                         android:layout_height="52dp"
                         android:background="@drawable/bg_icon_circle_light_blue">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_gravity="center"
+                            android:fontFamily="sans-serif-black"
                             android:text="02"
                             android:textColor="#2A7FCA"
-                            android:textSize="18sp"
-                            android:fontFamily="sans-serif-black" />
+                            android:textSize="18sp" />
                     </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
                         android:layout_weight="1"
-                        android:orientation="vertical"
-                        android:layout_marginStart="20dp">
+                        android:orientation="vertical">
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
                             android:text="Ảnh chụp CCCD"
                             android:textColor="#0D2D52"
-                            android:textSize="16sp"
-                            android:fontFamily="sans-serif-medium" />
+                            android:textSize="16sp" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -204,28 +205,29 @@
                 </LinearLayout>
             </androidx.cardview.widget.CardView>
 
-            <!-- ===== SECURITY INFO ===== -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_margin="24dp"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
                 android:background="@drawable/bg_info_strip"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
                 android:padding="16dp">
+
                 <ImageView
                     android:layout_width="18dp"
                     android:layout_height="18dp"
                     android:src="@drawable/ic_shield_check"
                     app:tint="#2A7FCA" />
+
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="12dp"
+                    android:lineSpacingExtra="3dp"
                     android:text="Dữ liệu được bảo mật và chỉ sử dụng cho mục đích xác minh tài khoản."
                     android:textColor="#2A7FCA"
-                    android:textSize="11sp"
-                    android:lineSpacingExtra="3dp" />
+                    android:textSize="11sp" />
             </LinearLayout>
 
             <View
@@ -236,25 +238,24 @@
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 
-    <!-- ===== BOTTOM ACTION BUTTONS ===== -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:background="@drawable/bg_bottom_sheet_white"
         android:layout_gravity="bottom"
-        android:elevation="12dp">
+        android:background="@drawable/bg_bottom_sheet_white"
+        android:elevation="12dp"
+        android:orientation="vertical"
+        android:padding="24dp">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartVerify"
             android:layout_width="match_parent"
             android:layout_height="60dp"
-            android:text="BẮT ĐẦU NGAY"
-            android:textSize="15sp"
             android:fontFamily="sans-serif-medium"
             android:letterSpacing="0.1"
+            android:text="BẮT ĐẦU NGAY"
             android:textColor="#FFFFFF"
+            android:textSize="15sp"
             app:backgroundTint="#2A7FCA"
             app:cornerRadius="16dp"
             app:elevation="4dp" />
@@ -264,13 +265,13 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
+            android:alpha="0.8"
+            android:fontFamily="sans-serif-medium"
             android:gravity="center"
             android:padding="8dp"
             android:text="Xem Quy định &amp; Trách nhiệm"
             android:textColor="#2A7FCA"
-            android:textSize="13sp"
-            android:fontFamily="sans-serif-medium"
-            android:alpha="0.8" />
+            android:textSize="13sp" />
 
     </LinearLayout>
 

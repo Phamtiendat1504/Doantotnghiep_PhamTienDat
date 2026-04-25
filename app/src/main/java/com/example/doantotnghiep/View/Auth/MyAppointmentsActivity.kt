@@ -165,7 +165,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
 
     private fun updateListByTab() {
         val isLandlordView = if (isDualMode) currentTab == 1
-                             else (bookingViewModel.userRole.value ?: "user").let { it == "landlord" || it == "admin" || it == "verified" }
+                             else (bookingViewModel.userRole.value ?: "user").let { it == "admin" || it == "verified" }
         var filtered = when (currentFilterIndex) {
             1 -> allAppointments.filter { it["status"] == "pending" }
             2 -> allAppointments.filter { it["status"] == "confirmed" }
@@ -233,7 +233,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
             if (isDualMode) return@observe  // dual-tab dùng observer riêng bên dưới
             tenantList = appointmentList
             val role = bookingViewModel.userRole.value ?: "user"
-            val isLandlord = role == "landlord" || role == "admin" || role == "verified"
+            val isLandlord = role == "admin" || role == "verified"
 
             updateFilterMenu(isLandlord)
 

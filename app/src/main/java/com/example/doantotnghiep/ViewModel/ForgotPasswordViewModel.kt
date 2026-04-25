@@ -21,8 +21,12 @@ class ForgotPasswordViewModel : ViewModel() {
     private val _generalError = MutableLiveData<String?>()
     val generalError: LiveData<String?> = _generalError
 
-    private val _sendEmailSuccess = MutableLiveData<String>()
-    val sendEmailSuccess: LiveData<String> = _sendEmailSuccess
+    private val _sendEmailSuccess = MutableLiveData<String?>()
+    val sendEmailSuccess: LiveData<String?> = _sendEmailSuccess
+
+    fun clearSendEmailSuccess() {
+        _sendEmailSuccess.value = null
+    }
 
     fun requestPasswordReset(email: String, phone: String) {
         _emailError.value = null

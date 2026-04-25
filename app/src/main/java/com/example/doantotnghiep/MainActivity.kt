@@ -179,7 +179,7 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.loadAppointmentBadge(uid, effectiveRole)
             }
             .addOnFailureListener {
-                // Fallback: nếu không lấy được role, dùng tenant (chỉ ngịe confirmed)
+                // Fallback: nếu không lấy được role, mặc định quyền user thường
                 mainViewModel.loadAppointmentBadge(uid, "user")
             }
     }
@@ -198,8 +198,10 @@ class MainActivity : AppCompatActivity() {
         userStatusListener?.remove()
         userStatusListener = null
 
-        // Đăng xuất Firebase
-        FirebaseAuth.getInstance().signOut()
+        // Đánh dấu offline rồi đăng xuất Firebase
+        com.example.doantotnghiep.Utils.PresenceManager.goOfflineAndThen {
+            FirebaseAuth.getInstance().signOut()
+        }
 
         // Hiển thị thông báo và đá ra ngoài
         runOnUiThread {

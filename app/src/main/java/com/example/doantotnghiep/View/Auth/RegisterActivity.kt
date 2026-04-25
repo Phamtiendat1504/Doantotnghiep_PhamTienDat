@@ -1,5 +1,6 @@
 package com.example.doantotnghiep.View.Auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -65,6 +66,12 @@ class RegisterActivity : AppCompatActivity() {
                     "Thành công",
                     "Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục."
                 ) {
+                    viewModel.resetRegisterResult()
+                    viewModel.logOut()
+                    val intent = Intent(this, LoginActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
+                    startActivity(intent)
                     finish()
                 }
             }

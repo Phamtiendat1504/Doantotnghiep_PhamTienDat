@@ -5,7 +5,11 @@ import com.example.doantotnghiep.Model.Room
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
+import com.google.firebase.storage.StorageException
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
@@ -15,10 +19,82 @@ class RoomRepository {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance("gs://doantotnghiep-b39ae.firebasestorage.app")
     private val auth = FirebaseAuth.getInstance()
+    private val imageMetadata = StorageMetadata.Builder()
+        .setContentType("image/jpeg")
+        .build()
+    private val postQuotaWindowMs = 24L * 60L * 60L * 1000L
+
+    private fun mapStorageUploadError(error: Exception?): String {
+        val ex = error as? StorageException
+        return when (ex?.errorCode) {
+            StorageException.ERROR_NOT_AUTHENTICATED ->
+                "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+            StorageException.ERROR_NOT_AUTHORIZED ->
+                "Tài khoản chưa đủ quyền tải ảnh. Hãy kiểm tra trạng thái xác minh rồi thử lại."
+            StorageException.ERROR_QUOTA_EXCEEDED ->
+                "Bộ nhớ Firebase tạm thời quá tải. Vui lòng thử lại sau."
+            else -> "Tải ảnh thất bại: ${error?.message ?: "Lỗi không xác định"}"
+        }
+    }
+
+    private fun mapFirestorePostError(error: Exception?): String {
+        val ex = error as? FirebaseFirestoreException
+        return when (ex?.code) {
+            FirebaseFirestoreException.Code.PERMISSION_DENIED ->
+                "Tài khoản chưa đủ điều kiện đăng bài theo chính sách hiện tại."
+            else -> "Lưu bài đăng thất bại: ${error?.message ?: "Lỗi không xác định"}"
+        }
+    }
+
+    fun checkDailyPostQuota(
+        uid: String,
+        limitPer24h: Int = 3,
+        purchasedSlots: Int = 0,
+        onAllowed: (remainingToday: Int, usePurchasedSlot: Boolean) -> Unit,
+        onBlocked: (unlockAt: Long) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val now = System.currentTimeMillis()
+        val windowStart = now - postQuotaWindowMs
+
+        db.collection("rooms")
+            .whereEqualTo("userId", uid)
+            .get(Source.SERVER)
+            .addOnSuccessListener { docs ->
+                val recentPosts = docs.documents
+                    .mapNotNull { it.getLong("createdAt") }
+                    .filter { it >= windowStart }
+                    .sorted()
+
+                // LƯU Ý: Đã mua gói thì SẼ TRỪ VÀO GÓI TRƯỚC (không tặng 3 lượt miễn phí khi đang còn gói)
+                if (purchasedSlots > 0) {
+                    onAllowed(purchasedSlots, true)
+                    return@addOnSuccessListener
+                }
+
+                // Nếu KHÔNG mua gói (hoặc đã dùng hết gói), thì mới áp dụng luật 3 lượt miễn phí mỗi 24h
+                if (recentPosts.size < limitPer24h) {
+                    onAllowed((limitPer24h - recentPosts.size).coerceAtLeast(0), false)
+                    return@addOnSuccessListener
+                }
+
+                val oldestPostInWindow = recentPosts.firstOrNull() ?: now
+                val unlockAt = oldestPostInWindow + postQuotaWindowMs
+                if (unlockAt <= now) {
+                    onAllowed(0, false)
+                } else {
+                    onBlocked(unlockAt)
+                }
+            }
+            .addOnFailureListener { e ->
+                onFailure("Không thể kiểm tra số lượt đăng bài hôm nay: ${e.message ?: "Lỗi không xác định"}")
+            }
+    }
 
     fun postRoom(
         room: Room,
         imageUris: List<Uri>,
+        usePurchasedSlot: Boolean = false,
         onSuccess: (String, String?) -> Unit,
         onFailure: (String) -> Unit,
         onProgress: (Int) -> Unit
@@ -29,18 +105,58 @@ class RoomRepository {
 
         if (imageUris.isEmpty()) {
             val roomData = room.copy(id = roomId, userId = uid)
-            saveRoomToFirestore(docRef, roomData, { onSuccess(roomId, null) }, onFailure)
+            saveRoomToFirestore(docRef, roomData, { 
+                if (usePurchasedSlot) decrementPurchasedSlot(uid)
+                onSuccess(roomId, null) 
+            }, onFailure)
         } else {
-            uploadImages(roomId, imageUris, onProgress,
-                onComplete = { urls ->
-                    val roomData = room.copy(id = roomId, userId = uid, imageUrls = urls)
-                    saveRoomToFirestore(docRef, roomData, { onSuccess(roomId, urls.firstOrNull()) }, onFailure)
+            // Tạo room trước để upload ảnh chạy theo nhánh quyền isRoomOwner(roomId) trong Storage rules.
+            // Cách này ổn định hơn so với upload-before-room-doc (phụ thuộc isVerifiedUser tại đúng thời điểm upload).
+            val roomSeedData = room.copy(id = roomId, userId = uid, imageUrls = emptyList())
+            saveRoomToFirestore(
+                docRef = docRef,
+                room = roomSeedData,
+                onSuccess = {
+                    docRef.get(Source.SERVER)
+                        .addOnSuccessListener {
+                            uploadImages(
+                                roomId = roomId,
+                                uris = imageUris,
+                                onProgress = onProgress,
+                                onComplete = { urls ->
+                                    docRef.update(
+                                        mapOf(
+                                            "imageUrls" to urls,
+                                            "updatedAt" to System.currentTimeMillis()
+                                        )
+                                    ).addOnSuccessListener {
+                                        if (usePurchasedSlot) decrementPurchasedSlot(uid)
+                                        onSuccess(roomId, urls.firstOrNull())
+                                    }.addOnFailureListener { e ->
+                                        onFailure(mapFirestorePostError(e))
+                                    }
+                                },
+                                onError = { error ->
+                                    // Upload lỗi: dọn room seed để tránh tạo bài rỗng.
+                                    docRef.delete().addOnCompleteListener { onFailure(error) }
+                                }
+                            )
+                        }
+                        .addOnFailureListener { e ->
+                            docRef.delete().addOnCompleteListener { onFailure(mapFirestorePostError(e)) }
+                        }
                 },
-                onError = { error ->
-                    onFailure(error)
-                }
+                onFailure = onFailure
             )
         }
+    }
+
+    private fun decrementPurchasedSlot(uid: String) {
+        db.collection("users").document(uid)
+            .update("purchasedSlots", com.google.firebase.firestore.FieldValue.increment(-1))
+            .addOnFailureListener { e ->
+                android.util.Log.e("RoomRepository", "Failed to decrement purchased slot: ${e.message}")
+            }
     }
 
     private fun saveRoomToFirestore(
@@ -63,7 +179,7 @@ class RoomRepository {
                         onFailure("Gia hạn bài đăng thất bại. Vui lòng thử lại.")
                     }
             }
-            .addOnFailureListener { e -> onFailure("Lưu bài đăng thất bại: ${e.message}") }
+            .addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
     }
 
     // Lấy chi tiết một phòng theo ID
@@ -113,7 +229,7 @@ class RoomRepository {
             val fileName = "img_${UUID.randomUUID()}.jpg"
             val ref = storage.reference.child("rooms").child(roomId).child(fileName)
             
-            val uploadTask = ref.putFile(uri)
+            val uploadTask = ref.putFile(uri, imageMetadata)
             
             // Theo dõi tiến độ từng byte để thanh progress chạy mượt
             uploadTask.addOnProgressListener { taskSnapshot ->
@@ -149,7 +265,7 @@ class RoomRepository {
             .addOnFailureListener { e ->
                 if (!hasError) {
                     hasError = true
-                    onError("Tải ảnh thất bại: ${e.message}")
+                    onError(mapStorageUploadError(e))
                 }
             }
         }
@@ -581,7 +697,7 @@ class RoomRepository {
             var count = 0
             newImageUris.forEach { uri ->
                 val ref = storage.reference.child("rooms/$roomId/img_${java.util.UUID.randomUUID()}.jpg")
-                ref.putFile(uri).continueWithTask { it.result?.storage?.downloadUrl }
+                ref.putFile(uri, imageMetadata).continueWithTask { it.result?.storage?.downloadUrl }
                     .addOnSuccessListener { downloadUrl ->
                         urls.add(downloadUrl.toString())
                         count++
@@ -590,7 +706,7 @@ class RoomRepository {
                             saveUpdatedPost(roomId, existingImageUrls + urls, deletedImageUrls, data, onSuccess, onFailure)
                         }
                     }
-                    .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi upload ảnh") }
+                    .addOnFailureListener { e -> onFailure(mapStorageUploadError(e)) }
             }
         } else {
             saveUpdatedPost(roomId, existingImageUrls, deletedImageUrls, data, onSuccess, onFailure)

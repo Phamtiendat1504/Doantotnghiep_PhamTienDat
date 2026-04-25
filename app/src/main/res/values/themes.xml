@@ -159,4 +159,12 @@
         <item name="android:lineSpacingExtra">1dp</item>
     </style>
 
+    <!-- Search Address Dialog Style -->
+    <style name="RoundedDialogStyle" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowMinWidthMajor">92%</item>
+        <item name="android:windowMinWidthMinor">92%</item>
+    </style>
+
 </resources>

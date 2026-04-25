@@ -18,5 +18,8 @@ data class User(
     var isLocked: Boolean = false,
     var lockReason: String = "",
     var lockUntil: Long = 0,
-    var createdAt: Long = 0
+    var postingUnlockAt: Long = 0,
+    var verifiedAt: Long = 0,
+    var createdAt: Long = 0,
+    var purchasedSlots: Int = 0
 )

@@ -33,7 +33,7 @@ class MyPostsActivity : AppCompatActivity() {
     private lateinit var tvEmpty: TextView
     private lateinit var btnBack: ImageView
     private lateinit var menuFilter: android.widget.AutoCompleteTextView
-    private lateinit var edtSearchPost: com.google.android.material.textfield.TextInputEditText
+    private lateinit var edtSearchPost: EditText
     private var currentFilterIndex = 0
     private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
@@ -224,10 +224,10 @@ class MyPostsActivity : AppCompatActivity() {
 
         val tvStatus = TextView(this)
         when (status) {
-            "pending" -> { tvStatus.text = "⏳ Chờ duyệt"; tvStatus.setTextColor(0xFFE65100.toInt()); tvStatus.setBackgroundResource(R.drawable.bg_badge_pending) }
+            "pending" -> { tvStatus.text = " Chờ duyệt"; tvStatus.setTextColor(0xFFE65100.toInt()); tvStatus.setBackgroundResource(R.drawable.bg_badge_pending) }
             "approved" -> { tvStatus.text = "✓ Đã duyệt"; tvStatus.setTextColor(0xFFFFFFFF.toInt()); tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF2E7D32.toInt()); cornerRadius = dpToPx(8).toFloat() } }
             "rejected" -> { tvStatus.text = "✗ Từ chối"; tvStatus.setTextColor(0xFFD32F2F.toInt()); tvStatus.setBackgroundResource(R.drawable.bg_badge_pending) }
-            "expired" -> { tvStatus.text = "⏰ Hết hạn"; tvStatus.setTextColor(0xFFFFFFFF.toInt()); tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF757575.toInt()); cornerRadius = dpToPx(8).toFloat() } }
+            "expired" -> { tvStatus.text = " Hết hạn"; tvStatus.setTextColor(0xFFFFFFFF.toInt()); tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF757575.toInt()); cornerRadius = dpToPx(8).toFloat() } }
         }
         tvStatus.textSize = 12f; tvStatus.setTypeface(tvStatus.typeface, android.graphics.Typeface.BOLD)
         tvStatus.setPadding(dpToPx(12), dpToPx(4), dpToPx(12), dpToPx(4))
@@ -288,11 +288,11 @@ class MyPostsActivity : AppCompatActivity() {
 
         if (status == "expired") {
             mainLayout.addView(TextView(this).apply {
-                text = "⚠️ Bài đăng đã ẩn khỏi kết quả tìm kiếm sau 2 tháng. Bài sẽ tự động xóa sau 1 tháng nữa."
+                text = "⚠ Bài đăng đã ẩn khỏi kết quả tìm kiếm sau 2 tháng. Bài sẽ tự động xóa sau 1 tháng nữa."
                 textSize = 12f; setTextColor(0xFF795548.toInt()); setPadding(dpToPx(12), 0, dpToPx(12), dpToPx(8))
             })
             val btnRenew = TextView(this).apply {
-                text = "🔄 Gia hạn bài đăng thêm 2 tháng"; textSize = 14f; setTextColor(0xFFFFFFFF.toInt())
+                text = " Gia hạn bài đăng thêm 2 tháng"; textSize = 14f; setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(typeface, android.graphics.Typeface.BOLD); gravity = android.view.Gravity.CENTER
                 setPadding(dpToPx(16), dpToPx(10), dpToPx(16), dpToPx(10))
                 background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF1976D2.toInt()); cornerRadius = dpToPx(10).toFloat() }

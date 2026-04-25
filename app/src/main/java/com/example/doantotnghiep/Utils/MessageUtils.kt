@@ -73,6 +73,28 @@ object MessageUtils {
         applyDialogWindowStyle(dialog, context, useTransparentBackground = false)
     }
 
+    fun showConfirmDialog(
+        context: Context,
+        title: String,
+        message: String,
+        positiveText: String = "Xác nhận",
+        negativeText: String = "Hủy",
+        onConfirm: () -> Unit
+    ) {
+        val dialog = createStateDialogBuilder(
+            context = context,
+            type = DialogType.INFO,
+            title = title,
+            message = message
+        )
+            .setNegativeButton(negativeText, null)
+            .setPositiveButton(positiveText) { _, _ -> onConfirm.invoke() }
+            .create()
+
+        dialog.show()
+        applyDialogWindowStyle(dialog, context, useTransparentBackground = false)
+    }
+
     fun showLoadingDialog(
         context: Context,
         message: String,

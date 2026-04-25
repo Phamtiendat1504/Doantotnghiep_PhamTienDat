@@ -1,13 +1,11 @@
 package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
+import android.location.Geocoder
 import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -23,12 +21,18 @@ import androidx.gridlayout.widget.GridLayout
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.RoomViewModel
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.GoogleMap
+import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.util.Locale
+import java.util.concurrent.Executors
 
 class RoomDetailActivity : AppCompatActivity() {
 
@@ -48,7 +52,6 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var btnBooking: MaterialButton
     private lateinit var btnOpenMaps: MaterialButton
     private lateinit var tvMapAddress: TextView
-    private lateinit var webViewMap: WebView
     private lateinit var tvBookedCount: TextView
     private lateinit var btnViewAllSlots: TextView
     private lateinit var layoutBookedSummary: LinearLayout
@@ -70,6 +73,12 @@ class RoomDetailActivity : AppCompatActivity() {
     private val uid by lazy { viewModel.getCurrentUserId() }
     private var currentRoomId = ""
     private var currentRoomData: Map<String, Any> = emptyMap()
+    private var googleMap: GoogleMap? = null
+    private var pendingMapAddress: String? = null
+    private var pendingMapLatLng: LatLng? = null
+    private var lastResolvedLatLng: LatLng? = null
+    private val mapFallbackLatLng = LatLng(21.0285, 105.8542)
+    private val geocodeExecutor = Executors.newSingleThreadExecutor()
 
     private lateinit var btnBackContainer: android.view.View
 
@@ -88,6 +97,7 @@ class RoomDetailActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this)[RoomViewModel::class.java]
 
         initViews()
+        setupGoogleMap()
 
         // Xử lý WindowInsets để thanh tiêu đề tràn lên Status Bar nhưng nút Back vẫn ở vùng an toàn
         androidx.core.view.ViewCompat.setOnApplyWindowInsetsListener(btnBackContainer) { v, insets ->
@@ -128,7 +138,6 @@ class RoomDetailActivity : AppCompatActivity() {
         btnBooking = findViewById(R.id.btnBooking)
         btnOpenMaps = findViewById(R.id.btnOpenMaps)
         tvMapAddress = findViewById(R.id.tvMapAddress)
-        webViewMap = findViewById(R.id.webViewMap)
         tvBookedCount = findViewById(R.id.tvBookedCount)
         btnViewAllSlots = findViewById(R.id.btnViewAllSlots)
         layoutBookedSummary = findViewById(R.id.layoutBookedSummary)
@@ -138,6 +147,20 @@ class RoomDetailActivity : AppCompatActivity() {
         tvSpecType = findViewById(R.id.tvSpecType)
         btnReadMore = findViewById(R.id.btnReadMore)
         // btnBackContainer đã được init sớm trong onCreate
+    }
+
+    private fun setupGoogleMap() {
+        val mapFragment = supportFragmentManager.findFragmentById(R.id.mapContainer) as? SupportMapFragment
+            ?: return
+
+        mapFragment.getMapAsync { map ->
+            googleMap = map
+            map.uiSettings.isZoomControlsEnabled = true
+            map.uiSettings.isCompassEnabled = true
+            map.uiSettings.isMapToolbarEnabled = true
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(mapFallbackLatLng, 11f))
+            pendingMapAddress?.let { updateMapMarker(it, pendingMapLatLng) }
+        }
     }
 
     private fun observeViewModel() {
@@ -260,7 +283,9 @@ class RoomDetailActivity : AppCompatActivity() {
         setupRoomInfo(data)
         setupAmenities(data)
         setupOwnerInfo(data)
-        setupMapSection(address, ward, district)
+        val latitude = (data["latitude"] as? Number)?.toDouble()
+        val longitude = (data["longitude"] as? Number)?.toDouble()
+        setupMapSection(address, ward, district, latitude, longitude)
 
         val status = data["status"] as? String ?: "pending"
         // Lấy chủ sở hữu bài đăng
@@ -309,116 +334,108 @@ class RoomDetailActivity : AppCompatActivity() {
     }
 
     // ─── GOOGLE MAPS ───────────────────────────────────────────────────────────
-    private fun setupMapSection(address: String, ward: String, district: String) {
+    private fun setupMapSection(
+        address: String,
+        ward: String,
+        district: String,
+        latitude: Double?,
+        longitude: Double?
+    ) {
         val fullAddress = buildString {
             if (address.isNotEmpty()) append("$address, ")
             if (ward.isNotEmpty()) append("$ward, ")
             if (district.isNotEmpty()) append("$district, ")
-            append("Hà Nội")
+            append("Ha Noi")
         }
 
-        // Hiển thị địa chỉ text
         tvMapAddress.text = fullAddress
-
-        // Nhúng Google Maps vào WebView (không cần API key)
-        with(webViewMap.settings) {
-            javaScriptEnabled = true
-            loadWithOverviewMode = true
-            useWideViewPort = true
-            cacheMode = WebSettings.LOAD_NO_CACHE
-            domStorageEnabled = true
+        pendingMapAddress = fullAddress
+        pendingMapLatLng = if (latitude != null && longitude != null) {
+            LatLng(latitude, longitude)
+        } else {
+            null
         }
-        webViewMap.webViewClient = object : WebViewClient() {
-            override fun shouldOverrideUrlLoading(
-                view: WebView?,
-                request: android.webkit.WebResourceRequest?
-            ): Boolean {
-                val url = request?.url?.toString() ?: return false
-                
-                // Nếu là link web bình thường thì cho chạy trong WebView
-                if (url.startsWith("http://") || url.startsWith("https://")) {
-                    // Mở link Google Maps sang trình duyệt/app ngoài cho tiện
-                    if (url.contains("maps.google.com")) {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
-                        return true
-                    }
-                    return false 
-                }
+        updateMapMarker(fullAddress, pendingMapLatLng)
 
-                // Nếu là các link gọi app hệ thống (vd: intent://, geo://)
-                try {
-                    val intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME)
-                    if (intent.resolveActivity(packageManager) != null) {
-                        startActivity(intent)
-                        return true
-                    }
-                    // Nếu máy không có app, thử tìm link fallback (mở trình duyệt)
-                    val fallbackUrl = intent.getStringExtra("browser_fallback_url")
-                    if (fallbackUrl != null) {
-                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl)))
-                        return true
-                    }
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-                
-                // Trả về true để báo là app đã tự xử lý, đừng văng lỗi "Không khả dụng"
-                return true
-            }
-        }
-
-        // URL nhúng bản đồ — tìm kiếm theo địa chỉ, không cần API key
-        val encodedAddr = Uri.encode(fullAddress)
-        val embedUrl = "https://maps.google.com/maps?q=$encodedAddr&output=embed&hl=vi&z=15"
-        
-        // Bọc trong thẻ HTML tiêu chuẩn chứa iframe để vượt lỗi của Google Maps
-        val iframeHtml = """
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-                <style>
-                    body { margin: 0; padding: 0; overflow: hidden; }
-                    iframe { width: 100%; height: 100vh; border: none; }
-                </style>
-            </head>
-            <body>
-                <iframe src="$embedUrl" allowfullscreen loading="lazy"></iframe>
-            </body>
-            </html>
-        """.trimIndent()
-
-        webViewMap.loadDataWithBaseURL(null, iframeHtml, "text/html", "utf-8", null)
-
-        // Nút mở full Google Maps app
         btnOpenMaps.setOnClickListener {
             openGoogleMaps(fullAddress)
         }
     }
 
+    private fun updateMapMarker(fullAddress: String, directLatLng: LatLng? = null) {
+        val map = googleMap ?: return
+        if (directLatLng != null) {
+            map.clear()
+            map.addMarker(
+                MarkerOptions()
+                    .position(directLatLng)
+                    .title(fullAddress)
+            )
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(directLatLng, 15f))
+            lastResolvedLatLng = directLatLng
+            return
+        }
+
+        geocodeExecutor.execute {
+            var resolvedLatLng: LatLng? = null
+            try {
+                val geocoder = Geocoder(this, Locale("vi", "VN"))
+                val result = geocoder.getFromLocationName(fullAddress, 1)
+                if (!result.isNullOrEmpty()) {
+                    val first = result.first()
+                    resolvedLatLng = LatLng(first.latitude, first.longitude)
+                }
+            } catch (_: Exception) {
+            }
+
+            val target = resolvedLatLng ?: mapFallbackLatLng
+            runOnUiThread {
+                if (isFinishing || isDestroyed) return@runOnUiThread
+                map.clear()
+                map.addMarker(
+                    MarkerOptions()
+                        .position(target)
+                        .title(if (resolvedLatLng != null) fullAddress else "Vi tri gan dung")
+                )
+                map.animateCamera(CameraUpdateFactory.newLatLngZoom(target, if (resolvedLatLng != null) 15f else 11f))
+                lastResolvedLatLng = resolvedLatLng
+            }
+        }
+    }
+
     private fun openGoogleMaps(address: String) {
-        // Thử mở app Google Maps trước
-        val geoUri = Uri.parse("geo:0,0?q=${Uri.encode(address)}")
+        val resolvedLatLng = lastResolvedLatLng ?: pendingMapLatLng
+        val geoUri = if (resolvedLatLng != null) {
+            Uri.parse("geo:${resolvedLatLng.latitude},${resolvedLatLng.longitude}?q=${Uri.encode(address)}")
+        } else {
+            Uri.parse("geo:0,0?q=${Uri.encode(address)}")
+        }
         val mapsIntent = Intent(Intent.ACTION_VIEW, geoUri).apply {
             setPackage("com.google.android.apps.maps")
         }
         if (mapsIntent.resolveActivity(packageManager) != null) {
             startActivity(mapsIntent)
         } else {
-            // Fallback: mở bằng trình duyệt nếu chưa cài Google Maps
-            val browserUri = Uri.parse(
-                "https://www.google.com/maps/search/?api=1&query=${Uri.encode(address)}"
-            )
+            val query = if (resolvedLatLng != null) {
+                "${resolvedLatLng.latitude},${resolvedLatLng.longitude}"
+            } else {
+                Uri.encode(address)
+            }
+            val browserUri = Uri.parse("https://www.google.com/maps/search/?api=1&query=$query")
             startActivity(Intent(Intent.ACTION_VIEW, browserUri))
         }
     }
-    // ──────────────────────────────────────────────────────────────────────────
 
     override fun onResume() {
         super.onResume()
         if (currentRoomId.isNotEmpty() && uid != null) {
             viewModel.checkActiveBooking(uid!!, currentRoomId)
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        geocodeExecutor.shutdownNow()
     }
 
     private fun promptLogin() {
@@ -915,3 +932,4 @@ class RoomDetailActivity : AppCompatActivity() {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
+

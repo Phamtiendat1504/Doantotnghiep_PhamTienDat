@@ -1,6 +1,5 @@
 package com.example.doantotnghiep.View.Auth
 
-import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,15 +8,20 @@ import android.widget.EditText
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
-import androidx.appcompat.app.AlertDialog
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.VerifyLandlordViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 
 class VerifyLandlordActivity : AppCompatActivity() {
+
+    private enum class CaptureTarget { FRONT, BACK }
 
     private lateinit var edtFullName: EditText
     private lateinit var edtCccdNumber: EditText
@@ -39,19 +43,23 @@ class VerifyLandlordActivity : AppCompatActivity() {
 
     private var frontUri: Uri? = null
     private var backUri: Uri? = null
-    private var isPickingFront = true
+    private var captureTarget: CaptureTarget = CaptureTarget.FRONT
 
-    private val pickImageLauncher = registerForActivityResult(
+    private val cccdCameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data ?: return@registerForActivityResult
-            if (isPickingFront) {
+        if (result.resultCode != RESULT_OK) return@registerForActivityResult
+        val uriString = result.data?.getStringExtra(CccdCameraActivity.EXTRA_OUTPUT_URI)
+        val uri = uriString?.let(Uri::parse) ?: return@registerForActivityResult
+
+        when (captureTarget) {
+            CaptureTarget.FRONT -> {
                 frontUri = uri
                 imgFront.setImageURI(uri)
                 imgFront.visibility = View.VISIBLE
                 layoutFrontPlaceholder.visibility = View.GONE
-            } else {
+            }
+            CaptureTarget.BACK -> {
                 backUri = uri
                 imgBack.setImageURI(uri)
                 imgBack.visibility = View.VISIBLE
@@ -67,61 +75,88 @@ class VerifyLandlordActivity : AppCompatActivity() {
         initViews()
         viewModel = ViewModelProvider(this)[VerifyLandlordViewModel::class.java]
 
-        // Kiểm tra trạng thái hiện tại ngay khi mở màn hình
-        // (lấy thẳng từ Server để tránh đọc cache cũ)
         checkCurrentStatusBeforeShow()
     }
 
     private fun checkCurrentStatusBeforeShow() {
-        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
-        if (uid == null) { finish(); return }
-        val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid == null) {
+            finish()
+            return
+        }
+        val db = FirebaseFirestore.getInstance()
 
-        // Bước 1: Kiểm tra user document (isVerified)
         db.collection("users").document(uid)
-            .get(com.google.firebase.firestore.Source.SERVER)
+            .get(Source.SERVER)
             .addOnSuccessListener { userDoc ->
                 val isVerified = userDoc.getBoolean("isVerified") ?: false
+                val postingUnlockAt = userDoc.getLong("postingUnlockAt") ?: 0L
+                val now = System.currentTimeMillis()
                 if (isVerified) {
-                    // Đã được xác minh rồi, không cho nộp lại
-                    MessageUtils.showSuccessDialog(
-                        this,
-                        "Đã xác minh",
-                        "Tài khoản của bạn đã được xác minh. Bạn có thể đăng tin cho thuê ngay!"
-                    ) { finish() }
+                    if (postingUnlockAt > now) {
+                        val totalMinutes = ((postingUnlockAt - now).coerceAtLeast(0L)) / 60_000L
+                        val hours = totalMinutes / 60L
+                        val minutes = totalMinutes % 60L
+                        val formatter = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale("vi", "VN"))
+                        val unlockTime = formatter.format(java.util.Date(postingUnlockAt))
+                        MessageUtils.showInfoDialog(
+                            this,
+                            "Đã được cấp quyền",
+                            "Quyền đăng bài của bạn đã được cấp, nhưng cần chờ thêm 24 giờ " +
+                                "kể từ lúc admin duyệt.\n\n" +
+                                "Còn lại: ${hours} giờ ${minutes} phút\n" +
+                                "Thời điểm mở đăng bài: $unlockTime"
+                        ) { finish() }
+                    } else {
+                        MessageUtils.showSuccessDialog(
+                            this,
+                            "Đã xác minh",
+                            "Tài khoản của bạn đã được xác minh. Bạn có thể đăng tin cho thuê ngay!"
+                        ) { finish() }
+                    }
                     return@addOnSuccessListener
                 }
 
-                // Bước 2: Kiểm tra document verifications — nếu đang "pending" thì không cho nộp lại
                 db.collection("verifications").document(uid)
-                    .get(com.google.firebase.firestore.Source.SERVER)
+                    .get(Source.SERVER)
                     .addOnSuccessListener { verifyDoc ->
                         val status = if (verifyDoc.exists()) verifyDoc.getString("status") else null
-                        if (status == "pending") {
+                        val waitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
+                        if (status in waitingStatuses) {
                             MessageUtils.showInfoDialog(
                                 this,
-                                "Đang chờ phê duyệt",
-                                "Hồ sơ của bạn đã được gửi và đang chờ Admin phê duyệt. Vui lòng quay lại sau 24-48h làm việc."
+                                "Đang xử lý hồ sơ",
+                                "Hồ sơ của bạn đã được gửi và đang được hệ thống xử lý. Nếu cần can thiệp thủ công, admin sẽ phản hồi trong 24 giờ."
                             ) { finish() }
                         } else {
-                            // Chưa nộp hoặc đã bị từ chối → cho phép nộp (lại)
                             setupForm()
                         }
                     }
-                    .addOnFailureListener { setupForm() } // Lỗi mạng → vẫn cho hiển form
+                    .addOnFailureListener {
+                        MessageUtils.showInfoDialog(
+                            this,
+                            "Không thể kiểm tra hồ sơ",
+                            "Không thể tải trạng thái hồ sơ xác minh. Vui lòng thử lại khi kết nối ổn định."
+                        ) { finish() }
+                    }
             }
-            .addOnFailureListener { setupForm() } // Lỗi mạng → vẫn cho hiển form
+            .addOnFailureListener {
+                MessageUtils.showInfoDialog(
+                    this,
+                    "Không thể kiểm tra trạng thái",
+                    "Không thể tải trạng thái xác minh từ máy chủ. Vui lòng kiểm tra mạng và thử lại."
+                ) { finish() }
+            }
     }
 
     private fun setupForm() {
+        lockReadonlyIdentityFields()
+
         viewModel.ownerInfo.observe(this) { user ->
             edtFullName.setText(user.fullName)
             edtPhone.setText(user.phone)
             edtEmail.setText(user.email)
-            // Tự điền địa chỉ nếu người dùng đã cập nhật trong profile
-            if (user.address.isNotEmpty()) {
-                edtAddress.setText(user.address)
-            }
+            edtAddress.setText(user.address)
         }
 
         viewModel.isLoading.observe(this) { isLoading ->
@@ -138,13 +173,26 @@ class VerifyLandlordActivity : AppCompatActivity() {
             btnSubmitVerify.isEnabled = !isLoading
         }
 
-        viewModel.submitResult.observe(this) { success ->
-            if (success == true) {
+        viewModel.submitResult.observe(this) { result ->
+            if (result == null) return@observe
+            if (result.escalatedToAdmin) {
+                MessageUtils.showInfoDialog(
+                    this,
+                    "Đã chuyển đến admin",
+                    result.message
+                ) {
+                    viewModel.clearSubmitResult()
+                    finish()
+                }
+            } else {
                 MessageUtils.showSuccessDialog(
                     this,
                     "Gửi yêu cầu thành công",
-                    "Thông tin xác minh của bạn đã được gửi. Vui lòng chờ Admin phê duyệt để có quyền đăng tin."
-                ) { finish() }
+                    result.message
+                ) {
+                    viewModel.clearSubmitResult()
+                    finish()
+                }
             }
         }
 
@@ -156,10 +204,36 @@ class VerifyLandlordActivity : AppCompatActivity() {
 
         viewModel.loadUserInfo()
 
-        frameFront.setOnClickListener { isPickingFront = true; pickImage() }
-        frameBack.setOnClickListener { isPickingFront = false; pickImage() }
+        frameFront.setOnClickListener { openCamera(CaptureTarget.FRONT) }
+        frameBack.setOnClickListener { openCamera(CaptureTarget.BACK) }
         btnSubmitVerify.setOnClickListener { submitVerification() }
         btnBack.setOnClickListener { finish() }
+    }
+
+    private fun lockReadonlyIdentityFields() {
+        edtFullName.isEnabled = false
+        edtPhone.isEnabled = false
+        edtEmail.isEnabled = false
+        edtFullName.isFocusable = false
+        edtPhone.isFocusable = false
+        edtEmail.isFocusable = false
+    }
+
+    private fun openCamera(target: CaptureTarget) {
+        captureTarget = target
+        launchCameraCapture(target)
+    }
+
+    private fun launchCameraCapture(target: CaptureTarget) {
+        captureTarget = target
+        val side = if (target == CaptureTarget.FRONT) {
+            CccdCameraActivity.SIDE_FRONT
+        } else {
+            CccdCameraActivity.SIDE_BACK
+        }
+        val intent = Intent(this, CccdCameraActivity::class.java)
+            .putExtra(CccdCameraActivity.EXTRA_TARGET_SIDE, side)
+        cccdCameraLauncher.launch(intent)
     }
 
     private fun initViews() {
@@ -179,30 +253,45 @@ class VerifyLandlordActivity : AppCompatActivity() {
         btnBack = findViewById(R.id.btnBack)
     }
 
-    private fun pickImage() {
-        val intent = Intent(Intent.ACTION_PICK).apply { type = "image/*" }
-        pickImageLauncher.launch(intent)
-    }
-
     private fun submitVerification() {
         val cccd = edtCccdNumber.text.toString().trim()
         val address = edtAddress.text.toString().trim()
         val fullName = edtFullName.text.toString().trim()
         val phone = edtPhone.text.toString().trim()
+        val email = edtEmail.text.toString().trim()
+        val front = frontUri
+        val back = backUri
 
         if (cccd.length != 12) {
-            MessageUtils.showInfoDialog(this, "Số CCCD không hợp lệ", "Vui lòng nhập đúng 12 số CCCD của bạn.")
+            MessageUtils.showInfoDialog(this, "Số CCCD không hợp lệ", "Vui lòng nhập đúng 12 số CCCD.")
             return
         }
-        if (address.isEmpty() || frontUri == null || backUri == null) {
-            MessageUtils.showInfoDialog(this, "Thông tin chưa đủ", "Vui lòng nhập địa chỉ và tải đủ 2 mặt ảnh CCCD.")
+        if (address.isEmpty() || front == null || back == null) {
+            MessageUtils.showInfoDialog(
+                this,
+                "Thông tin chưa đủ",
+                "Vui lòng nhập địa chỉ và chụp đủ 2 mặt CCCD."
+            )
             return
         }
         if (!cbCommit.isChecked) {
-            MessageUtils.showInfoDialog(this, "Chưa đồng ý quy định", "Vui lòng đọc và tích vào ô đồng ý với các quy định đăng tin.")
+            MessageUtils.showInfoDialog(
+                this,
+                "Chưa đồng ý quy định",
+                "Vui lòng đọc và tích vào ô đồng ý với các quy định đăng tin."
+            )
             return
         }
 
-        viewModel.submitVerification(fullName, cccd, phone, address, frontUri!!, backUri!!)
+        viewModel.submitVerification(
+            context = this,
+            fullName = fullName,
+            email = email,
+            cccd = cccd,
+            phone = phone,
+            address = address,
+            frontUri = front,
+            backUri = back
+        )
     }
 }

@@ -274,7 +274,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bấm để chọn ảnh mặt trước"
+                            android:text="Bấm để chụp ảnh mặt trước"
                             android:textSize="13sp"
                             android:textColor="@color/text_hint"
                             android:layout_marginTop="8dp" />
@@ -323,7 +323,7 @@
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bấm để chọn ảnh mặt sau"
+                            android:text="Bấm để chụp ảnh mặt sau"
                             android:textSize="13sp"
                             android:textColor="@color/text_hint"
                             android:layout_marginTop="8dp" />

@@ -444,8 +444,9 @@
                         app:cardCornerRadius="14dp"
                         app:cardElevation="0dp">
 
-                        <WebView
-                            android:id="@+id/webViewMap"
+                        <androidx.fragment.app.FragmentContainerView
+                            android:id="@+id/mapContainer"
+                            android:name="com.google.android.gms.maps.SupportMapFragment"
                             android:layout_width="match_parent"
                             android:layout_height="match_parent" />
                     </androidx.cardview.widget.CardView>

@@ -15,23 +15,27 @@ object PresenceManager {
 
     private val db = FirebaseFirestore.getInstance()
 
-    fun goOnline() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        db.collection("users").document(uid).update(
-            mapOf(
-                "isOnline" to true,
-                "lastSeen"  to System.currentTimeMillis()
-            )
-        )
+    fun goOnline() = updatePresence(isOnline = true)
+
+    fun goOffline() = updatePresence(isOnline = false)
+
+    fun goOfflineAndThen(onComplete: () -> Unit) {
+        updatePresence(isOnline = false, onComplete = onComplete)
     }
 
-    fun goOffline() {
-        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+    private fun updatePresence(isOnline: Boolean, onComplete: (() -> Unit)? = null) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            onComplete?.invoke()
+            return
+        }
         db.collection("users").document(uid).update(
             mapOf(
-                "isOnline" to false,
+                "isOnline" to isOnline,
                 "lastSeen"  to System.currentTimeMillis()
             )
-        )
+        ).addOnCompleteListener {
+            onComplete?.invoke()
+        }
     }
 }

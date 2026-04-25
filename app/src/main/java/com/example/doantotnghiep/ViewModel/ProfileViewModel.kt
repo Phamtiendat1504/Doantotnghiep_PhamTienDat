@@ -56,8 +56,11 @@ class ProfileViewModel : ViewModel() {
 
     fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
 
-    fun logOut() {
-        FirebaseAuth.getInstance().signOut()
+    fun logOut(onDone: (() -> Unit)? = null) {
+        com.example.doantotnghiep.Utils.PresenceManager.goOfflineAndThen {
+            FirebaseAuth.getInstance().signOut()
+            onDone?.invoke()
+        }
     }
 
     fun isLoggedIn(): Boolean = FirebaseAuth.getInstance().currentUser != null

@@ -1,17 +1,26 @@
 package com.example.doantotnghiep.repository
 
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import com.example.doantotnghiep.Model.User
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 
 class AuthRepository {
 
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
+    private val mainHandler = Handler(Looper.getMainLooper())
+    private val httpClient by lazy { OkHttpClient() }
 
     fun register(fullName: String, email: String, phone: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         // Bước 1: Kiểm tra số điện thoại đã được đăng ký chưa (Firestore)
@@ -28,23 +37,77 @@ class AuthRepository {
                 // Bước 2: Phone chưa trùng → tiến hành tạo tài khoản Firebase Auth
                 auth.createUserWithEmailAndPassword(email, password)
                     .addOnSuccessListener { result ->
-                        val uid = result.user?.uid ?: ""
-                        val user = User(
-                            uid = uid,
-                            fullName = fullName,
-                            email = email,
-                            phone = phone,
-                            role = "user",
-                            createdAt = System.currentTimeMillis()
+                        val firebaseUser = result.user ?: auth.currentUser
+                        val uid = firebaseUser?.uid
+                        if (uid.isNullOrBlank()) {
+                            onFailure("Đăng ký thất bại: không lấy được UID tài khoản")
+                            return@addOnSuccessListener
+                        }
+                        val createdAt = System.currentTimeMillis()
+                        // Ghi map tường minh để chắc chắn đúng tên field theo Firestore Rules.
+                        val userData = hashMapOf<String, Any>(
+                            "uid" to uid,
+                            "fullName" to fullName,
+                            "email" to email,
+                            "phone" to phone,
+                            "address" to "",
+                            "birthday" to "",
+                            "gender" to "",
+                            "occupation" to "",
+                            "avatarUrl" to "",
+                            "role" to "user",
+                            "isVerified" to false,
+                            "hasAcceptedRules" to false,
+                            "isLocked" to false,
+                            "lockReason" to "",
+                            "lockUntil" to 0L,
+                            "postingUnlockAt" to 0L,
+                            "verifiedAt" to 0L,
+                            "createdAt" to createdAt,
+                            "purchasedSlots" to 0L
                         )
-                        db.collection("users").document(uid).set(user)
-                            .addOnSuccessListener { onSuccess() }
-                            .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+                        // Làm mới token trước khi ghi Firestore để giảm lỗi race-condition.
+                        firebaseUser.getIdToken(true)
+                            .addOnSuccessListener {
+                                saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+                            }
+                            .addOnFailureListener {
+                                saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+                            }
                     }
                     .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
             }
             .addOnFailureListener { e ->
                 onFailure("Lỗi kiểm tra số điện thoại: ${e.message}")
+            }
+    }
+
+    private fun saveUserProfileWithRetry(
+        uid: String,
+        userData: Map<String, Any>,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        db.collection("users").document(uid).set(userData)
+            .addOnSuccessListener { onSuccess() }
+            .addOnFailureListener { e ->
+                val rawErr = e.message ?: ""
+                if (rawErr.contains("PERMISSION_DENIED", ignoreCase = true)) {
+                    auth.currentUser?.getIdToken(true)
+                        ?.addOnSuccessListener {
+                            db.collection("users").document(uid).set(userData)
+                                .addOnSuccessListener { onSuccess() }
+                                .addOnFailureListener { e2 ->
+                                    onFailure("Đăng ký thất bại: ${e2.message}")
+                                }
+                        }
+                        ?.addOnFailureListener {
+                            onFailure("Đăng ký thất bại: $rawErr")
+                        }
+                        ?: onFailure("Đăng ký thất bại: $rawErr")
+                } else {
+                    onFailure("Đăng ký thất bại: $rawErr")
+                }
             }
     }
 
@@ -169,7 +232,10 @@ class AuthRepository {
                     isLocked      = doc.getBoolean("isLocked") ?: false,
                     lockReason    = doc.getString("lockReason") ?: "",
                     lockUntil     = doc.getLong("lockUntil") ?: 0L,
-                    createdAt     = doc.getLong("createdAt") ?: 0L
+                    postingUnlockAt = doc.getLong("postingUnlockAt") ?: 0L,
+                    verifiedAt    = doc.getLong("verifiedAt") ?: 0L,
+                    createdAt     = doc.getLong("createdAt") ?: 0L,
+                    purchasedSlots = (doc.getLong("purchasedSlots") ?: 0L).toInt()
                 )
                 onSuccess(user)
             }.addOnFailureListener {
@@ -193,7 +259,10 @@ class AuthRepository {
                             isLocked      = doc.getBoolean("isLocked") ?: false,
                             lockReason    = doc.getString("lockReason") ?: "",
                             lockUntil     = doc.getLong("lockUntil") ?: 0L,
-                            createdAt     = doc.getLong("createdAt") ?: 0L
+                            postingUnlockAt = doc.getLong("postingUnlockAt") ?: 0L,
+                            verifiedAt    = doc.getLong("verifiedAt") ?: 0L,
+                            createdAt     = doc.getLong("createdAt") ?: 0L,
+                            purchasedSlots = (doc.getLong("purchasedSlots") ?: 0L).toInt()
                         )
                         onSuccess(user)
                     }
@@ -220,7 +289,10 @@ class AuthRepository {
                 isLocked      = doc.getBoolean("isLocked") ?: false,
                 lockReason    = doc.getString("lockReason") ?: "",
                 lockUntil     = doc.getLong("lockUntil") ?: 0L,
-                createdAt     = doc.getLong("createdAt") ?: 0L
+                postingUnlockAt = doc.getLong("postingUnlockAt") ?: 0L,
+                verifiedAt    = doc.getLong("verifiedAt") ?: 0L,
+                createdAt     = doc.getLong("createdAt") ?: 0L,
+                purchasedSlots = (doc.getLong("purchasedSlots") ?: 0L).toInt()
             )
             onSuccess(user)
         }.addOnFailureListener { onFailure(it.message ?: "Lỗi tải dữ liệu") }
@@ -406,5 +478,79 @@ class AuthRepository {
                 onSuccess()
             }.addOnFailureListener { onFailure(it.message ?: "Lỗi gửi email xác nhận") }
         }.addOnFailureListener { onFailure("Mật khẩu không chính xác") }
+    }
+
+    fun requestAccountDeletion(
+        functionUrl: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val user = auth.currentUser ?: run {
+            onFailure("Bạn chưa đăng nhập.")
+            return
+        }
+
+        if (functionUrl.isBlank()) {
+            onFailure("Thiếu URL Cloud Function xóa tài khoản.")
+            return
+        }
+
+        user.getIdToken(true)
+            .addOnSuccessListener { tokenResult ->
+                val idToken = tokenResult.token
+                if (idToken.isNullOrBlank()) {
+                    onFailure("Không lấy được token xác thực.")
+                    return@addOnSuccessListener
+                }
+
+                val payload = JSONObject().apply {
+                    put("uid", user.uid)
+                    put("requestedAt", System.currentTimeMillis())
+                }
+
+                val requestBody = payload.toString()
+                    .toRequestBody("application/json; charset=utf-8".toMediaType())
+
+                val request = Request.Builder()
+                    .url(functionUrl)
+                    .post(requestBody)
+                    .addHeader("Authorization", "Bearer $idToken")
+                    .build()
+
+                httpClient.newCall(request).enqueue(object : okhttp3.Callback {
+                    override fun onFailure(call: okhttp3.Call, e: java.io.IOException) {
+                        postFailure(onFailure, "Không thể kết nối máy chủ: ${e.message ?: "Lỗi mạng"}")
+                    }
+
+                    override fun onResponse(call: okhttp3.Call, response: okhttp3.Response) {
+                        response.use { res ->
+                            val rawBody = res.body?.string().orEmpty()
+                            if (!res.isSuccessful) {
+                                postFailure(onFailure, extractServerError(rawBody, res.code))
+                                return
+                            }
+                            mainHandler.post { onSuccess.invoke() }
+                        }
+                    }
+                })
+            }
+            .addOnFailureListener { e ->
+                onFailure("Không thể xác thực yêu cầu hủy tài khoản: ${e.message ?: "Lỗi"}")
+            }
+    }
+
+    private fun postFailure(onFailure: (String) -> Unit, message: String) {
+        mainHandler.post { onFailure.invoke(message) }
+    }
+
+    private fun extractServerError(rawBody: String, code: Int): String {
+        return try {
+            if (rawBody.isBlank()) return "Máy chủ từ chối yêu cầu (HTTP $code)."
+            val obj = JSONObject(rawBody)
+            val message = obj.optString("error", obj.optString("message", "")).trim()
+            if (message.isNotEmpty()) message else "Máy chủ từ chối yêu cầu (HTTP $code)."
+        } catch (_: Exception) {
+            "Máy chủ từ chối yêu cầu (HTTP $code)."
+        }
     }
 }

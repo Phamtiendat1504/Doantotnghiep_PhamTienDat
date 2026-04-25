@@ -8,7 +8,6 @@ import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.ForgotPasswordViewModel
@@ -26,8 +25,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var btnBack: ImageView
     private lateinit var tvGoToLogin: TextView
-    private lateinit var cardSuccess: CardView
-    private lateinit var tvSuccessMessage: TextView
 
     private val viewModel: ForgotPasswordViewModel by viewModels()
 
@@ -49,8 +46,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
         progressBar   = findViewById(R.id.progressBar)
         btnBack       = findViewById(R.id.btnBack)
         tvGoToLogin   = findViewById(R.id.tvGoToLogin)
-        cardSuccess   = findViewById(R.id.cardSuccess)
-        tvSuccessMessage = findViewById(R.id.tvSuccessMessage)
     }
 
     private fun setupListeners() {
@@ -104,15 +99,15 @@ class ForgotPasswordActivity : AppCompatActivity() {
 
         // Gửi email thành công
         viewModel.sendEmailSuccess.observe(this) { email ->
-            // Hiển thị card thành công
-            cardSuccess.visibility = View.VISIBLE
-            tvSuccessMessage.text =
+            if (email.isNullOrEmpty()) return@observe
+            viewModel.clearSendEmailSuccess()
+            MessageUtils.showSuccessDialog(
+                this,
+                "Liên kết đã gửi",
                 "Liên kết đặt lại mật khẩu đã được gửi đến\n$email\nVui lòng kiểm tra hộp thư của bạn."
-
-            // Vô hiệu hoá form để tránh gửi lại nhiều lần
-            btnSendEmail.isEnabled = false
-            edtEmail.isEnabled = false
-            edtPhone.isEnabled = false
+            ) {
+                finish()
+            }
         }
     }
 

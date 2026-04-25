@@ -10,7 +10,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
@@ -33,6 +32,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnSavedPosts: LinearLayout
     private lateinit var btnAppointments: LinearLayout
     private lateinit var btnMessages: LinearLayout
+    private lateinit var btnSettings: LinearLayout
     private lateinit var tvAppointmentBadge: TextView
     private lateinit var tvMessagesBadge: TextView
     private lateinit var btnLogout: LinearLayout
@@ -51,9 +51,11 @@ class ProfileFragment : Fragment() {
     private var avatarLoadingDialog: AlertDialog? = null
 
     private val pickImageLauncher = registerForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let { viewModel.uploadAvatar(it) }
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            result.data?.data?.let { viewModel.uploadAvatar(it) }
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
@@ -249,8 +251,6 @@ class ProfileFragment : Fragment() {
         val normalizedStatus = verificationStatus?.trim()?.lowercase(Locale.ROOT)
         val isVerifiedAccount =
             (isVerified == true) ||
-            normalizedRole == "landlord" ||
-            normalizedRole == "owner" ||
             normalizedStatus == "approved" ||
             normalizedStatus == "verified"
 
@@ -296,6 +296,7 @@ class ProfileFragment : Fragment() {
         btnSavedPosts = view.findViewById(R.id.btnSavedPosts)
         btnAppointments = view.findViewById(R.id.btnAppointments)
         btnMessages = view.findViewById(R.id.btnMessages)
+        btnSettings = view.findViewById(R.id.btnSettings)
         tvAppointmentBadge = view.findViewById(R.id.tvAppointmentBadge)
         tvMessagesBadge = view.findViewById(R.id.tvMessagesBadge)
         btnLogout = view.findViewById(R.id.btnLogout)
@@ -317,7 +318,7 @@ class ProfileFragment : Fragment() {
             }
         }
         btnChangeAvatar.setOnClickListener {
-            pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+            openLocalImagePicker()
         }
         btnPersonalInfo.setOnClickListener { startActivity(Intent(requireContext(), PersonalInfoActivity::class.java)) }
         btnChangePassword.setOnClickListener { startActivity(Intent(requireContext(), ChangePasswordActivity::class.java)) }
@@ -338,16 +339,22 @@ class ProfileFragment : Fragment() {
             tvMessagesBadge.visibility = View.GONE
             startActivity(Intent(requireContext(), ConversationsActivity::class.java))
         }
+        btnSettings.setOnClickListener {
+            startActivity(Intent(requireContext(), SettingsActivity::class.java))
+        }
         btnLogout.setOnClickListener {
             androidx.appcompat.app.AlertDialog.Builder(requireContext())
                 .setTitle("\u0110\u0103ng xu\u1ea5t")
                 .setMessage("B\u1ea1n c\u00f3 ch\u1eafc ch\u1eafn mu\u1ed1n \u0111\u0103ng xu\u1ea5t?")
                 .setPositiveButton("\u0110\u0103ng xu\u1ea5t") { _, _ ->
-                    viewModel.logOut()
-                    val intent = Intent(requireContext(), com.example.doantotnghiep.MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                    viewModel.logOut {
+                        if (!isAdded) return@logOut
+                        val intent = Intent(requireContext(), LoginActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                        }
+                        startActivity(intent)
+                        requireActivity().finish()
                     }
-                    startActivity(intent)
                 }
                 .setNegativeButton("H\u1ee7y", null).show()
         }
@@ -374,6 +381,15 @@ class ProfileFragment : Fragment() {
     override fun onDestroyView() {
         dismissAvatarLoadingDialog()
         super.onDestroyView()
+    }
+
+    private fun openLocalImagePicker() {
+        val intent = Intent(Intent.ACTION_GET_CONTENT).apply {
+            type = "image/*"
+            addCategory(Intent.CATEGORY_OPENABLE)
+            putExtra(Intent.EXTRA_LOCAL_ONLY, true)
+        }
+        pickImageLauncher.launch(Intent.createChooser(intent, "Chọn ảnh từ thư viện"))
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

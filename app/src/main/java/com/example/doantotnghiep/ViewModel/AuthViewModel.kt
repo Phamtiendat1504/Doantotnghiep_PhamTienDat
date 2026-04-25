@@ -13,7 +13,9 @@ class AuthViewModel : ViewModel() {
     fun isLoggedIn(): Boolean = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null
     fun getCurrentUserEmail(): String = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email ?: ""
     fun logOut() {
-        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+        com.example.doantotnghiep.Utils.PresenceManager.goOfflineAndThen {
+            com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+        }
     }
 
     private val _isLoading = MutableLiveData<Boolean>()
