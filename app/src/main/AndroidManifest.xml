@@ -87,6 +87,7 @@
         <activity
             android:name=".View.Auth.SavedPostsActivity"
             android:exported="false" />
+        <activity android:name=".View.Auth.PaymentHistoryActivity" android:exported="false" />
         <activity android:name=".View.Auth.BookingActivity" android:exported="false" />
         <activity android:name=".View.Auth.MyAppointmentsActivity" android:exported="false" />
         <activity

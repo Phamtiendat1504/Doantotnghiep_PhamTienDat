@@ -23,8 +23,12 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import android.content.Intent
+import android.os.Handler
+import android.os.Looper
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.MyPostsViewModel
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Source
 
 class MyPostsActivity : AppCompatActivity() {
 
@@ -40,6 +44,19 @@ class MyPostsActivity : AppCompatActivity() {
     private lateinit var viewModel: MyPostsViewModel
     private var allPosts = listOf<DocumentSnapshot>()
     private var currentFilter = "all"
+
+    private data class FeaturedPackage(val label: String, val code: String, val days: Int, val price: Int)
+
+    private val featuredPackages = listOf(
+        FeaturedPackage("Nổi bật 3 ngày", "FT03", 3, 10_000),
+        FeaturedPackage("Nổi bật 7 ngày", "FT07", 7, 20_000),
+        FeaturedPackage("Nổi bật 15 ngày", "FT15", 15, 40_000)
+    )
+
+    private val bankId = "mbbank"
+    private val accountNo = "0889740127"
+    private val accountName = "PHAM TIEN DAT"
+    private val bankDisplay = "MB Bank"
 
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
@@ -151,7 +168,10 @@ class MyPostsActivity : AppCompatActivity() {
                 status = doc.getString("status") ?: "pending",
                 rejectReason = doc.getString("rejectReason") ?: "",
                 imageUrls = doc.get("imageUrls") as? List<String> ?: listOf(),
-                createdAt = doc.getLong("createdAt") ?: 0
+                createdAt = doc.getLong("createdAt") ?: 0,
+                isFeatured = doc.getBoolean("isFeatured") == true,
+                featuredUntil = doc.getLong("featuredUntil") ?: 0,
+                featuredRequestStatus = doc.getString("featuredRequestStatus") ?: ""
             ))
         }
     }
@@ -159,7 +179,8 @@ class MyPostsActivity : AppCompatActivity() {
     private fun createPostCard(
         docId: String, title: String, price: Long, ward: String,
         district: String, area: Int, status: String, rejectReason: String,
-        imageUrls: List<String>, createdAt: Long
+        imageUrls: List<String>, createdAt: Long, isFeatured: Boolean,
+        featuredUntil: Long, featuredRequestStatus: String
     ): CardView {
         val card = CardView(this)
         val cardParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -209,6 +230,23 @@ class MyPostsActivity : AppCompatActivity() {
             text = "${formatter.format(price)} đ/tháng"; textSize = 15f; setTextColor(0xFFD32F2F.toInt())
             setTypeface(typeface, android.graphics.Typeface.BOLD); setPadding(0, dpToPx(4), 0, 0)
         })
+        val now = System.currentTimeMillis()
+        if (isFeatured && featuredUntil > now) {
+            infoLayout.addView(TextView(this).apply {
+                text = "Đang nổi bật đến ${SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")).format(Date(featuredUntil))}"
+                textSize = 11f
+                setTextColor(0xFFE65100.toInt())
+                setTypeface(typeface, android.graphics.Typeface.BOLD)
+                setPadding(0, dpToPx(4), 0, 0)
+            })
+        } else if (featuredRequestStatus == "waiting_for_payment" || featuredRequestStatus == "paid_waiting_admin") {
+            infoLayout.addView(TextView(this).apply {
+                text = if (featuredRequestStatus == "paid_waiting_admin") "Đã thanh toán, chờ admin duyệt nổi bật" else "Có yêu cầu nổi bật đang chờ thanh toán"
+                textSize = 11f
+                setTextColor(0xFF1976D2.toInt())
+                setPadding(0, dpToPx(4), 0, 0)
+            })
+        }
         topLayout.addView(infoLayout)
         mainLayout.addView(topLayout)
 
@@ -253,8 +291,18 @@ class MyPostsActivity : AppCompatActivity() {
         bottomLayout.addView(btnDelete)
 
         if (status == "approved") {
-            // Nút "Đã cho thuê" đã được loại bỏ khỏi danh sách thẻ bài đăng để đơn giản hóa giao diện.
-            // Landlord có thể vào chi tiết bài đăng để thực hiện thao tác này nếu cần.
+            val canBuyFeatured = !(isFeatured && featuredUntil > System.currentTimeMillis()) &&
+                featuredRequestStatus != "waiting_for_payment" &&
+                featuredRequestStatus != "paid_waiting_admin"
+            if (canBuyFeatured) {
+                val btnFeatured = TextView(this).apply {
+                    text = "Đẩy nổi bật"; textSize = 13f; setTextColor(0xFFE65100.toInt())
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                    setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
+                    setOnClickListener { showFeaturedPackagesDialog(docId, title) }
+                }
+                bottomLayout.addView(btnFeatured)
+            }
         }
 
         if (status == "pending") {
@@ -331,6 +379,147 @@ class MyPostsActivity : AppCompatActivity() {
             4 -> viewModel.loadPosts("expired")
             else -> viewModel.loadPosts("all")
         }
+    }
+
+    private fun showFeaturedPackagesDialog(roomId: String, roomTitle: String) {
+        val labels = featuredPackages.map { "${it.label} — ${formatter.format(it.price.toLong())} đ" }.toTypedArray()
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Đẩy bài lên Phòng nổi bật")
+            .setItems(labels) { _, which ->
+                showFeaturedPaymentQrDialog(roomId, roomTitle, featuredPackages[which])
+            }
+            .setNegativeButton("Hủy", null)
+            .show()
+    }
+
+    private fun showFeaturedPaymentQrDialog(roomId: String, roomTitle: String, pkg: FeaturedPackage) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+        val docRef = db.collection("featured_upgrade_requests").document()
+        val requestId = docRef.id
+        val requestCode = requestId.takeLast(8).uppercase(Locale.US)
+        val addInfo = "NOIBAT ${pkg.code} REQ_$requestCode"
+        val now = System.currentTimeMillis()
+        val request = hashMapOf(
+            "uid" to uid,
+            "roomId" to roomId,
+            "roomTitle" to roomTitle,
+            "requestId" to requestId,
+            "days" to pkg.days,
+            "amount" to pkg.price,
+            "label" to pkg.label,
+            "code" to pkg.code,
+            "transferNote" to addInfo,
+            "status" to "waiting_for_payment",
+            "approvalStatus" to "pending_payment",
+            "createdAt" to now,
+            "updatedAt" to now,
+            "expiresAt" to now + 30L * 60L * 1000L
+        )
+
+        val dialogView = layoutInflater.inflate(R.layout.dialog_payment_qr, null)
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this, R.style.RoundedDialogStyle)
+            .setView(dialogView)
+            .setCancelable(false)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        docRef.set(request).addOnFailureListener {
+            MessageUtils.showErrorDialog(this, "Không thể tạo giao dịch", "Vui lòng thử lại sau.")
+            dialog.dismiss()
+        }
+
+        dialogView.findViewById<TextView>(R.id.tvQrPackageName).text = "${pkg.label} — ${formatter.format(pkg.price.toLong())} đ"
+        dialogView.findViewById<TextView>(R.id.tvQrBank).text = bankDisplay
+        dialogView.findViewById<TextView>(R.id.tvQrAccountNo).text = accountNo
+        dialogView.findViewById<TextView>(R.id.tvQrAccountName).text = accountName
+        dialogView.findViewById<TextView>(R.id.tvQrTransferNote).text = addInfo
+        val qrUrl = "https://img.vietqr.io/image/$bankId-$accountNo-compact2.png" +
+            "?amount=${pkg.price}&addInfo=${addInfo.replace(" ", "%20")}&accountName=${accountName.replace(" ", "%20")}"
+        Glide.with(this).load(qrUrl).placeholder(android.R.drawable.ic_menu_gallery)
+            .error(android.R.drawable.ic_dialog_alert).into(dialogView.findViewById(R.id.imgVietQR))
+
+        val btnConfirm = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnConfirmPayment)
+        btnConfirm.isEnabled = false
+        btnConfirm.text = "Đang chờ xác nhận thanh toán..."
+        btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+
+        var paymentCompleted = false
+        var latestStatus = "waiting_for_payment"
+        val handler = Handler(Looper.getMainLooper())
+        var stopPolling = false
+
+        fun applyStatus(status: String) {
+            latestStatus = status
+            when (status) {
+                "paid_waiting_admin" -> {
+                    btnConfirm.isEnabled = true
+                    btnConfirm.text = "Đã thanh toán - chờ admin duyệt"
+                    btnConfirm.setBackgroundColor(0xFF1976D2.toInt())
+                }
+                "approved" -> {
+                    btnConfirm.isEnabled = true
+                    btnConfirm.text = "Đã duyệt nổi bật"
+                    btnConfirm.setBackgroundColor(0xFF2E7D32.toInt())
+                }
+                "expired" -> {
+                    btnConfirm.isEnabled = false
+                    btnConfirm.text = "Giao dịch đã hết hạn"
+                    btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                }
+                "rejected" -> {
+                    btnConfirm.isEnabled = false
+                    btnConfirm.text = "Admin đã từ chối"
+                    btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                }
+            }
+        }
+
+        val listener = docRef.addSnapshotListener { snapshot, error ->
+            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+            applyStatus(snapshot.getString("status") ?: return@addSnapshotListener)
+        }
+        val pollRunnable = object : Runnable {
+            override fun run() {
+                if (stopPolling || !dialog.isShowing) return
+                docRef.get(Source.SERVER).addOnSuccessListener {
+                    it.getString("status")?.let(::applyStatus)
+                }.addOnCompleteListener {
+                    if (!stopPolling && dialog.isShowing) handler.postDelayed(this, 3000L)
+                }
+            }
+        }
+        handler.postDelayed(pollRunnable, 3000L)
+
+        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
+            .setOnClickListener {
+                if (latestStatus == "paid_waiting_admin" || latestStatus == "approved") {
+                    dialog.dismiss()
+                    return@setOnClickListener
+                }
+                docRef.update(mapOf("status" to "cancelled", "approvalStatus" to "cancelled", "updatedAt" to System.currentTimeMillis()))
+                    .addOnCompleteListener { dialog.dismiss() }
+            }
+
+        btnConfirm.setOnClickListener {
+            if (latestStatus != "paid_waiting_admin" && latestStatus != "approved") return@setOnClickListener
+            paymentCompleted = true
+            dialog.dismiss()
+            MessageUtils.showInfoDialog(
+                this,
+                "Đã ghi nhận thanh toán",
+                "Yêu cầu đẩy nổi bật đã được gửi cho admin duyệt. Sau khi duyệt, bài sẽ hiển thị ở mục Phòng nổi bật."
+            )
+            refreshList()
+        }
+
+        dialog.setOnDismissListener {
+            stopPolling = true
+            handler.removeCallbacks(pollRunnable)
+            listener.remove()
+            if (!paymentCompleted) refreshList()
+        }
+        dialog.show()
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

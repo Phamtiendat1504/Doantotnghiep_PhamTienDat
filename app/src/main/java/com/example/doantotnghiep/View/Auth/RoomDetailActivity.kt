@@ -6,9 +6,11 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.RatingBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
@@ -29,8 +31,12 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -56,6 +62,9 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var btnViewAllSlots: TextView
     private lateinit var layoutBookedSummary: LinearLayout
     private lateinit var cardBookedSlots: CardView
+    private lateinit var layoutReviews: LinearLayout
+    private lateinit var btnAddReview: MaterialButton
+    private lateinit var tvReviewsTitle: TextView
 
     private lateinit var tvSpecArea: TextView
     private lateinit var tvSpecPeople: TextView
@@ -79,6 +88,7 @@ class RoomDetailActivity : AppCompatActivity() {
     private var lastResolvedLatLng: LatLng? = null
     private val mapFallbackLatLng = LatLng(21.0285, 105.8542)
     private val geocodeExecutor = Executors.newSingleThreadExecutor()
+    private val db = FirebaseFirestore.getInstance()
 
     private lateinit var btnBackContainer: android.view.View
 
@@ -142,6 +152,9 @@ class RoomDetailActivity : AppCompatActivity() {
         btnViewAllSlots = findViewById(R.id.btnViewAllSlots)
         layoutBookedSummary = findViewById(R.id.layoutBookedSummary)
         cardBookedSlots = findViewById(R.id.cardBookedSlots)
+        layoutReviews = findViewById(R.id.layoutReviews)
+        btnAddReview = findViewById(R.id.btnAddReview)
+        tvReviewsTitle = findViewById(R.id.tvReviewsTitle)
         tvSpecArea = findViewById(R.id.tvSpecArea)
         tvSpecPeople = findViewById(R.id.tvSpecPeople)
         tvSpecType = findViewById(R.id.tvSpecType)
@@ -283,6 +296,7 @@ class RoomDetailActivity : AppCompatActivity() {
         setupRoomInfo(data)
         setupAmenities(data)
         setupOwnerInfo(data)
+        loadReviews(data["userId"] as? String ?: "")
         val latitude = (data["latitude"] as? Number)?.toDouble()
         val longitude = (data["longitude"] as? Number)?.toDouble()
         setupMapSection(address, ward, district, latitude, longitude)
@@ -303,13 +317,176 @@ class RoomDetailActivity : AppCompatActivity() {
             // Chủ phòng xem phòng của chính mình → ẩn Lưu và Đặt lịch
             btnSave.visibility = View.GONE
             btnBooking.visibility = View.GONE
+            btnAddReview.visibility = View.GONE
         } else {
             // Người dùng khác → hiện nút và load thêm dữ liệu
             btnSave.visibility = View.VISIBLE
             btnBooking.visibility = View.VISIBLE
+            btnAddReview.visibility = View.VISIBLE
+            btnAddReview.setOnClickListener { showAddReviewDialog(roomOwnerId) }
             viewModel.loadBookedSlots(currentRoomId)
             setupActionButtons()
         }
+    }
+
+    private fun loadReviews(landlordId: String) {
+        layoutReviews.removeAllViews()
+        if (landlordId.isBlank()) {
+            renderEmptyReviews()
+            return
+        }
+        db.collection("reviews")
+            .whereEqualTo("landlordId", landlordId)
+            .whereEqualTo("status", "approved")
+            .orderBy("createdAt", Query.Direction.DESCENDING)
+            .limit(10)
+            .get()
+            .addOnSuccessListener { snap ->
+                val reviews = snap.documents.mapNotNull { doc ->
+                    val d = doc.data ?: return@mapNotNull null
+                    ReviewRow(
+                        userName = d["userName"] as? String ?: "Người dùng",
+                        rating = (d["rating"] as? Number)?.toFloat() ?: 0f,
+                        comment = d["comment"] as? String ?: "",
+                        createdAt = (d["createdAt"] as? Number)?.toLong() ?: 0L,
+                        roomTitle = d["roomTitle"] as? String ?: ""
+                    )
+                }
+                renderReviews(reviews)
+            }
+            .addOnFailureListener { renderEmptyReviews("Không thể tải đánh giá") }
+    }
+
+    private data class ReviewRow(
+        val userName: String,
+        val rating: Float,
+        val comment: String,
+        val createdAt: Long,
+        val roomTitle: String
+    )
+
+    private fun renderReviews(reviews: List<ReviewRow>) {
+        layoutReviews.removeAllViews()
+        if (reviews.isEmpty()) {
+            renderEmptyReviews()
+            return
+        }
+        val avg = reviews.map { it.rating }.average()
+        tvReviewsTitle.text = "Đánh giá chủ trọ (${String.format(Locale("vi", "VN"), "%.1f", avg)}★)"
+        reviews.forEach { review ->
+            layoutReviews.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(0, dpToPx(10), 0, dpToPx(10))
+                addView(TextView(this@RoomDetailActivity).apply {
+                    text = "${review.userName} • ${"★".repeat(review.rating.toInt().coerceIn(1, 5))}"
+                    textSize = 14f
+                    setTextColor(0xFF111827.toInt())
+                    setTypeface(typeface, android.graphics.Typeface.BOLD)
+                })
+                addView(TextView(this@RoomDetailActivity).apply {
+                    text = review.comment.ifBlank { "Không có bình luận" }
+                    textSize = 13f
+                    setTextColor(0xFF374151.toInt())
+                    setPadding(0, dpToPx(4), 0, 0)
+                })
+                val dateText = if (review.createdAt > 0) {
+                    SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")).format(Date(review.createdAt))
+                } else ""
+                addView(TextView(this@RoomDetailActivity).apply {
+                    text = listOf(review.roomTitle, dateText).filter { it.isNotBlank() }.joinToString(" • ")
+                    textSize = 11f
+                    setTextColor(0xFF9CA3AF.toInt())
+                    setPadding(0, dpToPx(3), 0, 0)
+                })
+            })
+        }
+    }
+
+    private fun renderEmptyReviews(message: String = "Chưa có đánh giá nào cho chủ trọ này.") {
+        tvReviewsTitle.text = "Đánh giá chủ trọ"
+        layoutReviews.removeAllViews()
+        layoutReviews.addView(TextView(this).apply {
+            text = message
+            textSize = 13f
+            setTextColor(0xFF6B7280.toInt())
+            setPadding(0, dpToPx(4), 0, 0)
+        })
+    }
+
+    private fun showAddReviewDialog(landlordId: String) {
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUid == null) {
+            promptLogin()
+            return
+        }
+        if (landlordId.isBlank() || landlordId == currentUid) return
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dpToPx(20), dpToPx(8), dpToPx(20), 0)
+        }
+        val ratingBar = RatingBar(this).apply {
+            numStars = 5
+            stepSize = 1f
+            rating = 5f
+        }
+        val commentInput = EditText(this).apply {
+            hint = "Nhập nhận xét về chủ trọ/phòng..."
+            minLines = 3
+            maxLines = 5
+        }
+        container.addView(ratingBar)
+        container.addView(commentInput)
+
+        androidx.appcompat.app.AlertDialog.Builder(this)
+            .setTitle("Đánh giá chủ trọ")
+            .setView(container)
+            .setNegativeButton("Hủy", null)
+            .setPositiveButton("Gửi đánh giá", null)
+            .create()
+            .apply {
+                setOnShowListener {
+                    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                        val comment = commentInput.text.toString().trim()
+                        if (comment.length < 5) {
+                            commentInput.error = "Nhận xét cần ít nhất 5 ký tự"
+                            return@setOnClickListener
+                        }
+                        submitReview(landlordId, ratingBar.rating.toInt().coerceIn(1, 5), comment) {
+                            dismiss()
+                        }
+                    }
+                }
+                show()
+            }
+    }
+
+    private fun submitReview(landlordId: String, rating: Int, comment: String, onDone: () -> Unit) {
+        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val userName = FirebaseAuth.getInstance().currentUser?.displayName
+            ?: FirebaseAuth.getInstance().currentUser?.email
+            ?: "Người dùng"
+        val now = System.currentTimeMillis()
+        val data = hashMapOf(
+            "userId" to currentUid,
+            "userName" to userName,
+            "landlordId" to landlordId,
+            "roomId" to currentRoomId,
+            "roomTitle" to (currentRoomData["title"] as? String ?: ""),
+            "rating" to rating,
+            "comment" to comment,
+            "status" to "approved",
+            "createdAt" to now,
+            "updatedAt" to now
+        )
+        db.collection("reviews").add(data)
+            .addOnSuccessListener {
+                MessageUtils.showSuccessDialog(this, "Đã gửi đánh giá", "Cảm ơn bạn đã đánh giá chủ trọ.")
+                loadReviews(landlordId)
+                onDone()
+            }
+            .addOnFailureListener { e ->
+                MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể gửi đánh giá")
+            }
     }
 
     private fun setupActionButtons() {
@@ -932,4 +1109,3 @@ class RoomDetailActivity : AppCompatActivity() {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
-
