@@ -15,6 +15,7 @@ import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -312,6 +313,7 @@ class CccdCameraActivity : AppCompatActivity() {
         }, AUTO_CAPTURE_REARM_DELAY_MS)
     }
 
+    @OptIn(ExperimentalGetImage::class)
     private fun analyzePreviewFrame(imageProxy: ImageProxy) {
         if (captureInProgress || autoCaptureLocked) {
             imageProxy.close()

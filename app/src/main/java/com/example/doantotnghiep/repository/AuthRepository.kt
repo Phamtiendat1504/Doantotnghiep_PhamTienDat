@@ -3,7 +3,10 @@ package com.example.doantotnghiep.repository
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
+import android.util.Patterns
 import com.example.doantotnghiep.Model.User
+import com.google.firebase.auth.FirebaseAuthException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -23,63 +26,97 @@ class AuthRepository {
     private val httpClient by lazy { OkHttpClient() }
 
     fun register(fullName: String, email: String, phone: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        val normalizedEmail = email.trim().lowercase()
+
+        if (!isValidGmailEmail(normalizedEmail)) {
+            onFailure("Email không hợp lệ. Vui lòng nhập đúng định dạng và kết thúc bằng @gmail.com")
+            return
+        }
+
         // Bước 1: Kiểm tra số điện thoại đã được đăng ký chưa (Firestore)
-        // Firebase Auth chỉ tự check trùng email, không kiểm tra số điện thoại
+        // Bước 2: Kiểm tra email đã tồn tại trong Firestore chưa
         db.collection("users")
             .whereEqualTo("phone", phone)
             .limit(1)
             .get()
-            .addOnSuccessListener { snapshot ->
-                if (!snapshot.isEmpty) {
+            .addOnSuccessListener { phoneSnapshot ->
+                if (!phoneSnapshot.isEmpty) {
                     onFailure("Số điện thoại này đã được đăng ký cho tài khoản khác")
                     return@addOnSuccessListener
                 }
-                // Bước 2: Phone chưa trùng → tiến hành tạo tài khoản Firebase Auth
-                auth.createUserWithEmailAndPassword(email, password)
-                    .addOnSuccessListener { result ->
-                        val firebaseUser = result.user ?: auth.currentUser
-                        val uid = firebaseUser?.uid
-                        if (uid.isNullOrBlank()) {
-                            onFailure("Đăng ký thất bại: không lấy được UID tài khoản")
+
+                db.collection("users")
+                    .whereEqualTo("email", normalizedEmail)
+                    .limit(1)
+                    .get()
+                    .addOnSuccessListener { emailSnapshot ->
+                        if (!emailSnapshot.isEmpty) {
+                            onFailure("Email này đã được sử dụng")
                             return@addOnSuccessListener
                         }
-                        val createdAt = System.currentTimeMillis()
-                        // Ghi map tường minh để chắc chắn đúng tên field theo Firestore Rules.
-                        val userData = hashMapOf<String, Any>(
-                            "uid" to uid,
-                            "fullName" to fullName,
-                            "email" to email,
-                            "phone" to phone,
-                            "address" to "",
-                            "birthday" to "",
-                            "gender" to "",
-                            "occupation" to "",
-                            "avatarUrl" to "",
-                            "role" to "user",
-                            "isVerified" to false,
-                            "hasAcceptedRules" to false,
-                            "isLocked" to false,
-                            "lockReason" to "",
-                            "lockUntil" to 0L,
-                            "postingUnlockAt" to 0L,
-                            "verifiedAt" to 0L,
-                            "createdAt" to createdAt,
-                            "purchasedSlots" to 0L
-                        )
-                        // Làm mới token trước khi ghi Firestore để giảm lỗi race-condition.
-                        firebaseUser.getIdToken(true)
-                            .addOnSuccessListener {
-                                saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+
+                        // Bước 3: Tạo tài khoản Firebase Auth (Auth vẫn là lớp bảo vệ cuối cho trùng email)
+                        auth.createUserWithEmailAndPassword(normalizedEmail, password)
+                            .addOnSuccessListener { result ->
+                                val firebaseUser = result.user ?: auth.currentUser
+                                val uid = firebaseUser?.uid
+                                if (uid.isNullOrBlank()) {
+                                    onFailure("Đăng ký thất bại: không lấy được UID tài khoản")
+                                    return@addOnSuccessListener
+                                }
+                                val createdAt = System.currentTimeMillis()
+                                // Ghi map tường minh để chắc chắn đúng tên field theo Firestore Rules.
+                                val userData = hashMapOf<String, Any>(
+                                    "uid" to uid,
+                                    "fullName" to fullName,
+                                    "email" to normalizedEmail,
+                                    "phone" to phone,
+                                    "address" to "",
+                                    "birthday" to "",
+                                    "gender" to "",
+                                    "occupation" to "",
+                                    "avatarUrl" to "",
+                                    "role" to "user",
+                                    "isVerified" to false,
+                                    "hasAcceptedRules" to false,
+                                    "isLocked" to false,
+                                    "lockReason" to "",
+                                    "lockUntil" to 0L,
+                                    "postingUnlockAt" to 0L,
+                                    "verifiedAt" to 0L,
+                                    "createdAt" to createdAt,
+                                    "purchasedSlots" to 0L
+                                )
+                                // Làm mới token trước khi ghi Firestore để giảm lỗi race-condition.
+                                firebaseUser.getIdToken(true)
+                                    .addOnSuccessListener {
+                                        saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+                                    }
+                                    .addOnFailureListener {
+                                        saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+                                    }
                             }
-                            .addOnFailureListener {
-                                saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+                            .addOnFailureListener { e ->
+                                val errorCode = (e as? FirebaseAuthException)?.errorCode
+                                if (e is FirebaseAuthUserCollisionException || errorCode == "ERROR_EMAIL_ALREADY_IN_USE") {
+                                    onFailure("Email này đã được sử dụng")
+                                } else {
+                                    onFailure("Đăng ký thất bại: ${e.message}")
+                                }
                             }
                     }
-                    .addOnFailureListener { e -> onFailure("Đăng ký thất bại: ${e.message}") }
+                    .addOnFailureListener { e ->
+                        onFailure("Lỗi kiểm tra email: ${e.message}")
+                    }
             }
             .addOnFailureListener { e ->
                 onFailure("Lỗi kiểm tra số điện thoại: ${e.message}")
             }
+    }
+
+    private fun isValidGmailEmail(email: String): Boolean {
+        return Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
+                email.endsWith("@gmail.com", ignoreCase = true)
     }
 
     private fun saveUserProfileWithRetry(
