@@ -111,7 +111,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             intent = Intent(this, com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity::class.java).apply {
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_ID, ticketId)
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_TITLE, ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
-                putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "in_progress")
             }
         } else {
             // Mặc định mở MainActivity kèm lệnh mở MyAppointmentsActivity

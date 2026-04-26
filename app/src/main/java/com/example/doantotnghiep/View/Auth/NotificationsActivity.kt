@@ -36,7 +36,6 @@ class NotificationsActivity : AppCompatActivity() {
             startActivity(Intent(this, SupportTicketDetailActivity::class.java).apply {
                 putExtra(SupportTicketDetailActivity.EXTRA_TICKET_ID, item.ticketId)
                 putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, item.ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
-                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "in_progress")
             })
         }
     }

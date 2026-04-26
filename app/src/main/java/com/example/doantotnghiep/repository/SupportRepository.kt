@@ -8,6 +8,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
 import java.util.UUID
 
@@ -69,6 +70,25 @@ class SupportRepository {
                     }
                 } ?: emptyList()
                 onUpdate(messages)
+            }
+    }
+
+    fun listenTicket(
+        ticketId: String,
+        onUpdate: (SupportTicket) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection("support_tickets").document(ticketId)
+            .addSnapshotListener { snap, error ->
+                if (error != null) {
+                    onError("Lỗi tải trạng thái hỗ trợ: ${error.message}")
+                    return@addSnapshotListener
+                }
+                if (snap != null && snap.exists()) {
+                    val ticket = snap.toObject(SupportTicket::class.java)?.copy(id = snap.id)
+                        ?: SupportTicket(id = snap.id)
+                    onUpdate(ticket)
+                }
             }
     }
 
@@ -163,8 +183,7 @@ class SupportRepository {
             }
             val ticketRef = db.collection("support_tickets").document(ticketId)
             val messageRef = ticketRef.collection("messages").document()
-            val batch = db.batch()
-            batch.set(messageRef, hashMapOf<String, Any>(
+            val messageData = hashMapOf<String, Any>(
                 "senderId" to uid,
                 "senderRole" to "user",
                 "text" to text.trim(),
@@ -172,24 +191,34 @@ class SupportRepository {
                 "createdAt" to now,
                 "seenByUser" to true,
                 "seenByAdmin" to false
-            ))
-            ticketRef.get()
-                .addOnSuccessListener { ticketDoc ->
-                    val currentStatus = ticketDoc.getString("status") ?: "new"
-                    val nextStatus = if (currentStatus == "resolved") "in_progress" else currentStatus
-                    batch.update(ticketRef, mapOf(
+            )
+            db.runTransaction { txn ->
+                val ticketDoc = txn.get(ticketRef)
+                if (!ticketDoc.exists()) {
+                    throw IllegalStateException("Yêu cầu hỗ trợ không tồn tại")
+                }
+                val currentStatus = ticketDoc.getString("status") ?: "new"
+                if (currentStatus == "closed") {
+                    throw IllegalStateException("Yêu cầu này đã đóng, bạn không thể gửi thêm tin nhắn.")
+                }
+                val nextStatus = if (currentStatus == "resolved") "in_progress" else currentStatus
+                txn.set(messageRef, messageData, SetOptions.merge())
+                txn.update(
+                    ticketRef,
+                    mapOf(
                         "updatedAt" to now,
                         "lastMessage" to displayMessage,
                         "lastSenderRole" to "user",
                         "unreadForAdmin" to true,
                         "unreadForUser" to false,
                         "status" to nextStatus
-                    ))
-                    batch.commit()
-                        .addOnSuccessListener { onSuccess() }
-                        .addOnFailureListener { onFailure("Không gửi được tin nhắn: ${it.message}") }
-                }
-                .addOnFailureListener { onFailure("Không kiểm tra được yêu cầu hỗ trợ: ${it.message}") }
+                    )
+                )
+            }.addOnSuccessListener {
+                onSuccess()
+            }.addOnFailureListener {
+                onFailure("Không gửi được tin nhắn: ${it.message}")
+            }
         }
 
         if (imageUri != null) {

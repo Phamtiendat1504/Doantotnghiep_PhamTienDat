@@ -65,6 +65,17 @@ class SupportTicketDetailActivity : AppCompatActivity() {
         initViews()
         setupRecyclerView()
         observeViewModel()
+        viewModel.listenTicket(
+            ticketId,
+            onUpdate = { ticket ->
+                ticketStatus = ticket.status
+                findViewById<TextView>(R.id.tvSupportDetailTitle).text = ticket.title.ifBlank {
+                    intent.getStringExtra(EXTRA_TICKET_TITLE) ?: "Chi tiết hỗ trợ"
+                }
+                updateStatusUi(ticketStatus)
+            },
+            onError = { MessageUtils.showErrorDialog(this, "Lỗi", it) }
+        )
         viewModel.listenMessages(ticketId)
     }
 

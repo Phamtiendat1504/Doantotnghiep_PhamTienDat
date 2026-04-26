@@ -27,6 +27,7 @@ class SupportViewModel : ViewModel() {
 
     private var ticketListener: ListenerRegistration? = null
     private var messageListener: ListenerRegistration? = null
+    private var detailTicketListener: ListenerRegistration? = null
 
     fun listenMyTickets() {
         ticketListener?.remove()
@@ -44,6 +45,22 @@ class SupportViewModel : ViewModel() {
             onError = { _errorMessage.postValue(it) }
         )
         repository.markUserRead(ticketId)
+    }
+
+    fun listenTicket(
+        ticketId: String,
+        onUpdate: (SupportTicket) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        detailTicketListener?.remove()
+        detailTicketListener = repository.listenTicket(
+            ticketId,
+            onUpdate,
+            onError = {
+                _errorMessage.postValue(it)
+                onError(it)
+            }
+        )
     }
 
     fun markUserRead(ticketId: String) {
@@ -72,6 +89,10 @@ class SupportViewModel : ViewModel() {
                 onFailure(it)
             }
         )
+    }
+
+    fun clearCreatedTicketId() {
+        _createdTicketId.value = ""
     }
 
     fun sendMessage(
@@ -107,6 +128,7 @@ class SupportViewModel : ViewModel() {
     override fun onCleared() {
         ticketListener?.remove()
         messageListener?.remove()
+        detailTicketListener?.remove()
         super.onCleared()
     }
 }

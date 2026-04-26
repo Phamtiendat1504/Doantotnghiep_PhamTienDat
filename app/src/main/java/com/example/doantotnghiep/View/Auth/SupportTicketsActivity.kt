@@ -93,6 +93,7 @@ class SupportTicketsActivity : AppCompatActivity() {
                     putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, "Yêu cầu hỗ trợ")
                     putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
                 })
+                viewModel.clearCreatedTicketId()
             }
         }
     }
