@@ -905,6 +905,7 @@ class PostFragment : Fragment() {
                 showPaymentQrDialogContent(docRef, pkg, addInfo)
             }
             .addOnFailureListener {
+                if (!isAdded) return@addOnFailureListener
                 MessageUtils.showErrorDialog(
                     requireContext(),
                     "Không thể tạo giao dịch",
