@@ -33,6 +33,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.Source
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
@@ -478,14 +479,34 @@ class RoomDetailActivity : AppCompatActivity() {
             "createdAt" to now,
             "updatedAt" to now
         )
-        db.collection("reviews").add(data)
+
+        db.collection("reviews")
+            .whereEqualTo("userId", currentUid)
+            .whereEqualTo("landlordId", landlordId)
+            .limit(1)
+            .get(Source.SERVER)
             .addOnSuccessListener {
-                MessageUtils.showSuccessDialog(this, "Đã gửi đánh giá", "Cảm ơn bạn đã đánh giá chủ trọ.")
-                loadReviews(landlordId)
-                onDone()
+                if (!it.isEmpty) {
+                    MessageUtils.showInfoDialog(
+                        this,
+                        "Bạn đã đánh giá",
+                        "Bạn đã gửi đánh giá cho chủ trọ này rồi."
+                    )
+                    onDone()
+                    return@addOnSuccessListener
+                }
+                db.collection("reviews").add(data)
+                    .addOnSuccessListener {
+                        MessageUtils.showSuccessDialog(this, "Đã gửi đánh giá", "Cảm ơn bạn đã đánh giá chủ trọ.")
+                        loadReviews(landlordId)
+                        onDone()
+                    }
+                    .addOnFailureListener { e ->
+                        MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể gửi đánh giá")
+                    }
             }
             .addOnFailureListener { e ->
-                MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể gửi đánh giá")
+                MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể kiểm tra đánh giá hiện tại")
             }
     }
 

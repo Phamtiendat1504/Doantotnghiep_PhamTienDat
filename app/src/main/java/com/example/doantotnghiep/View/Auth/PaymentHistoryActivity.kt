@@ -170,9 +170,9 @@ class PaymentHistoryActivity : AppCompatActivity() {
                     setPadding(0, dp(3), 0, 0)
                 })
                 addView(TextView(this@PaymentHistoryActivity).apply {
-                    text = "${formatter.format(amount)} đ • ${formatStatus(status)}"
+                    text = "${formatter.format(amount)} đ • ${formatStatus(status, type)}"
                     textSize = 13f
-                    setTextColor(statusColor(status))
+                    setTextColor(statusColor(status, type))
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                     setPadding(0, dp(6), 0, 0)
                 })
@@ -186,8 +186,8 @@ class PaymentHistoryActivity : AppCompatActivity() {
         }
     }
 
-    private fun formatStatus(status: String): String = when (status) {
-        "paid" -> "Đã thanh toán"
+    private fun formatStatus(status: String, type: String): String = when (status) {
+        "paid" -> if (type == "featured") "Đã thanh toán, chờ admin duyệt" else "Đã thanh toán"
         "paid_waiting_admin" -> "Đã thanh toán, chờ admin duyệt"
         "approved" -> "Đã duyệt"
         "rejected" -> "Bị từ chối"
@@ -196,8 +196,9 @@ class PaymentHistoryActivity : AppCompatActivity() {
         else -> "Chờ thanh toán"
     }
 
-    private fun statusColor(status: String): Int = when (status) {
-        "paid", "approved" -> 0xFF2E7D32.toInt()
+    private fun statusColor(status: String, type: String): Int = when (status) {
+        "paid" -> if (type == "featured") 0xFF1976D2.toInt() else 0xFF2E7D32.toInt()
+        "approved" -> 0xFF2E7D32.toInt()
         "paid_waiting_admin" -> 0xFF1976D2.toInt()
         "rejected", "expired", "cancelled" -> 0xFFD32F2F.toInt()
         else -> 0xFFE65100.toInt()

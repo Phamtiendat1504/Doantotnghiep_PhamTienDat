@@ -239,9 +239,9 @@ class MyPostsActivity : AppCompatActivity() {
                 setTypeface(typeface, android.graphics.Typeface.BOLD)
                 setPadding(0, dpToPx(4), 0, 0)
             })
-        } else if (featuredRequestStatus == "waiting_for_payment" || featuredRequestStatus == "paid_waiting_admin") {
+        } else if (featuredRequestStatus == "waiting_for_payment" || featuredRequestStatus == "paid" || featuredRequestStatus == "paid_waiting_admin") {
             infoLayout.addView(TextView(this).apply {
-                text = if (featuredRequestStatus == "paid_waiting_admin") "Đã thanh toán, chờ admin duyệt nổi bật" else "Có yêu cầu nổi bật đang chờ thanh toán"
+                text = if (featuredRequestStatus == "paid" || featuredRequestStatus == "paid_waiting_admin") "Đã thanh toán, chờ admin duyệt nổi bật" else "Có yêu cầu nổi bật đang chờ thanh toán"
                 textSize = 11f
                 setTextColor(0xFF1976D2.toInt())
                 setPadding(0, dpToPx(4), 0, 0)
@@ -293,6 +293,7 @@ class MyPostsActivity : AppCompatActivity() {
         if (status == "approved") {
             val canBuyFeatured = !(isFeatured && featuredUntil > System.currentTimeMillis()) &&
                 featuredRequestStatus != "waiting_for_payment" &&
+                featuredRequestStatus != "paid" &&
                 featuredRequestStatus != "paid_waiting_admin"
             if (canBuyFeatured) {
                 val btnFeatured = TextView(this).apply {
@@ -395,7 +396,55 @@ class MyPostsActivity : AppCompatActivity() {
     private fun showFeaturedPaymentQrDialog(roomId: String, roomTitle: String, pkg: FeaturedPackage) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = FirebaseFirestore.getInstance()
+        val loadingDialog = MessageUtils.showLoadingDialog(
+            this,
+            "Đang kiểm tra yêu cầu nổi bật hiện tại..."
+        )
+        val activeStatuses = listOf("waiting_for_payment", "paid", "paid_waiting_admin")
+        db.collection("featured_upgrade_requests")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("roomId", roomId)
+            .get(Source.SERVER)
+            .addOnSuccessListener { snap ->
+                val activeDoc = snap.documents.firstOrNull { activeStatuses.contains(it.getString("status")) }
+                if (activeDoc != null) {
+                    val doc = activeDoc
+                    val status = doc.getString("status") ?: "waiting_for_payment"
+                    syncRoomFeaturedRequestStatus(db, roomId, status, doc.id)
+                    loadingDialog.dismiss()
+                    MessageUtils.showInfoDialog(
+                        this,
+                        "Đã có yêu cầu nổi bật",
+                        if (status == "waiting_for_payment") {
+                            "Bài đăng này đã có yêu cầu nổi bật đang chờ thanh toán."
+                        } else {
+                            "Bài đăng này đã thanh toán và đang chờ admin duyệt nổi bật."
+                        }
+                    ) { refreshList() }
+                    return@addOnSuccessListener
+                }
+                createFeaturedPaymentRequest(db, uid, roomId, roomTitle, pkg, loadingDialog)
+            }
+            .addOnFailureListener { e ->
+                loadingDialog.dismiss()
+                MessageUtils.showErrorDialog(
+                    this,
+                    "Không thể kiểm tra giao dịch",
+                    e.message ?: "Vui lòng kiểm tra kết nối rồi thử lại."
+                )
+            }
+    }
+
+    private fun createFeaturedPaymentRequest(
+        db: FirebaseFirestore,
+        uid: String,
+        roomId: String,
+        roomTitle: String,
+        pkg: FeaturedPackage,
+        loadingDialog: androidx.appcompat.app.AlertDialog
+    ) {
         val docRef = db.collection("featured_upgrade_requests").document()
+        val roomRef = db.collection("rooms").document(roomId)
         val requestId = docRef.id
         val requestCode = requestId.takeLast(8).uppercase(Locale.US)
         val addInfo = "NOIBAT ${pkg.code} REQ_$requestCode"
@@ -417,17 +466,44 @@ class MyPostsActivity : AppCompatActivity() {
             "expiresAt" to now + 30L * 60L * 1000L
         )
 
+        val batch = db.batch()
+        batch.set(docRef, request)
+        batch.update(
+            roomRef,
+            mapOf(
+                "featuredRequestStatus" to "waiting_for_payment",
+                "featuredRequestId" to requestId,
+                "featuredRequestUpdatedAt" to now
+            )
+        )
+        batch.commit()
+            .addOnSuccessListener {
+                loadingDialog.dismiss()
+                showFeaturedPaymentQrDialogContent(db, docRef, roomId, pkg, addInfo)
+            }
+            .addOnFailureListener { e ->
+                loadingDialog.dismiss()
+                MessageUtils.showErrorDialog(
+                    this,
+                    "Không thể tạo giao dịch",
+                    e.message ?: "Vui lòng thử lại sau."
+                )
+            }
+    }
+
+    private fun showFeaturedPaymentQrDialogContent(
+        db: FirebaseFirestore,
+        docRef: com.google.firebase.firestore.DocumentReference,
+        roomId: String,
+        pkg: FeaturedPackage,
+        addInfo: String
+    ) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_payment_qr, null)
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this, R.style.RoundedDialogStyle)
             .setView(dialogView)
             .setCancelable(false)
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        docRef.set(request).addOnFailureListener {
-            MessageUtils.showErrorDialog(this, "Không thể tạo giao dịch", "Vui lòng thử lại sau.")
-            dialog.dismiss()
-        }
 
         dialogView.findViewById<TextView>(R.id.tvQrPackageName).text = "${pkg.label} — ${formatter.format(pkg.price.toLong())} đ"
         dialogView.findViewById<TextView>(R.id.tvQrBank).text = bankDisplay
@@ -446,13 +522,18 @@ class MyPostsActivity : AppCompatActivity() {
 
         var paymentCompleted = false
         var latestStatus = "waiting_for_payment"
+        var latestSyncedStatus = ""
         val handler = Handler(Looper.getMainLooper())
         var stopPolling = false
 
         fun applyStatus(status: String) {
             latestStatus = status
+            if (status != latestSyncedStatus) {
+                latestSyncedStatus = status
+                syncRoomFeaturedRequestStatus(db, roomId, status, docRef.id)
+            }
             when (status) {
-                "paid_waiting_admin" -> {
+                "paid", "paid_waiting_admin" -> {
                     btnConfirm.isEnabled = true
                     btnConfirm.text = "Đã thanh toán - chờ admin duyệt"
                     btnConfirm.setBackgroundColor(0xFF1976D2.toInt())
@@ -493,16 +574,33 @@ class MyPostsActivity : AppCompatActivity() {
 
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
             .setOnClickListener {
-                if (latestStatus == "paid_waiting_admin" || latestStatus == "approved") {
+                if (latestStatus == "paid" || latestStatus == "paid_waiting_admin" || latestStatus == "approved") {
                     dialog.dismiss()
                     return@setOnClickListener
                 }
-                docRef.update(mapOf("status" to "cancelled", "approvalStatus" to "cancelled", "updatedAt" to System.currentTimeMillis()))
+                val cancelAt = System.currentTimeMillis()
+                val batch = db.batch()
+                batch.update(
+                    docRef,
+                    mapOf(
+                        "status" to "cancelled",
+                        "approvalStatus" to "cancelled",
+                        "updatedAt" to cancelAt
+                    )
+                )
+                batch.update(
+                    db.collection("rooms").document(roomId),
+                    mapOf(
+                        "featuredRequestStatus" to "cancelled",
+                        "featuredRequestUpdatedAt" to cancelAt
+                    )
+                )
+                batch.commit()
                     .addOnCompleteListener { dialog.dismiss() }
             }
 
         btnConfirm.setOnClickListener {
-            if (latestStatus != "paid_waiting_admin" && latestStatus != "approved") return@setOnClickListener
+            if (latestStatus != "paid" && latestStatus != "paid_waiting_admin" && latestStatus != "approved") return@setOnClickListener
             paymentCompleted = true
             dialog.dismiss()
             MessageUtils.showInfoDialog(
@@ -520,6 +618,24 @@ class MyPostsActivity : AppCompatActivity() {
             if (!paymentCompleted) refreshList()
         }
         dialog.show()
+    }
+
+    private fun syncRoomFeaturedRequestStatus(
+        db: FirebaseFirestore,
+        roomId: String,
+        status: String,
+        requestId: String? = null
+    ) {
+        val normalizedStatus = if (status == "paid") "paid_waiting_admin" else status
+        val update = hashMapOf<String, Any>(
+            "featuredRequestStatus" to normalizedStatus,
+            "featuredRequestUpdatedAt" to System.currentTimeMillis()
+        )
+        if (!requestId.isNullOrBlank()) update["featuredRequestId"] = requestId
+        db.collection("rooms").document(roomId).update(update)
+            .addOnFailureListener { e ->
+                android.util.Log.w("MyPostsActivity", "Sync featured request status failed", e)
+            }
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
