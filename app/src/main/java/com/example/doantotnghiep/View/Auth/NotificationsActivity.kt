@@ -1,5 +1,6 @@
 package com.example.doantotnghiep.View.Auth
 
+import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
@@ -30,6 +31,13 @@ class NotificationsActivity : AppCompatActivity() {
                 .collection("notifications")
                 .document(item.id)
                 .update("seen", true)
+        }
+        if (item.type == "support_reply" && item.ticketId.isNotBlank()) {
+            startActivity(Intent(this, SupportTicketDetailActivity::class.java).apply {
+                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_ID, item.ticketId)
+                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, item.ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
+                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "in_progress")
+            })
         }
     }
 
@@ -85,6 +93,8 @@ class NotificationsActivity : AppCompatActivity() {
                         title     = data["title"] as? String ?: "",
                         message   = data["message"] as? String ?: "",
                         type      = data["type"] as? String ?: "",
+                        ticketId  = data["ticketId"] as? String ?: "",
+                        ticketTitle = data["ticketTitle"] as? String ?: data["title"] as? String ?: "Yêu cầu hỗ trợ",
                         isRead    = isSeen,
                         createdAt = data["createdAt"] as? Long ?: 0L
                     )

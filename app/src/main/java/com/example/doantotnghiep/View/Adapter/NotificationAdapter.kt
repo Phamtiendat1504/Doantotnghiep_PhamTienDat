@@ -13,6 +13,8 @@ data class NotificationItem(
     val title: String = "",
     val message: String = "",
     val type: String = "",
+    val ticketId: String = "",
+    val ticketTitle: String = "",
     val isRead: Boolean = false,
     val createdAt: Long = 0L
 )
@@ -69,6 +71,7 @@ class NotificationAdapter(
                 "verification_approved"  -> R.drawable.ic_verified
                 "verification_rejected"  -> R.drawable.ic_cancel
                 "appointment"            -> R.drawable.ic_calendar
+                "support_reply"          -> R.drawable.ic_info
                 else                     -> R.drawable.ic_notification
             }
             ivIcon.setImageResource(iconRes)

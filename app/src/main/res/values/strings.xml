@@ -79,6 +79,16 @@
     <string name="booking_select_date">Chọn ngày</string>
     <string name="booking_select_time">Chọn giờ</string>
 
+    <string-array name="support_categories">
+        <item>Lỗi đăng bài</item>
+        <item>Lỗi xác minh CCCD</item>
+        <item>Lỗi đặt lịch</item>
+        <item>Thanh toán/mua lượt đăng bài</item>
+        <item>Tài khoản bị khóa</item>
+        <item>Báo cáo phòng/người dùng</item>
+        <item>Khác</item>
+    </string-array>
+
     <!-- Profile -->
     <string name="profile_title">Cá Nhân</string>
     <string name="profile_personal_info">Thông Tin Cá Nhân</string>
@@ -257,4 +267,3 @@
     <string name="settings_about_content">Tìm Trọ 24/7 là ứng dụng hỗ trợ kết nối người thuê và người cho thuê phòng trọ trên nền tảng di động Android, được xây dựng với mục tiêu đơn giản hóa quy trình tìm kiếm, đăng tin và đặt lịch xem phòng.\n\n1. Mục tiêu sản phẩm\n\n- Giúp người dùng tìm phòng phù hợp nhanh hơn theo khu vực, ngân sách và nhu cầu thực tế.\n- Giúp chủ trọ quản lý bài đăng, lịch hẹn và tương tác với khách thuê trong một hệ thống thống nhất.\n- Tăng tính minh bạch thông tin thông qua cơ chế xác minh tài khoản đăng bài.\n\n2. Các chức năng chính\n\n- Tìm kiếm phòng theo nhiều bộ lọc: khu vực, mức giá, diện tích, tiện ích.\n- Xem chi tiết phòng, lưu bài viết quan tâm và theo dõi lại dễ dàng.\n- Đặt lịch hẹn xem phòng trực tiếp với chủ trọ theo khung giờ phù hợp.\n- Nhắn tin giữa người thuê và người cho thuê trong ứng dụng.\n- Nhận thông báo trạng thái bài đăng, lịch hẹn và thông báo hệ thống.\n- Xác minh tài khoản để mở quyền đăng bài cho thuê.\n\n3. Định hướng phát triển\n\nTrong các phiên bản tiếp theo, ứng dụng hướng tới nâng cao chất lượng kiểm duyệt nội dung, cải thiện trải nghiệm người dùng và tăng cường tính an toàn dữ liệu để phục vụ tốt hơn nhu cầu thuê trọ thực tế.</string>
 
 </resources>
-
