@@ -30,6 +30,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnPersonalInfo: LinearLayout
     private lateinit var btnChangePassword: LinearLayout
     private lateinit var btnSavedPosts: LinearLayout
+    private lateinit var btnPaymentHistory: LinearLayout
     private lateinit var btnAppointments: LinearLayout
     private lateinit var btnMessages: LinearLayout
     private lateinit var btnSupportCenter: LinearLayout
@@ -295,6 +296,7 @@ class ProfileFragment : Fragment() {
         btnPersonalInfo = view.findViewById(R.id.btnPersonalInfo)
         btnChangePassword = view.findViewById(R.id.btnChangePassword)
         btnSavedPosts = view.findViewById(R.id.btnSavedPosts)
+        btnPaymentHistory = view.findViewById(R.id.btnPaymentHistory)
         btnAppointments = view.findViewById(R.id.btnAppointments)
         btnMessages = view.findViewById(R.id.btnMessages)
         btnSupportCenter = view.findViewById(R.id.btnSupportCenter)
@@ -329,6 +331,7 @@ class ProfileFragment : Fragment() {
             startActivity(intent)
         }
         btnSavedPosts.setOnClickListener { startActivity(Intent(requireContext(), SavedPostsActivity::class.java)) }
+        btnPaymentHistory.setOnClickListener { startActivity(Intent(requireContext(), PaymentHistoryActivity::class.java)) }
         btnMyPosts.setOnClickListener {
             tvMyPostsBadge.visibility = View.GONE
             startActivity(Intent(requireContext(), MyPostsActivity::class.java))
@@ -399,4 +402,3 @@ class ProfileFragment : Fragment() {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
-

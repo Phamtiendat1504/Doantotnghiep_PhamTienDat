@@ -105,10 +105,15 @@ class RoomRepository {
 
         if (imageUris.isEmpty()) {
             val roomData = room.copy(id = roomId, userId = uid)
-            saveRoomToFirestore(docRef, roomData, { 
-                if (usePurchasedSlot) decrementPurchasedSlot(uid)
-                onSuccess(roomId, null) 
-            }, onFailure)
+            if (usePurchasedSlot) {
+                saveRoomWithPurchasedSlot(docRef, roomData, uid, {
+                    onSuccess(roomId, null)
+                }, onFailure)
+            } else {
+                saveRoomToFirestore(docRef, roomData, usePurchasedSlot, {
+                    onSuccess(roomId, null)
+                }, onFailure)
+            }
         } else {
             // Tạo room trước để upload ảnh chạy theo nhánh quyền isRoomOwner(roomId) trong Storage rules.
             // Cách này ổn định hơn so với upload-before-room-doc (phụ thuộc isVerifiedUser tại đúng thời điểm upload).
@@ -116,6 +121,7 @@ class RoomRepository {
             saveRoomToFirestore(
                 docRef = docRef,
                 room = roomSeedData,
+                usedPurchasedSlot = false,
                 onSuccess = {
                     docRef.get(Source.SERVER)
                         .addOnSuccessListener {
@@ -130,8 +136,22 @@ class RoomRepository {
                                             "updatedAt" to System.currentTimeMillis()
                                         )
                                     ).addOnSuccessListener {
-                                        if (usePurchasedSlot) decrementPurchasedSlot(uid)
-                                        onSuccess(roomId, urls.firstOrNull())
+                                        if (usePurchasedSlot) {
+                                            consumePurchasedSlot(
+                                                uid = uid,
+                                                onSuccess = {
+                                                    docRef.update("usedPurchasedSlot", true)
+                                                        .addOnCompleteListener {
+                                                            onSuccess(roomId, urls.firstOrNull())
+                                                        }
+                                                },
+                                                onFailure = { error ->
+                                                    docRef.delete().addOnCompleteListener { onFailure(error) }
+                                                }
+                                            )
+                                        } else {
+                                            onSuccess(roomId, urls.firstOrNull())
+                                        }
                                     }.addOnFailureListener { e ->
                                         onFailure(mapFirestorePostError(e))
                                     }
@@ -151,17 +171,74 @@ class RoomRepository {
         }
     }
 
-    private fun decrementPurchasedSlot(uid: String) {
-        db.collection("users").document(uid)
-            .update("purchasedSlots", com.google.firebase.firestore.FieldValue.increment(-1))
-            .addOnFailureListener { e ->
-                android.util.Log.e("RoomRepository", "Failed to decrement purchased slot: ${e.message}")
+    private fun saveRoomWithPurchasedSlot(
+        docRef: com.google.firebase.firestore.DocumentReference,
+        room: Room,
+        uid: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val userRef = db.collection("users").document(uid)
+        db.runTransaction { tx ->
+            val snap = tx.get(userRef)
+            val currentSlots = (snap.getLong("purchasedSlots") ?: 0L).toInt()
+            if (currentSlots <= 0) {
+                throw FirebaseFirestoreException(
+                    "Bạn đã dùng hết lượt đăng bài đã mua.",
+                    FirebaseFirestoreException.Code.ABORTED
+                )
             }
+            tx.set(docRef, room)
+            tx.update(
+                userRef,
+                mapOf(
+                    "purchasedSlots" to currentSlots - 1,
+                    "lastSlotConsumedAt" to System.currentTimeMillis()
+                )
+            )
+        }.addOnSuccessListener {
+            val expireAtMs = room.createdAt + 90L * 24 * 60 * 60 * 1000
+            docRef.update(
+                mapOf(
+                    "expireAt" to Timestamp(Date(expireAtMs)),
+                    "usedPurchasedSlot" to true
+                )
+            ).addOnSuccessListener { onSuccess() }
+                .addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
+        }.addOnFailureListener { e ->
+            onFailure(e.message ?: "Không thể đăng bài bằng lượt đã mua. Vui lòng thử lại.")
+        }
+    }
+
+    private fun consumePurchasedSlot(uid: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        val userRef = db.collection("users").document(uid)
+        db.runTransaction { tx ->
+            val snap = tx.get(userRef)
+            val currentSlots = (snap.getLong("purchasedSlots") ?: 0L).toInt()
+            if (currentSlots <= 0) {
+                throw FirebaseFirestoreException(
+                    "Bạn đã dùng hết lượt đăng bài đã mua.",
+                    FirebaseFirestoreException.Code.ABORTED
+                )
+            }
+            tx.update(
+                userRef,
+                mapOf(
+                    "purchasedSlots" to currentSlots - 1,
+                    "lastSlotConsumedAt" to System.currentTimeMillis()
+                )
+            )
+        }.addOnSuccessListener {
+            onSuccess()
+        }.addOnFailureListener { e ->
+            onFailure(e.message ?: "Không thể trừ lượt đăng bài đã mua. Vui lòng thử lại.")
+        }
     }
 
     private fun saveRoomToFirestore(
         docRef: com.google.firebase.firestore.DocumentReference,
         room: Room,
+        usedPurchasedSlot: Boolean = false,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
@@ -172,7 +249,7 @@ class RoomRepository {
         docRef.set(room)
             .addOnSuccessListener {
                 // Cập nhật thêm trường expireAt kiểu Firestore Timestamp (bắt buộc cho TTL)
-                docRef.update("expireAt", expireAtTimestamp)
+                docRef.update(mapOf("expireAt" to expireAtTimestamp, "usedPurchasedSlot" to usedPurchasedSlot))
                     .addOnSuccessListener { onSuccess() }
                     .addOnFailureListener { e ->
                         android.util.Log.e("RoomRepository", "Cập nhật expireAt thất bại: ${e.message}")
@@ -524,7 +601,10 @@ class RoomRepository {
     fun loadFeaturedRooms(onSuccess: (List<com.google.firebase.firestore.QueryDocumentSnapshot>) -> Unit) {
         db.collection("rooms").whereEqualTo("status", "approved").whereEqualTo("isFeatured", true)
             .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(10).get()
-            .addOnSuccessListener { docs -> onSuccess(docs.toList()) }
+            .addOnSuccessListener { docs ->
+                val now = System.currentTimeMillis()
+                onSuccess(docs.toList().filter { (it.getLong("featuredUntil") ?: Long.MAX_VALUE) > now })
+            }
             .addOnFailureListener { onSuccess(emptyList()) }
     }
 
