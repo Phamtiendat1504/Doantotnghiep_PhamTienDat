@@ -900,6 +900,25 @@ class PostFragment : Fragment() {
             "expiresAt" to expiresAt
         )
 
+        docRef.set(request)
+            .addOnSuccessListener {
+                showPaymentQrDialogContent(docRef, pkg, addInfo)
+            }
+            .addOnFailureListener {
+                MessageUtils.showErrorDialog(
+                    requireContext(),
+                    "Không thể tạo giao dịch",
+                    "Lỗi khởi tạo yêu cầu thanh toán. Vui lòng thử lại."
+                )
+            }
+    }
+
+    private fun showPaymentQrDialogContent(
+        docRef: com.google.firebase.firestore.DocumentReference,
+        pkg: SlotPackage,
+        addInfo: String
+    ) {
+        if (!isAdded) return
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_payment_qr, null)
 
@@ -908,15 +927,6 @@ class PostFragment : Fragment() {
             .setCancelable(false)
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        docRef.set(request).addOnFailureListener {
-            MessageUtils.showErrorDialog(
-                requireContext(),
-                "Không thể tạo giao dịch",
-                "Lỗi khởi tạo yêu cầu thanh toán. Vui lòng thử lại."
-            )
-            dialog.dismiss()
-        }
 
         dialogView.findViewById<TextView>(R.id.tvQrPackageName).text = "${pkg.label} — ${"%,.0f".format(pkg.price.toDouble())}đ"
         dialogView.findViewById<TextView>(R.id.tvQrBank).text = BANK_DISPLAY
