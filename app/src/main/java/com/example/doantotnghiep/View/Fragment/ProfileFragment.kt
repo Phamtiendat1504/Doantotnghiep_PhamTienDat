@@ -32,6 +32,7 @@ class ProfileFragment : Fragment() {
     private lateinit var btnSavedPosts: LinearLayout
     private lateinit var btnAppointments: LinearLayout
     private lateinit var btnMessages: LinearLayout
+    private lateinit var btnSupportCenter: LinearLayout
     private lateinit var btnSettings: LinearLayout
     private lateinit var tvAppointmentBadge: TextView
     private lateinit var tvMessagesBadge: TextView
@@ -296,6 +297,7 @@ class ProfileFragment : Fragment() {
         btnSavedPosts = view.findViewById(R.id.btnSavedPosts)
         btnAppointments = view.findViewById(R.id.btnAppointments)
         btnMessages = view.findViewById(R.id.btnMessages)
+        btnSupportCenter = view.findViewById(R.id.btnSupportCenter)
         btnSettings = view.findViewById(R.id.btnSettings)
         tvAppointmentBadge = view.findViewById(R.id.tvAppointmentBadge)
         tvMessagesBadge = view.findViewById(R.id.tvMessagesBadge)
@@ -338,6 +340,9 @@ class ProfileFragment : Fragment() {
         btnMessages.setOnClickListener {
             tvMessagesBadge.visibility = View.GONE
             startActivity(Intent(requireContext(), ConversationsActivity::class.java))
+        }
+        btnSupportCenter.setOnClickListener {
+            startActivity(Intent(requireContext(), SupportTicketsActivity::class.java))
         }
         btnSettings.setOnClickListener {
             startActivity(Intent(requireContext(), SettingsActivity::class.java))
@@ -394,5 +399,4 @@ class ProfileFragment : Fragment() {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
-
 

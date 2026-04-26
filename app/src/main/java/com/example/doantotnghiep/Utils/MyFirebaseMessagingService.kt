@@ -62,8 +62,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val title   = remoteMessage.notification?.title ?: remoteMessage.data["title"] ?: "Thông báo mới"
         val body    = remoteMessage.notification?.body  ?: remoteMessage.data["message"] ?: ""
         val chatId  = remoteMessage.data["chatId"] ?: ""
+        val ticketId = remoteMessage.data["ticketId"] ?: ""
+        val ticketTitle = remoteMessage.data["ticketTitle"] ?: "Yêu cầu hỗ trợ"
 
-        showNotification(title, body, type, chatId, senderId)
+        showNotification(title, body, type, chatId, senderId, ticketId, ticketTitle)
     }
 
 
@@ -88,7 +90,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     /**
      * Vẽ và hiển thị thông báo dạng Pop-up khi App đang được mở.
      */
-    private fun showNotification(title: String, body: String, type: String = "general", chatId: String = "", senderId: String = "") {
+    private fun showNotification(
+        title: String,
+        body: String,
+        type: String = "general",
+        chatId: String = "",
+        senderId: String = "",
+        ticketId: String = "",
+        ticketTitle: String = ""
+    ) {
         createNotificationChannel()
 
         val intent: Intent
@@ -96,6 +106,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             intent = Intent(this, com.example.doantotnghiep.View.Auth.ChatActivity::class.java).apply {
                 putExtra(com.example.doantotnghiep.View.Auth.ChatActivity.EXTRA_OTHER_UID, senderId)
                 putExtra(com.example.doantotnghiep.View.Auth.ChatActivity.EXTRA_OTHER_NAME, title.replace("Tin nhắn mới từ ", ""))
+            }
+        } else if (type == "support_reply" && ticketId.isNotEmpty()) {
+            intent = Intent(this, com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity::class.java).apply {
+                putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_ID, ticketId)
+                putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_TITLE, ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
             }
         } else {
             // Mặc định mở MainActivity kèm lệnh mở MyAppointmentsActivity

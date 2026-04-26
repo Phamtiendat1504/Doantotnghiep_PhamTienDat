@@ -26,6 +26,7 @@ class SettingsActivity : AppCompatActivity() {
     private lateinit var switchPushAppointment: SwitchCompat
     private lateinit var switchPushSystem: SwitchCompat
     private lateinit var btnClearImageCache: LinearLayout
+    private lateinit var btnSupportCenter: LinearLayout
     private lateinit var btnTerms: LinearLayout
     private lateinit var btnAbout: LinearLayout
     private lateinit var btnDeleteAccount: LinearLayout
@@ -61,6 +62,7 @@ class SettingsActivity : AppCompatActivity() {
         switchPushAppointment = findViewById(R.id.switchPushAppointment)
         switchPushSystem = findViewById(R.id.switchPushSystem)
         btnClearImageCache = findViewById(R.id.btnClearImageCache)
+        btnSupportCenter = findViewById(R.id.btnSupportCenter)
         btnTerms = findViewById(R.id.btnTerms)
         btnAbout = findViewById(R.id.btnAbout)
         btnDeleteAccount = findViewById(R.id.btnDeleteAccount)
@@ -114,6 +116,10 @@ class SettingsActivity : AppCompatActivity() {
                 message = "Bạn có chắc muốn xóa bộ nhớ tạm hình ảnh không?",
                 positiveText = "Xóa"
             ) { clearImageCache() }
+        }
+
+        btnSupportCenter.setOnClickListener {
+            startActivity(Intent(this, SupportTicketsActivity::class.java))
         }
 
         btnTerms.setOnClickListener {

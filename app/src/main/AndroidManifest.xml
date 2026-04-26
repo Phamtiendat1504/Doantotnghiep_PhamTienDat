@@ -116,6 +116,13 @@
             android:name=".View.Auth.NotificationsActivity"
             android:exported="false" />
         <activity
+            android:name=".View.Auth.SupportTicketsActivity"
+            android:exported="false" />
+        <activity
+            android:name=".View.Auth.SupportTicketDetailActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+        <activity
             android:name=".View.Auth.SettingsActivity"
             android:exported="false" />
         <activity
