@@ -263,8 +263,8 @@ class MyPostsActivity : AppCompatActivity() {
         val tvStatus = TextView(this)
         when (status) {
             "pending" -> { tvStatus.text = " Chờ duyệt"; tvStatus.setTextColor(0xFFE65100.toInt()); tvStatus.setBackgroundResource(R.drawable.bg_badge_pending) }
-            "approved" -> { tvStatus.text = "✓ Đã duyệt"; tvStatus.setTextColor(0xFFFFFFFF.toInt()); tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF2E7D32.toInt()); cornerRadius = dpToPx(8).toFloat() } }
-            "rejected" -> { tvStatus.text = "✗ Từ chối"; tvStatus.setTextColor(0xFFD32F2F.toInt()); tvStatus.setBackgroundResource(R.drawable.bg_badge_pending) }
+            "approved" -> { tvStatus.text = "Đã duyệt"; tvStatus.setTextColor(0xFFFFFFFF.toInt()); tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF2E7D32.toInt()); cornerRadius = dpToPx(8).toFloat() } }
+            "rejected" -> { tvStatus.text = "Từ chối"; tvStatus.setTextColor(0xFFD32F2F.toInt()); tvStatus.setBackgroundResource(R.drawable.bg_badge_pending) }
             "expired" -> { tvStatus.text = " Hết hạn"; tvStatus.setTextColor(0xFFFFFFFF.toInt()); tvStatus.background = android.graphics.drawable.GradientDrawable().apply { setColor(0xFF757575.toInt()); cornerRadius = dpToPx(8).toFloat() } }
         }
         tvStatus.textSize = 12f; tvStatus.setTypeface(tvStatus.typeface, android.graphics.Typeface.BOLD)
