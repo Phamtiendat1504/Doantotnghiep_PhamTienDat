@@ -44,6 +44,7 @@ class SupportTicketAdapter(
         private val tvLastMessage: TextView = itemView.findViewById(R.id.tvTicketLastMessage)
         private val tvTime: TextView = itemView.findViewById(R.id.tvTicketTime)
         private val unreadDot: View = itemView.findViewById(R.id.viewTicketUnread)
+        private val cardView: androidx.cardview.widget.CardView = itemView as androidx.cardview.widget.CardView
 
         fun bind(ticket: SupportTicket) {
             tvTitle.text = ticket.title
@@ -57,9 +58,18 @@ class SupportTicketAdapter(
             }
             unreadDot.visibility = if (ticket.unreadForUser) View.VISIBLE else View.GONE
             itemView.isSelected = ticket.id == selectedTicketId
-            itemView.setBackgroundColor(
+            cardView.setCardBackgroundColor(
                 if (ticket.id == selectedTicketId) 0xFFE3F2FD.toInt() else 0xFFFFFFFF.toInt()
             )
+            
+            // Đổi màu badge trạng thái cho đẹp
+            when (ticket.status) {
+                "new" -> tvStatus.setTextColor(0xFFE53935.toInt()) // Red
+                "in_progress" -> tvStatus.setTextColor(0xFFFB8C00.toInt()) // Orange
+                "resolved" -> tvStatus.setTextColor(0xFF43A047.toInt()) // Green
+                "closed" -> tvStatus.setTextColor(0xFF757575.toInt()) // Grey
+            }
+
             itemView.setOnClickListener { onClick(ticket) }
         }
     }
