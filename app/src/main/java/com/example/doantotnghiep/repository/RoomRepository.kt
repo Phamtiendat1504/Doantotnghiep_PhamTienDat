@@ -603,7 +603,7 @@ class RoomRepository {
             .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(10).get()
             .addOnSuccessListener { docs ->
                 val now = System.currentTimeMillis()
-                onSuccess(docs.toList().filter { (it.getLong("featuredUntil") ?: Long.MAX_VALUE) > now })
+                onSuccess(docs.toList().filter { (it.getLong("featuredUntil") ?: 0L) > now })
             }
             .addOnFailureListener { onSuccess(emptyList()) }
     }

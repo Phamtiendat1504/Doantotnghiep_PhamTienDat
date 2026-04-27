@@ -417,17 +417,13 @@ class MyPostsActivity : AppCompatActivity() {
             "expiresAt" to now + 30L * 60L * 1000L
         )
 
+        val roomRef = db.collection("rooms").document(roomId)
         val dialogView = layoutInflater.inflate(R.layout.dialog_payment_qr, null)
         val dialog = androidx.appcompat.app.AlertDialog.Builder(this, R.style.RoundedDialogStyle)
             .setView(dialogView)
             .setCancelable(false)
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        docRef.set(request).addOnFailureListener {
-            MessageUtils.showErrorDialog(this, "Không thể tạo giao dịch", "Vui lòng thử lại sau.")
-            dialog.dismiss()
-        }
 
         dialogView.findViewById<TextView>(R.id.tvQrPackageName).text = "${pkg.label} — ${formatter.format(pkg.price.toLong())} đ"
         dialogView.findViewById<TextView>(R.id.tvQrBank).text = bankDisplay
@@ -475,10 +471,6 @@ class MyPostsActivity : AppCompatActivity() {
             }
         }
 
-        val listener = docRef.addSnapshotListener { snapshot, error ->
-            if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-            applyStatus(snapshot.getString("status") ?: return@addSnapshotListener)
-        }
         val pollRunnable = object : Runnable {
             override fun run() {
                 if (stopPolling || !dialog.isShowing) return
@@ -489,7 +481,31 @@ class MyPostsActivity : AppCompatActivity() {
                 }
             }
         }
-        handler.postDelayed(pollRunnable, 3000L)
+
+        var listener: com.google.firebase.firestore.ListenerRegistration? = null
+        fun startWatchingPayment() {
+            listener = docRef.addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
+                applyStatus(snapshot.getString("status") ?: return@addSnapshotListener)
+            }
+            handler.postDelayed(pollRunnable, 3000L)
+            dialog.show()
+        }
+
+        db.batch().apply {
+            set(docRef, request)
+            update(
+                roomRef,
+                mapOf(
+                    "featuredRequestId" to requestId,
+                    "featuredRequestStatus" to "waiting_for_payment"
+                )
+            )
+        }.commit().addOnSuccessListener {
+            startWatchingPayment()
+        }.addOnFailureListener {
+            MessageUtils.showErrorDialog(this, "Không thể tạo giao dịch", "Vui lòng thử lại sau.")
+        }
 
         dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
             .setOnClickListener {
@@ -516,10 +532,9 @@ class MyPostsActivity : AppCompatActivity() {
         dialog.setOnDismissListener {
             stopPolling = true
             handler.removeCallbacks(pollRunnable)
-            listener.remove()
+            listener?.remove()
             if (!paymentCompleted) refreshList()
         }
-        dialog.show()
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

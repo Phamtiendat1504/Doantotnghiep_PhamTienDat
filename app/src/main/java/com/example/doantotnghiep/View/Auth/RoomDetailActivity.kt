@@ -478,11 +478,25 @@ class RoomDetailActivity : AppCompatActivity() {
             "createdAt" to now,
             "updatedAt" to now
         )
-        db.collection("reviews").add(data)
-            .addOnSuccessListener {
-                MessageUtils.showSuccessDialog(this, "Đã gửi đánh giá", "Cảm ơn bạn đã đánh giá chủ trọ.")
-                loadReviews(landlordId)
-                onDone()
+        db.collection("reviews")
+            .whereEqualTo("userId", currentUid)
+            .whereEqualTo("landlordId", landlordId)
+            .limit(1)
+            .get()
+            .addOnSuccessListener { existing ->
+                if (!existing.isEmpty) {
+                    MessageUtils.showInfoDialog(this, "Đã đánh giá", "Bạn đã đánh giá chủ trọ này rồi.")
+                    return@addOnSuccessListener
+                }
+                db.collection("reviews").add(data)
+                    .addOnSuccessListener {
+                        MessageUtils.showSuccessDialog(this, "Đã gửi đánh giá", "Cảm ơn bạn đã đánh giá chủ trọ.")
+                        loadReviews(landlordId)
+                        onDone()
+                    }
+                    .addOnFailureListener { e ->
+                        MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể gửi đánh giá")
+                    }
             }
             .addOnFailureListener { e ->
                 MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể gửi đánh giá")
