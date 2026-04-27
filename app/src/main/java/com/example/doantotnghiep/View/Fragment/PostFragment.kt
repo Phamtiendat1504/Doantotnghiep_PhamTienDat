@@ -1,4 +1,4 @@
-﻿package com.example.doantotnghiep.View.Fragment
+package com.example.doantotnghiep.View.Fragment
 
 import android.app.Activity
 import android.content.Intent
@@ -825,9 +825,8 @@ class PostFragment : Fragment() {
     data class SlotPackage(val label: String, val code: String, val slots: Int, val price: Int)
 
     private val slotPackages = listOf(
-        SlotPackage("+3 lượt đăng bài",  "GOI01", 3,  10_000),
-        SlotPackage("+10 lượt đăng bài", "GOI02", 10, 30_000),
-        SlotPackage("+20 lượt đăng bài", "GOI03", 20, 50_000)
+        SlotPackage("+3 lượt đăng bài",  "GOI01", 3,  15_000),
+        SlotPackage("+10 lượt đăng bài", "GOI02", 10, 50_000)
     )
 
     // ⚠️ ĐIỀN THÔNG TIN NGÂN HÀNG CỦA BẠN VÀO ĐÂY:
@@ -859,9 +858,37 @@ class PostFragment : Fragment() {
             packageSelected = true
             dialog.dismiss(); showPaymentQrDialog(slotPackages[1])
         }
-        dialogView.findViewById<android.view.View>(R.id.layoutPkg3).setOnClickListener {
-            packageSelected = true
-            dialog.dismiss(); showPaymentQrDialog(slotPackages[2])
+
+        val edtCustomSlots = dialogView.findViewById<EditText>(R.id.edtCustomSlots)
+        val tvCustomPrice = dialogView.findViewById<TextView>(R.id.tvCustomPrice)
+        val btnBuyCustom = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnBuyCustom)
+
+        edtCustomSlots.addTextChangedListener(object : android.text.TextWatcher {
+            override fun afterTextChanged(s: android.text.Editable?) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val slotsStr = s?.toString() ?: ""
+                val slots = slotsStr.toIntOrNull() ?: 0
+                if (slots > 0) {
+                    val price = slots * 5_000L
+                    tvCustomPrice.text = "%,d đ".format(price).replace(",", ".")
+                    btnBuyCustom.isEnabled = true
+                } else {
+                    tvCustomPrice.text = "0 đ"
+                    btnBuyCustom.isEnabled = false
+                }
+            }
+        })
+
+        btnBuyCustom.setOnClickListener {
+            val slotsStr = edtCustomSlots.text.toString()
+            val slots = slotsStr.toIntOrNull() ?: 0
+            if (slots > 0) {
+                packageSelected = true
+                dialog.dismiss()
+                val customPkg = SlotPackage("+$slots lượt đăng bài (Tùy chọn)", "CUSTOM", slots, slots * 5_000)
+                showPaymentQrDialog(customPkg)
+            }
         }
 
         dialog.setOnDismissListener {

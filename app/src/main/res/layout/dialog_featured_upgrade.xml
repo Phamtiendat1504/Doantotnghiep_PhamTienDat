@@ -18,7 +18,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mua thêm lượt đăng bài"
+            android:text="Đẩy bài nổi bật"
             android:textSize="20sp"
             android:textStyle="bold"
             android:textColor="@android:color/white" />
@@ -26,11 +26,10 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chọn gói hoặc nhập số lượng bạn muốn"
+            android:text="Thu hút người thuê với vị trí ưu tiên"
             android:textSize="14sp"
             android:textColor="#E0F2FE"
             android:layout_marginTop="4dp" />
-
     </LinearLayout>
 
     <!-- Body -->
@@ -41,9 +40,9 @@
         android:padding="20dp"
         android:background="@android:color/white">
 
-        <!-- Gói 1 -->
+        <!-- Gói 3 ngày -->
         <LinearLayout
-            android:id="@+id/layoutPkg1"
+            android:id="@+id/layoutFeatured3"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
@@ -61,31 +60,90 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="+3 lượt đăng bài"
+                    android:text="Nổi bật 3 ngày"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
+
             </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="15.000 đ"
+                android:text="10.000 đ"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/primary" />
         </LinearLayout>
 
-        <!-- Gói 2 -->
+        <!-- Gói 7 ngày (Phổ biến) -->
         <LinearLayout
-            android:id="@+id/layoutPkg2"
+            android:id="@+id/layoutFeatured7"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_slot_package_normal"
+            android:backgroundTint="#F0F9FF"
+            android:padding="16dp"
+            android:layout_marginBottom="12dp">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Nổi bật 7 ngày"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="PHỔ BIẾN"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/white"
+                        android:background="@color/primary"
+                        android:paddingStart="6dp"
+                        android:paddingEnd="6dp"
+                        android:paddingTop="2dp"
+                        android:paddingBottom="2dp"
+                        android:layout_marginStart="8dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20.000 đ"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/primary" />
+        </LinearLayout>
+
+        <!-- Gói 15 ngày -->
+        <LinearLayout
+            android:id="@+id/layoutFeatured15"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/bg_slot_package_normal"
             android:padding="16dp"
-            android:layout_marginBottom="12dp">
+            android:layout_marginBottom="16dp">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -96,16 +154,17 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="+10 lượt đăng bài"
+                    android:text="Nổi bật 15 ngày"
                     android:textSize="16sp"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
+
             </LinearLayout>
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="50.000 đ"
+                android:text="40.000 đ"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="@color/primary" />
@@ -114,11 +173,11 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Hoặc nhập số lượng tùy chọn (1 lượt = 5.000 đ):"
+            android:text="Hoặc tự chọn số ngày (1 ngày = 10.000 đ):"
             android:textSize="14sp"
             android:textColor="#333333"
             android:textStyle="bold"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="6dp"
             android:layout_marginBottom="8dp"/>
 
         <LinearLayout
@@ -131,12 +190,12 @@
             android:layout_marginBottom="20dp">
 
             <EditText
-                android:id="@+id/edtCustomSlots"
+                android:id="@+id/edtCustomDays"
                 android:layout_width="0dp"
                 android:layout_height="50dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:hint="Nhập số lượt..."
+                android:hint="Nhập số ngày..."
                 android:inputType="number"
                 android:paddingStart="12dp"
                 android:paddingEnd="12dp"
@@ -177,17 +236,16 @@
                 app:cornerRadius="8dp" />
         </LinearLayout>
 
-        <!-- Nút đóng -->
+        <!-- Nút Hủy -->
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnCloseUpgrade"
+            android:id="@+id/btnCancelFeatured"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent"
             android:layout_height="50dp"
-            android:text="Để sau"
+            android:text="Đóng"
             android:textAllCaps="false"
             android:textSize="16sp"
             android:textColor="#666666" />
-
     </LinearLayout>
 
 </LinearLayout>

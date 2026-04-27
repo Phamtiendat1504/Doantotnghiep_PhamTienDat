@@ -105,12 +105,10 @@ class PaymentHistoryActivity : AppCompatActivity() {
         progressBar.visibility = View.VISIBLE
         val slotTask = db.collection("slot_upgrade_requests")
             .whereEqualTo("uid", uid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .limit(50)
             .get()
         val featuredTask = db.collection("featured_upgrade_requests")
             .whereEqualTo("uid", uid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .limit(50)
             .get()
 

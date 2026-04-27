@@ -271,16 +271,6 @@
                         android:textStyle="bold"
                         android:textColor="@color/text_primary" />
 
-                    <TextView
-                        android:id="@+id/btnSeeAllFeatured"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_alignParentEnd="true"
-                        android:layout_centerVertical="true"
-                        android:text="Xem thêm"
-                        android:textColor="@color/primary"
-                        android:textSize="14sp"
-                        android:textStyle="bold" />
                 </RelativeLayout>
 
                 <View

@@ -51,6 +51,21 @@ class HomeViewModel : ViewModel() {
     private val REFRESH_INTERVAL = 60 * 60 * 1000L
     private val NEW_ROOMS_PAGE_SIZE = 10L
 
+    private val rotationHandler = android.os.Handler(android.os.Looper.getMainLooper())
+    private var allFeaturedRoomsList: List<RoomItem> = emptyList()
+
+    private val rotationRunnable = object : Runnable {
+        override fun run() {
+            if (allFeaturedRoomsList.isNotEmpty()) {
+                val shuffled = allFeaturedRoomsList.shuffled().take(10)
+                _featuredRooms.value = shuffled
+                rotationHandler.postDelayed(this, 10000L) // Rotate every 10s
+            } else {
+                _featuredRooms.value = emptyList()
+            }
+        }
+    }
+
     fun loadUserName() {
         updateGreetingAndDate()
         val uid = FirebaseAuth.getInstance().currentUser?.uid
@@ -94,8 +109,12 @@ class HomeViewModel : ViewModel() {
                     createdAt = doc.getLong("createdAt") ?: 0L
                 )
             }
+            allFeaturedRoomsList = featuredList
             _isLoadingFeatured.value = false
-            _featuredRooms.value = featuredList
+            
+            // Start rotation
+            rotationHandler.removeCallbacks(rotationRunnable)
+            rotationRunnable.run()
         }
     }
 
@@ -191,6 +210,7 @@ class HomeViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         notificationListener?.remove()
+        rotationHandler.removeCallbacks(rotationRunnable)
     }
 
     fun loadNotificationBadge() {

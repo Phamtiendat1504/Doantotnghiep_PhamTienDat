@@ -9,6 +9,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.view.LayoutInflater
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.ViewModelProvider
@@ -383,14 +385,60 @@ class MyPostsActivity : AppCompatActivity() {
     }
 
     private fun showFeaturedPackagesDialog(roomId: String, roomTitle: String) {
-        val labels = featuredPackages.map { "${it.label} — ${formatter.format(it.price.toLong())} đ" }.toTypedArray()
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Đẩy bài lên Phòng nổi bật")
-            .setItems(labels) { _, which ->
-                showFeaturedPaymentQrDialog(roomId, roomTitle, featuredPackages[which])
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_featured_upgrade, null)
+        val dialog = AlertDialog.Builder(this, R.style.RoundedDialogStyle)
+            .setView(dialogView)
+            .create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        dialogView.findViewById<View>(R.id.layoutFeatured3).setOnClickListener {
+            dialog.dismiss()
+            showFeaturedPaymentQrDialog(roomId, roomTitle, featuredPackages[0])
+        }
+        dialogView.findViewById<View>(R.id.layoutFeatured7).setOnClickListener {
+            dialog.dismiss()
+            showFeaturedPaymentQrDialog(roomId, roomTitle, featuredPackages[1])
+        }
+        dialogView.findViewById<View>(R.id.layoutFeatured15).setOnClickListener {
+            dialog.dismiss()
+            showFeaturedPaymentQrDialog(roomId, roomTitle, featuredPackages[2])
+        }
+        dialogView.findViewById<View>(R.id.btnCancelFeatured).setOnClickListener {
+            dialog.dismiss()
+        }
+
+        val edtCustomDays = dialogView.findViewById<EditText>(R.id.edtCustomDays)
+        val tvCustomPrice = dialogView.findViewById<TextView>(R.id.tvCustomPrice)
+        val btnBuyCustom = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnBuyCustom)
+
+        edtCustomDays.addTextChangedListener(object : TextWatcher {
+            override fun afterTextChanged(s: Editable?) {}
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                val daysStr = s?.toString() ?: ""
+                val days = daysStr.toIntOrNull() ?: 0
+                if (days > 0) {
+                    val price = days * 10_000L
+                    tvCustomPrice.text = "%,d đ".format(price).replace(",", ".")
+                    btnBuyCustom.isEnabled = true
+                } else {
+                    tvCustomPrice.text = "0 đ"
+                    btnBuyCustom.isEnabled = false
+                }
             }
-            .setNegativeButton("Hủy", null)
-            .show()
+        })
+
+        btnBuyCustom.setOnClickListener {
+            val daysStr = edtCustomDays.text.toString()
+            val days = daysStr.toIntOrNull() ?: 0
+            if (days > 0) {
+                dialog.dismiss()
+                val customPkg = FeaturedPackage("Nổi bật $days ngày (Tùy chọn)", "FT_CUSTOM", days, days * 10000)
+                showFeaturedPaymentQrDialog(roomId, roomTitle, customPkg)
+            }
+        }
+
+        dialog.show()
     }
 
     private fun showFeaturedPaymentQrDialog(roomId: String, roomTitle: String, pkg: FeaturedPackage) {

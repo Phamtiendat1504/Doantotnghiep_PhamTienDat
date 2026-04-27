@@ -600,7 +600,7 @@ class RoomRepository {
 
     fun loadFeaturedRooms(onSuccess: (List<com.google.firebase.firestore.QueryDocumentSnapshot>) -> Unit) {
         db.collection("rooms").whereEqualTo("status", "approved").whereEqualTo("isFeatured", true)
-            .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING).limit(10).get()
+            .get()
             .addOnSuccessListener { docs ->
                 val now = System.currentTimeMillis()
                 onSuccess(docs.toList().filter { (it.getLong("featuredUntil") ?: 0L) > now })
