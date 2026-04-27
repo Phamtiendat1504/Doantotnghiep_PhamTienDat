@@ -93,44 +93,9 @@ class HomeViewModel : ViewModel() {
                     imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
                     createdAt = doc.getLong("createdAt") ?: 0L
                 )
-            }.toMutableList()
-
-            if (featuredList.size >= 3) {
-                _isLoadingFeatured.value = false
-                _featuredRooms.value = featuredList
-            } else {
-                val existingIds = featuredList.map { it.id }.toSet()
-                val needed = 3 - featuredList.size
-                repository.loadApprovedRoomsPage(
-                    startAfter = null,
-                    limit = (needed + 5).toLong(),
-                    onSuccess = { docs, _ ->
-                        @Suppress("UNCHECKED_CAST")
-                        val extras = docs
-                            .filter { it.id !in existingIds }
-                            .take(needed)
-                            .map { doc ->
-                                RoomItem(
-                                    id = doc.id,
-                                    title = doc.getString("title") ?: "",
-                                    price = doc.getLong("price") ?: 0,
-                                    ward = doc.getString("ward") ?: "",
-                                    district = doc.getString("district") ?: "",
-                                    area = doc.getLong("area")?.toInt() ?: 0,
-                                    imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
-                                    createdAt = doc.getLong("createdAt") ?: 0L
-                                )
-                            }
-                        featuredList.addAll(extras)
-                        _isLoadingFeatured.value = false
-                        _featuredRooms.value = featuredList
-                    },
-                    onFailure = {
-                        _isLoadingFeatured.value = false
-                        _featuredRooms.value = featuredList
-                    }
-                )
             }
+            _isLoadingFeatured.value = false
+            _featuredRooms.value = featuredList
         }
     }
 
