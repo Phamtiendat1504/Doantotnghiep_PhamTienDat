@@ -479,7 +479,6 @@ class RoomDetailActivity : AppCompatActivity() {
             "createdAt" to now,
             "updatedAt" to now
         )
-
         db.collection("reviews")
             .whereEqualTo("userId", currentUid)
             .whereEqualTo("landlordId", landlordId)
