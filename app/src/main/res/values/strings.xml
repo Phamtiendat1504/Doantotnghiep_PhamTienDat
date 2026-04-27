@@ -1,0 +1,269 @@
+﻿<resources>
+    <!-- App name -->
+    <string name="app_name">Tìm trọ 24/7</string>
+
+    <!-- Home Fragment -->
+    <string name="home_greeting_prefix">Xin chào,</string>
+    <string name="home_loading">Đang tải...</string>
+    <string name="home_notification">Thông báo</string>
+    <string name="home_featured_rooms">Phòng nổi bật</string>
+    <string name="home_new_rooms">Phòng mới đăng</string>
+    <string name="home_no_featured">Không có phòng nổi bật</string>
+    <string name="home_no_new">Không có phòng mới</string>
+
+    <!-- Auth - Login -->
+    <string name="login_title">Đăng Nhập</string>
+    <string name="login_description">Chào mừng bạn đến với Tìm Trọ 24/7!</string>
+    <string name="login_forgot_password">Quên mật khẩu?</string>
+    <string name="login_no_account">Chưa có tài khoản?</string>
+    <string name="login_register_here">Đăng ký tại đây</string>
+    <string name="login_button">Đăng Nhập</string>
+
+    <!-- Auth - Register -->
+    <string name="register_title">Đăng Ký</string>
+    <string name="register_button">Đăng Ký</string>
+    <string name="register_have_account">Đã có tài khoản?</string>
+    <string name="register_login_here">Đăng nhập tại đây</string>
+    <string name="register_success">Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục.</string>
+
+    <!-- Form Labels -->
+    <string name="label_full_name">Họ và Tên</string>
+    <string name="label_email">Email</string>
+    <string name="label_phone">Số Điện Thoại</string>
+    <string name="label_password">Mật Khẩu</string>
+    <string name="label_confirm_password">Xác Nhận Mật Khẩu</string>
+    <string name="label_address">Địa Chỉ</string>
+
+    <!-- Form Hints -->
+    <string name="hint_full_name">Nhập họ và tên của bạn</string>
+    <string name="hint_email">Nhập email của bạn</string>
+    <string name="hint_phone">Nhập số điện thoại</string>
+    <string name="hint_password">Nhập mật khẩu</string>
+    <string name="hint_confirm_password">Xác nhận mật khẩu</string>
+
+    <!-- Search -->
+    <string name="search_title">Tìm Kiếm</string>
+    <string name="search_button">Tìm Kiếm</string>
+    <string name="search_no_results">Không tìm thấy kết quả</string>
+    <string name="search_results_count">Kết quả tìm kiếm: %d phòng</string>
+
+    <!-- Post/Room Management -->
+    <string name="post_title">Đăng Bài</string>
+    <string name="post_button">Đăng Bài Cho Thuê</string>
+    <string name="post_update_button">Cập Nhật Bài Viết</string>
+    <string name="post_success">Đăng bài thành công! Bài đăng của bạn đã được gửi và đang chờ admin phê duyệt.</string>
+    <string name="post_error">Lỗi đăng bài</string>
+
+    <!-- Room Details -->
+    <string name="room_detail_title">Chi Tiết Phòng</string>
+    <string name="room_save_post">Lưu bài viết</string>
+    <string name="room_saved_post">✓ Đã lưu</string>
+    <string name="room_booking">Đặt Lịch Hẹn</string>
+    <string name="room_area">Diện tích</string>
+    <string name="room_price">Giá thuê</string>
+    <string name="room_owner">Chủ Trọ</string>
+
+    <!-- My Posts -->
+    <string name="my_posts_title">Bài Đăng Của Tôi</string>
+    <string name="my_posts_pending">⏳ Chờ duyệt</string>
+    <string name="my_posts_approved">✓ Đã duyệt</string>
+    <string name="my_posts_rejected">✗ Từ chối</string>
+    <string name="my_posts_delete">Xóa</string>
+    <string name="my_posts_edit">✏️ Sửa và đăng lại</string>
+
+    <!-- Booking -->
+    <string name="booking_title">Đặt Lịch Hẹn</string>
+    <string name="booking_submit">Gửi Yêu Cầu</string>
+    <string name="booking_success">Đặt lịch thành công</string>
+    <string name="booking_success_msg">Yêu cầu của bạn đã được gửi tới chủ trọ.</string>
+    <string name="booking_select_date">Chọn ngày</string>
+    <string name="booking_select_time">Chọn giờ</string>
+
+    <string-array name="support_categories">
+        <item>Lỗi đăng bài</item>
+        <item>Lỗi xác minh CCCD</item>
+        <item>Lỗi đặt lịch</item>
+        <item>Thanh toán/mua lượt đăng bài</item>
+        <item>Tài khoản bị khóa</item>
+        <item>Báo cáo phòng/người dùng</item>
+        <item>Khác</item>
+    </string-array>
+
+    <!-- Profile -->
+    <string name="profile_title">Cá Nhân</string>
+    <string name="profile_personal_info">Thông Tin Cá Nhân</string>
+    <string name="profile_change_password">Đổi Mật Khẩu</string>
+    <string name="profile_saved_posts">Bài Đã Lưu</string>
+    <string name="profile_my_posts">Bài Đăng Của Tôi</string>
+    <string name="profile_my_appointments">Lịch Hẹn Của Tôi</string>
+    <string name="profile_logout">Đăng Xuất</string>
+    <string name="profile_logout_confirm">Bạn có chắc chắn muốn đăng xuất?</string>
+    <string name="profile_change_avatar">Thay Đổi Ảnh Đại Diện</string>
+
+    <!-- Status & Messages -->
+    <string name="status_pending">⏳ Chờ xác nhận</string>
+    <string name="status_confirmed">✓ Đã xác nhận</string>
+    <string name="status_tenant_confirmed">✅ Cả hai đã xác nhận</string>
+    <string name="status_rejected">✗ Đã từ chối</string>
+    <string name="status_approved">✓ Đã duyệt</string>
+    <string name="status_rented">🏠 Đã cho thuê</string>
+    <string name="status_cancelled_by_tenant">❌ Bạn đã hủy</string>
+    <string name="status_cancelled_by_system">🚫 Đã hủy (phòng hết)</string>
+
+    <!-- Appointment Actions -->
+    <string name="action_confirm_rented">Xác nhận đã cho thuê</string>
+    <string name="action_confirm_rented_dialog_title">Xác nhận cho thuê</string>
+    <string name="action_confirm_rented_dialog_msg">Bạn có chắc chắn muốn đánh dấu phòng này đã được cho thuê bởi khách hàng này? Bài đăng sẽ bị ẩn và các lịch hẹn khác sẽ bị hủy.</string>
+    <string name="action_confirm_rented_success">Đã cập nhật trạng thái cho thuê thành công!</string>
+
+
+    <!-- Common Actions -->
+    <string name="action_yes">Có</string>
+    <string name="action_no">Không</string>
+    <string name="action_ok">OK</string>
+    <string name="action_cancel">Hủy</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_edit">Sửa</string>
+    <string name="action_save">Lưu</string>
+    <string name="action_close">Đóng</string>
+    <string name="action_back">Quay Lại</string>
+
+    <!-- Errors -->
+    <string name="error_network">Lỗi mạng, vui lòng kiểm tra kết nối</string>
+    <string name="error_loading_data">Lỗi tải dữ liệu</string>
+    <string name="error_empty_field">Vui lòng điền đầy đủ thông tin</string>
+    <string name="error_invalid_email">Email không hợp lệ</string>
+    <string name="error_invalid_phone">Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng 0)</string>
+    <string name="error_weak_password">Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt</string>
+    <string name="error_password_mismatch">Mật khẩu xác nhận không khớp</string>
+
+    <!-- Accessibility -->
+    <string name="notification_icon_desc">Biểu tượng thông báo</string>
+    <string name="back_button_desc">Nút quay lại</string>
+    <string name="settings_button_desc">Nút cài đặt</string>
+    <string name="menu_home">Trang Chủ</string>
+    <string name="menu_search">Tìm Kiếm</string>
+    <string name="menu_post">Đăng Bài</string>
+    <string name="menu_profile">Cá Nhân</string>
+    <string name="menu_ai">AI Chat</string>
+
+    <!-- Loading/Progress -->
+    <string name="loading_text">Đang tải...</string>
+    <string name="uploading_images">Đang tải ảnh: %d%%</string>
+    <string name="processing">Đang xử lý dữ liệu...</string>
+    <!-- Post Success Screen -->
+    <string name="post_success_title">Đăng bài thành công!</string>
+    <string name="post_success_subtitle">Bài đăng đã được gửi đến hệ thống</string>
+    <string name="post_process_title">Quy trình xét duyệt</string>
+    <string name="post_step_1_title">Nhập thông tin</string>
+    <string name="post_step_1_desc">Bài đăng đã được gửi thành công</string>
+    <string name="post_step_2_title">Chờ admin duyệt</string>
+    <string name="post_step_2_badge">Đang xử lý</string>
+    <string name="post_step_2_desc">Đội ngũ kiểm duyệt sẽ xem xét nội dung trong vòng 24 giờ tới.</string>
+    <string name="post_step_3_title">Bài đăng hoạt động</string>
+    <string name="post_step_3_desc">Hiển thị cho người thuê tìm kiếm</string>
+    <string name="post_info_title">Thông tin bài đăng</string>
+    <string name="post_info_label_id">Mã bài đăng</string>
+    <string name="post_info_label_title">Tiêu đề</string>
+    <string name="post_info_label_price">Giá thuê</string>
+    <string name="post_info_label_location">Khu vực</string>
+    <string name="post_note_title">Lưu ý về thời hạn bài đăng</string>
+    <string name="post_note_line_1">Bài đăng sẽ hiển thị trong vòng 2 tháng kể từ ngày đăng.</string>
+    <string name="post_note_line_2">Hết 2 tháng, bài sẽ tự động bị ẩn và bạn sẽ nhận thông báo.</string>
+    <string name="post_note_line_3">Bạn có thể gia hạn hoặc đánh dấu \"Đã cho thuê\" để ẩn bài trong mục \"Quản lý bài đăng\".</string>
+    <string name="post_note_line_4">Nếu không thao tác, bài sẽ bị xóa vĩnh viễn sau 1 tháng tiếp theo.</string>
+    <string name="post_btn_my_posts">Xem bài đăng của tôi</string>
+    <string name="post_btn_another">Đăng bài khác</string>
+    <string name="post_notification_note">Bạn sẽ nhận được thông báo qua điện thoại khi bài đăng được phê duyệt.</string>
+    <string name="post_btn_quick_edit">Chỉnh sửa thông tin bài đăng</string>
+    <string name="post_rules_link">Xem quy định đăng bài để tránh bị từ chối</string>
+    <string name="title_reset_password">Đặt Mật Khẩu Mới</string>
+    <string name="desc_reset_password">Tạo mật khẩu mới cho tài khoản của bạn.</string>
+    <string name="label_new_password">Mật khẩu mới</string>
+    <string name="hint_new_password">Nhập mật khẩu mới</string>
+    <string name="label_reset_confirm_password">Xác nhận mật khẩu mới</string>
+    <string name="hint_reset_confirm_password">Nhập lại mật khẩu mới</string>
+    <string name="btn_change_password">Đổi mật khẩu</string>
+
+    <!-- Search Screen V2 -->
+    <string name="search_screen_title">\u0054\u00ec\u006d \u0070\u0068\u00f2\u006e\u0067 \u0074\u0072\u1ecd</string>
+    <string name="search_screen_subtitle">\u0054\u0068\u0069\u1ebf\u0074 \u006c\u1ead\u0070 \u0062\u1ed9 \u006c\u1ecd\u0063 \u0111\u1ec3 \u0074\u00ec\u006d \u0070\u0068\u00f2\u006e\u0067 \u0070\u0068\u00f9 \u0068\u1ee3\u0070</string>
+    <string name="search_section_area">Khu vực</string>
+    <string name="search_area_type">Loại khu vực</string>
+    <string name="search_area_type_ward">\u0050\u0068\u01b0\u1edd\u006e\u0067 (\u006e\u1ed9\u0069 \u0074\u0068\u00e0\u006e\u0068)</string>
+    <string name="search_area_type_xa">\u0058\u00e3 (\u006e\u0067\u006f\u1ea1\u0069 \u0074\u0068\u00e0\u006e\u0068)</string>
+    <string name="search_scope">Phạm vi tìm kiếm</string>
+    <string name="search_scope_ward">\u0054\u0068\u0065\u006f \u0070\u0068\u01b0\u1edd\u006e\u0067 / \u0078\u00e3</string>
+    <string name="search_scope_district">\u0054\u006f\u00e0\u006e \u0071\u0075\u1ead\u006e / \u0068\u0075\u0079\u1ec7\u006e</string>
+    <string name="search_area_picker_label">\u0043\u0068\u1ecd\u006e \u0070\u0068\u01b0\u1edd\u006e\u0067 / \u0078\u00e3</string>
+    <string name="search_area_picker_hint">-- \u0043\u0068\u1ecd\u006e \u0050\u0068\u01b0\u1edd\u006e\u0067 --</string>
+    <string name="search_address_optional">\u0053\u1ed1 \u006e\u0068\u00e0, \u0074\u00ea\u006e \u0111\u01b0\u1edd\u006e\u0067 (\u0074\u00f9\u0079 \u0063\u0068\u1ecd\u006e)</string>
+    <string name="search_address_hint">\u0056\u0044: 12 \u004e\u0067\u0075\u0079\u1ec5\u006e \u0054\u0072\u00e3\u0069</string>
+    <string name="search_section_price">Giá thuê / tháng</string>
+    <string name="search_price_1">1-3 tr</string>
+    <string name="search_price_2">3-6 tr</string>
+    <string name="search_price_3">6-9 tr</string>
+    <string name="search_price_4">9-12 tr</string>
+    <string name="search_price_5">12+ tr</string>
+    <string name="search_price_custom">Giá khác</string>
+    <string name="search_price_custom_hint">\u004e\u0068\u1ead\u0070 \u0067\u0069\u00e1 \u006d\u006f\u006e\u0067 \u006d\u0075\u1ed1\u006e (\u0056\u004e\u0110)</string>
+    <string name="search_section_room">Loại / thông tin phòng</string>
+    <string name="search_room_type">\u004b\u0069\u1ec3\u0075 \u0070\u0068\u00f2\u006e\u0067</string>
+    <string name="search_room_shared">\u1ede \u0067\u0068\u00e9\u0070</string>
+    <string name="search_room_private">\u0052\u0069\u00ea\u006e\u0067 \u0074\u01b0</string>
+    <string name="search_area_m2">\u0044\u0069\u1ec7\u006e \u0074\u00ed\u0063\u0068 (\u006d\u00b2)</string>
+    <string name="search_area_hint">VD: 20</string>
+    <string name="search_people">\u0053\u1ed1 \u006e\u0067\u01b0\u1eddi</string>
+    <string name="search_people_hint">\u0056\u0044: 2</string>
+    <string name="search_section_utility">Tiện ích / chi phí</string>
+    <string name="search_wifi_price_hint">\u0047\u0069\u00e1 \u0077\u0069\u0066\u0069 (\u0056\u004e\u0110)</string>
+    <string name="search_electric">\u0110\u0069\u1ec7\u006e</string>
+    <string name="search_electric_price_hint">\u0047\u0069\u00e1 \u0111\u0069\u1ec7\u006e (\u0056\u004e\u0110/\u006b\u0057\u0068)</string>
+    <string name="search_water">\u004e\u01b0\u1edb\u0063</string>
+    <string name="search_water_price_hint">\u0047\u0069\u00e1 \u006e\u01b0\u1edb\u0063 (\u0056\u004e\u0110/\u006d\u00b3)</string>
+    <string name="search_curfew">Giờ giấc</string>
+    <string name="search_curfew_free">\u0054\u1ef1 \u0064\u006f</string>
+    <string name="search_curfew_custom">\u0054\u00f9\u0079 \u0063\u0068\u1ecd\u006e</string>
+    <string name="search_curfew_hint">\u0056\u0044: 23:00</string>
+    <string name="search_reset_filter">\u0110\u1eb7\u0074 \u006c\u1ea1\u0069 \u0062\u1ed9 \u006c\u1ecd\u0063</string>
+    <string name="search_submit">\u0054\u00ec\u006d \u0070\u0068\u00f2\u006e\u0067</string>
+
+    <!-- Guest Post Screen -->
+    <string name="guest_post_badge">Dành cho chủ cho thuê</string>
+    <string name="guest_post_title">Đăng tin nhanh, đúng người thuê</string>
+    <string name="guest_post_subtitle">Đăng nhập để bắt đầu đăng bài và quản lý lịch hẹn xem phòng.</string>
+    <string name="guest_post_point_1">Xác minh rõ ràng, tăng độ tin cậy</string>
+    <string name="guest_post_point_2">Quản lý bài đăng ngay trên điện thoại</string>
+    <string name="guest_post_login_cta">Đăng nhập</string>
+    <string name="guest_post_register_cta">Tạo tài khoản</string>
+    <string name="pf_guest_title">\u0054\u00ec\u006d \u0054\u0072\u1ecd 24/7</string>
+    <string name="pf_guest_subtitle">\u0110\u0103\u006e\u0067 \u006e\u0068\u1ead\u0070 \u0111\u1ec3 \u0073\u1eed \u0064\u1ee5\u006e\u0067 \u0111\u1ea7\u0079 \u0111\u1ee7 \u0063\u0068\u1ee9\u0063 \u006e\u0103\u006e\u0067</string>
+    <string name="pf_login">\u0110\u0103\u006e\u0067 \u006e\u0068\u1ead\u0070</string>
+    <string name="pf_register">\u0054\u1ea1\u006f \u0074\u00e0\u0069 \u006b\u0068\u006f\u1ea3\u006e \u006d\u1edb\u0069</string>
+    <string name="pf_notification">\u0054\u0068\u00f4\u006e\u0067 \u0062\u00e1\u006f</string>
+    <string name="pf_change_avatar">\u0110\u1ed5\u0069 \u1ea3\u006e\u0068</string>
+    <string name="pf_account">\u0054\u00e0\u0069 \u006b\u0068\u006f\u1ea3\u006e</string>
+    <string name="pf_activity">\u0048\u006f\u1ea1\u0074 \u0111\u1ed9\u006e\u0067</string>
+    <string name="pf_personal_info">\u0054\u0068\u00f4\u006e\u0067 \u0074\u0069\u006e \u0063\u00e1 \u006e\u0068\u00e2\u006e</string>
+    <string name="pf_change_password">\u0110\u1ed5\u0069 \u006d\u1ead\u0074 \u006b\u0068\u1ea9\u0075</string>
+    <string name="pf_saved_posts">\u0042\u00e0\u0069 \u0076\u0069\u1ebf\u0074 \u0111\u00e3 \u006c\u01b0\u0075</string>
+    <string name="pf_appointments">\u004c\u1ecb\u0063\u0068 \u0068\u1eb9\u006e \u0078\u0065\u006d \u0070\u0068\u00f2\u006e\u0067</string>
+    <string name="pf_messages">\u0054\u0069\u006e \u006e\u0068\u1eaf\u006e</string>
+    <string name="pf_my_posts">\u0042\u00e0\u0069 \u0111\u0103\u006e\u0067 \u0063\u1ee7\u0061 \u0074\u00f4\u0069</string>
+    <string name="pf_logout">\u0110\u0103\u006e\u0067 \u0078\u0075\u1ea5\u0074</string>
+    <string name="pf_open">\u004d\u1edf</string>
+    <string name="search_section_area_title">\u004b\u0068\u0075 \u0076\u1ef1\u0063</string>
+    <string name="search_area_type_label">\u004c\u006f\u1ea1\u0069 \u006b\u0068\u0075 \u0076\u1ef1\u0063</string>
+    <string name="search_scope_label">\u0050\u0068\u1ea1\u006d \u0076\u0069 \u0074\u00ec\u006d \u006b\u0069\u1ebf\u006d</string>
+    <string name="search_section_price_title">\u0047\u0069\u00e1 \u0074\u0068\u0075\u00ea</string>
+    <string name="search_section_room_title">\u0054\u0068\u00f4\u006e\u0067 \u0074\u0069\u006e \u0070\u0068\u00f2\u006e\u0067</string>
+    <string name="search_section_amenities_title">\u0054\u0069\u1ec7\u006e \u00ed\u0063\u0068</string>
+
+    <string name="settings_version_format">Phiên bản %1$s</string>
+    <string name="delete_account_function_url">https://deleteuseraccount-cg77zy364a-uc.a.run.app</string>
+    <string name="settings_terms_title">Điều khoản sử dụng</string>
+    <string name="settings_terms_content">I. Phạm vi áp dụng\n\nĐiều khoản này áp dụng cho toàn bộ người dùng sử dụng ứng dụng Tìm Trọ 24/7, bao gồm người tìm trọ, người đăng cho thuê và tài khoản quản trị.\n\nII. Nguyên tắc sử dụng tài khoản\n\n1. Người dùng phải cung cấp thông tin cá nhân chính xác, đầy đủ và chịu trách nhiệm về thông tin đã khai báo.\n2. Người dùng không được mạo danh tổ chức hoặc cá nhân khác dưới bất kỳ hình thức nào.\n3. Mỗi tài khoản chỉ đại diện cho một chủ thể sử dụng và không được chia sẻ trái phép cho bên thứ ba.\n\nIII. Quy định về nội dung đăng tải\n\n1. Nội dung bài đăng phải phản ánh đúng hiện trạng phòng trọ, giá thuê, tiện ích và điều kiện liên quan.\n2. Không đăng tải nội dung vi phạm pháp luật, lừa đảo, kích động, quấy rối hoặc gây hiểu nhầm cho người dùng khác.\n3. Không sử dụng hình ảnh, thông tin của bên thứ ba khi chưa được cho phép.\n\nIV. Trách nhiệm và giới hạn trách nhiệm\n\n1. Người dùng tự chịu trách nhiệm đối với thỏa thuận thuê trọ và giao dịch phát sinh giữa các bên.\n2. Ứng dụng đóng vai trò nền tảng kết nối, không thay thế hợp đồng dân sự giữa người thuê và người cho thuê.\n3. Ứng dụng có quyền rà soát, ẩn hoặc gỡ nội dung không phù hợp để đảm bảo an toàn hệ thống.\n\nV. Xử lý vi phạm\n\n1. Tài khoản có dấu hiệu vi phạm có thể bị nhắc nhở, giới hạn chức năng, tạm khóa hoặc hủy tài khoản.\n2. Trường hợp nghiêm trọng, dữ liệu vi phạm có thể được lưu phục vụ công tác đối soát và xử lý theo quy định.\n\nVI. Chính sách dữ liệu và bảo mật\n\n1. Dữ liệu người dùng được sử dụng cho mục đích vận hành dịch vụ, bảo mật và nâng cao chất lượng hệ thống.\n2. Hệ thống áp dụng biện pháp kỹ thuật phù hợp để giảm thiểu rủi ro rò rỉ và truy cập trái phép.\n3. Người dùng cần tự bảo mật mật khẩu và thiết bị đăng nhập của mình.\n\nVII. Hiệu lực và cập nhật\n\nĐiều khoản có thể được cập nhật theo từng giai đoạn phát triển sản phẩm. Phiên bản mới sẽ có hiệu lực kể từ thời điểm được công bố trên ứng dụng.</string>
+    <string name="settings_about_title">Giới thiệu ứng dụng</string>
+    <string name="settings_about_content">Tìm Trọ 24/7 là ứng dụng hỗ trợ kết nối người thuê và người cho thuê phòng trọ trên nền tảng di động Android, được xây dựng với mục tiêu đơn giản hóa quy trình tìm kiếm, đăng tin và đặt lịch xem phòng.\n\n1. Mục tiêu sản phẩm\n\n- Giúp người dùng tìm phòng phù hợp nhanh hơn theo khu vực, ngân sách và nhu cầu thực tế.\n- Giúp chủ trọ quản lý bài đăng, lịch hẹn và tương tác với khách thuê trong một hệ thống thống nhất.\n- Tăng tính minh bạch thông tin thông qua cơ chế xác minh tài khoản đăng bài.\n\n2. Các chức năng chính\n\n- Tìm kiếm phòng theo nhiều bộ lọc: khu vực, mức giá, diện tích, tiện ích.\n- Xem chi tiết phòng, lưu bài viết quan tâm và theo dõi lại dễ dàng.\n- Đặt lịch hẹn xem phòng trực tiếp với chủ trọ theo khung giờ phù hợp.\n- Nhắn tin giữa người thuê và người cho thuê trong ứng dụng.\n- Nhận thông báo trạng thái bài đăng, lịch hẹn và thông báo hệ thống.\n- Xác minh tài khoản để mở quyền đăng bài cho thuê.\n\n3. Định hướng phát triển\n\nTrong các phiên bản tiếp theo, ứng dụng hướng tới nâng cao chất lượng kiểm duyệt nội dung, cải thiện trải nghiệm người dùng và tăng cường tính an toàn dữ liệu để phục vụ tốt hơn nhu cầu thuê trọ thực tế.</string>
+
+</resources>

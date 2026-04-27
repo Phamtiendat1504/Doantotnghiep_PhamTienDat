@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="12dp"
+    android:paddingBottom="12dp"
+    android:background="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
+
+    <!-- Avatar người kia -->
+    <FrameLayout
+        android:layout_width="54dp"
+        android:layout_height="54dp">
+
+        <androidx.cardview.widget.CardView
+            android:layout_width="54dp"
+            android:layout_height="54dp"
+            app:cardCornerRadius="27dp"
+            app:cardElevation="0dp"
+            app:cardBackgroundColor="#F1F3F4">
+
+            <ImageView
+                android:id="@+id/ivConvAvatar"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:src="@drawable/ic_person"
+                android:padding="12dp"
+                app:tint="#999999" />
+
+        </androidx.cardview.widget.CardView>
+
+        <!-- Unread badge nhỏ ở góc avatar -->
+        <TextView
+            android:id="@+id/tvConvUnreadBadge"
+            android:layout_width="20dp"
+            android:layout_height="20dp"
+            android:layout_gravity="top|end"
+            android:gravity="center"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:textColor="@color/white"
+            android:background="@drawable/bg_badge_red"
+            android:visibility="gone" />
+
+    </FrameLayout>
+
+    <!-- Nội dung -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp">
+
+        <TextView
+            android:id="@+id/tvConvName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tên người dùng"
+            android:textSize="15sp"
+            android:textStyle="bold"
+            android:textColor="@color/text_primary"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/tvConvLastMessage"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Tin nhắn cuối..."
+            android:textSize="13sp"
+            android:textColor="@color/text_hint"
+            android:layout_marginTop="2dp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+    </LinearLayout>
+
+    <!-- Thời gian -->
+    <TextView
+        android:id="@+id/tvConvTime"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="12:00"
+        android:textSize="12sp"
+        android:textColor="@color/text_hint"
+        android:layout_gravity="top"
+        android:layout_marginTop="2dp" />
+
+</LinearLayout>

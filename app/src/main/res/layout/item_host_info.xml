@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="4dp">
+
+    <androidx.cardview.widget.CardView
+        android:layout_width="58dp"
+        android:layout_height="58dp"
+        app:cardBackgroundColor="#EFF3F8"
+        app:cardCornerRadius="29dp"
+        app:cardElevation="0dp">
+
+        <ImageView
+            android:id="@+id/ivHostAvatar"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:padding="12dp"
+            android:src="@drawable/ic_person"
+            app:tint="#90A4AE" />
+    </androidx.cardview.widget.CardView>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="14dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/tvHostName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Chủ nhà"
+            android:textColor="#111827"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvHostStatus"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:text="Đã xác minh"
+            android:textColor="#10B981"
+            android:textSize="13sp" />
+    </LinearLayout>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnChatHost"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:insetBottom="0dp"
+        android:insetLeft="0dp"
+        android:insetRight="0dp"
+        android:insetTop="0dp"
+        android:padding="0dp"
+        app:cornerRadius="22dp"
+        app:icon="@drawable/ic_ai"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp"
+        app:iconTint="@color/primary"
+        app:strokeColor="#DCE3EA" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btnCallHost"
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp"
+        android:insetBottom="0dp"
+        android:insetLeft="0dp"
+        android:insetRight="0dp"
+        android:insetTop="0dp"
+        android:padding="0dp"
+        app:backgroundTint="@color/primary"
+        app:cornerRadius="22dp"
+        app:icon="@drawable/ic_phone"
+        app:iconGravity="textStart"
+        app:iconPadding="0dp" />
+
+</LinearLayout>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Popup chọn emoji - dùng GridLayout được populate động từ adapter -->
+<androidx.core.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="280dp"
+    android:layout_height="wrap_content"
+    android:maxHeight="320dp"
+    android:background="@drawable/bg_emoji_popup"
+    android:elevation="8dp">
+
+    <GridLayout
+        android:id="@+id/emojiGrid"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:columnCount="6"
+        android:padding="8dp" />
+
+</androidx.core.widget.NestedScrollView>

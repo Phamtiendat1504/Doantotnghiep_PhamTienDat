@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <style name="Theme.Doantotnghiep" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorPrimaryVariant">@color/primary_dark</item>
+        <item name="colorOnPrimary">@color/on_primary</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Doantotnghiep.AlertDialog</item>
+        <item name="android:alertDialogTheme">@style/ThemeOverlay.Doantotnghiep.AlertDialog</item>
+        <item name="materialAlertDialogTheme">@style/ThemeOverlay.Doantotnghiep.MaterialAlertDialog</item>
+    </style>
+
+    <!-- Input Styles -->
+    <style name="OutlinedBoxRounded" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="boxStrokeColor">@color/black</item>
+        <item name="boxStrokeWidth">@dimen/stroke_1_5</item>
+        <item name="boxCornerRadiusTopStart">@dimen/corner_radius_12</item>
+        <item name="boxCornerRadiusTopEnd">@dimen/corner_radius_12</item>
+        <item name="boxCornerRadiusBottomStart">@dimen/corner_radius_12</item>
+        <item name="boxCornerRadiusBottomEnd">@dimen/corner_radius_12</item>
+        <item name="boxStrokeErrorColor">@color/black</item>
+        <item name="errorIconDrawable">@null</item>
+    </style>
+
+    <!-- Text Styles - Heading -->
+    <style name="TextHeading1">
+        <item name="android:textSize">@dimen/text_size_28</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/primary</item>
+    </style>
+
+    <style name="TextHeading2">
+        <item name="android:textSize">@dimen/text_size_20</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="TextHeading3">
+        <item name="android:textSize">@dimen/text_size_18</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <!-- Text Styles - Body -->
+    <style name="TextBody1">
+        <item name="android:textSize">@dimen/text_size_16</item>
+        <item name="android:textColor">@color/text_primary</item>
+    </style>
+
+    <style name="TextBody2">
+        <item name="android:textSize">@dimen/text_size_14</item>
+        <item name="android:textColor">@color/text_secondary</item>
+    </style>
+
+    <!-- Text Styles - Caption -->
+    <style name="TextCaption">
+        <item name="android:textSize">@dimen/text_size_12</item>
+        <item name="android:textColor">@color/text_hint</item>
+    </style>
+
+    <style name="TextCaptionSmall">
+        <item name="android:textSize">@dimen/text_size_10</item>
+        <item name="android:textColor">@color/text_hint</item>
+    </style>
+
+    <!-- Badge Styles -->
+    <style name="BadgeStyle">
+        <item name="android:textSize">@dimen/text_size_12</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:paddingStart">@dimen/spacing_12</item>
+        <item name="android:paddingEnd">@dimen/spacing_12</item>
+        <item name="android:paddingTop">@dimen/spacing_4</item>
+        <item name="android:paddingBottom">@dimen/spacing_4</item>
+    </style>
+
+    <style name="BadgePending" parent="BadgeStyle">
+        <item name="android:textColor">#E65100</item>
+        <item name="android:background">@drawable/bg_badge_pending</item>
+    </style>
+
+    <style name="BadgeApproved" parent="BadgeStyle">
+        <item name="android:textColor">@color/on_primary</item>
+        <item name="android:background">@drawable/bg_badge_landlord</item>
+    </style>
+
+    <style name="BadgeTenant" parent="BadgeStyle">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:background">@drawable/bg_badge_tenant</item>
+    </style>
+
+    <!-- ShapeableImageView rounded corners -->
+    <style name="RoundedImage" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
+
+    <!-- Bo góc chỉ bên trái (dùng cho card item nằm ngang) -->
+    <style name="RoundedImageLeft" parent="">
+        <item name="cornerFamilyTopLeft">rounded</item>
+        <item name="cornerFamilyTopRight">rounded</item>
+        <item name="cornerFamilyBottomLeft">rounded</item>
+        <item name="cornerFamilyBottomRight">rounded</item>
+        <item name="cornerSizeTopLeft">16dp</item>
+        <item name="cornerSizeBottomLeft">16dp</item>
+        <item name="cornerSizeTopRight">0dp</item>
+        <item name="cornerSizeBottomRight">0dp</item>
+    </style>
+
+    <!-- Button Styles -->
+    <style name="ButtonPrimary" parent="Widget.MaterialComponents.Button">
+        <item name="android:textColor">@color/on_primary</item>
+        <item name="android:textSize">@dimen/text_size_14</item>
+        <item name="android:textStyle">bold</item>
+        <item name="cornerRadius">@dimen/corner_radius_8</item>
+        <item name="backgroundTint">@color/primary</item>
+    </style>
+
+    <style name="ThemeOverlay.Doantotnghiep.AlertDialog" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@drawable/bg_dialog_surface</item>
+        <item name="android:windowMinWidthMajor">88%</item>
+        <item name="android:windowMinWidthMinor">88%</item>
+        <item name="android:textColorPrimary">@color/text_primary</item>
+        <item name="android:textColorSecondary">@color/text_secondary</item>
+        <item name="android:buttonBarPositiveButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="android:buttonBarNegativeButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="android:buttonBarNeutralButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+    </style>
+
+    <style name="ThemeOverlay.Doantotnghiep.MaterialAlertDialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
+        <item name="shapeAppearanceOverlay">@style/ShapeAppearanceOverlay.Doantotnghiep.Dialog</item>
+        <item name="materialAlertDialogTitleTextStyle">@style/TextAppearance.Doantotnghiep.DialogTitle</item>
+        <item name="materialAlertDialogBodyTextStyle">@style/TextAppearance.Doantotnghiep.DialogBody</item>
+        <item name="buttonBarPositiveButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="buttonBarNegativeButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+        <item name="buttonBarNeutralButtonStyle">@style/Widget.Doantotnghiep.DialogButton</item>
+    </style>
+
+    <style name="Widget.Doantotnghiep.DialogButton" parent="Widget.AppCompat.Button.ButtonBar.AlertDialog">
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textColor">@color/primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="ShapeAppearanceOverlay.Doantotnghiep.Dialog" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">22dp</item>
+    </style>
+
+    <style name="TextAppearance.Doantotnghiep.DialogTitle" parent="TextAppearance.MaterialComponents.Headline6">
+        <item name="android:textColor">@color/text_primary</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.Doantotnghiep.DialogBody" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textColor">@color/text_secondary</item>
+        <item name="android:lineSpacingExtra">1dp</item>
+    </style>
+
+    <!-- Search Address Dialog Style -->
+    <style name="RoundedDialogStyle" parent="ThemeOverlay.AppCompat.Dialog.Alert">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowIsFloating">true</item>
+        <item name="android:windowMinWidthMajor">92%</item>
+        <item name="android:windowMinWidthMinor">92%</item>
+    </style>
+
+</resources>

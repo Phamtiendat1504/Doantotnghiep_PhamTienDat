@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="14dp"
+    android:layout_marginEnd="14dp"
+    android:layout_marginTop="14dp"
+    app:cardCornerRadius="12dp"
+    app:cardBackgroundColor="#FFFFEBEE"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <ImageView
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@android:drawable/stat_notify_error"
+                app:tint="#D32F2F" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="BÀI VIẾT BỊ TỪ CHỐI"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@color/secondary"
+                android:layout_marginStart="8dp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvRejectReason"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Lý do: Ảnh chưa rõ thông tin"
+            android:textSize="14sp"
+            android:textColor="@color/secondary_dark"
+            android:layout_marginTop="6dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Vui lòng chỉnh sửa các thông tin theo yêu cầu và bấm 'Cập nhật bài viết' để gửi duyệt lại."
+            android:textSize="12sp"
+            android:textColor="@color/secondary_dark"
+            android:layout_marginTop="8dp"
+            android:fontStyle="italic" />
+
+    </LinearLayout>
+</androidx.cardview.widget.CardView>

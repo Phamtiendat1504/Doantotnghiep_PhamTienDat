@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="96dp"
+    android:height="96dp"
+    android:viewportWidth="96"
+    android:viewportHeight="96">
+
+    <!-- Nền tròn xanh đậm -->
+    <path
+        android:pathData="M48,4 A44,44 0 1,1 47.999,4 Z"
+        android:fillColor="#1565C0" />
+
+    <!-- Lớp xanh sáng hơn phía trên (hiệu ứng chiều sâu) -->
+    <path
+        android:pathData="M48,8 A40,40 0 0,1 88,48 A40,40 0 0,0 8,48 A40,40 0 0,1 48,8 Z"
+        android:fillColor="#2196F3"
+        android:fillAlpha="0.30" />
+
+    <!-- Location pin - thân tròn + mũi nhọn dưới -->
+    <path
+        android:pathData="M48,18 C36.402,18 27,27.402 27,39 C27,50.598 38,64 48,76 C58,64 69,50.598 69,39 C69,27.402 59.598,18 48,18 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Vòng tròn rỗng bên trong pin -->
+    <path
+        android:pathData="M48,32 A7,7 0 1,0 48.001,32 Z"
+        android:fillColor="#1976D2" />
+
+    <!-- Mái nhà tam giác -->
+    <path
+        android:pathData="M48,24 L60,35 L36,35 Z"
+        android:fillColor="#1976D2" />
+
+    <!-- Thân nhà chữ nhật -->
+    <path
+        android:pathData="M38,35 L38,47 L58,47 L58,35 Z"
+        android:fillColor="#1976D2" />
+
+    <!-- Cửa ra vào (hình chữ U) -->
+    <path
+        android:pathData="M44.5,40.5 C44.5,38.567 46.067,37 48,37 C49.933,37 51.5,38.567 51.5,40.5 L51.5,47 L44.5,47 Z"
+        android:fillColor="#FFFFFF" />
+
+    <!-- Cửa sổ trái -->
+    <path
+        android:pathData="M40,37 L43,37 L43,41 L40,41 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.90" />
+
+    <!-- Cửa sổ phải -->
+    <path
+        android:pathData="M53,37 L56,37 L56,41 L53,41 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.90" />
+
+    <!-- Chấm sáng highlight góc trên -->
+    <path
+        android:pathData="M66,20 A4,4 0 1,1 66.001,20 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.20" />
+
+</vector>
