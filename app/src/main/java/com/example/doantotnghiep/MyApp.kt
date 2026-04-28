@@ -11,12 +11,13 @@ class MyApp : Application(), Application.ActivityLifecycleCallbacks {
 
     private var startedActivityCount = 0
     private val handler = Handler(Looper.getMainLooper())
-    private val heartbeatRunnable = object : Runnable {
-        override fun run() {
-            if (startedActivityCount > 0) {
-                PresenceManager.goOnline()
-                handler.postDelayed(this, 60 * 1000)
-            }
+    
+    private val heartbeatRunnable = Runnable { heartbeat() }
+
+    private fun heartbeat() {
+        if (startedActivityCount > 0) {
+            PresenceManager.goOnline()
+            handler.postDelayed(heartbeatRunnable, 60 * 1000)
         }
     }
 
