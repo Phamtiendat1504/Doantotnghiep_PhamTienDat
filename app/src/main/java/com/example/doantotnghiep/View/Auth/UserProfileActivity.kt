@@ -241,19 +241,9 @@ class UserProfileActivity : AppCompatActivity() {
 
             val myUid = FirebaseAuth.getInstance().currentUser?.uid ?: ""
 
-            // Luôn đọc lại isVerified từ server cho mọi trường hợp (cả hồ sơ mình lẫn người khác)
-            // để tránh Firestore cache trả về giá trị cũ (isVerified = false dù đã được duyệt)
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(user.uid)
-                .get(com.google.firebase.firestore.Source.SERVER)
-                .addOnSuccessListener { doc ->
-                    val verified = doc.getBoolean("isVerified") ?: false
-                    applyUserDisplay(user.copy(isVerified = verified), myUid)
-                }
-                .addOnFailureListener {
-                    // Lỗi mạng: dùng dữ liệu sẵn có
-                    applyUserDisplay(user, myUid)
-                }
+            // Dữ liệu userInfo từ viewModel (qua getUserById) đã sử dụng Source.SERVER 
+            // nên chắc chắn là dữ liệu mới nhất. Không cần call Firestore lần 2.
+            applyUserDisplay(user, myUid)
         }
 
         viewModel.rooms.observe(this) { rooms ->
