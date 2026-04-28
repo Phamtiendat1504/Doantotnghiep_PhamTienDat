@@ -270,7 +270,8 @@
                                     android:layout_height="wrap_content"
                                     android:text="Nam"
                                     android:textSize="13sp"
-                                    android:buttonTint="@color/primary" />
+                                    android:buttonTint="@color/primary" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbOwnerFemale"
@@ -279,7 +280,8 @@
                                     android:text="Nữ"
                                     android:textSize="13sp"
                                     android:buttonTint="@color/primary"
-                                    android:layout_marginStart="10dp" />
+                                    android:layout_marginStart="10dp" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -812,7 +814,8 @@
                                     android:text="Chung chủ"
                                     android:textSize="13sp"
                                     android:gravity="center_vertical"
-                                    android:buttonTint="@color/secondary" />
+                                    android:buttonTint="@color/secondary" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbPrivate"
@@ -821,7 +824,8 @@
                                     android:text="Riêng chủ"
                                     android:textSize="13sp"
                                     android:gravity="center_vertical"
-                                    android:buttonTint="@color/secondary" />
+                                    android:buttonTint="@color/secondary" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -1237,7 +1241,8 @@
                                     android:layout_height="wrap_content"
                                     android:text="Chung"
                                     android:textSize="12sp"
-                                    android:buttonTint="@color/teal" />
+                                    android:buttonTint="@color/teal" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbKitchenPrivate"
@@ -1246,7 +1251,8 @@
                                     android:text="Riêng"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="6dp" />
+                                    android:layout_marginStart="6dp" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbKitchenNone"
@@ -1255,7 +1261,8 @@
                                     android:text="Không"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="6dp" />
+                                    android:layout_marginStart="6dp" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -1288,7 +1295,8 @@
                                     android:layout_height="34dp"
                                     android:text="Chung"
                                     android:textSize="12sp"
-                                    android:buttonTint="@color/teal" />
+                                    android:buttonTint="@color/teal" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbBathroomPrivate"
@@ -1297,7 +1305,8 @@
                                     android:text="Riêng"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="8dp" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -1329,7 +1338,8 @@
                                     android:layout_height="34dp"
                                     android:text="Cho nuôi"
                                     android:textSize="12sp"
-                                    android:buttonTint="@color/teal" />
+                                    android:buttonTint="@color/teal" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbPetNo"
@@ -1338,7 +1348,8 @@
                                     android:text="Không"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="8dp" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -1417,7 +1428,8 @@
                                     android:layout_height="wrap_content"
                                     android:text="Nam"
                                     android:textSize="12sp"
-                                    android:buttonTint="@color/teal" />
+                                    android:buttonTint="@color/teal" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbGenderFemale"
@@ -1426,7 +1438,8 @@
                                     android:text="Nữ"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="8dp" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbGenderAll"
@@ -1435,7 +1448,8 @@
                                     android:text="Tất cả"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="8dp" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -1467,7 +1481,8 @@
                                     android:layout_height="34dp"
                                     android:text="Tự do"
                                     android:textSize="12sp"
-                                    android:buttonTint="@color/teal" />
+                                    android:buttonTint="@color/teal" 
+                                      android:maxLines="1"/>
 
                                 <RadioButton
                                     android:id="@+id/rbCurfewCustom"
@@ -1476,7 +1491,8 @@
                                     android:text="Tùy chọn"
                                     android:textSize="12sp"
                                     android:buttonTint="@color/teal"
-                                    android:layout_marginStart="8dp" />
+                                    android:layout_marginStart="8dp" 
+                                      android:maxLines="1"/>
 
                             </RadioGroup>
 
@@ -1587,7 +1603,8 @@
                                 android:text="Miễn phí"
                                 android:textSize="12sp"
                                 android:buttonTint="@color/teal"
-                                android:checked="true" />
+                                android:checked="true" 
+                                      android:maxLines="1"/>
 
                             <RadioButton
                                 android:id="@+id/rbMotorbikePaid"
@@ -1596,7 +1613,8 @@
                                 android:text="Tính phí"
                                 android:textSize="12sp"
                                 android:buttonTint="@color/teal"
-                                android:layout_marginStart="12dp" />
+                                android:layout_marginStart="12dp" 
+                                      android:maxLines="1"/>
 
                         </RadioGroup>
 
@@ -1639,7 +1657,8 @@
                                 android:text="Miễn phí"
                                 android:textSize="12sp"
                                 android:buttonTint="@color/teal"
-                                android:checked="true" />
+                                android:checked="true" 
+                                      android:maxLines="1"/>
 
                             <RadioButton
                                 android:id="@+id/rbEBikePaid"
@@ -1648,7 +1667,8 @@
                                 android:text="Tính phí"
                                 android:textSize="12sp"
                                 android:buttonTint="@color/teal"
-                                android:layout_marginStart="12dp" />
+                                android:layout_marginStart="12dp" 
+                                      android:maxLines="1"/>
 
                         </RadioGroup>
 
@@ -1691,7 +1711,8 @@
                                 android:text="Miễn phí"
                                 android:textSize="12sp"
                                 android:buttonTint="@color/teal"
-                                android:checked="true" />
+                                android:checked="true" 
+                                      android:maxLines="1"/>
 
                             <RadioButton
                                 android:id="@+id/rbBicyclePaid"
@@ -1700,7 +1721,8 @@
                                 android:text="Tính phí"
                                 android:textSize="12sp"
                                 android:buttonTint="@color/teal"
-                                android:layout_marginStart="12dp" />
+                                android:layout_marginStart="12dp" 
+                                      android:maxLines="1"/>
 
                         </RadioGroup>
 
