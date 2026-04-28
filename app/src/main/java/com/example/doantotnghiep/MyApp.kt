@@ -1,13 +1,24 @@
-﻿package com.example.doantotnghiep
+package com.example.doantotnghiep
 
 import android.app.Activity
 import android.app.Application
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import com.example.doantotnghiep.Utils.PresenceManager
 
 class MyApp : Application(), Application.ActivityLifecycleCallbacks {
 
     private var startedActivityCount = 0
+    private val handler = Handler(Looper.getMainLooper())
+    private val heartbeatRunnable = object : Runnable {
+        override fun run() {
+            if (startedActivityCount > 0) {
+                PresenceManager.goOnline()
+                handler.postDelayed(this, 60 * 1000)
+            }
+        }
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -19,6 +30,7 @@ class MyApp : Application(), Application.ActivityLifecycleCallbacks {
         if (startedActivityCount == 1) {
             // App is in foreground
             PresenceManager.goOnline()
+            handler.postDelayed(heartbeatRunnable, 60 * 1000)
         }
     }
 
@@ -26,6 +38,7 @@ class MyApp : Application(), Application.ActivityLifecycleCallbacks {
         startedActivityCount--
         if (startedActivityCount == 0) {
             // App is in background
+            handler.removeCallbacks(heartbeatRunnable)
             PresenceManager.goOffline()
         }
     }
