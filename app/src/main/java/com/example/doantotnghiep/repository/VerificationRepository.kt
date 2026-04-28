@@ -1,4 +1,4 @@
-﻿package com.example.doantotnghiep.repository
+package com.example.doantotnghiep.repository
 
 import android.content.Context
 import android.net.Uri
@@ -230,8 +230,7 @@ class VerificationRepository {
 
                         val matched = normalizedInput
                         val expectedName = normalizeNoAccentUpper(fullName)
-                        val frontFullText = normalizeNoAccentUpper(frontText).replace("
-", " ")
+                        val frontFullText = normalizeNoAccentUpper(frontText).replace("\n", " ")
                         val nameMatched = frontFullText.contains(expectedName)
 
                         if (!nameMatched) {
