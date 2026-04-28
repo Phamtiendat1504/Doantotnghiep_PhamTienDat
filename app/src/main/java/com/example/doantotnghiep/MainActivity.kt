@@ -1,4 +1,4 @@
-package com.example.doantotnghiep
+﻿package com.example.doantotnghiep
 
 import android.Manifest
 import android.content.Intent
@@ -219,15 +219,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        com.example.doantotnghiep.Utils.PresenceManager.goOnline()
-    }
 
-    override fun onStop() {
-        super.onStop()
-        com.example.doantotnghiep.Utils.PresenceManager.goOffline()
-    }
+
+
 
     override fun onDestroy() {
         super.onDestroy()

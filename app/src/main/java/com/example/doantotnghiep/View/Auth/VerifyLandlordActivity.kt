@@ -1,4 +1,4 @@
-package com.example.doantotnghiep.View.Auth
+﻿package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
 import android.net.Uri
@@ -175,22 +175,25 @@ class VerifyLandlordActivity : AppCompatActivity() {
 
         viewModel.submitResult.observe(this) { result ->
             if (result == null) return@observe
-            if (result.escalatedToAdmin) {
+            if (result.status == VerifyLandlordViewModel.SubmitStatus.ESCALATED_TO_ADMIN) {
                 MessageUtils.showInfoDialog(
                     this,
-                    "Đã chuyển đến admin",
+                    "Đang chờ duyệt",
                     result.message
                 ) {
                     viewModel.clearSubmitResult()
                     finish()
                 }
-            } else {
+            } else if (result.status == VerifyLandlordViewModel.SubmitStatus.SUCCESS_AUTO_VERIFIED) {
                 MessageUtils.showSuccessDialog(
                     this,
-                    "Gửi yêu cầu thành công",
+                    "Thông tin chính xác",
                     result.message
                 ) {
                     viewModel.clearSubmitResult()
+                    val intent = android.content.Intent(this, MyPostsActivity::class.java)
+                    intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    startActivity(intent)
                     finish()
                 }
             }

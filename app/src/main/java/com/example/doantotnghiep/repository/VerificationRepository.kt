@@ -1,4 +1,4 @@
-package com.example.doantotnghiep.repository
+﻿package com.example.doantotnghiep.repository
 
 import android.content.Context
 import android.net.Uri
@@ -89,6 +89,7 @@ class VerificationRepository {
 
     fun runAutoCheckCccd(
         context: Context,
+        fullName: String,
         enteredCccd: String,
         frontUri: Uri,
         backUri: Uri,
@@ -228,7 +229,27 @@ class VerificationRepository {
                         }
 
                         val matched = normalizedInput
-                        if (frontMatched && backMatched) {
+                        val expectedName = normalizeNoAccentUpper(fullName)
+                        val frontFullText = normalizeNoAccentUpper(frontText).replace("
+", " ")
+                        val nameMatched = frontFullText.contains(expectedName)
+
+                        if (!nameMatched) {
+                            val failCount = recordAutoFailure(context)
+                            onResult(
+                                AutoCheckResult(
+                                    passed = false,
+                                    reason = "Họ và tên trên thẻ không khớp với thông tin bạn nhập.",
+                                    recognizedCccd = frontCandidates.firstOrNull(),
+                                    failCountToday = failCount,
+                                    remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
+                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                )
+                            )
+                            return@addOnSuccessListener
+                        }
+
+                        if (frontMatched && backMatched && nameMatched) {
                             resetAutoFailureCounter(context)
                             onResult(
                                 AutoCheckResult(

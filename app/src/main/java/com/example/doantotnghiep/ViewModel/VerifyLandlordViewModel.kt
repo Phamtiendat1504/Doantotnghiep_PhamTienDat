@@ -1,4 +1,4 @@
-package com.example.doantotnghiep.ViewModel
+﻿package com.example.doantotnghiep.ViewModel
 
 import android.content.Context
 import android.net.Uri
@@ -11,8 +11,13 @@ import com.google.firebase.auth.FirebaseAuth
 
 class VerifyLandlordViewModel : ViewModel() {
 
+    enum class SubmitStatus {
+        SUCCESS_AUTO_VERIFIED,
+        ESCALATED_TO_ADMIN
+    }
+
     data class SubmitUiResult(
-        val escalatedToAdmin: Boolean,
+        val status: SubmitStatus,
         val message: String
     )
 
@@ -76,6 +81,7 @@ class VerifyLandlordViewModel : ViewModel() {
             onNotExists = {
                 repository.runAutoCheckCccd(
                     context = context,
+                    fullName = fullName,
                     enteredCccd = cccd,
                     frontUri = frontUri,
                     backUri = backUri,
@@ -97,7 +103,7 @@ class VerifyLandlordViewModel : ViewModel() {
                                 frontUri = frontUri,
                                 backUri = backUri,
                                 meta = meta,
-                                escalatedToAdmin = false
+                                status = SubmitStatus.SUCCESS_AUTO_VERIFIED
                             )
                             return@runAutoCheckCccd
                         }
@@ -119,7 +125,7 @@ class VerifyLandlordViewModel : ViewModel() {
                                 frontUri = frontUri,
                                 backUri = backUri,
                                 meta = meta,
-                                escalatedToAdmin = true
+                                status = SubmitStatus.ESCALATED_TO_ADMIN
                             )
                             return@runAutoCheckCccd
                         }
@@ -151,7 +157,7 @@ class VerifyLandlordViewModel : ViewModel() {
         frontUri: Uri,
         backUri: Uri,
         meta: VerificationRepository.VerificationSubmitMeta,
-        escalatedToAdmin: Boolean
+        status: SubmitStatus
     ) {
         repository.submitVerification(
             fullName = fullName,
@@ -164,13 +170,13 @@ class VerifyLandlordViewModel : ViewModel() {
             meta = meta,
             onSuccess = {
                 _isLoading.value = false
-                val message = if (escalatedToAdmin) {
+                val message = if (status == SubmitStatus.ESCALATED_TO_ADMIN) {
                     "Thông tin của bạn đã được gửi đến admin, chờ duyệt trong 24 giờ do xác thực lỗi quá 3 lần."
                 } else {
-                    "Thông tin xác minh đã được gửi. Hệ thống đang tự động quét CCCD và sẽ mở quyền đăng bài nếu hợp lệ."
+                    "Thông tin trùng khớp chính xác! Tài khoản của bạn đã được xác minh thành công."
                 }
                 _submitResult.value = SubmitUiResult(
-                    escalatedToAdmin = escalatedToAdmin,
+                    status = status,
                     message = message
                 )
             },

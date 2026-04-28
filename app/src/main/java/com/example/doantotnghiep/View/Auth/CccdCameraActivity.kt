@@ -77,16 +77,16 @@ class CccdCameraActivity : AppCompatActivity() {
         private const val MAX_MEAN_LUMA = 205.0
         private const val MAX_DARK_RATIO = 0.42
         private const val MAX_BRIGHT_RATIO = 0.28
-        private const val MIN_CONTRAST_STD = 24.0
-        private const val MIN_SHARPNESS = 22.0
+        private const val MIN_CONTRAST_STD = 30.0
+        private const val MIN_SHARPNESS = 28.0
         private const val MIN_TEXT_BLOCKS_FRONT = 3
         private const val MIN_TEXT_BLOCKS_BACK = 2
         private const val MIN_TEXT_CHARS_FRONT = 30
         private const val MIN_TEXT_CHARS_BACK = 22
-        private const val MIN_TEXT_SPREAD_X_FRONT = 0.42
-        private const val MIN_TEXT_SPREAD_X_BACK = 0.45
-        private const val MIN_TEXT_SPREAD_Y = 0.24
-        private const val MIN_TEXT_COVERAGE = 0.10
+        private const val MIN_TEXT_SPREAD_X_FRONT = 0.68
+        private const val MIN_TEXT_SPREAD_X_BACK = 0.68
+        private const val MIN_TEXT_SPREAD_Y = 0.35
+        private const val MIN_TEXT_COVERAGE = 0.22
         private const val AUTO_CAPTURE_MIN_STABLE_FRAMES = 2
         private const val AUTO_CAPTURE_ANALYZE_INTERVAL_MS = 700L
         private const val AUTO_CAPTURE_REARM_DELAY_MS = 900L
@@ -631,10 +631,10 @@ class CccdCameraActivity : AppCompatActivity() {
         val spreadX = (maxRight - minLeft).coerceAtLeast(1) / frameW
         val spreadY = (maxBottom - minTop).coerceAtLeast(1) / frameH
 
-        return dxRatio <= 0.18f &&
-            dyRatio <= 0.18f &&
-            spreadX >= 0.45f &&
-            spreadY >= 0.22f
+        return dxRatio <= 0.12f &&
+            dyRatio <= 0.12f &&
+            spreadX >= 0.68f &&
+            spreadY >= 0.35f
     }
 
     private data class SideSignals(
