@@ -338,13 +338,11 @@ class RoomDetailActivity : AppCompatActivity() {
         }
         db.collection("reviews")
             .whereEqualTo("landlordId", landlordId)
-            .whereEqualTo("status", "approved")
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .limit(10)
             .get()
             .addOnSuccessListener { snap ->
                 val reviews = snap.documents.mapNotNull { doc ->
                     val d = doc.data ?: return@mapNotNull null
+                    if (d["status"] != "approved") return@mapNotNull null
                     ReviewRow(
                         userName = d["userName"] as? String ?: "Người dùng",
                         rating = (d["rating"] as? Number)?.toFloat() ?: 0f,
@@ -352,7 +350,7 @@ class RoomDetailActivity : AppCompatActivity() {
                         createdAt = (d["createdAt"] as? Number)?.toLong() ?: 0L,
                         roomTitle = d["roomTitle"] as? String ?: ""
                     )
-                }
+                }.sortedByDescending { it.createdAt }.take(10)
                 renderReviews(reviews)
             }
             .addOnFailureListener { renderEmptyReviews("Không thể tải đánh giá") }
@@ -421,44 +419,38 @@ class RoomDetailActivity : AppCompatActivity() {
             return
         }
         if (landlordId.isBlank() || landlordId == currentUid) return
-        val container = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(20), dpToPx(8), dpToPx(20), 0)
-        }
-        val ratingBar = RatingBar(this).apply {
-            numStars = 5
-            stepSize = 1f
-            rating = 5f
-        }
-        val commentInput = EditText(this).apply {
-            hint = "Nhập nhận xét về chủ trọ/phòng..."
-            minLines = 3
-            maxLines = 5
-        }
-        container.addView(ratingBar)
-        container.addView(commentInput)
+        
+        val dialog = android.app.Dialog(this)
+        dialog.setContentView(R.layout.dialog_review)
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        dialog.window?.setLayout(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT
+        )
 
-        androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Đánh giá chủ trọ")
-            .setView(container)
-            .setNegativeButton("Hủy", null)
-            .setPositiveButton("Gửi đánh giá", null)
-            .create()
-            .apply {
-                setOnShowListener {
-                    getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                        val comment = commentInput.text.toString().trim()
-                        if (comment.length < 5) {
-                            commentInput.error = "Nhận xét cần ít nhất 5 ký tự"
-                            return@setOnClickListener
-                        }
-                        submitReview(landlordId, ratingBar.rating.toInt().coerceIn(1, 5), comment) {
-                            dismiss()
-                        }
-                    }
-                }
-                show()
+        val ratingBar = dialog.findViewById<RatingBar>(R.id.ratingBar)
+        val edtComment = dialog.findViewById<EditText>(R.id.edtComment)
+        val btnCancel = dialog.findViewById<View>(R.id.btnCancel)
+        val btnSubmit = dialog.findViewById<View>(R.id.btnSubmit)
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnSubmit.setOnClickListener {
+            val comment = edtComment.text.toString().trim()
+            if (comment.length < 5) {
+                edtComment.error = "Nhận xét cần ít nhất 5 ký tự"
+                return@setOnClickListener
             }
+            val rating = ratingBar.rating.toInt().coerceIn(1, 5)
+            if (rating < 1) {
+                Toast.makeText(this@RoomDetailActivity, "Vui lòng chọn số sao", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            submitReview(landlordId, rating, comment) {
+                dialog.dismiss()
+            }
+        }
+        dialog.show()
     }
 
     private fun submitReview(landlordId: String, rating: Int, comment: String, onDone: () -> Unit) {
