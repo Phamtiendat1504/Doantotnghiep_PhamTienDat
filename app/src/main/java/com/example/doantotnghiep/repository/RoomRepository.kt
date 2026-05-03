@@ -575,27 +575,48 @@ class RoomRepository {
     }
 
     fun loadPopularAreas(onSuccess: (List<Pair<String, Int>>) -> Unit) {
-        db.collection("rooms").whereEqualTo("status", "approved").get()
-            .addOnSuccessListener { documents ->
-                val districtCount = mutableMapOf<String, Int>()
-                val districtDisplay = mutableMapOf<String, String>()
-                for (doc in documents) {
-                    val rawDistrict = doc.getString("district") ?: continue
-                    val district = rawDistrict.trim().replace(Regex("\\s+"), " ")
-                    if (district.isEmpty()) continue
-                    val key = district.lowercase(Locale("vi", "VN"))
-                    districtCount[key] = (districtCount[key] ?: 0) + 1
-                    if (!districtDisplay.containsKey(key)) {
-                        districtDisplay[key] = district
+        db.collection("stats").document("popular_areas").get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists() && doc.contains("areas")) {
+                    val areasList = mutableListOf<Pair<String, Int>>()
+                    val areasRaw = doc.get("areas") as? List<*>
+                    areasRaw?.forEach { item ->
+                        val map = item as? Map<*, *>
+                        if (map != null) {
+                            val district = map["district"] as? String ?: ""
+                            val count = (map["count"] as? Number)?.toInt() ?: 0
+                            if (district.isNotEmpty()) {
+                                areasList.add(Pair(district, count))
+                            }
+                        }
                     }
+                    onSuccess(areasList.take(6))
+                } else {
+                    // Fallback to manual calculation if stats document doesn't exist yet
+                    db.collection("rooms").whereEqualTo("status", "approved").get()
+                        .addOnSuccessListener { documents ->
+                            val districtCount = mutableMapOf<String, Int>()
+                            val districtDisplay = mutableMapOf<String, String>()
+                            for (rDoc in documents) {
+                                val rawDistrict = rDoc.getString("district") ?: continue
+                                val district = rawDistrict.trim().replace(Regex("\\s+"), " ")
+                                if (district.isEmpty()) continue
+                                val key = district.lowercase(Locale("vi", "VN"))
+                                districtCount[key] = (districtCount[key] ?: 0) + 1
+                                if (!districtDisplay.containsKey(key)) {
+                                    districtDisplay[key] = district
+                                }
+                            }
+                            val top6 = districtCount.entries
+                                .sortedByDescending { it.value }
+                                .take(6)
+                                .map { entry ->
+                                    Pair(districtDisplay[entry.key] ?: entry.key, entry.value)
+                                }
+                            onSuccess(top6)
+                        }
+                        .addOnFailureListener { onSuccess(emptyList()) }
                 }
-                val top6 = districtCount.entries
-                    .sortedByDescending { it.value }
-                    .take(6)
-                    .map { entry ->
-                        Pair(districtDisplay[entry.key] ?: entry.key, entry.value)
-                    }
-                onSuccess(top6)
             }
             .addOnFailureListener { onSuccess(emptyList()) }
     }
