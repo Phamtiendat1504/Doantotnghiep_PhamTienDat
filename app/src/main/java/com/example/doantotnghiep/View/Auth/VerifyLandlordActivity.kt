@@ -1,4 +1,4 @@
-﻿package com.example.doantotnghiep.View.Auth
+package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
 import android.net.Uri
@@ -191,7 +191,8 @@ class VerifyLandlordActivity : AppCompatActivity() {
                     result.message
                 ) {
                     viewModel.clearSubmitResult()
-                    val intent = android.content.Intent(this, MyPostsActivity::class.java)
+                    val intent = android.content.Intent(this, com.example.doantotnghiep.MainActivity::class.java)
+                    intent.putExtra("navigate_to", "post")
                     intent.flags = android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP
                     startActivity(intent)
                     finish()

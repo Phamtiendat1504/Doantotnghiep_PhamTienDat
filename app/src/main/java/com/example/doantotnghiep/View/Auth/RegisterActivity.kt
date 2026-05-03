@@ -78,6 +78,7 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         viewModel.errorMessage.observe(this) { message ->
+            if (message.isNullOrEmpty()) return@observe
             clearErrors()
             when {
                 message.contains("họ và tên", ignoreCase = true) -> tilFullName.error = message
@@ -85,6 +86,10 @@ class RegisterActivity : AppCompatActivity() {
                 message.contains("điện thoại", ignoreCase = true) -> tilPhone.error = message
                 message.contains("xác nhận", ignoreCase = true) -> tilConfirmPassword.error = message
                 message.contains("mật khẩu", ignoreCase = true) -> tilPassword.error = message
+                // Lỗi mạng → hiện Toast nhanh để user thử lại ngay
+                message.contains("mạng", ignoreCase = true) || message.contains("Internet", ignoreCase = true) -> {
+                    android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+                }
                 else -> MessageUtils.showErrorDialog(this, "Lỗi đăng ký", message)
             }
         }

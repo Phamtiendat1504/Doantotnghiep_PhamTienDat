@@ -34,6 +34,8 @@
             android:id="@+id/tvHostName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:text="Chủ nhà"
             android:textColor="#111827"
             android:textSize="16sp"
@@ -44,6 +46,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
+            android:maxLines="1"
+            android:ellipsize="end"
             android:text="Đã xác minh"
             android:textColor="#10B981"
             android:textSize="13sp" />

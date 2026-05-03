@@ -173,7 +173,7 @@ class VerificationRepository {
                                     reason = reason,
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
@@ -487,6 +487,9 @@ class VerificationRepository {
             .toList()
         direct.addAll(flexible)
 
+        val compactMatches = Regex("\\d{12}").findAll(normalizeDigits(normalizeOcrDigits(text))).map { it.value }.toList()
+        direct.addAll(compactMatches)
+
         if (direct.isNotEmpty()) return direct.distinct()
 
         val allDigits = normalizeDigits(normalizeOcrDigits(text))
@@ -512,6 +515,7 @@ class VerificationRepository {
         }
 
         Regex("\\b\\d{12}\\b").findAll(normalized).forEach { candidates.add(it.value) }
+        Regex("\\d{12}").findAll(normalized).forEach { candidates.add(it.value) }
 
         Regex("VNM([0-9<]{10,})").findAll(normalized).forEach { match ->
             val digits = match.groupValues[1].replace("<", "").filter { it.isDigit() }

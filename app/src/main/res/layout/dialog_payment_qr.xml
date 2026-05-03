@@ -26,7 +26,7 @@
             android:id="@+id/tvQrPackageName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="⭐ +10 lượt — 30.000đ"
+            android:text="Gói +10 lượt - 30.000đ"
             android:textSize="13sp"
             android:textColor="#CCffffff"
             android:layout_marginTop="3dp" />
@@ -185,7 +185,7 @@
             android:id="@+id/btnConfirmPayment"
             android:layout_width="match_parent"
             android:layout_height="48dp"
-            android:text="✅  Tôi đã chuyển khoản xong"
+            android:text="Tôi đã chuyển khoản xong"
             android:textSize="14sp"
             android:textAllCaps="false"
             android:textStyle="bold"

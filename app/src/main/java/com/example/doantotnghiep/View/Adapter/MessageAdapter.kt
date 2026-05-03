@@ -28,18 +28,9 @@ class MessageAdapter(
         private const val VIEW_TYPE_RECEIVED = 2
 
         val EMOJIS = listOf(
-            // Biểu cảm phổ biến
-            "❤️", "😂", "😮", "😢", "😡", "👍",
-            "🥰", "😍", "🤩", "😘", "😊", "🙂",
-            "😎", "🤔", "🤗", "😏", "😒", "🙄",
-            "😴", "🥱", "😭", "😤", "🤯", "🥳",
-            "🤭", "🫢", "😬", "🤣", "😅", "😆",
-            // Cử chỉ & tay
-            "🤙", "✌️", "🤞", "👏", "🙏", "💪",
-            "🫶", "👋", "🤝", "☝️", "👌", "🤌",
-            // Vật thể & biểu tượng
-            "🔥", "💯", "⭐", "🎉", "🎊", "💎",
-            "💡", "✅"
+            "\u2764\uFE0F", "\uD83D\uDE02", "\uD83D\uDE0D", "\uD83D\uDE22",
+            "\uD83D\uDE21", "\uD83D\uDC4D", "\uD83D\uDC4F", "\uD83D\uDE4F",
+            "\uD83D\uDD25", "\uD83C\uDF89", "\u2B50", "\u2705"
         )
     }
 
@@ -153,18 +144,18 @@ class MessageAdapter(
         val actions = mutableListOf<() -> Unit>()
 
         // Luôn có thả cảm xúc
-        options.add("❤️  Thả cảm xúc")
+        options.add("Thả cảm xúc")
         actions.add { showEmojiPickerPopup(anchor, msg) }
 
         // Nếu là tin nhắn của mình thì có nút xóa
         if (isMine) {
-            options.add("🗑️  Xóa tin nhắn")
+            options.add("Xóa tin nhắn")
             actions.add { onLongClickMessage?.invoke(msg) }
         }
 
         // Nếu là tin nhắn ảnh thì cho phép lưu ảnh
         if (msg.imageUrl.isNotEmpty()) {
-            options.add("⬇️  Lưu ảnh")
+            options.add("Lưu ảnh")
             actions.add { downloadImage(context, msg.imageUrl) }
         }
 

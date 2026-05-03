@@ -39,17 +39,18 @@ class EditPostActivity : AppCompatActivity() {
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
-            if (data?.clipData != null) {
-                val count = data.clipData!!.itemCount
+            val clipData = data?.clipData
+            if (clipData != null) {
+                val count = clipData.itemCount
                 for (i in 0 until count) {
-                    val uri = data.clipData!!.getItemAt(i).uri
+                    val uri = clipData.getItemAt(i).uri
                     if ((existingImageUrls.size + newImageUris.size) < MAX_PHOTOS) {
                         newImageUris.add(uri)
                     }
                 }
                 renderPhotos()
             } else if (data?.data != null) {
-                val uri = data.data!!
+                val uri = data.data ?: return@registerForActivityResult
                 if ((existingImageUrls.size + newImageUris.size) < MAX_PHOTOS) {
                     newImageUris.add(uri)
                     renderPhotos()
@@ -305,18 +306,18 @@ class EditPostActivity : AppCompatActivity() {
                 val tvCurfew = findViewById<TextView>(R.id.edtCurfewTime)
                 tvCurfew.text = curfewTime
                 
-                // Parse time string (e.g., "11:30 PM") and set to NumberPickers
-                try {
+                // Parse time string (e.g., "11:30 PM") and set to NumberPickers.
+                runCatching {
                     val parts = curfewTime.split(" ")
                     if (parts.size == 2) {
                         val timeParts = parts[0].split(":")
                         if (timeParts.size == 2) {
-                            findViewById<NumberPicker>(R.id.pickerHour).value = timeParts[0].toInt()
-                            findViewById<NumberPicker>(R.id.pickerMinute).value = timeParts[1].toInt()
+                            findViewById<NumberPicker>(R.id.pickerHour).value = timeParts[0].toInt().coerceIn(1, 12)
+                            findViewById<NumberPicker>(R.id.pickerMinute).value = timeParts[1].toInt().coerceIn(0, 59)
                             findViewById<NumberPicker>(R.id.pickerAmPm).value = if (parts[1] == "AM") 0 else 1
                         }
                     }
-                } catch (e: Exception) {}
+                }
             }
         }
 
@@ -328,7 +329,7 @@ class EditPostActivity : AppCompatActivity() {
 
         loadParkingData("Motorbike", d); loadParkingData("EBike", d); loadParkingData("Bicycle", d)
 
-        existingImageUrls = (d["imageUrls"] as? List<String>)?.toMutableList() ?: mutableListOf()
+        existingImageUrls = (d["imageUrls"] as? List<*>)?.mapNotNull { it as? String }?.toMutableList() ?: mutableListOf()
         renderPhotos()
     }
 
@@ -393,7 +394,7 @@ class EditPostActivity : AppCompatActivity() {
     }
 
     private fun showImageOptions(index: Int, isExisting: Boolean, url: String?, uri: Uri?) {
-        val options = arrayOf("🔍 Xem ảnh phóng to", "🔄 Thay đổi ảnh khác", "🗑️ Xóa ảnh này")
+        val options = arrayOf("Xem ảnh phóng to", "Thay đổi ảnh khác", "Xóa ảnh này")
         
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Tùy chọn hình ảnh")

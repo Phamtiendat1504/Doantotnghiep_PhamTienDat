@@ -105,7 +105,7 @@ class HomeViewModel : ViewModel() {
                     ward = doc.getString("ward") ?: "",
                     district = doc.getString("district") ?: "",
                     area = doc.getLong("area")?.toInt() ?: 0,
-                    imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                    imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
                     createdAt = doc.getLong("createdAt") ?: 0L
                 )
             }
@@ -152,7 +152,7 @@ class HomeViewModel : ViewModel() {
                         ward = doc.getString("ward") ?: "",
                         district = doc.getString("district") ?: "",
                         area = doc.getLong("area")?.toInt() ?: 0,
-                        imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                        imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
                         createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 }
@@ -187,7 +187,7 @@ class HomeViewModel : ViewModel() {
                         ward = doc.getString("ward") ?: "",
                         district = doc.getString("district") ?: "",
                         area = doc.getLong("area")?.toInt() ?: 0,
-                        imageUrl = (doc.get("imageUrls") as? List<String>)?.firstOrNull(),
+                        imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
                         createdAt = doc.getLong("createdAt") ?: 0L
                     )
                 }

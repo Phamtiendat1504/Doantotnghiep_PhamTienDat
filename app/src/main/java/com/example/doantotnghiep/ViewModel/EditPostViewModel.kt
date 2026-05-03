@@ -22,8 +22,8 @@ class EditPostViewModel : ViewModel() {
     private val _saveResult = MutableLiveData<Boolean>()
     val saveResult: LiveData<Boolean> = _saveResult
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> = _errorMessage
 
     fun loadRoomData(roomId: String) {
         repository.loadRoomData(roomId) { data -> _roomData.value = data }
@@ -39,6 +39,8 @@ class EditPostViewModel : ViewModel() {
         data: HashMap<String, Any>
     ) {
         _isLoading.value = true
+        data["ward"] = ward
+        data["district"] = district
         repository.updatePost(
             roomId, existingImageUrls, newImageUris, deletedImageUrls, data,
             onProgress = { text -> _uploadProgressText.value = text },
@@ -54,5 +56,5 @@ class EditPostViewModel : ViewModel() {
     }
 
     fun resetSaveResult() { _saveResult.value = false }
-    fun resetErrorMessage() { _errorMessage.value = "" }
+    fun resetErrorMessage() { _errorMessage.value = null }
 }

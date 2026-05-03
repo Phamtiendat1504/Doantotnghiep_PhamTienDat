@@ -96,7 +96,7 @@ class SplashActivity : AppCompatActivity() {
         progressAnimator = ValueAnimator.ofInt(0, 100).apply {
             duration = splashDuration - 150
             interpolator = LinearInterpolator()
-            addUpdateListener { progressBar.progress = it.animatedValue as Int }
+            addUpdateListener { progressBar.progress = it.animatedValue as? Int ?: 0 }
             start()
         }
 

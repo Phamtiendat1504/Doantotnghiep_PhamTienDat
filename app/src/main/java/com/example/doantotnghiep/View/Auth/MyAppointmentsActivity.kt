@@ -10,10 +10,6 @@ import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.BookingViewModel
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
 
 class MyAppointmentsActivity : AppCompatActivity() {
 
@@ -44,7 +40,6 @@ class MyAppointmentsActivity : AppCompatActivity() {
     private var pendingAction = PendingAction.NONE
     private val conflictMap = mutableMapOf<String, Int>()
     private var isReminderShown = false
-    private var roomRentedNoticeListener: ListenerRegistration? = null
     private var isRentedDialogShowing = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,68 +51,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
 
         btnBack.setOnClickListener { finish() }
 
-        val uid = FirebaseAuth.getInstance().currentUser?.uid
-        if (uid == null) { finish(); return }
-        listenRoomRentedNotices(uid)
-
-        // Kiểm tra isVerified trước để quyết định dual-tab hay single-tab
-        com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            .collection("users").document(uid).get()
-            .addOnSuccessListener { doc ->
-                val isVerified = doc.getBoolean("isVerified") ?: false
-                val role = doc.getString("role") ?: ""
-                val effectiveRole = if (isVerified || role == "admin") "verified" else "user"
-
-                // Đánh dấu đã đọc tất cả lịch hẹn → badge điện thoại tự biến mất
-                com.example.doantotnghiep.repository.AppointmentRepository()
-                    .markAllAppointmentsRead(uid, effectiveRole)
-
-                if (isVerified || role == "admin") {
-                    isDualMode = true
-                    setupDualTabs()
-                    bookingViewModel.fetchBothAppointments()
-                } else {
-                    bookingViewModel.fetchAppointmentsByRole()
-                }
-            }
-            .addOnFailureListener { bookingViewModel.fetchAppointmentsByRole() }
-    }
-
-    private fun listenRoomRentedNotices(uid: String) {
-        roomRentedNoticeListener?.remove()
-        roomRentedNoticeListener = FirebaseFirestore.getInstance()
-            .collection("notifications")
-            .whereEqualTo("userId", uid)
-            .whereEqualTo("type", "room_already_rented")
-            .whereEqualTo("seen", false)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .limit(1)
-            .addSnapshotListener { snapshots, error ->
-                if (error != null || snapshots == null || snapshots.isEmpty) return@addSnapshotListener
-                if (isRentedDialogShowing) return@addSnapshotListener
-
-                val doc = snapshots.documents.firstOrNull() ?: return@addSnapshotListener
-                val title = doc.getString("title") ?: "Lịch hẹn đã bị hủy"
-                val message = doc.getString("message")
-                    ?: "Phòng đã có người thuê. Lịch hẹn của bạn đã bị hủy tự động."
-
-                isRentedDialogShowing = true
-                androidx.appcompat.app.AlertDialog.Builder(this)
-                    .setTitle(title)
-                    .setMessage(message)
-                    .setCancelable(false)
-                    .setPositiveButton("Đã hiểu") { _, _ ->
-                        doc.reference.update(
-                            mapOf(
-                                "seen" to true,
-                                "isRead" to true
-                            )
-                        )
-                        isRentedDialogShowing = false
-                    }
-                    .setOnDismissListener { isRentedDialogShowing = false }
-                    .show()
-            }
+        bookingViewModel.initializeAppointmentsScreen()
     }
 
     private fun initViews() {
@@ -149,8 +83,10 @@ class MyAppointmentsActivity : AppCompatActivity() {
     /** Hiện TabLayout 2 tab cho user đã xác minh */
     private fun setupDualTabs() {
         tabLayoutRole.visibility = android.view.View.VISIBLE
-        tabLayoutRole.addTab(tabLayoutRole.newTab().setText("📅 Lịch tôi đặt"))
-        tabLayoutRole.addTab(tabLayoutRole.newTab().setText("🏠 Khách hẹn phòng tôi"))
+        tabLayoutRole.clearOnTabSelectedListeners()
+        tabLayoutRole.removeAllTabs()
+        tabLayoutRole.addTab(tabLayoutRole.newTab().setText("Lịch tôi đặt"))
+        tabLayoutRole.addTab(tabLayoutRole.newTab().setText("Khách hẹn phòng tôi"))
         tabLayoutRole.addOnTabSelectedListener(object : com.google.android.material.tabs.TabLayout.OnTabSelectedListener {
             override fun onTabSelected(tab: com.google.android.material.tabs.TabLayout.Tab?) {
                 currentTab = tab?.position ?: 0
@@ -170,11 +106,11 @@ class MyAppointmentsActivity : AppCompatActivity() {
             1 -> allAppointments.filter { it["status"] == "pending" }
             2 -> allAppointments.filter { it["status"] == "confirmed" }
             3 -> allAppointments.filter { it["status"] == "tenant_confirmed" }
-            4 -> allAppointments.filter { 
+            4 -> allAppointments.filter {
                 val s = it["status"] as? String ?: ""
                 s != "pending" && s != "confirmed" && s != "tenant_confirmed"
             }
-            else -> allAppointments // 0 - chipAll
+            else -> allAppointments
         }
 
         if (searchQuery.isNotEmpty()) {
@@ -228,7 +164,33 @@ class MyAppointmentsActivity : AppCompatActivity() {
     }
 
     private fun setupObservers() {
-        // Quan sát danh sách lịch hẹn từ ViewModel (chế độ single-role)
+        bookingViewModel.appointmentAccess.observe(this) { access ->
+            isDualMode = access.isHostAccess
+            if (access.isHostAccess) {
+                setupDualTabs()
+            } else {
+                tabLayoutRole.visibility = View.GONE
+                currentTab = 0
+                updateFilterMenu(isLandlord = false)
+            }
+        }
+
+        bookingViewModel.roomRentedNotice.observe(this) { notice ->
+            if (notice == null || isRentedDialogShowing) return@observe
+
+            isRentedDialogShowing = true
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle(notice.title)
+                .setMessage(notice.message)
+                .setCancelable(false)
+                .setPositiveButton("Đã hiểu") { _, _ ->
+                    bookingViewModel.markRoomRentedNoticeRead(notice.id)
+                    isRentedDialogShowing = false
+                }
+                .setOnDismissListener { isRentedDialogShowing = false }
+                .show()
+        }
+// Quan sát danh sách lịch hẹn từ ViewModel (chế độ single-role)
         bookingViewModel.appointments.observe(this) { appointmentList ->
             if (isDualMode) return@observe  // dual-tab dùng observer riêng bên dưới
             tenantList = appointmentList
@@ -317,7 +279,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
     private fun showTenantConfirmedReminderDialog() {
         isReminderShown = true
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("💡 Khách đã xác nhận đến!")
+            .setTitle("Khách đã xác nhận đến")
             .setMessage("Bạn có lịch hẹn khách đã xác nhận sẽ đi xem phòng. Nếu hai bên chốt thuê thành công, đừng quên bấm 'Xác nhận đã cho thuê' để hệ thống tự động ẩn bài và hủy các lịch hẹn khác giúp bạn nhé!")
             .setPositiveButton("Tôi đã hiểu", null)
             .show()
@@ -567,7 +529,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
                     setPadding(dpToPx(12), 0, dpToPx(12), dpToPx(10))
                 }
                 val tvTip = TextView(this).apply {
-                    text = "💡 Khách đã xác nhận đến. Nếu đã chốt thuê, hãy bấm:"
+                    text = "Khách đã xác nhận đến. Nếu đã chốt thuê, hãy bấm:"
                     textSize = 9f
                     setTextColor(0xFF1976D2.toInt())
                     setPadding(0, 0, 0, dpToPx(4))
@@ -685,7 +647,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
     private fun showEditScheduleDialog(docId: String, landlordId: String, roomTitle: String) {
         var selectedDate = ""; var selectedDateDisplay = ""; var selectedTime = ""
         val container = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dpToPx(20), dpToPx(10), dpToPx(20), dpToPx(10)) }
-        val tvDate = TextView(this).apply { text = "📅 Chọn ngày mới"; textSize = 14f; setPadding(0, dpToPx(10), 0, dpToPx(10)) }
+        val tvDate = TextView(this).apply { text = "Chọn ngày mới"; textSize = 14f; setPadding(0, dpToPx(10), 0, dpToPx(10)) }
         val tvTime = TextView(this).apply { text = "⏰ Chọn giờ mới"; textSize = 14f; setPadding(0, dpToPx(10), 0, dpToPx(10)) }
         
         tvDate.setOnClickListener {
@@ -694,7 +656,7 @@ class MyAppointmentsActivity : AppCompatActivity() {
                 val c = java.util.Calendar.getInstance().apply { set(y, m, d) }
                 selectedDate = String.format("%02d/%02d/%04d", d, m + 1, y)
                 selectedDateDisplay = "${java.text.SimpleDateFormat("EEEE", java.util.Locale("vi", "VN")).format(c.time)}, $selectedDate"
-                tvDate.text = "📅 $selectedDateDisplay"
+                tvDate.text = "$selectedDateDisplay"
             }, cal.get(java.util.Calendar.YEAR), cal.get(java.util.Calendar.MONTH), cal.get(java.util.Calendar.DAY_OF_MONTH)).show()
         }
         tvTime.setOnClickListener {
@@ -720,7 +682,6 @@ class MyAppointmentsActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        roomRentedNoticeListener?.remove()
         super.onDestroy()
     }
 }

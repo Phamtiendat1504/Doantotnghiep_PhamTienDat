@@ -30,6 +30,7 @@ class MyPostsViewModel : ViewModel() {
 
     fun loadPosts(filter: String) {
         _isLoading.value = true
+        _errorMessage.value = null
         repository.getMyPosts(
             filter,
             onSuccess = { list ->

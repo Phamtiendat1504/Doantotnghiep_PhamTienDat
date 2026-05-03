@@ -91,6 +91,16 @@ class SettingsActivity : AppCompatActivity() {
         switchPushAll.setOnCheckedChangeListener { _, isChecked ->
             if (bindingState) return@setOnCheckedChangeListener
             AppSettings.setPushEnabled(this, isChecked)
+            if (!isChecked) {
+                AppSettings.setChatPushEnabled(this, false)
+                AppSettings.setAppointmentPushEnabled(this, false)
+                AppSettings.setSystemPushEnabled(this, false)
+                bindingState = true
+                switchPushChat.isChecked = false
+                switchPushAppointment.isChecked = false
+                switchPushSystem.isChecked = false
+                bindingState = false
+            }
             updateChildSwitchEnabled()
         }
 

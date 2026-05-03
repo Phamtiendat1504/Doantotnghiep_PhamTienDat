@@ -93,12 +93,28 @@ class SearchResultsActivity : AppCompatActivity() {
         val hasElectric = intent.getBooleanExtra("hasElectric", false)
         val hasWater = intent.getBooleanExtra("hasWater", false)
 
+        // ── Tìm theo bản đồ ──
+        if (searchMode == "nearby") {
+            val lat = intent.getDoubleExtra("lat", 0.0)
+            val lng = intent.getDoubleExtra("lng", 0.0)
+            val radiusKm = intent.getDoubleExtra("radiusKm", 2.0)
+            val mapAddress = intent.getStringExtra("mapAddress").orEmpty()
+
+            val radiusLabel = if (radiusKm == radiusKm.toLong().toDouble())
+                "${radiusKm.toInt()}km" else "${radiusKm}km"
+            tvSearchArea.text = "Trong vòng $radiusLabel từ vị trí chọn"
+
+            viewModel.searchNearby(lat, lng, radiusKm)
+            return
+        }
+
         tvSearchArea.text = when {
             query.isNotEmpty() -> "\"$query\""
             searchMode == "district" && district.isNotEmpty() -> district
-            ward.isEmpty() -> "\u0054\u1ea5\u0074 \u0063\u1ea3 \u006b\u0068\u0075 \u0076\u1ef1\u0063"
-            district.isNotEmpty() -> "$ward ($district)"
-            else -> ward
+            ward.isBlank() && district.isBlank() -> "Tất cả khu vực"
+            ward.isNotBlank() && district.isNotBlank() -> "$ward ($district)"
+            ward.isNotBlank() -> ward
+            else -> district
         }
 
         if (query.isNotEmpty()) {
@@ -129,7 +145,7 @@ class SearchResultsActivity : AppCompatActivity() {
         }
 
         viewModel.searchResults.observe(this) { results ->
-            tvResultCount.text = "\u004b\u1ebf\u0074 \u0071\u0075\u1ea3 \u0074\u00ec\u006d \u006b\u0069\u1ebf\u006d\u003a ${results.size} \u0062\u00e0\u0069 \u0111\u0103\u006e\u0067"
+            tvResultCount.text = "Kết quả tìm kiếm: ${results.size} bài đăng"
             if (results.isEmpty()) {
                 tvEmpty.visibility = View.VISIBLE
                 layoutResults.removeAllViews()
@@ -144,26 +160,27 @@ class SearchResultsActivity : AppCompatActivity() {
         viewModel.errorMessage.observe(this) { msg ->
             if (!msg.isNullOrEmpty()) {
                 tvEmpty.visibility = View.VISIBLE
-                tvResultCount.text = "\u004b\u1ebf\u0074 \u0071\u0075\u1ea3 \u0074\u00ec\u006d \u006b\u0069\u1ebf\u006d\u003a 0 \u0062\u00e0\u0069 \u0111\u0103\u006e\u0067"
+                tvEmpty.text = msg
+                tvResultCount.text = "Kết quả tìm kiếm: 0 bài đăng"
             }
         }
     }
 
     private fun showSortMenu() {
         val popup = androidx.appcompat.widget.PopupMenu(this, btnSortDropdown)
-        popup.menu.add("\u0050\u0068\u00f9 \u0068\u1ee3\u0070 \u006e\u0068\u1ea5\u0074")
-        popup.menu.add("\u004d\u1edb\u0069 \u006e\u0068\u1ea5\u0074")
-        popup.menu.add("\u0043\u0169 \u006e\u0068\u1ea5\u0074")
-        popup.menu.add("\u0047\u0069\u00e1 \u0074\u0068\u1ea5\u0070 \u0111\u1ebf\u006e \u0063\u0061\u006f")
-        popup.menu.add("\u0047\u0069\u00e1 \u0063\u0061\u006f \u0111\u1ebf\u006e \u0074\u0068\u1ea5\u0070")
+        popup.menu.add("Phù hợp nhất")
+        popup.menu.add("Mới nhất")
+        popup.menu.add("Cũ nhất")
+        popup.menu.add("Giá thấp đến cao")
+        popup.menu.add("Giá cao đến thấp")
 
         popup.setOnMenuItemClickListener { item ->
             val newSort = when (item.title.toString()) {
-                "\u0050\u0068\u00f9 \u0068\u1ee3\u0070 \u006e\u0068\u1ea5\u0074" -> SortType.NONE
-                "\u0047\u0069\u00e1 \u0074\u0068\u1ea5\u0070 \u0111\u1ebf\u006e \u0063\u0061\u006f" -> SortType.PRICE_ASC
-                "\u0047\u0069\u00e1 \u0063\u0061\u006f \u0111\u1ebf\u006e \u0074\u0068\u1ea5\u0070" -> SortType.PRICE_DESC
-                "\u004d\u1edb\u0069 \u006e\u0068\u1ea5\u0074" -> SortType.NEWEST
-                "\u0043\u0169 \u006e\u0068\u1ea5\u0074" -> SortType.OLDEST
+                "Phù hợp nhất" -> SortType.NONE
+                "Giá thấp đến cao" -> SortType.PRICE_ASC
+                "Giá cao đến thấp" -> SortType.PRICE_DESC
+                "Mới nhất" -> SortType.NEWEST
+                "Cũ nhất" -> SortType.OLDEST
                 else -> SortType.NONE
             }
             currentSort = newSort
@@ -182,11 +199,11 @@ class SearchResultsActivity : AppCompatActivity() {
 
     private fun updateSortUI() {
         tvCurrentSort.text = when (currentSort) {
-            SortType.NONE -> "\u0050\u0068\u00f9 \u0068\u1ee3\u0070 \u006e\u0068\u1ea5\u0074"
-            SortType.PRICE_ASC -> "\u0047\u0069\u00e1 \u0074\u0068\u1ea5\u0070 \u0111\u1ebf\u006e \u0063\u0061\u006f"
-            SortType.PRICE_DESC -> "\u0047\u0069\u00e1 \u0063\u0061\u006f \u0111\u1ebf\u006e \u0074\u0068\u1ea5\u0070"
-            SortType.NEWEST -> "\u004d\u1edb\u0069 \u006e\u0068\u1ea5\u0074"
-            SortType.OLDEST -> "\u0043\u0169 \u006e\u0068\u1ea5\u0074"
+            SortType.NONE -> "Phù hợp nhất"
+            SortType.PRICE_ASC -> "Giá thấp đến cao"
+            SortType.PRICE_DESC -> "Giá cao đến thấp"
+            SortType.NEWEST -> "Mới nhất"
+            SortType.OLDEST -> "Cũ nhất"
         }
     }
 
@@ -217,25 +234,17 @@ class SearchResultsActivity : AppCompatActivity() {
             }
 
             row.addView(createRoomCard(pageItems[i]).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    0,
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    1f
-                ).apply { marginEnd = dpToPx(5) }
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                    .apply { marginEnd = dpToPx(5) }
             })
 
             if (i + 1 < pageItems.size) {
                 row.addView(createRoomCard(pageItems[i + 1]).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                    ).apply { marginStart = dpToPx(5) }
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                        .apply { marginStart = dpToPx(5) }
                 })
             } else {
-                row.addView(View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, 0, 1f)
-                })
+                row.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
             }
 
             layoutResults.addView(row)
@@ -255,10 +264,7 @@ class SearchResultsActivity : AppCompatActivity() {
 
         val imageContainer = FrameLayout(this)
         val imgView = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                dpToPx(130)
-            )
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dpToPx(130))
             scaleType = ImageView.ScaleType.CENTER_CROP
         }
         Glide.with(this).load(item.firstImage).placeholder(R.color.gray_200).into(imgView)
@@ -272,18 +278,16 @@ class SearchResultsActivity : AppCompatActivity() {
                 setColor(0xFFE8F5E9.toInt())
                 cornerRadius = dpToPx(4).toFloat()
             }
-            layoutParams = FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.WRAP_CONTENT,
-                FrameLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                gravity = Gravity.TOP or Gravity.START
-                topMargin = dpToPx(8)
-                leftMargin = dpToPx(8)
-            }
+            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+                .apply {
+                    gravity = Gravity.TOP or Gravity.START
+                    topMargin = dpToPx(8)
+                    leftMargin = dpToPx(8)
+                }
         }
 
         verifiedBadge.addView(TextView(this).apply {
-            text = "\u2713"
+            text = "✓"
             textSize = 13f
             setTextColor(0xFF2E7D32.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -291,7 +295,7 @@ class SearchResultsActivity : AppCompatActivity() {
         })
 
         verifiedBadge.addView(TextView(this).apply {
-            text = "\u0110\u00e3 \u006b\u0069\u1ec3\u006d \u0064\u0075\u0079\u1ec7\u0074"
+            text = "Đã kiểm duyệt"
             textSize = 10f
             setTextColor(0xFF2E7D32.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
@@ -299,6 +303,37 @@ class SearchResultsActivity : AppCompatActivity() {
         })
 
         imageContainer.addView(verifiedBadge)
+
+        // ── Badge khoảng cách (chỉ hiển thị khi tìm theo bản đồ) ──
+        if (item.distanceKm >= 0) {
+            val distStr = if (item.distanceKm < 1.0)
+                "${(item.distanceKm * 1000).toInt()}m"
+            else
+                "${"%,.1f".format(item.distanceKm)}km"
+
+            val distBadge = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dpToPx(6), dpToPx(2), dpToPx(8), dpToPx(2))
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0xFF1565C0.toInt())
+                    cornerRadius = dpToPx(4).toFloat()
+                }
+                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
+                    .apply {
+                        gravity = Gravity.TOP or Gravity.END
+                        topMargin = dpToPx(8)
+                        rightMargin = dpToPx(8)
+                    }
+            }
+            distBadge.addView(TextView(this).apply {
+                text = "📍 $distStr"
+                textSize = 10f
+                setTextColor(0xFFFFFFFF.toInt())
+                setTypeface(null, android.graphics.Typeface.BOLD)
+            })
+            imageContainer.addView(distBadge)
+        }
         mainLayout.addView(imageContainer)
 
         val infoLayout = LinearLayout(this).apply {
@@ -328,28 +363,24 @@ class SearchResultsActivity : AppCompatActivity() {
         }
 
         infoLayout.addView(TextView(this).apply {
-            text = "\u0110\u1ecba ch\u1ec9: $fullAddress"
+            text = "Địa chỉ: $fullAddress"
             textSize = 11f
             setTextColor(0xFF757575.toInt())
             maxLines = 2
             ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dpToPx(3) }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dpToPx(3) }
         })
 
         val rowPriceDate = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply { topMargin = dpToPx(5) }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dpToPx(5) }
         }
 
         rowPriceDate.addView(TextView(this).apply {
-            text = "${formatter.format(item.price)} \u0111/th"
+            text = "${formatter.format(item.price)} đ/th"
             setTextColor(0xFFD32F2F.toInt())
             setTypeface(null, android.graphics.Typeface.BOLD)
             textSize = 13f
@@ -358,13 +389,11 @@ class SearchResultsActivity : AppCompatActivity() {
 
         val dateStr = if (item.createdAt > 0) {
             SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(Date(item.createdAt))
-        } else {
-            ""
-        }
+        } else ""
 
         if (dateStr.isNotEmpty()) {
             rowPriceDate.addView(TextView(this).apply {
-                text = "Ng\u00e0y: $dateStr"
+                text = "Ngày: $dateStr"
                 textSize = 10f
                 setTextColor(0xFF9E9E9E.toInt())
             })
@@ -374,7 +403,7 @@ class SearchResultsActivity : AppCompatActivity() {
         val available = item.roomCount - item.rentedCount
         if (item.roomCount > 0) {
             infoLayout.addView(TextView(this).apply {
-                text = if (available > 0) "\u0043\u00f2\u006e $available \u0070\u0068\u00f2\u006e\u0067" else "\u0048\u1ebf\u0074 \u0070\u0068\u00f2\u006e\u0067"
+                text = if (available > 0) "Còn $available phòng" else "Hết phòng"
                 textSize = 10f
                 setTextColor(0xFFFFFFFF.toInt())
                 setTypeface(null, android.graphics.Typeface.BOLD)
@@ -383,10 +412,8 @@ class SearchResultsActivity : AppCompatActivity() {
                     setColor(if (available > 0) 0xFF1976D2.toInt() else 0xFF9E9E9E.toInt())
                     cornerRadius = dpToPx(4).toFloat()
                 }
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { topMargin = dpToPx(4) }
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { topMargin = dpToPx(4) }
             })
         }
 
@@ -409,7 +436,7 @@ class SearchResultsActivity : AppCompatActivity() {
         layoutPagination.gravity = Gravity.CENTER
 
         val btnPrev = TextView(this).apply {
-            text = "\u0054\u0072\u01b0\u1edb\u0063"
+            text = "Trước"
             textSize = 14f
             setTypeface(null, android.graphics.Typeface.BOLD)
             setPadding(dpToPx(16), dpToPx(8), dpToPx(16), dpToPx(8))
@@ -433,13 +460,11 @@ class SearchResultsActivity : AppCompatActivity() {
                 setColor(0xFF1976D2.toInt())
                 cornerRadius = dpToPx(8).toFloat()
             }
-            layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.WRAP_CONTENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT
-            ).apply {
-                marginStart = dpToPx(4)
-                marginEnd = dpToPx(4)
-            }
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply {
+                    marginStart = dpToPx(4)
+                    marginEnd = dpToPx(4)
+                }
         }
         layoutPagination.addView(tvCurrent)
 

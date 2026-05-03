@@ -145,30 +145,36 @@ class LocationPickerActivity : AppCompatActivity() {
 
         geocodeExecutor.execute {
             val geocoder = Geocoder(this, Locale("vi", "VN"))
-            val results: List<android.location.Address>
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                val list = mutableListOf<android.location.Address>()
-                geocoder.getFromLocationName(fullQuery, 5) { list.addAll(it) }
-                Thread.sleep(600)
-                results = list
+                runCatching {
+                    geocoder.getFromLocationName(fullQuery, 5) { results ->
+                        handleGeocodeResults(results)
+                    }
+                }.onFailure {
+                    handleGeocodeResults(emptyList())
+                }
+                return@execute
             } else {
-                results = try {
+                val results = try {
                     geocoder.getFromLocationName(fullQuery, 5) ?: emptyList()
                 } catch (_: Exception) { emptyList() }
+                handleGeocodeResults(results)
             }
+        }
+    }
 
-            if (isFinishing || isDestroyed) return@execute
+    private fun handleGeocodeResults(results: List<android.location.Address>) {
+        if (isFinishing || isDestroyed) return
 
-            runOnUiThread {
-                when {
-                    results.isEmpty() -> Toast.makeText(
-                        this, "Kh\u00f4ng t\u00ecm th\u1ea5y. H\u00e3y th\u1eed t\u1eeb kh\u00f3a kh\u00e1c.",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    results.size == 1 -> applyGeocoderResult(results.first())
-                    else              -> showResultPicker(results)
-                }
+        runOnUiThread {
+            when {
+                results.isEmpty() -> Toast.makeText(
+                    this, "Kh\u00f4ng t\u00ecm th\u1ea5y. H\u00e3y th\u1eed t\u1eeb kh\u00f3a kh\u00e1c.",
+                    Toast.LENGTH_SHORT
+                ).show()
+                results.size == 1 -> applyGeocoderResult(results.first())
+                else              -> showResultPicker(results)
             }
         }
     }

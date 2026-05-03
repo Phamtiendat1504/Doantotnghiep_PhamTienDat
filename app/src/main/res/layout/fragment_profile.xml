@@ -466,7 +466,7 @@
                                 app:tint="#1976D2"
                                 android:background="@color/bg_white"
                                 android:padding="18dp"
-                                android:contentDescription="\Ảnh đại diện" />
+                                android:contentDescription="Ảnh đại diện" />
 
                         </androidx.cardview.widget.CardView>
 

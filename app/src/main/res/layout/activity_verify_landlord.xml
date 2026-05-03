@@ -30,7 +30,7 @@
                 android:layout_width="36dp"
                 android:layout_height="36dp"
                 android:src="@drawable/ic_back"
-                android:tint="#FFFFFF"
+                app:tint="#FFFFFF"
                 android:padding="6dp" />
 
             <TextView
@@ -269,7 +269,7 @@
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:src="@drawable/ic_camera"
-                            android:tint="#999999" />
+                            app:tint="#999999" />
 
                         <TextView
                             android:layout_width="wrap_content"
@@ -318,7 +318,7 @@
                             android:layout_width="40dp"
                             android:layout_height="40dp"
                             android:src="@drawable/ic_camera"
-                            android:tint="#999999" />
+                            app:tint="#999999" />
 
                         <TextView
                             android:layout_width="wrap_content"

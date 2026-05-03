@@ -14,6 +14,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
@@ -66,14 +67,15 @@ class PostFragment : Fragment() {
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
             val data = result.data
-            if (data?.clipData != null) {
-                val count = data.clipData!!.itemCount
+            val clipData = data?.clipData
+            if (clipData != null) {
+                val count = clipData.itemCount
                 for (i in 0 until count) {
-                    val uri = data.clipData!!.getItemAt(i).uri
+                    val uri = clipData.getItemAt(i).uri
                     if (imageUris.size < MAX_PHOTOS) { imageUris.add(uri); addPhotoToLayout(uri) }
                 }
             } else if (data?.data != null) {
-                val uri = data.data!!
+                val uri = data.data ?: return@registerForActivityResult
                 if (imageUris.size < MAX_PHOTOS) { imageUris.add(uri); addPhotoToLayout(uri) }
             }
         }
@@ -118,9 +120,9 @@ class PostFragment : Fragment() {
         }
 
         tvPickedLocation.text = if (selectedLocationAddress.isNotBlank()) {
-            "📍 Đã chọn: $selectedLocationAddress"
+            "Đã chọn: $selectedLocationAddress"
         } else {
-            "📍 Đã chọn tọa độ: %.6f, %.6f".format(Locale.US, lat, lng)
+            "Đã chọn tọa độ: %.6f, %.6f".format(Locale.US, lat, lng)
         }
     }
 
@@ -988,7 +990,7 @@ class PostFragment : Fragment() {
                 "paid" -> {
                     btnConfirm.isEnabled = true
                     btnConfirm.text = "Hoàn tất giao dịch"
-                    btnConfirm.setBackgroundColor(resources.getColor(R.color.primary))
+                    btnConfirm.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary))
                 }
                 "waiting_for_payment" -> {
                     btnConfirm.isEnabled = false

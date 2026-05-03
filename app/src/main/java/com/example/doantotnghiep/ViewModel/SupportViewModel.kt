@@ -92,7 +92,7 @@ class SupportViewModel : ViewModel() {
     }
 
     fun clearCreatedTicketId() {
-        _createdTicketId.value = ""
+        _createdTicketId.postValue("")
     }
 
     fun sendMessage(

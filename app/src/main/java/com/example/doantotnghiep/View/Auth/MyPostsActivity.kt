@@ -102,6 +102,7 @@ class MyPostsActivity : AppCompatActivity() {
             if (!error.isNullOrEmpty()) {
                 tvEmpty.text = "Lỗi tải dữ liệu"
                 tvEmpty.visibility = View.VISIBLE
+                swipeRefreshLayout.isRefreshing = false
             }
         }
 
@@ -169,7 +170,7 @@ class MyPostsActivity : AppCompatActivity() {
                 area = doc.getLong("area")?.toInt() ?: 0,
                 status = doc.getString("status") ?: "pending",
                 rejectReason = doc.getString("rejectReason") ?: "",
-                imageUrls = doc.get("imageUrls") as? List<String> ?: listOf(),
+                imageUrls = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String } ?: listOf(),
                 createdAt = doc.getLong("createdAt") ?: 0,
                 isFeatured = doc.getBoolean("isFeatured") == true,
                 featuredUntil = doc.getLong("featuredUntil") ?: 0,

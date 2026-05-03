@@ -8,6 +8,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.ProgressBar
 import android.widget.Spinner
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -22,6 +23,7 @@ import com.example.doantotnghiep.ViewModel.UserProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
 import de.hdodenhof.circleimageview.CircleImageView
 import kotlin.math.min
+import android.graphics.Typeface
 
 class UserProfileActivity : AppCompatActivity() {
 
@@ -29,7 +31,7 @@ class UserProfileActivity : AppCompatActivity() {
 
     private lateinit var ivAvatar: CircleImageView
     private lateinit var tvName: TextView
-    private lateinit var tvVerified: TextView
+    private lateinit var tvVerified: LinearLayout
     private lateinit var tvPhone: TextView
     private lateinit var tvEmail: TextView
     private lateinit var tvRole: TextView
@@ -307,11 +309,22 @@ class UserProfileActivity : AppCompatActivity() {
         if (user.uid != myUid) {
             btnChat.visibility = View.VISIBLE
             btnChat.setOnClickListener {
-                val intent = Intent(this, ChatActivity::class.java)
-                intent.putExtra(ChatActivity.EXTRA_OTHER_UID, user.uid)
-                intent.putExtra(ChatActivity.EXTRA_OTHER_NAME, user.fullName)
-                intent.putExtra(ChatActivity.EXTRA_OTHER_AVATAR, user.avatarUrl)
-                startActivity(intent)
+                if (myUid.isEmpty()) {
+                    androidx.appcompat.app.AlertDialog.Builder(this@UserProfileActivity)
+                        .setTitle("Yêu cầu đăng nhập")
+                        .setMessage("Bạn cần đăng nhập để sử dụng tính năng này.")
+                        .setPositiveButton("Đăng nhập") { _, _ ->
+                            startActivity(Intent(this@UserProfileActivity, LoginActivity::class.java))
+                        }
+                        .setNegativeButton("Hủy", null)
+                        .show()
+                } else {
+                    val intent = Intent(this@UserProfileActivity, ChatActivity::class.java)
+                    intent.putExtra(ChatActivity.EXTRA_OTHER_UID, user.uid)
+                    intent.putExtra(ChatActivity.EXTRA_OTHER_NAME, user.fullName)
+                    intent.putExtra(ChatActivity.EXTRA_OTHER_AVATAR, user.avatarUrl)
+                    startActivity(intent)
+                }
             }
         } else {
             btnChat.visibility = View.GONE

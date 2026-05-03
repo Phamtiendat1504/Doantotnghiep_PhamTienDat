@@ -98,19 +98,35 @@ class AuthRepository {
                             }
                             .addOnFailureListener { e ->
                                 val errorCode = (e as? FirebaseAuthException)?.errorCode
-                                if (e is FirebaseAuthUserCollisionException || errorCode == "ERROR_EMAIL_ALREADY_IN_USE") {
-                                    onFailure("Email này đã được sử dụng")
-                                } else {
-                                    onFailure("Đăng ký thất bại: ${e.message}")
+                                when {
+                                    e is FirebaseAuthUserCollisionException || errorCode == "ERROR_EMAIL_ALREADY_IN_USE" ->
+                                        onFailure("Email này đã được sử dụng")
+                                    e.message?.contains("network", ignoreCase = true) == true ||
+                                    e.message?.contains("offline", ignoreCase = true) == true ||
+                                    e.message?.contains("timeout", ignoreCase = true) == true ||
+                                    e.message?.contains("unreachable", ignoreCase = true) == true ->
+                                        onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet và thử lại.")
+                                    else ->
+                                        onFailure("Đăng ký thất bại. Vui lòng thử lại.")
                                 }
                             }
                     }
                     .addOnFailureListener { e ->
-                        onFailure("Lỗi kiểm tra email: ${e.message}")
+                        val msg = e.message ?: ""
+                        if (msg.contains("offline", ignoreCase = true) || msg.contains("network", ignoreCase = true) || msg.contains("timeout", ignoreCase = true)) {
+                            onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet và thử lại.")
+                        } else {
+                            onFailure("Lỗi kiểm tra email: $msg")
+                        }
                     }
             }
             .addOnFailureListener { e ->
-                onFailure("Lỗi kiểm tra số điện thoại: ${e.message}")
+                val msg = e.message ?: ""
+                if (msg.contains("offline", ignoreCase = true) || msg.contains("network", ignoreCase = true) || msg.contains("timeout", ignoreCase = true)) {
+                    onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet và thử lại.")
+                } else {
+                    onFailure("Lỗi kiểm tra số điện thoại: $msg")
+                }
             }
     }
 
@@ -225,7 +241,7 @@ class AuthRepository {
             }
             .addOnFailureListener {
                 // Fallback cache khi mất mạng
-                db.collection("users").document(uid).get()
+                db.collection("users").document(uid).get(com.google.firebase.firestore.Source.CACHE)
                     .addOnSuccessListener { doc ->
                         if (doc.exists()) {
                             onSuccess(
@@ -277,7 +293,7 @@ class AuthRepository {
                 onSuccess(user)
             }.addOnFailureListener {
                 // Fallback về cache nếu mất mạng
-                db.collection("users").document(uid).get()
+                db.collection("users").document(uid).get(com.google.firebase.firestore.Source.CACHE)
                     .addOnSuccessListener { doc ->
                         if (!doc.exists()) { onSuccess(null); return@addOnSuccessListener }
                         val user = User(
@@ -347,7 +363,8 @@ class AuthRepository {
 
     fun changePassword(oldPass: String, newPass: String, onSuccess: () -> Unit, onWrongOldPassword: () -> Unit, onFailure: (String) -> Unit) {
         val user = auth.currentUser ?: return onFailure("Chưa đăng nhập")
-        val credential = EmailAuthProvider.getCredential(user.email!!, oldPass)
+        val email = user.email ?: return onFailure("Tài khoản này chưa có email để đổi mật khẩu.")
+        val credential = EmailAuthProvider.getCredential(email, oldPass)
         user.reauthenticate(credential).addOnSuccessListener {
             user.updatePassword(newPass).addOnSuccessListener { onSuccess() }.addOnFailureListener { onFailure(it.message ?: "Lỗi đổi mật khẩu") }
         }.addOnFailureListener { onWrongOldPassword() }
@@ -364,7 +381,7 @@ class AuthRepository {
                 } else { onSuccess(null, null) }
             }.addOnFailureListener {
                 // Fallback về cache nếu mất mạng
-                db.collection("verifications").document(uid).get()
+                db.collection("verifications").document(uid).get(com.google.firebase.firestore.Source.CACHE)
                     .addOnSuccessListener { doc ->
                         if (doc.exists()) onSuccess(doc.getString("status"), doc.getString("rejectReason"))
                         else onSuccess(null, null)
@@ -507,7 +524,8 @@ class AuthRepository {
 
     fun reauthenticateAndUpdateEmail(pass: String, newEmail: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val user = auth.currentUser ?: return onFailure("Chưa đăng nhập")
-        val cred = EmailAuthProvider.getCredential(user.email!!, pass)
+        val email = user.email ?: return onFailure("Tài khoản này chưa có email hiện tại để xác thực.")
+        val cred = EmailAuthProvider.getCredential(email, pass)
         user.reauthenticate(cred).addOnSuccessListener {
             user.verifyBeforeUpdateEmail(newEmail).addOnSuccessListener {
                 // Không cập nhật Firestore ngay lập tức. 

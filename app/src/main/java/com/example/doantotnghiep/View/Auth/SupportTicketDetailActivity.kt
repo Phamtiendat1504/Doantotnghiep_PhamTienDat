@@ -42,6 +42,7 @@ class SupportTicketDetailActivity : AppCompatActivity() {
     private val myUid by lazy { FirebaseAuth.getInstance().currentUser?.uid ?: "" }
     private var selectedImageUri: Uri? = null
     private var ticketStatus = ""
+    private var lastKnownMessageCount = 0
 
     private val pickImageLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -119,7 +120,10 @@ class SupportTicketDetailActivity : AppCompatActivity() {
             adapter.submitList(messages)
             if (messages.isNotEmpty()) {
                 rvMessages.scrollToPosition(messages.size - 1)
-                viewModel.markUserRead(ticketId)
+                if (messages.size != lastKnownMessageCount) {
+                    lastKnownMessageCount = messages.size
+                    viewModel.markUserRead(ticketId)
+                }
             }
         }
     }

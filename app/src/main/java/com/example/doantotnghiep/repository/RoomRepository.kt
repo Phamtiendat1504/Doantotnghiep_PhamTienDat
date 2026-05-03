@@ -356,21 +356,20 @@ class RoomRepository {
     ) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
         val baseQuery = db.collection("rooms").whereEqualTo("userId", uid)
-        
-        // Luôn lọc bỏ những bài đã thuê (rented) khỏi danh sách của chủ trọ
+
+        // Không dùng orderBy ở đây để tránh bắt buộc phải tạo Composite Index
         val query = if (filter != "all") {
             baseQuery.whereEqualTo("status", filter)
-                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
         } else {
-            // Đối với filter "all", chúng ta lấy tất cả trừ rented
-            // Firestore không hỗ trợ != trong where cùng lúc với orderBy dễ dàng nếu không có index phức tạp,
-            // nên ta sẽ xử lý lọc ở code sau khi lấy về hoặc dùng list in
             baseQuery.whereIn("status", listOf("pending", "approved", "rejected", "expired"))
-                .orderBy("createdAt", com.google.firebase.firestore.Query.Direction.DESCENDING)
         }
 
         query.get()
-            .addOnSuccessListener { docs -> onSuccess(docs.toList()) }
+            .addOnSuccessListener { docs ->
+                // Sắp xếp phía client theo createdAt giảm dần
+                val sorted = docs.toList().sortedByDescending { it.getLong("createdAt") ?: 0L }
+                onSuccess(sorted)
+            }
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi tải dữ liệu") }
     }
 
@@ -392,9 +391,10 @@ class RoomRepository {
     fun listenPostBadge(uid: String, onResult: (Int) -> Unit): com.google.firebase.firestore.ListenerRegistration {
         return db.collection("rooms")
             .whereEqualTo("userId", uid)
-            .whereEqualTo("hasUnreadUpdate", true)
             .addSnapshotListener { snap, _ ->
-                onResult(snap?.size() ?: 0)
+                // Lọc phía client để tránh Composite Index
+                val count = snap?.count { it.getBoolean("hasUnreadUpdate") == true } ?: 0
+                onResult(count)
             }
     }
 
@@ -405,12 +405,14 @@ class RoomRepository {
     fun markPostsAsRead(uid: String) {
         db.collection("rooms")
             .whereEqualTo("userId", uid)
-            .whereEqualTo("hasUnreadUpdate", true)
             .get()
             .addOnSuccessListener { docs ->
+                // Lọc phía client để tránh Composite Index
+                val toUpdate = docs.filter { it.getBoolean("hasUnreadUpdate") == true }
+                if (toUpdate.isEmpty()) return@addOnSuccessListener
                 val batch = db.batch()
-                docs.forEach { batch.update(it.reference, "hasUnreadUpdate", false) }
-                if (!docs.isEmpty) batch.commit()
+                toUpdate.forEach { batch.update(it.reference, "hasUnreadUpdate", false) }
+                batch.commit()
             }
     }
 
@@ -547,11 +549,11 @@ class RoomRepository {
                         "userId" to uid, "roomId" to roomId,
                         "ownerId" to (roomData["userId"] as? String ?: ""),
                         "title" to (roomData["title"] as? String ?: ""),
-                        "price" to (roomData["price"] as? Long ?: 0),
+                        "price" to ((roomData["price"] as? Number)?.toLong() ?: 0L),
                         "address" to (roomData["address"] as? String ?: ""),
                         "ward" to (roomData["ward"] as? String ?: ""),
                         "district" to (roomData["district"] as? String ?: ""),
-                        "imageUrl" to ((roomData["imageUrls"] as? List<String>)?.firstOrNull() ?: ""),
+                        "imageUrl" to ((roomData["imageUrls"] as? List<*>)?.mapNotNull { it as? String }?.firstOrNull() ?: ""),
                         "savedAt" to System.currentTimeMillis()
                     )
                     docRef.set(savedPost)
@@ -807,7 +809,10 @@ class RoomRepository {
         db.collection("rooms").document(roomId).update(data)
             .addOnSuccessListener {
                 deletedImageUrls.forEach { url ->
-                    try { storage.getReferenceFromUrl(url).delete() } catch (_: Exception) {}
+                    runCatching { storage.getReferenceFromUrl(url).delete() }
+                        .onFailure { error ->
+                            android.util.Log.w("RoomRepository", "Invalid storage image url while deleting old post image", error)
+                        }
                 }
                 onSuccess()
             }

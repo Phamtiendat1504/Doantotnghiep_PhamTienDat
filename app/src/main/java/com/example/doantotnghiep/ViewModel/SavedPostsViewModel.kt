@@ -90,6 +90,6 @@ class SavedPostsViewModel : ViewModel() {
     }
 
     fun clearRoomCheckResult() {
-        _roomCheckResult.value = null
+        // Không giữ state cũ để tránh UI xử lý nhầm kết quả trước đó
     }
 }

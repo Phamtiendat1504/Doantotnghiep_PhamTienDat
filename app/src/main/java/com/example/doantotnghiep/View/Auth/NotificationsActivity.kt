@@ -68,44 +68,46 @@ class NotificationsActivity : AppCompatActivity() {
         val uid = auth.currentUser?.uid ?: return
         progressBar.visibility = View.VISIBLE
 
+        listenerRegistration?.remove()
         listenerRegistration = db.collection("notifications")
             .whereEqualTo("userId", uid)
             .addSnapshotListener { snap, error ->
                 progressBar.visibility = View.GONE
                 if (error != null) {
                     android.util.Log.e("Notifications", "Listen failed.", error)
+                    emptyState.visibility = View.VISIBLE
+                    rvNotifications.visibility = View.GONE
                     return@addSnapshotListener
                 }
                 if (snap == null) return@addSnapshotListener
 
                 val list = snap.documents.mapNotNull { doc ->
                     val data = doc.data ?: return@mapNotNull null
-                    // Kiểm tra cả 'seen' và 'isRead' để tránh mất dữ liệu cũ
-                    val isSeen = if (data.containsKey("seen")) {
-                        data["seen"] as? Boolean ?: false
-                    } else {
-                        data["isRead"] as? Boolean ?: false
-                    }
+                    val isSeen = (data["seen"] as? Boolean)
+                        ?: (data["isRead"] as? Boolean)
+                        ?: false
                     
                     NotificationItem(
-                        id        = doc.id,
-                        title     = data["title"] as? String ?: "",
-                        message   = data["message"] as? String ?: "",
-                        type      = data["type"] as? String ?: "",
-                        ticketId  = data["ticketId"] as? String ?: "",
+                        id = doc.id,
+                        title = data["title"] as? String ?: "",
+                        message = data["message"] as? String ?: "",
+                        type = data["type"] as? String ?: "",
+                        ticketId = data["ticketId"] as? String ?: "",
                         ticketTitle = data["ticketTitle"] as? String ?: data["title"] as? String ?: "Yêu cầu hỗ trợ",
-                        isRead    = isSeen,
+                        isRead = isSeen,
                         createdAt = data["createdAt"] as? Long ?: 0L
                     )
-                }.sortedByDescending { it.createdAt }
+                }
 
-                if (list.isEmpty()) {
+                val sortedList = list.sortedByDescending { it.createdAt }
+
+                if (sortedList.isEmpty()) {
                     emptyState.visibility = View.VISIBLE
                     rvNotifications.visibility = View.GONE
                 } else {
                     emptyState.visibility = View.GONE
                     rvNotifications.visibility = View.VISIBLE
-                    adapter.submitList(list)
+                    adapter.submitList(sortedList)
                 }
             }
     }
@@ -116,11 +118,9 @@ class NotificationsActivity : AppCompatActivity() {
             .whereEqualTo("userId", uid)
             .get()
             .addOnSuccessListener { snap ->
-                // Lọc thủ công các thông báo chưa đọc (vì có thể thiếu trường seen)
                 val unreadDocs = snap.documents.filter { doc ->
                     val seen = doc.getBoolean("seen")
                     val isRead = doc.getBoolean("isRead")
-                    // Nếu không có seen và không có isRead, hoặc một trong hai là false thì coi là chưa đọc
                     (seen == null && isRead == null) || (seen == false) || (isRead == false)
                 }
 
@@ -130,12 +130,11 @@ class NotificationsActivity : AppCompatActivity() {
                 }
                 
                 val batch = db.batch()
-                unreadDocs.forEach { doc -> 
-                    batch.update(doc.reference, "seen", true)
-                    batch.update(doc.reference, "isRead", true) // Cập nhật cả hai cho chắc chắn
+                unreadDocs.forEach { doc ->
+                    batch.update(doc.reference, mapOf("seen" to true, "isRead" to true))
                 }
                 batch.commit().addOnSuccessListener {
-                    // Thành công
+                    com.example.doantotnghiep.Utils.MessageUtils.showSuccessDialog(this, "Thành công", "Đã đánh dấu tất cả là đã đọc.")
                 }
             }
     }

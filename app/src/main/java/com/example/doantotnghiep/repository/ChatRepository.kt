@@ -13,6 +13,22 @@ class ChatRepository {
 
     private val db = FirebaseFirestore.getInstance()
 
+    private fun stringMap(value: Any?): Map<String, String> {
+        return (value as? Map<*, *>)?.mapNotNull { (key, mapValue) ->
+            val safeKey = key as? String ?: return@mapNotNull null
+            val safeValue = mapValue as? String ?: return@mapNotNull null
+            safeKey to safeValue
+        }?.toMap() ?: emptyMap()
+    }
+
+    private fun longMap(value: Any?): Map<String, Long> {
+        return (value as? Map<*, *>)?.mapNotNull { (key, mapValue) ->
+            val safeKey = key as? String ?: return@mapNotNull null
+            val safeValue = (mapValue as? Number)?.toLong() ?: return@mapNotNull null
+            safeKey to safeValue
+        }?.toMap() ?: emptyMap()
+    }
+
     /**
      * Tạo chatId duy nhất từ 2 uid (sắp xếp để tránh trùng lặp)
      */
@@ -40,8 +56,7 @@ class ChatRepository {
         chatRef.get().addOnSuccessListener { doc ->
             if (doc.exists()) {
                 // Cuộc chat đã tồn tại
-                @Suppress("UNCHECKED_CAST")
-                val deletedForMap = (doc.get("deletedFor") as? Map<String, Long>) ?: mapOf()
+                val deletedForMap = longMap(doc.get("deletedFor"))
                 val myDeletedAt = deletedForMap[myUid] ?: 0L
                 onSuccess(chatId, myDeletedAt)
             } else {
@@ -61,8 +76,13 @@ class ChatRepository {
                     .addOnSuccessListener { onSuccess(chatId, 0L) }
                     .addOnFailureListener { onFailure(it.message ?: "Lỗi tạo cuộc chat") }
             }
-        }.addOnFailureListener {
-            onFailure(it.message ?: "Lỗi kết nối")
+        }.addOnFailureListener { e ->
+            val msg = e.message ?: "Lỗi kết nối"
+            if (msg.contains("offline", ignoreCase = true)) {
+                onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet.")
+            } else {
+                onFailure("Lỗi kết nối: $msg")
+            }
         }
     }
 
@@ -159,8 +179,7 @@ class ChatRepository {
                             return@mapNotNull null
                         }
 
-                        @Suppress("UNCHECKED_CAST")
-                        val reactions = (doc.get("reactions") as? Map<String, String>) ?: mapOf()
+                        val reactions = stringMap(doc.get("reactions"))
 
                         Message(
                             id        = doc.getString("id") ?: doc.id,
@@ -196,8 +215,7 @@ class ChatRepository {
 
         // Đọc reaction hiện tại rồi toggle
         msgRef.get().addOnSuccessListener { doc ->
-            @Suppress("UNCHECKED_CAST")
-            val current = (doc.get("reactions") as? Map<String, String>)?.toMutableMap() ?: mutableMapOf()
+            val current = stringMap(doc.get("reactions")).toMutableMap()
             if (current[userId] == emoji) {
                 // Đã thả emoji này rồi → bỏ (toggle off)
                 current.remove(userId)
@@ -230,8 +248,7 @@ class ChatRepository {
                 if (snap == null) return@addSnapshotListener
                 val convs = snap.documents.mapNotNull { doc ->
                     try {
-                        @Suppress("UNCHECKED_CAST")
-                        val deletedForMap = (doc.get("deletedFor") as? Map<String, Long>) ?: mapOf()
+                        val deletedForMap = longMap(doc.get("deletedFor"))
                         val myDeletedAt   = deletedForMap[uid] ?: 0L
                         val lastMsgAt     = doc.getLong("lastMessageAt") ?: 0L
 
@@ -242,13 +259,13 @@ class ChatRepository {
 
                         Conversation(
                             chatId             = doc.id,
-                            participants       = (doc.get("participants") as? List<String>) ?: listOf(),
-                            participantNames   = (doc.get("participantNames") as? Map<String, String>) ?: mapOf(),
-                            participantAvatars = (doc.get("participantAvatars") as? Map<String, String>) ?: mapOf(),
+                            participants       = (doc.get("participants") as? List<*>)?.mapNotNull { it as? String } ?: listOf(),
+                            participantNames   = stringMap(doc.get("participantNames")),
+                            participantAvatars = stringMap(doc.get("participantAvatars")),
                             lastMessage        = doc.getString("lastMessage") ?: "",
                             lastMessageAt      = lastMsgAt,
                             lastSenderId       = doc.getString("lastSenderId") ?: "",
-                            unreadCount        = (doc.get("unreadCount") as? Map<String, Long>) ?: mapOf()
+                            unreadCount        = longMap(doc.get("unreadCount"))
                         )
                     } catch (e: Exception) {
                         android.util.Log.e("ChatRepo", "Parse conversation lỗi: ${e.message}")

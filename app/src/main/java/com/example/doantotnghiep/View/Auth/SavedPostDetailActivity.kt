@@ -72,17 +72,18 @@ class SavedPostDetailActivity : AppCompatActivity() {
         viewModel.roomData.observe(this) { data ->
             tvTitle.text = data["title"] as? String ?: "Chưa có tiêu đề"
 
-            val price = data["price"] as? Long ?: 0
-            tvPrice.text = "${formatter.format(price)} đ/tháng"
+            val price = (data["price"] as? Number)?.toLong() ?: 0L
+            tvPrice.text = if (price > 0) "${formatter.format(price)} đ/tháng" else "Liên hệ"
 
             val address = data["address"] as? String ?: ""
             val ward = data["ward"] as? String ?: ""
             val district = data["district"] as? String ?: ""
-            tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
+            tvAddress.text = listOf(address, ward, district).filter { it.isNotBlank() }.joinToString(", ")
+                .ifBlank { "Chưa cập nhật địa chỉ" }
 
-            tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
+            tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotBlank() } ?: "Không có mô tả"
 
-            val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
+            val imageUrls = (data["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: listOf()
             setupImageSlider(imageUrls)
             setupRoomInfo(data)
             setupAmenities(data)
@@ -282,6 +283,14 @@ class SavedPostDetailActivity : AppCompatActivity() {
         if (name.isNotEmpty()) addOwnerRow("Họ tên", name)
         if (phone.isNotEmpty()) addOwnerRow("SĐT", phone)
         if (gender.isNotEmpty()) addOwnerRow("Giới tính", gender)
+
+        if (name.isEmpty() && phone.isEmpty() && gender.isEmpty()) {
+            layoutOwnerInfo.addView(TextView(this).apply {
+                text = "Không có thông tin"
+                textSize = 13f
+                setTextColor(0xFF999999.toInt())
+            })
+        }
     }
 
     private fun addOwnerRow(label: String, value: String) {
@@ -318,4 +327,3 @@ class SavedPostDetailActivity : AppCompatActivity() {
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()
 }
-

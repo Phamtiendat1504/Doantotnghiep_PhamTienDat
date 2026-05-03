@@ -121,7 +121,7 @@
             android:contentDescription="Close camera"
             android:padding="8dp"
             android:src="@drawable/ic_close"
-            android:tint="#FFFFFFFF" />
+            app:tint="#FFFFFFFF" />
 
         <Space
             android:layout_width="0dp"

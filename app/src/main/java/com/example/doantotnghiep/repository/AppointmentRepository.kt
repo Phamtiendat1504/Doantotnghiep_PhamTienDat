@@ -5,7 +5,12 @@ import com.example.doantotnghiep.Model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
+
+data class RoomRentedNotice(
+    val id: String,
+    val title: String,
+    val message: String
+)
 
 class AppointmentRepository {
 
@@ -75,17 +80,17 @@ class AppointmentRepository {
 
         return db.collection("appointments")
             .whereEqualTo(field, uid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { value, error ->
                 if (error != null) {
                     onError("Lỗi tải lịch hẹn: ${error.message}")
                     return@addSnapshotListener
                 }
-                val list = value?.map { doc ->
+                val list = (value?.map { doc ->
                     val data = doc.data.toMutableMap()
                     data["id"] = doc.id
                     data
-                } ?: emptyList()
+                } ?: emptyList())
+                    .sortedByDescending { (it["createdAt"] as? Long) ?: 0L }
                 onUpdate(list)
             }
     }
@@ -107,23 +112,21 @@ class AppointmentRepository {
 
         val tenantListener = db.collection("appointments")
             .whereEqualTo("tenantId", uid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { value, error ->
                 if (error != null) { onError(error.message ?: "Lỗi"); return@addSnapshotListener }
-                val list = value?.map { doc ->
+                val list = (value?.map { doc ->
                     val data = doc.data.toMutableMap(); data["id"] = doc.id; data
-                } ?: emptyList()
+                } ?: emptyList()).sortedByDescending { (it["createdAt"] as? Long) ?: 0L }
                 onTenantUpdate(list)
             }
 
         val landlordListener = db.collection("appointments")
             .whereEqualTo("landlordId", uid)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { value, error ->
                 if (error != null) { onError(error.message ?: "Lỗi"); return@addSnapshotListener }
-                val list = value?.map { doc ->
+                val list = (value?.map { doc ->
                     val data = doc.data.toMutableMap(); data["id"] = doc.id; data
-                } ?: emptyList()
+                } ?: emptyList()).sortedByDescending { (it["createdAt"] as? Long) ?: 0L }
                 onLandlordUpdate(list)
             }
 
@@ -149,6 +152,64 @@ class AppointmentRepository {
     }
 
     // Lấy thông tin phòng + người thuê song song (cho chủ trọ bấm vào lịch hẹn)
+    fun loadCurrentUserAppointmentAccess(
+        onSuccess: (isHostAccess: Boolean, effectiveRole: String) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
+        db.collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val isVerified = doc.getBoolean("isVerified") ?: false
+                val role = doc.getString("role").orEmpty()
+                val effectiveRole = if (isVerified || role == "admin") "verified" else "user"
+                onSuccess(isVerified || role == "admin", effectiveRole)
+            }
+            .addOnFailureListener { e -> onFailure(e.message ?: "Không thể tải quyền người dùng") }
+    }
+
+    fun listenRoomRentedNotices(
+        uid: String,
+        onNotice: (RoomRentedNotice) -> Unit,
+        onError: (String) -> Unit
+    ): ListenerRegistration {
+        return db.collection("notifications")
+            .whereEqualTo("userId", uid)
+            .addSnapshotListener { snapshots, error ->
+                if (error != null) {
+                    onError(error.message ?: "Không thể nghe thông báo lịch hẹn")
+                    return@addSnapshotListener
+                }
+                if (snapshots == null || snapshots.isEmpty) return@addSnapshotListener
+
+                // Lọc client-side để tránh Composite Index
+                val doc = snapshots.documents
+                    .filter {
+                        it.getString("type") == "room_already_rented" &&
+                        it.getBoolean("seen") == false
+                    }
+                    .maxByOrNull { it.getLong("createdAt") ?: 0L }
+                    ?: return@addSnapshotListener
+
+                onNotice(
+                    RoomRentedNotice(
+                        id = doc.id,
+                        title = doc.getString("title") ?: "Lịch hẹn đã bị hủy",
+                        message = doc.getString("message")
+                            ?: "Phòng đã có người thuê. Lịch hẹn của bạn đã bị hủy tự động."
+                    )
+                )
+            }
+    }
+
+    fun markRoomRentedNoticeRead(notificationId: String) {
+        if (notificationId.isBlank()) return
+        db.collection("notifications").document(notificationId).update(
+            mapOf(
+                "seen" to true,
+                "isRead" to true
+            )
+        )
+    }
     fun fetchAppointmentDetails(
         roomId: String,
         tenantId: String,
@@ -200,7 +261,12 @@ class AppointmentRepository {
                 "hasUnreadUpdate" to true
             ))
             .addOnSuccessListener {
-                db.collection("bookedSlots").document(appointmentId).update("status", "confirmed")
+                val slotRef = db.collection("bookedSlots").document(appointmentId)
+                slotRef.get().addOnSuccessListener { slotDoc ->
+                    if (slotDoc.exists()) {
+                        slotRef.update("status", "confirmed")
+                    }
+                }
                 sendNotification(
                     userId = tenantId,
                     title = "Lịch hẹn đã được xác nhận!",
@@ -247,7 +313,7 @@ class AppointmentRepository {
         // 1. Lấy thông tin bài đăng để lấy danh sách ảnh trước khi xóa
         roomRef.get().addOnSuccessListener { document ->
             if (document.exists()) {
-                val imageUrls = document.get("imageUrls") as? List<String> ?: emptyList()
+                val imageUrls = (document.get("imageUrls") as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
                 
                 // 2. Xóa ảnh trên Storage
                 if (imageUrls.isNotEmpty()) {
@@ -472,12 +538,13 @@ class AppointmentRepository {
         roomId: String,
         onUpdate: (Map<String, Int>) -> Unit // Map<"date_time", count>
     ) {
+        val activeStatuses = setOf("pending", "confirmed", "tenant_confirmed")
         db.collection("appointments")
             .whereEqualTo("roomId", roomId)
-            .whereIn("status", listOf("pending", "confirmed", "tenant_confirmed"))
             .addSnapshotListener { snapshots, _ ->
                 val conflicts = mutableMapOf<String, Int>()
-                snapshots?.forEach { doc ->
+                // Lọc status phía client để tránh Composite Index
+                snapshots?.filter { it.getString("status") in activeStatuses }?.forEach { doc ->
                     val date = doc.getString("date") ?: ""
                     val time = doc.getString("time") ?: ""
                     val key = "${date}_${time}"
@@ -517,21 +584,27 @@ class AppointmentRepository {
         onResult: (Int) -> Unit
     ): ListenerRegistration {
         val isHostAccess = role == "admin" || role == "verified"
+        val hostStatuses = setOf("pending", "tenant_confirmed")
         return if (isHostAccess) {
             db.collection("appointments")
                 .whereEqualTo("landlordId", uid)
-                .whereIn("status", listOf("pending", "tenant_confirmed"))
-                .whereEqualTo("hasUnreadUpdate", true)
                 .addSnapshotListener { snap, _ ->
-                    onResult(snap?.size() ?: 0)
+                    // Lọc phía client để tránh Composite Index
+                    val count = snap?.count {
+                        it.getString("status") in hostStatuses &&
+                        it.getBoolean("hasUnreadUpdate") == true
+                    } ?: 0
+                    onResult(count)
                 }
         } else {
             db.collection("appointments")
                 .whereEqualTo("tenantId", uid)
-                .whereEqualTo("status", "confirmed")
-                .whereEqualTo("hasUnreadUpdate", true)
                 .addSnapshotListener { snap, _ ->
-                    onResult(snap?.size() ?: 0)
+                    val count = snap?.count {
+                        it.getString("status") == "confirmed" &&
+                        it.getBoolean("hasUnreadUpdate") == true
+                    } ?: 0
+                    onResult(count)
                 }
         }
     }
@@ -545,12 +618,14 @@ class AppointmentRepository {
         val field = if (isHostAccess) "landlordId" else "tenantId"
         db.collection("appointments")
             .whereEqualTo(field, uid)
-            .whereEqualTo("hasUnreadUpdate", true)
             .get()
             .addOnSuccessListener { snap ->
                 if (snap.isEmpty) return@addOnSuccessListener
+                // Lọc phía client để tránh Composite Index
+                val toUpdate = snap.documents.filter { it.getBoolean("hasUnreadUpdate") == true }
+                if (toUpdate.isEmpty()) return@addOnSuccessListener
                 val batch = db.batch()
-                snap.documents.forEach { doc ->
+                toUpdate.forEach { doc ->
                     batch.update(doc.reference, "hasUnreadUpdate", false)
                 }
                 batch.commit()

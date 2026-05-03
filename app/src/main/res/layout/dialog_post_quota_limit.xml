@@ -22,7 +22,7 @@
                 android:layout_height="20dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_info"
-                android:tint="@color/primary" />
+                app:tint="@color/primary" />
         </FrameLayout>
 
         <TextView

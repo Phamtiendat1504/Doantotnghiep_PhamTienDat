@@ -9,11 +9,18 @@ import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.RadioGroup
+import android.widget.SeekBar
+import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.AddressData
 import com.example.doantotnghiep.Utils.NumberFormatUtils
+import com.example.doantotnghiep.View.Auth.LocationPickerActivity
 import com.example.doantotnghiep.View.Auth.SearchResultsActivity
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
@@ -42,6 +49,36 @@ class SearchFragment : Fragment() {
     private lateinit var rgCurfew: RadioGroup
     private lateinit var edtCurfewTime: EditText
     private lateinit var btnSearch: MaterialButton
+
+    // ── Map location picker ──
+    private lateinit var btnPickMapLocation: MaterialButton
+    private lateinit var layoutMapSelected: LinearLayout
+    private lateinit var tvMapSelectedAddress: TextView
+    private lateinit var btnClearMapLocation: ImageView
+    private lateinit var layoutRadiusPicker: LinearLayout
+    private lateinit var tvRadiusValue: TextView
+    private lateinit var seekBarRadius: SeekBar
+
+    // Lưu vị trí bản đồ đã chọn
+    private var mapLat: Double = 0.0
+    private var mapLng: Double = 0.0
+    private var mapAddress: String = ""
+    // Bán kính mặc định 2km (seekbar: 0→1km, 1→2km, ..., 4→5km)
+    private var radiusKm: Double = 2.0
+
+    private val radiusOptions = listOf(1.0, 2.0, 3.0, 4.0, 5.0)
+
+    private val locationPickerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == AppCompatActivity.RESULT_OK) {
+            val data = result.data ?: return@registerForActivityResult
+            mapLat     = data.getDoubleExtra(LocationPickerActivity.EXTRA_RESULT_LAT, 0.0)
+            mapLng     = data.getDoubleExtra(LocationPickerActivity.EXTRA_RESULT_LNG, 0.0)
+            mapAddress = data.getStringExtra(LocationPickerActivity.EXTRA_RESULT_ADDRESS).orEmpty()
+            applyMapSelection()
+        }
+    }
 
     private var currentAreaOptions: List<String> = emptyList()
 
@@ -78,8 +115,18 @@ class SearchFragment : Fragment() {
         edtCurfewTime = view.findViewById(R.id.edtCurfewTime)
         btnSearch = view.findViewById(R.id.btnSearch)
 
+        // Map location views
+        btnPickMapLocation     = view.findViewById(R.id.btnPickMapLocation)
+        layoutMapSelected      = view.findViewById(R.id.layoutMapSelected)
+        tvMapSelectedAddress   = view.findViewById(R.id.tvMapSelectedAddress)
+        btnClearMapLocation    = view.findViewById(R.id.btnClearMapLocation)
+        layoutRadiusPicker     = view.findViewById(R.id.layoutRadiusPicker)
+        tvRadiusValue          = view.findViewById(R.id.tvRadiusValue)
+        seekBarRadius          = view.findViewById(R.id.seekBarRadius)
+
         loadAreaOptions(AddressData.phuongList)
         setupAreaPickerBehavior()
+        setupMapLocationPicker()
 
         chipPhuong.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) loadAreaOptions(AddressData.phuongList)
@@ -119,6 +166,60 @@ class SearchFragment : Fragment() {
         btnSearch.setOnClickListener { submitSearch() }
     }
 
+    // ────────────────────────────────────────────────
+    // Map location picker setup
+    // ────────────────────────────────────────────────
+    private fun setupMapLocationPicker() {
+        // Mặc định SeekBar ở vị trí 1 (= 2km)
+        seekBarRadius.progress = 1
+        tvRadiusValue.text = "2 km"
+        radiusKm = 2.0
+
+        btnPickMapLocation.setOnClickListener {
+            val intent = Intent(requireContext(), LocationPickerActivity::class.java)
+            locationPickerLauncher.launch(intent)
+        }
+
+        btnClearMapLocation.setOnClickListener {
+            clearMapSelection()
+        }
+
+        seekBarRadius.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+            override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                radiusKm = radiusOptions[progress]
+                tvRadiusValue.text = "${radiusKm.toInt()} km"
+            }
+            override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+            override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+        })
+    }
+
+    private fun applyMapSelection() {
+        if (mapLat == 0.0 && mapLng == 0.0) return
+
+        // Hiển thị địa chỉ đã chọn và thanh bán kính
+        tvMapSelectedAddress.text = mapAddress.ifEmpty { "Vị trí đã chọn: $mapLat, $mapLng" }
+        layoutMapSelected.visibility   = View.VISIBLE
+        layoutRadiusPicker.visibility  = View.VISIBLE
+
+        // Thay đổi nút từ outline sang highlight để báo người dùng đã chọn
+        btnPickMapLocation.text = "🗺 Thay đổi vị trí"
+    }
+
+    private fun clearMapSelection() {
+        mapLat = 0.0
+        mapLng = 0.0
+        mapAddress = ""
+        layoutMapSelected.visibility   = View.GONE
+        layoutRadiusPicker.visibility  = View.GONE
+        btnPickMapLocation.text = "Chọn vị trí trên bản đồ"
+        // Reset radius
+        seekBarRadius.progress = 1
+        tvRadiusValue.text = "2 km"
+        radiusKm = 2.0
+    }
+
+    // ────────────────────────────────────────────────
     private fun setupAreaPickerBehavior() {
         autoArea.setOnClickListener { autoArea.showDropDown() }
         autoArea.setOnFocusChangeListener { _, hasFocus ->
@@ -127,19 +228,34 @@ class SearchFragment : Fragment() {
     }
 
     private fun submitSearch() {
+        // ── Chế độ tìm theo bản đồ ──
+        if (mapLat != 0.0 || mapLng != 0.0) {
+            val intent = Intent(requireContext(), SearchResultsActivity::class.java)
+            intent.putExtra("searchMode", "nearby")
+            intent.putExtra("lat", mapLat)
+            intent.putExtra("lng", mapLng)
+            intent.putExtra("radiusKm", radiusKm)
+            intent.putExtra("mapAddress", mapAddress)
+            // Truyền thêm các bộ lọc giá/tiện ích nếu người dùng đã chọn
+            appendPriceAndAmenityExtras(intent)
+            startActivity(intent)
+            return
+        }
+
+        // ── Chế độ tìm theo phường/xã (logic cũ) ──
         val selectedItem = autoArea.text?.toString()?.trim().orEmpty()
         if (selectedItem.isEmpty()) {
             showInfoDialog(
-                title = "\u0043\u0068\u01b0\u0061 \u0063\u0068\u1ecd\u006e \u006b\u0068\u0075 \u0076\u1ef1\u0063",
-                message = "\u0056\u0075\u0069 \u006c\u00f2\u006e\u0067 \u0063\u0068\u1ecd\u006e \u006b\u0068\u0075 \u0076\u1ef1\u0063 \u0111\u1ec3 \u0074\u00ec\u006d \u006b\u0069\u1ebf\u006d\u002e"
+                title = "Chưa chọn khu vực",
+                message = "Vui lòng chọn khu vực để tìm kiếm hoặc chọn vị trí trên bản đồ."
             )
             return
         }
 
         if (selectedItem !in currentAreaOptions) {
             showInfoDialog(
-                title = "\u004b\u0068\u0075 \u0076\u1ef1\u0063 \u006b\u0068\u00f4\u006e\u0067 \u0068\u1ee3\u0070 \u006c\u1ec7",
-                message = "\u0056\u0075\u0069 \u006c\u00f2\u006e\u0067 \u0063\u0068\u1ecd\u006e \u0074\u1eeb \u0064\u0061\u006e\u0068 \u0073\u00e1\u0063\u0068 \u0067\u1ee3\u0069 \u00fd\u002e"
+                title = "Khu vực không hợp lệ",
+                message = "Vui lòng chọn từ danh sách gợi ý."
             )
             return
         }
@@ -147,7 +263,7 @@ class SearchFragment : Fragment() {
         val (wardName, districtName) = parseAreaSelection(selectedItem)
         val searchMode = if (chipScopeDistrict.isChecked) "district" else "ward"
         val districtForSearch = if (
-            searchMode == "district" && districtName.equals("\u0048\u00e0 \u004e\u1ed9\u0069", ignoreCase = true)
+            searchMode == "district" && districtName.equals("Hà Nội", ignoreCase = true)
         ) {
             wardName
         } else {
@@ -160,6 +276,33 @@ class SearchFragment : Fragment() {
         intent.putExtra("searchMode", searchMode)
         intent.putExtra("addressKeyword", edtAddress.text?.toString()?.trim().orEmpty())
 
+        appendPriceAndAmenityExtras(intent)
+
+        val roomType = when (rgRoomStyle.checkedRadioButtonId) {
+            R.id.rbShared -> "Ở ghép"
+            R.id.rbPrivate -> "Riêng tư"
+            else -> ""
+        }
+        intent.putExtra("roomType", roomType)
+        intent.putExtra("hasWifi", cbWifi.isChecked)
+        intent.putExtra("hasElectric", cbElectric.isChecked)
+        intent.putExtra("hasWater", cbWater.isChecked)
+
+        val curfew = when (rgCurfew.checkedRadioButtonId) {
+            R.id.rbCurfewFree -> "Tự do"
+            R.id.rbCurfewCustom -> "Tùy chọn"
+            else -> ""
+        }
+        intent.putExtra("curfew", curfew)
+        intent.putExtra("genderPrefer", "")
+
+        startActivity(intent)
+    }
+
+    /**
+     * Đóng gói các extra về giá và tiện ích vào Intent (dùng chung cho cả 2 chế độ tìm kiếm).
+     */
+    private fun appendPriceAndAmenityExtras(intent: Intent) {
         var minPrice = 0L
         var maxPrice = 0L
         if (chipPriceCustom.isChecked && edtCustomPrice.text.isNotEmpty()) {
@@ -171,26 +314,11 @@ class SearchFragment : Fragment() {
             maxPrice = customPrice + 500_000L
         } else {
             when (chipGroupPrice.checkedChipId) {
-                R.id.chipPrice1 -> {
-                    minPrice = 1_000_000L
-                    maxPrice = 3_000_000L
-                }
-                R.id.chipPrice2 -> {
-                    minPrice = 3_000_000L
-                    maxPrice = 6_000_000L
-                }
-                R.id.chipPrice3 -> {
-                    minPrice = 6_000_000L
-                    maxPrice = 9_000_000L
-                }
-                R.id.chipPrice4 -> {
-                    minPrice = 9_000_000L
-                    maxPrice = 12_000_000L
-                }
-                R.id.chipPrice5 -> {
-                    minPrice = 12_000_000L
-                    maxPrice = 0L
-                }
+                R.id.chipPrice1 -> { minPrice = 1_000_000L; maxPrice = 3_000_000L }
+                R.id.chipPrice2 -> { minPrice = 3_000_000L; maxPrice = 6_000_000L }
+                R.id.chipPrice3 -> { minPrice = 6_000_000L; maxPrice = 9_000_000L }
+                R.id.chipPrice4 -> { minPrice = 9_000_000L; maxPrice = 12_000_000L }
+                R.id.chipPrice5 -> { minPrice = 12_000_000L; maxPrice = 0L }
             }
         }
         intent.putExtra("minPrice", minPrice)
@@ -204,29 +332,7 @@ class SearchFragment : Fragment() {
             intent.putExtra("minArea", 0)
             intent.putExtra("maxArea", 0)
         }
-
         intent.putExtra("desiredPeople", edtPeopleCount.text.toString().toIntOrNull() ?: 0)
-
-        val roomType = when (rgRoomStyle.checkedRadioButtonId) {
-            R.id.rbShared -> "\u1ede gh\u00e9p"
-            R.id.rbPrivate -> "Ri\u00eang t\u01b0"
-            else -> ""
-        }
-        intent.putExtra("roomType", roomType)
-
-        intent.putExtra("hasWifi", cbWifi.isChecked)
-        intent.putExtra("hasElectric", cbElectric.isChecked)
-        intent.putExtra("hasWater", cbWater.isChecked)
-
-        val curfew = when (rgCurfew.checkedRadioButtonId) {
-            R.id.rbCurfewFree -> "\u0054\u1ef1 do"
-            R.id.rbCurfewCustom -> "T\u00f9y ch\u1ecdn"
-            else -> ""
-        }
-        intent.putExtra("curfew", curfew)
-        intent.putExtra("genderPrefer", "")
-
-        startActivity(intent)
     }
 
     private fun parseAreaSelection(selectedItem: String): Pair<String, String> {
@@ -245,7 +351,7 @@ class SearchFragment : Fragment() {
         androidx.appcompat.app.AlertDialog.Builder(requireContext())
             .setTitle(title)
             .setMessage(message)
-            .setPositiveButton("\u0110\u00e3 \u0068\u0069\u1ec3\u0075", null)
+            .setPositiveButton("Đã hiểu", null)
             .show()
     }
 
@@ -275,6 +381,9 @@ class SearchFragment : Fragment() {
         rgCurfew.clearCheck()
         edtCurfewTime.text?.clear()
         edtCurfewTime.visibility = View.GONE
+
+        // Xóa vị trí bản đồ đã chọn
+        clearMapSelection()
     }
 
     private fun loadAreaOptions(list: Array<String>) {

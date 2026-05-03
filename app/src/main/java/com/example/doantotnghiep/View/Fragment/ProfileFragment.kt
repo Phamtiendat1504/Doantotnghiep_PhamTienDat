@@ -70,7 +70,6 @@ class ProfileFragment : Fragment() {
 
         viewModel = ViewModelProvider(this)[ProfileViewModel::class.java]
 
-        // DĂ„â€Ă‚Â¹ng isLoggedIn() tÄ‚Â¡Ă‚Â»Ă‚Â« ViewModel thay vĂ„â€Ă‚Â¬ gÄ‚Â¡Ă‚Â»Ă‚Âi FirebaseAuth trÄ‚Â¡Ă‚Â»Ă‚Â±c tiÄ‚Â¡Ă‚ÂºĂ‚Â¿p
         if (!viewModel.isLoggedIn()) {
             layoutGuest.visibility = View.VISIBLE
             layoutProfile.visibility = View.GONE
@@ -79,7 +78,6 @@ class ProfileFragment : Fragment() {
             layoutGuest.visibility = View.GONE
             layoutProfile.visibility = View.VISIBLE
             applyUnverifiedBadgePlaceholder()
-            // Luon hien du 4 muc hoat dong cho moi tai khoan da dang nhap.
             cardMyPosts.visibility = View.VISIBLE
             btnSavedPosts.visibility = View.VISIBLE
             setupClickListeners()
@@ -100,6 +98,8 @@ class ProfileFragment : Fragment() {
                 imgAvatar.setPadding(0, 0, 0, 0)
                 imgAvatar.imageTintList = null
                 Glide.with(this).load(currentAvatarUrl).circleCrop().placeholder(R.drawable.ic_person).into(imgAvatar)
+            } else {
+                imgAvatar.setImageResource(R.drawable.ic_person)
             }
             val role = info.role
             val isVerified = info.isVerified
@@ -157,10 +157,10 @@ class ProfileFragment : Fragment() {
             
             MessageUtils.showSuccessDialog(
                 requireContext(),
-                "C\u1eadp nh\u1eadt th\u00e0nh c\u00f4ng",
-                "\u1ea2nh \u0111\u1ea1i di\u1ec7n \u0111\u00e3 \u0111\u01b0\u1ee3c c\u1eadp nh\u1eadt"
+                "Cập nhật thành công",
+                "Ảnh đại diện đã được cập nhật"
             )
-            viewModel.resetAvatarUploadState() // Reset Ä‚â€Ă¢â‚¬ËœÄ‚Â¡Ă‚Â»Ă†â€™ khĂ„â€Ă‚Â´ng hiÄ‚Â¡Ă‚Â»Ă¢â‚¬Â¡n lÄ‚Â¡Ă‚ÂºĂ‚Â¡i Dialog Ä‚â€Ă¢â‚¬Ëœang xÄ‚Â¡Ă‚Â»Ă‚Â­ lĂ„â€Ă‚Â½
+            viewModel.resetAvatarUploadState()
         }
 
         viewModel.isUploadingAvatar.observe(viewLifecycleOwner) { isUploading ->
@@ -176,7 +176,7 @@ class ProfileFragment : Fragment() {
                 dismissAvatarLoadingDialog()
                 MessageUtils.showErrorDialog(
                     requireContext(),
-                    "L\u1ed7i c\u1eadp nh\u1eadt \u1ea3nh",
+                    "L\u1ed7i",
                     error
                 )
             }
@@ -370,7 +370,6 @@ class ProfileFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
-        // DĂ„â€Ă‚Â¹ng isLoggedIn() tÄ‚Â¡Ă‚Â»Ă‚Â« ViewModel thay vĂ„â€Ă‚Â¬ gÄ‚Â¡Ă‚Â»Ă‚Âi FirebaseAuth trÄ‚Â¡Ă‚Â»Ă‚Â±c tiÄ‚Â¡Ă‚ÂºĂ‚Â¿p
         if (viewModel.isLoggedIn() && layoutGuest.visibility == View.VISIBLE) {
             layoutGuest.visibility = View.GONE
             layoutProfile.visibility = View.VISIBLE

@@ -27,6 +27,7 @@ import java.util.Locale
 class MyPostDetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MyPostDetailViewModel
+    private var imagePageCallback: ViewPager2.OnPageChangeCallback? = null
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -118,7 +119,7 @@ class MyPostDetailActivity : AppCompatActivity() {
         findViewById<TextView>(R.id.tvDescription).text =
             (d["description"] as? String)?.takeIf { it.isNotBlank() } ?: "Kh\u00f4ng c\u00f3 m\u00f4 t\u1ea3"
 
-        setupImageSlider(d["imageUrls"] as? List<String> ?: emptyList())
+        setupImageSlider((d["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList())
         setupRoomInfo(d)
         setupAmenities(d)
 
@@ -206,12 +207,15 @@ class MyPostDetailActivity : AppCompatActivity() {
             override fun getItemCount(): Int = images.size
         }
 
+        imagePageCallback?.let { viewPager.unregisterOnPageChangeCallback(it) }
         tvCount.text = "1/${images.size}"
-        viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
+        val callback = object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 tvCount.text = "${position + 1}/${images.size}"
             }
-        })
+        }
+        imagePageCallback = callback
+        viewPager.registerOnPageChangeCallback(callback)
     }
 
     private fun setupRoomInfo(data: Map<String, Any>) {
@@ -376,6 +380,13 @@ class MyPostDetailActivity : AppCompatActivity() {
 
             layout.addView(row)
         }
+    }
+
+    override fun onDestroy() {
+        imagePageCallback?.let {
+            findViewById<ViewPager2>(R.id.viewPagerImages).unregisterOnPageChangeCallback(it)
+        }
+        super.onDestroy()
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

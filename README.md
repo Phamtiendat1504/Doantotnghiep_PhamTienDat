@@ -1,496 +1,801 @@
-# Đồ án Tốt nghiệp: Tìm Trọ 24/7 (Android + Web Admin + Firebase)
+# TIM TRO 24/7
 
-Tài liệu này viết cho người mở dự án lần đầu (giảng viên, phản biện, thành viên mới) để nắm nhanh toàn bộ hệ thống:
-- App Android có chức năng gì.
-- Web Admin làm gì.
-- Firebase/GCP được cấu hình ra sao.
-- Luồng xử lý dữ liệu từ đầu đến cuối cho từng nghiệp vụ.
-- Chức năng nào nằm ở file Kotlin/XML nào, file web nào, Cloud Function nào.
+> Ứng dụng Android tìm phòng trọ, đăng bài cho thuê, xác minh chủ trọ, đặt lịch xem phòng, chat, thông báo và quản lý lượt đăng bài bằng Firebase.
 
-Lưu ý thời điểm: phần cấu hình Firebase Console trong tài liệu này được tổng hợp theo trạng thái bạn chụp ngày **24/04/2026**.
+Tài liệu này được viết lại dựa trên việc đọc và đối chiếu trực tiếp mã nguồn trong project Android này. Mục tiêu là để người mới có thể hiểu nhanh:
+- Ứng dụng làm gì.
+- Kiến trúc hoạt động ra sao.
+- Luồng dữ liệu đi từ UI đến Firebase.
+- Mỗi màn hình / ViewModel / Repository dùng để làm gì.
+- Khi cần sửa một tính năng thì mở file nào trước.
 
 ---
 
-## 1) Bức tranh tổng thể hệ thống
+## 1. Tổng quan dự án
 
-Hệ thống gồm 3 khối chạy cùng một backend Firebase:
+`TIM TRO 24/7` là một ứng dụng Android viết bằng **Kotlin** theo kiểu **MVVM**, kết nối với hệ sinh thái **Firebase** để xử lý hầu hết nghiệp vụ:
 
-1. **App Android (repo này)**
-- Người dùng tìm phòng, đăng bài, xác minh CCCD, đặt lịch, chat, nhận thông báo.
-- Công nghệ chính: Kotlin, XML, MVVM, Firebase SDK.
+- **Firebase Authentication**: đăng ký, đăng nhập, đổi mật khẩu, kiểm tra phiên đăng nhập.
+- **Firestore**: lưu user, phòng trọ, lịch hẹn, thông báo, bài lưu, xác minh, yêu cầu nâng cấp lượt đăng bài.
+- **Firebase Storage**: lưu ảnh phòng, ảnh CCCD, ảnh liên quan bài đăng.
+- **Firebase Messaging**: nhận push notification.
+- **Google Maps / Geocoding**: chọn vị trí phòng trên bản đồ.
+- **CameraX + ML Kit**: chụp CCCD và đọc OCR trong quy trình xác minh.
 
-2. **Web Admin**
-- Đường dẫn local: `C:\Users\tiend\Admin_TimTro_New`
-- Gồm:
-  - `public/index.html`, `public/app.js`: giao diện và logic quản trị.
-  - `phamtriendat_doantotnghiep/index.js`: Cloud Functions backend.
-- Quản trị các nghiệp vụ: duyệt bài, duyệt xác minh, khóa user, xóa user, theo dõi trạng thái online/offline, thống kê.
+Dự án được tổ chức để phục vụ **2 nhóm người dùng chính**:
 
-3. **Firebase/GCP**
-- Auth, Firestore, Storage, FCM, Cloud Functions.
-- GCP APIs: Maps SDK for Android, Geocoding API, Places API (New), Cloud Vision API.
+1. **Người thuê / người tìm trọ**
+   - Tìm phòng theo khu vực, giá, nhu cầu.
+   - Xem chi tiết phòng.
+   - Lưu bài, đặt lịch xem phòng.
+   - Chat với chủ trọ.
+   - Nhận thông báo về lịch hẹn và trạng thái bài đăng.
 
-Sơ đồ luồng:
+2. **Chủ trọ**
+   - Đăng bài cho thuê.
+   - Xác minh danh tính bằng CCCD.
+   - Quản lý bài đăng của mình.
+   - Xem lịch hẹn.
+   - Theo dõi lượt đăng bài còn lại.
+
+---
+
+## 2. Công nghệ và thư viện chính
+
+### Ngôn ngữ / nền tảng
+- Kotlin
+- Android SDK
+- minSdk 24
+- compileSdk 35
+- targetSdk 35
+- Java 11
+
+### Thư viện nổi bật trong `app/build.gradle.kts`
+- AndroidX Core, AppCompat, Material
+- Lifecycle ViewModel / LiveData
+- Firebase BoM
+- Firebase Auth / Firestore / Storage / Messaging
+- Glide
+- CameraX
+- ML Kit Text Recognition
+- Google Maps
+- SwipeRefreshLayout
+- CircleImageView
+- Security Crypto
+- OkHttp
+
+### Điểm đáng chú ý
+- `viewBinding = true` đã được bật.
+- Ứng dụng dùng nhiều `LiveData` để cập nhật UI theo dữ liệu Firebase.
+- Có cơ chế xử lý online/offline và token FCM ở `MainActivity`.
+
+---
+
+## 3. Cấu trúc kiến trúc
+
+Dự án đi theo mô hình gần với **MVVM**:
+
+- **View**: `Activity`, `Fragment`, XML layout
+- **ViewModel**: chứa logic UI, gọi repository, giữ trạng thái hiển thị
+- **Repository**: làm việc trực tiếp với Firebase / Storage / Auth
+- **Model**: dữ liệu phòng, user, tin nhắn, cuộc hẹn...
+- **Utils**: helper xử lý UI, định dạng, ảnh, thông báo, trạng thái online
+
+### Luồng tổng quát
 
 ```text
-Android App (Kotlin/XML)            Web Admin (HTML/CSS/JS)
-           \                          /
-            \                        /
-             ---> Firebase Backend <---
-                  - Auth
-                  - Firestore
-                  - Storage
-                  - Cloud Functions
-                  - FCM
-                  - Security Rules
+UI (Activity / Fragment)
+    -> ViewModel
+        -> Repository
+            -> Firebase / Storage / FCM / Maps
+                -> trả dữ liệu
+            -> ViewModel cập nhật LiveData
+        -> UI observe LiveData và render
 ```
+
+### Ưu điểm của cách tổ chức này
+- Màn hình đỡ phải gọi Firebase trực tiếp.
+- Logic nghiệp vụ tập trung ở Repository / ViewModel.
+- Dễ truy vết khi cần debug.
+- Dễ mở rộng thêm tính năng mới.
 
 ---
 
-## 2) Kiến trúc và convention trong app Android
+## 4. Điểm vào ứng dụng
 
-### 2.1 Kiến trúc
-- Pattern: **MVVM**.
-- UI layer: `Activity/Fragment + XML + ViewBinding`.
-- ViewModel layer: validate dữ liệu, điều phối nghiệp vụ.
-- Repository layer: làm việc trực tiếp với Firebase.
+### `SplashActivity`
+- Là màn hình khởi động.
+- Kiểm tra trạng thái đăng nhập.
+- Điều hướng người dùng sang màn hình phù hợp.
 
-Luồng chuẩn:
+### `WelcomeActivity`
+- Màn hình chào / giới thiệu ban đầu.
+
+### `LoginActivity`, `RegisterActivity`, `ForgotPasswordActivity`, `ResetPasswordActivity`
+- Dùng cho xác thực tài khoản.
+- Kết hợp với `AuthViewModel` và `AuthRepository`.
+
+### `MainActivity`
+- Là màn hình chính sau khi đăng nhập.
+- Chứa bottom navigation.
+- Quản lý fragment Home / Search / Post / Profile.
+- Khởi tạo FCM token.
+- Lắng nghe trạng thái Internet.
+- Lắng nghe trạng thái khóa / xóa tài khoản.
+- Hiển thị badge cho thông báo và lịch hẹn.
+
+---
+
+## 5. `MainActivity` làm gì
+
+File: `app/src/main/java/com/example/doantotnghiep/MainActivity.kt`
+
+Đây là một trong những file trung tâm nhất của app. Nó thực hiện các việc sau:
+
+### 5.1 Điều hướng chính
+- Dùng `BottomNavigationView` để đổi fragment:
+  - `HomeFragment`
+  - `SearchFragment`
+  - `PostFragment`
+  - `ProfileFragment`
+
+### 5.2 Quản lý thông báo FCM
+- Với Android 13+ app xin quyền `POST_NOTIFICATIONS`.
+- Nếu được cấp quyền thì lấy FCM token và lưu vào Firestore user.
+- Token được cập nhật lại khi đăng nhập mới.
+
+### 5.3 Theo dõi trạng thái tài khoản
+- Gọi `AuthRepository.listenUserStatus(...)`.
+- Nếu tài khoản bị khóa hoặc bị xóa, app:
+  - đưa user về offline bằng `PresenceManager`
+  - sign out Firebase Auth
+  - hiển thị dialog thông báo
+  - chuyển về `LoginActivity`
+
+### 5.4 Theo dõi mạng
+- Đăng ký `ConnectivityManager.NetworkCallback`.
+- Khi mất mạng sẽ hiện Toast cảnh báo.
+
+### 5.5 Badge lịch hẹn
+- `MainViewModel` theo dõi badge count của lịch hẹn và bài hết hạn.
+- Role user được đọc từ collection `users` để quyết định logic badge.
+
+### 5.6 Điều hướng từ notification
+- `intent` có thể mở tab hoặc mở lịch hẹn trực tiếp.
+
+---
+
+## 6. Màn hình Home
+
+File: `app/src/main/java/com/example/doantotnghiep/View/Fragment/HomeFragment.kt`
+
+### Chức năng chính
+- Chào người dùng.
+- Hiển thị ngày hiện tại.
+- Hiển thị bài nổi bật.
+- Hiển thị bài mới.
+- Hiển thị khu vực phổ biến.
+- Tìm kiếm nhanh.
+- Lưu lịch sử tìm kiếm gần đây.
+- Mở màn hình thông báo.
+- Mở profile search.
+
+### Dữ liệu hiển thị
+- `userName`
+- `greeting`
+- `currentDate`
+- `popularAreas`
+- `featuredRooms`
+- `newRooms`
+- `notificationBadgeCount`
+
+### Các tương tác nổi bật
+- Chạm chip khu vực để tìm theo quận.
+- Chạm “Xem thêm” để tải thêm bài mới.
+- Nhập từ khóa và bấm tìm kiếm để mở `SearchResultsActivity`.
+- Có swipe-to-refresh để tải lại dữ liệu.
+
+### Search history
+- Lưu vào `SharedPreferences` tên `SearchHistory`.
+- Tối đa 5 truy vấn gần nhất.
+
+---
+
+## 7. Màn hình đăng bài
+
+File: `app/src/main/java/com/example/doantotnghiep/View/Fragment/PostFragment.kt`
+
+Đây là luồng nghiệp vụ lớn nhất trong app.
+
+### 7.1 Vai trò của màn hình
+- Cho chủ trọ đăng bài.
+- Với người chưa đăng nhập thì hiện màn hình guest.
+- Với user chưa xác minh thì yêu cầu xác minh.
+- Với user đã xác minh hoặc admin thì cho nhập form đăng bài.
+- Có cơ chế chờ mở quyền sau khi được duyệt.
+
+### 7.2 Quy trình hiển thị theo trạng thái user
+`PostFragment` nhận `userObject` từ `PostViewModel` và quyết định:
+
+- **Chưa đăng nhập**: hiện nút đăng nhập / đăng ký.
+- **Chưa xác minh**: hiện màn hình yêu cầu xác minh.
+- **Đang chờ duyệt**: hiện trạng thái pending.
+- **Bị từ chối**: hiện lý do từ chối.
+- **Đã được cấp quyền nhưng còn thời gian chờ**: hiện countdown mở quyền.
+- **Đủ quyền**: hiện form đăng bài.
+
+### 7.3 Form đăng bài chứa gì
+- Họ tên chủ trọ
+- Số điện thoại
+- Giới tính
+- Tiêu đề
+- Phường/xã
+- Địa chỉ
+- Vị trí bản đồ
+- Mô tả
+- Giá phòng
+- Diện tích
+- Số người
+- Loại phòng
+- Tiền cọc
+- Dịch vụ đi kèm
+- Tiện nghi
+- Bếp / WC / thú cưng / giờ giới nghiêm
+- Ảnh phòng
+
+### 7.4 Ảnh phòng
+- Cho phép chọn tối đa 10 ảnh.
+- Dùng `Intent.ACTION_PICK` với `EXTRA_ALLOW_MULTIPLE`.
+- Ảnh được preview trực tiếp trong form.
+- Có thể nhấn giữ để xóa ảnh.
+
+### 7.5 Chọn vị trí
+- Mở `LocationPickerActivity`.
+- Trả về tọa độ và địa chỉ.
+- Có tự động điền vào ô địa chỉ và sync lại phường/xã nếu khớp.
+
+### 7.6 Gửi bài
+- Bài được tạo thành `Model.Room`.
+- Trạng thái mặc định là `pending`.
+- Dữ liệu được gửi đến `PostViewModel.postRoom(...)`.
+- Có dialog tiến trình upload.
+- Khi thành công sẽ mở `PostSuccessActivity`.
+
+### 7.7 Quy định và quota
+- `PostFragment` có dialog điều khoản.
+- `PostViewModel` kiểm tra quota trước khi đăng.
+- Nếu hết lượt, user có thể mua thêm lượt đăng.
+
+### 7.8 Mua thêm lượt đăng
+Luồng nâng cấp lượt đăng bài được tích hợp trực tiếp trong `PostFragment`:
+- Chọn gói `+3 lượt` hoặc `+10 lượt`.
+- Có thể nhập gói tùy chọn.
+- App tạo request trong `slot_upgrade_requests`.
+- Hiển thị QR thanh toán VietQR.
+- Poll trạng thái thanh toán theo document Firestore.
+- Khi admin / cloud function xác nhận thanh toán, user được cộng slot.
+
+---
+
+## 8. Xác minh chủ trọ bằng CCCD
+
+### File liên quan
+- `View/Auth/VerifyLandlordActivity.kt`
+- `View/Auth/CccdCameraActivity.kt`
+- `ViewModel/VerifyLandlordViewModel.kt`
+- `repository/VerificationRepository.kt`
+
+### Luồng nghiệp vụ
+1. User vào màn hình xác minh.
+2. Chụp ảnh CCCD bằng CameraX.
+3. Upload ảnh lên Storage.
+4. Tạo document xác minh trong Firestore.
+5. Ảnh / dữ liệu được kiểm tra bằng OCR hoặc quy trình duyệt.
+6. Trạng thái có thể là:
+   - `pending`
+   - `pending_admin_review`
+   - `approved`
+   - `rejected`
+
+### Ý nghĩa nghiệp vụ
+- Chỉ user đã xác minh mới được mở quyền đăng bài.
+- Giúp giảm đăng tin ảo và tăng độ tin cậy cho chủ trọ.
+
+---
+
+## 9. Danh sách phòng, chi tiết phòng và lưu bài
+
+### 9.1 `SearchFragment`
+File: `View/Fragment/SearchFragment.kt`
+- Tìm kiếm phòng theo điều kiện.
+- Kết hợp nhiều bộ lọc.
+- Mở `SearchResultsActivity`.
+
+### 9.2 `SearchResultsActivity`
+- Hiển thị danh sách kết quả sau khi tìm.
+- Dựa trên dữ liệu từ `SearchViewModel`.
+
+### 9.3 `RoomDetailActivity`
+- Xem chi tiết một phòng.
+- Xem ảnh, thông tin chủ trọ, giá, tiện nghi, mô tả.
+- Có logic lưu bài, đặt lịch, mở hồ sơ chủ trọ, và điều hướng chat.
+
+### 9.4 `SavedPostsActivity`, `SavedPostDetailActivity`
+- Quản lý bài đã lưu.
+- Xem chi tiết bài đã lưu.
+
+### 9.5 `RoomAdapter`
+- Adapter hiển thị card phòng theo kiểu horizontal / vertical.
+- Dùng lại cho nhiều màn hình.
+
+---
+
+## 10. Đặt lịch xem phòng
+
+### File liên quan
+- `View/Auth/BookingActivity.kt`
+- `View/Auth/MyAppointmentsActivity.kt`
+- `View/Auth/AppointmentRoomDetailActivity.kt`
+- `ViewModel/BookingViewModel.kt`
+- `repository/AppointmentRepository.kt`
+
+### Chức năng
+- Người thuê đặt lịch xem phòng.
+- Lịch hẹn được lưu vào Firestore.
+- Có cơ chế chống trùng giờ bằng `bookedSlots`.
+- Chủ trọ xem các cuộc hẹn của mình trong `MyAppointmentsActivity`.
+
+### Dữ liệu thường gặp
+- tenantId
+- landlordId
+- roomId
+- date
+- time
+- status
+
+### Luồng tổng quát
+1. Người thuê mở trang chi tiết phòng.
+2. Chọn ngày giờ phù hợp.
+3. Tạo lịch hẹn.
+4. Lịch hẹn được phản ánh sang chủ trọ.
+5. Badge trong `MainActivity` cập nhật số lượng lịch hẹn.
+
+---
+
+## 11. Chat và conversations
+
+### File liên quan
+- `View/Auth/ChatActivity.kt`
+- `View/Auth/ConversationsActivity.kt`
+- `View/Adapter/MessageAdapter.kt`
+- `View/Adapter/ConversationAdapter.kt`
+- `repository/ChatRepository.kt`
+- `ViewModel/ChatViewModel.kt`
+
+### Chức năng
+- Nhắn tin giữa người thuê và chủ trọ.
+- Danh sách cuộc trò chuyện.
+- Hiển thị tin nhắn theo thread.
+- Hỗ trợ thông báo cho tin nhắn mới.
+
+### Đối tượng dữ liệu
+- `Conversation`
+- `Message`
+
+### Ghi chú kỹ thuật
+- Chat được lưu trên Firestore.
+- UI dùng adapter riêng cho list tin nhắn và list conversation.
+
+---
+
+## 12. Thông báo
+
+### File liên quan
+- `Utils/MyFirebaseMessagingService.kt`
+- `Utils/PostNotificationHelper.kt`
+- `View/Auth/NotificationsActivity.kt`
+- `View/Adapter/NotificationAdapter.kt`
+
+### Loại thông báo
+- Thông báo hệ thống
+- Lịch hẹn
+- Bài đăng được duyệt / từ chối / hết hạn
+- Chat / tin nhắn mới
+- Trạng thái tài khoản
+
+### Cách hoạt động
+- App nhận FCM token.
+- Token được lưu vào Firestore user.
+- Cloud Function hoặc server có thể gửi push.
+- Trong app cũng có collection `notifications` để hiển thị lịch sử.
+
+---
+
+## 13. Hồ sơ cá nhân, cài đặt và đổi mật khẩu
+
+### File liên quan
+- `View/Fragment/ProfileFragment.kt`
+- `View/Auth/UserProfileActivity.kt`
+- `View/Auth/SettingsActivity.kt`
+- `View/Auth/ChangePasswordActivity.kt`
+- `View/Auth/PersonalInfoActivity.kt`
+- `ViewModel/ProfileViewModel.kt`
+- `ViewModel/UserProfileViewModel.kt`
+
+### Nội dung chính
+- Xem thông tin người dùng.
+- Chỉnh sửa hồ sơ.
+- Đổi mật khẩu.
+- Cập nhật trạng thái online/offline.
+- Xem bài đăng của mình.
+- Xem lịch hẹn và thông báo liên quan.
+
+---
+
+## 14. Quản lý bài đăng của chủ trọ
+
+### File liên quan
+- `View/Auth/MyPostsActivity.kt`
+- `View/Auth/MyPostDetailActivity.kt`
+- `View/Auth/EditPostActivity.kt`
+- `ViewModel/MyPostsViewModel.kt`
+- `ViewModel/MyPostDetailViewModel.kt`
+- `ViewModel/EditPostViewModel.kt`
+- `repository/RoomRepository.kt`
+
+### Tính năng
+- Xem toàn bộ bài đã đăng.
+- Lọc theo trạng thái.
+- Sửa bài.
+- Xóa bài.
+- Đánh dấu đã cho thuê.
+- Gia hạn bài.
+- Theo dõi bài hết hạn.
+
+### Cách `RoomRepository` hỗ trợ
+- Lấy danh sách bài của user.
+- Gia hạn bài.
+- Xóa bài và xóa ảnh trong Storage.
+- Cập nhật bài đã sửa.
+- Xử lý bài hết hạn.
+- Cập nhật badge unread cho chủ trọ.
+
+---
+
+## 15. Model dữ liệu quan trọng
+
+### `Room`
+File: `app/src/main/java/com/example/doantotnghiep/Model/Room.kt`
+
+Đây là model trung tâm cho bài đăng. Nó chứa rất nhiều trường, gồm:
+- thông tin phòng
+- tiện nghi
+- giá dịch vụ
+- ảnh
+- thông tin chủ trọ
+- trạng thái bài
+- thời gian tạo
+
+Một số trường đáng chú ý:
+- `status`: `pending`, `approved`, `rejected`, `expired`
+- `imageUrls`: danh sách link ảnh
+- `userId`: chủ bài
+- `createdAt`: thời gian đăng
+- `isFeatured`: bài nổi bật
+- `depositAmount`, `depositMonths`
+- `ownerName`, `ownerPhone`, `ownerAvatarUrl`
+
+### Các model khác
+- `User`
+- `Conversation`
+- `Message`
+- `SupportTicket`
+
+---
+
+## 16. Repository và trách nhiệm của từng lớp
+
+### `AuthRepository`
+- Đăng nhập
+- Đăng ký
+- Đổi mật khẩu
+- Kiểm tra trạng thái khóa tài khoản
+- Cập nhật user
+
+### `RoomRepository`
+- Đăng bài
+- Upload ảnh lên Storage
+- Load danh sách phòng
+- Load bài của chủ trọ
+- Lưu / bỏ lưu bài
+- Đánh dấu đã cho thuê
+- Gia hạn bài
+- Tính quota đăng bài
+- Xử lý badge bài hết hạn
+
+### `AppointmentRepository`
+- Tạo lịch hẹn
+- Xem lịch hẹn
+- Kiểm tra slot đã bị đặt
+
+### `ChatRepository`
+- Gửi và nhận tin nhắn
+- Quản lý conversation
+
+### `UserRepository`
+- Lấy / cập nhật thông tin user
+
+### `VerificationRepository`
+- Gửi hồ sơ xác minh
+- Xử lý trạng thái xác minh
+
+### `SupportRepository`
+- Gửi ticket hỗ trợ
+- Xem ticket hỗ trợ
+
+---
+
+## 17. ViewModel nào dùng cho màn nào
+
+### Nhóm auth
+- `AuthViewModel`
+- `ForgotPasswordViewModel`
+- `ResetPasswordViewModel`
+- `PersonalInfoViewModel`
+
+### Nhóm home / search / room
+- `HomeViewModel`
+- `SearchViewModel`
+- `RoomViewModel`
+- `SearchProfileViewModel`
+- `SavedPostsViewModel`
+- `SavedPostDetailViewModel`
+
+### Nhóm bài đăng
+- `PostViewModel`
+- `EditPostViewModel`
+- `MyPostsViewModel`
+- `MyPostDetailViewModel`
+
+### Nhóm booking / appointment
+- `BookingViewModel`
+- `AppointmentRoomDetailViewModel`
+
+### Nhóm user / profile / verify
+- `ProfileViewModel`
+- `UserProfileViewModel`
+- `VerifyLandlordViewModel`
+
+### Nhóm chat / support
+- `ChatViewModel`
+- `SupportViewModel`
+
+### Nhóm quản lý badge ở app shell
+- `MainViewModel`
+
+---
+
+## 18. Dữ liệu Firestore và ý nghĩa nghiệp vụ
+
+### `users`
+Các trường thường gặp:
+- `role`: `user`, `admin`
+- `isVerified`: đã xác minh chủ trọ hay chưa
+- `purchasedSlots`: số lượt đăng bài đã mua
+- `isLocked`, `lockUntil`: trạng thái khóa
+- `isOnline`, `lastSeen`: trạng thái online
+- `fcmToken`: token để push notification
+- `postingUnlockAt`: thời điểm được mở quyền đăng bài
+
+### `rooms`
+- Thông tin bài đăng phòng trọ
+- `status` quyết định bài có hiển thị hay không
+- `hasUnreadUpdate` dùng cho badge
+- `expireAt` dùng cho TTL
+
+### `verifications`
+- Hồ sơ xác minh CCCD
+- Trạng thái duyệt xác minh
+- Lý do từ chối
+
+### `appointments`
+- Lịch hẹn xem phòng
+- Dùng `status` để xác định trạng thái xử lý
+
+### `bookedSlots`
+- Dữ liệu chống trùng lịch
+- Giúp kiểm tra slot đã bị đặt
+
+### `notifications`
+- Lịch sử thông báo trong app
+- `seen` / `isRead` dùng để tính badge
+
+### `savedPosts`
+- Bài người dùng đã lưu
+
+### `slot_upgrade_requests`
+- Yêu cầu nâng cấp lượt đăng bài
+- Dùng cho luồng thanh toán VietQR
+
+---
+
+## 19. Điểm đã được xử lý kỹ trong code
+
+Dựa trên mã nguồn hiện tại, các điểm sau đã được chú ý và sửa/giảm rủi ro:
+
+- Không ép kiểu `imageUrls` quá cứng.
+- Đọc số Firestore qua `Number` thay vì chỉ `Long`.
+- Tránh crash khi user chưa có email.
+- Tránh `uid!!` ở chỗ nhạy cảm.
+- Xử lý chọn ảnh từ `clipData` và `data.data` an toàn hơn.
+- Có cơ chế chống trùng lịch hẹn.
+- Có cơ chế TTL để giảm dữ liệu cũ.
+- Có badge / notification count tách riêng theo logic nghiệp vụ.
+- Có luồng nâng cấp lượt đăng bài bằng payment request.
+
+---
+
+## 20. Cấu trúc thư mục chính trong Android app
 
 ```text
-View (Activity/Fragment)
-  -> ViewModel
-    -> Repository
-      -> Firebase
-    <- dữ liệu/trạng thái
-  <- render UI
+app/src/main/java/com/example/doantotnghiep/
+├── MainActivity.kt
+├── MyApp.kt
+├── Model/
+├── repository/
+├── Utils/
+├── View/
+│   ├── Adapter/
+│   ├── Auth/
+│   └── Fragment/
+└── ViewModel/
 ```
 
-### 2.2 Công nghệ chính (theo `app/build.gradle.kts`)
-- Android: `compileSdk 35`, `targetSdk 35`, `minSdk 24`.
-- Kotlin + JVM 11.
-- Firebase BOM `33.1.2`:
-  - Auth, Firestore, Storage, Messaging.
-- Camera/OCR/Maps:
-  - CameraX `1.3.4`
-  - ML Kit Text Recognition `16.0.1`
-  - Google Maps SDK `18.2.0`
-- Media & network:
-  - Glide `4.16.0`
-  - OkHttp `4.12.0`
-- Security:
-  - `androidx.security:security-crypto`.
-
-### 2.3 Cấu trúc mã nguồn app
-
-```text
-app/src/main/java/com/example/doantotnghiep
-  |- Model/
-  |- View/
-  |   |- Auth/
-  |   |- Fragment/
-  |   |- Adapter/
-  |- ViewModel/
-  |- repository/
-  |- Utils/
-```
+### Ý nghĩa
+- `Model`: cấu trúc dữ liệu.
+- `repository`: truy cập Firebase / Storage.
+- `ViewModel`: trạng thái UI và logic màn hình.
+- `View/Auth`: hầu hết Activity của app.
+- `View/Fragment`: các tab chính.
+- `View/Adapter`: adapter RecyclerView.
+- `Utils`: helper dùng chung.
 
 ---
 
-## 3) Mapping chức năng chính: Android XML + Kotlin
-
-## 3.1 Điều hướng và tài khoản
-
-| Chức năng | XML | Kotlin |
-|---|---|---|
-| Splash | `activity_splash.xml` | `View/Auth/SplashActivity.kt` |
-| Welcome sau login | `activity_welcome_user.xml` | `View/Auth/WelcomeActivity.kt` |
-| Main + Bottom Nav | `activity_main.xml` | `MainActivity.kt` |
-| Đăng nhập | `activity_login.xml` | `View/Auth/LoginActivity.kt` |
-| Đăng ký | `activity_register.xml` | `View/Auth/RegisterActivity.kt` |
-| Quên mật khẩu | `activity_forgot_password.xml` | `View/Auth/ForgotPasswordActivity.kt` |
-| Profile tab | `fragment_profile.xml` | `View/Fragment/ProfileFragment.kt` |
-
-## 3.2 Tìm phòng / đăng bài / bản đồ
-
-| Chức năng | XML | Kotlin |
-|---|---|---|
-| Home | `fragment_home.xml` | `View/Fragment/HomeFragment.kt` |
-| Search | `fragment_search.xml` | `View/Fragment/SearchFragment.kt` |
-| Đăng bài | `fragment_post.xml` | `View/Fragment/PostFragment.kt` |
-| Khung người chưa xác minh | `layout_verify_required.xml` | `View/Fragment/PostFragment.kt` |
-| Dialog hết lượt đăng | `dialog_post_quota_limit.xml` | `View/Fragment/PostFragment.kt` |
-| Dialog mua gói lượt | `dialog_upgrade_slots.xml` | `View/Fragment/PostFragment.kt` |
-| Dialog QR thanh toán | `dialog_payment_qr.xml` | `View/Fragment/PostFragment.kt` |
-| Chọn vị trí trên map | `activity_location_picker.xml` | `View/Auth/LocationPickerActivity.kt` |
-| Chi tiết phòng | `activity_room_detail.xml` | `View/Auth/RoomDetailActivity.kt` |
-
-## 3.3 Xác minh CCCD / lịch hẹn / chat
-
-| Chức năng | XML | Kotlin |
-|---|---|---|
-| Form xác minh CCCD | `activity_verify_landlord.xml` | `View/Auth/VerifyLandlordActivity.kt` |
-| Camera CCCD custom | `activity_cccd_camera.xml` | `View/Auth/CccdCameraActivity.kt` |
-| Đặt lịch hẹn | `activity_booking.xml` | `View/Auth/BookingActivity.kt` |
-| Danh sách lịch hẹn | `activity_my_appointments.xml` | `View/Auth/MyAppointmentsActivity.kt` |
-| Danh sách chat | `activity_conversations.xml` | `View/Auth/ConversationsActivity.kt` |
-| Màn hình chat | `activity_chat.xml` | `View/Auth/ChatActivity.kt` |
-| Thông báo | `activity_notifications.xml` | `View/Auth/NotificationsActivity.kt` |
-
----
-
-## 4) Web Admin: thành phần và file quan trọng
-
-Repo web admin local: `C:\Users\tiend\Admin_TimTro_New`
-
-### 4.1 Cấu trúc chính
-
-```text
-Admin_TimTro_New/
-  |- public/
-  |   |- index.html
-  |   |- app.js
-  |- firestore.rules
-  |- firebase.json
-  |- phamtriendat_doantotnghiep/
-      |- index.js          (Cloud Functions)
-      |- package.json
-```
-
-### 4.2 Vai trò từng file
-- `public/index.html`: layout giao diện admin dashboard.
-- `public/app.js`:
-  - đăng nhập admin qua Firebase Auth.
-  - realtime listener Firestore.
-  - duyệt bài, duyệt xác minh, khóa/mở khóa user.
-  - xóa user và dọn dữ liệu liên quan (rooms, verifications, appointments, notifications, storage folder, `cccd_registry`).
-  - hiển thị trạng thái online/offline theo `isOnline/lastSeen`.
-- `phamtriendat_doantotnghiep/index.js`:
-  - triển khai Cloud Functions nghiệp vụ tự động.
-
----
-
-## 5) Cloud Functions đang dùng (backend nghiệp vụ)
-
-Theo code `C:\Users\tiend\Admin_TimTro_New\phamtriendat_doantotnghiep\index.js` và console Functions (24/04/2026), hệ thống có các hàm chính:
-
-1. `autoReviewVerificationByCloudVision` (Firestore trigger)
-- Trigger: `onDocumentWritten("verifications/{uid}")`.
-- Mục tiêu:
-  - đọc ảnh CCCD front/back bằng Cloud Vision.
-  - kiểm tra tín hiệu đúng mặt trước/sau.
-  - trích xuất CCCD 12 số và so khớp.
-  - nếu fail nhiều lần thì chuyển `pending_admin_review`.
-- Có bộ đếm fail theo ngày trong `verification_counters`.
-
-2. `autoUnlockUsers` (Scheduler mỗi 1 phút)
-- Tự mở khóa user khi `lockUntil` đã hết hạn.
-
-3. `dailyDataCleanup` (Scheduler)
-- Dọn dữ liệu cũ/orphan:
-  - `notifications`, `system_notifications`, `verifications` đã cũ.
-  - `savedPosts`, `bookedSlots` mồ côi.
-  - ảnh mồ côi trong Storage (`rooms/`, `verifications/`, `avatars/`, `chat_images/`).
-
-4. `deleteUserAccount` (HTTPS request)
-- API xóa user trên Firebase Authentication.
-- Chỉ admin gọi được (xác thực Bearer token + kiểm tra role admin).
-- Web admin gọi endpoint này trước khi dọn dữ liệu Firestore/Storage.
-
-5. `sendPushNotification` (Firestore trigger)
-- Trigger: `onDocumentCreated("notifications/{notifId}")`.
-- Đẩy FCM đến `users/{uid}.fcmToken`.
-
-6. `processPendingSlotUpgradePayments` (Scheduler mỗi 1 phút)
-- Quét `slot_upgrade_requests` trạng thái `waiting_for_payment`.
-- Gọi API SePay bằng secret `SEPAY_API_TOKEN`.
-- Match theo `REQ_XXXXXXXX` trong nội dung chuyển khoản (ưu tiên), fallback theo amount + note.
-- Nếu match:
-  - cập nhật request thành `paid`.
-  - cộng `users/{uid}.purchasedSlots`.
-  - tạo notification “Nạp lượt thành công”.
-- Nếu quá hạn thì `expired`.
-
----
-
-## 6) Firebase Console cấu hình hiện tại (24/04/2026)
-
-## 6.1 Authentication
-- Sign-in providers đang bật:
-  - Email/Password
-  - Phone
-- Email template:
-  - Password reset đã custom nội dung tiếng Việt.
-  - Sender name đang đặt theo thương hiệu app.
-
-## 6.2 Firestore composite indexes (đang active)
-
-1. `appointments`: `landlordId` (ASC), `createdAt` (DESC), `__name__` (DESC)
-2. `appointments`: `tenantId` (ASC), `createdAt` (DESC), `__name__` (DESC)
-3. `rooms`: `status` (ASC), `createdAt` (DESC), `__name__` (DESC)
-4. `rooms`: `isFeatured` (ASC), `createdAt` (DESC), `__name__` (DESC)
-5. `rooms`: `userId` (ASC), `status` (ASC), `createdAt` (DESC), `__name__` (DESC)
-6. `rooms`: `userId` (ASC), `createdAt` (DESC), `__name__` (DESC)
-7. `rooms`: `status` (ASC), `isFeatured` (ASC), `createdAt` (DESC), `__name__` (DESC)
-8. `users`: `isLocked` (ASC), `lockUntil` (ASC), `__name__` (ASC)
-9. `checks`: `status` (ASC), `createdAt` (DESC), `__name__` (DESC)
-
-## 6.3 Cloud/GCP APIs
-- Cloud Vision API: enabled.
-- Maps SDK for Android: enabled.
-- API key restrictions:
-  - Selected APIs: Geocoding API, Maps SDK for Android, Places API (New).
-  - Application restriction: Android apps (package + SHA1).
-
----
-
-## 7) Firestore data model và collections chính
-
-Các collection nghiệp vụ:
-- `users`: hồ sơ người dùng, role, verify state, lock state, presence, purchasedSlots.
-- `rooms`: bài đăng phòng (`pending/approved/rejected/expired`).
-- `verifications`: hồ sơ xác minh CCCD.
-- `cccd_registry`: chống trùng CCCD giữa nhiều tài khoản.
-- `slot_upgrade_requests`: yêu cầu nạp thêm lượt đăng bài.
-- `appointments`: lịch hẹn người thuê/chủ trọ.
-- `chats/{chatId}/messages`: hội thoại.
-- `savedPosts`: bài lưu.
-- `notifications`: thông báo cá nhân.
-- `system_notifications`: hàng đợi broadcast nội bộ.
-- `checks`, `verification_counters`: dữ liệu kỹ thuật nội bộ.
-- `bookedSlots`: dữ liệu đồng bộ khung giờ đã đặt.
-
-Storage path chính:
-- `avatars/{uid}`
-- `rooms/{roomId}/{fileName}`
-- `verifications/{uid}/{fileName}`
-- `chat_images/{chatId}/{fileName}`
-
----
-
-## 8) Luồng nghiệp vụ quan trọng end-to-end
-
-## 8.1 Presence online/offline (App -> Web Admin)
-
-1. App vào foreground:
-- `MainActivity.onStart()` gọi `PresenceManager.goOnline()`.
-- Update `users/{uid}`: `isOnline=true`, `lastSeen=now`.
-
-2. App ra background hoặc logout:
-- `MainActivity.onStop()` hoặc logout gọi `PresenceManager.goOffline()` / `goOfflineAndThen`.
-- Update `isOnline=false`, `lastSeen=now`.
-
-3. Web admin:
-- `public/app.js` đọc `isOnline/lastSeen`.
-- Dùng ngưỡng stale timeout để tránh hiển thị online “ảo”.
-- Render badge “Hoạt động / Offline từ …”.
-
-## 8.2 Xác minh CCCD mở quyền đăng bài
-
-1. Mobile (`VerifyLandlordActivity`, `VerificationRepository`):
-- Chụp 2 mặt CCCD (camera custom).
-- OCR local ML Kit + validate cơ bản.
-- Upload ảnh `verifications/{uid}/...`.
-- Ghi doc `verifications/{uid}` trạng thái `pending`.
-
-2. Backend auto:
-- Function `autoReviewVerificationByCloudVision` nhận trigger.
-- Cloud Vision đọc ảnh và kiểm tra:
-  - đúng mặt trước/mặt sau.
-  - có CCCD 12 số hợp lệ.
-  - khớp CCCD đã khai báo.
-- Nếu pass: duyệt tự động.
-- Nếu fail lặp lại: chuyển `pending_admin_review` để admin xử lý tay.
-
-3. Web admin:
-- Trang xác minh duyệt/từ chối.
-- Khi duyệt: cập nhật user được mở quyền đăng bài (`isVerified=true`) và các field liên quan.
-
-## 8.3 Đăng bài + quota 24h + nạp thêm lượt
-
-1. Khi user đăng bài:
-- `PostFragment` gọi `PostViewModel` -> `RoomRepository`.
-- `RoomRepository` kiểm quota:
-  - còn `purchasedSlots` thì ưu tiên dùng gói nạp.
-  - nếu hết thì dùng hạn mức theo cửa sổ 24h.
-- Bài mới lưu vào `rooms` với `status="pending"` chờ duyệt.
-
-2. Mua thêm lượt bằng QR:
-- `PostFragment` tạo doc `slot_upgrade_requests/{requestId}`:
-  - `status="waiting_for_payment"`
-  - `transferNote = "MUA GOIxx REQ_XXXXXXXX"`.
-- App hiển thị QR VietQR từ bank info.
-- App lắng nghe realtime status của doc request để đổi nút “Hoàn tất giao dịch”.
-
-3. Function đối soát:
-- `processPendingSlotUpgradePayments` chạy mỗi phút.
-- Gọi SePay lấy giao dịch mới.
-- Match `REQ_XXXXXXXX`.
-- Nếu thành công:
-  - request -> `paid`
-  - cộng `users.purchasedSlots`
-  - tạo notification thành công.
-
-## 8.4 Duyệt bài đăng
-
-1. User tạo bài ở trạng thái `pending`.
-2. Web admin load danh sách bài chờ (`loadPosts`).
-3. Admin:
-- `approvePost`: chuyển `approved`.
-- `rejectPost`: chuyển `rejected`, lưu lý do.
-
-## 8.5 Khóa/mở khóa user
-
-1. Web admin `toggleLockUser`:
-- set `isLocked=true`, `lockUntil`, `lockReason`.
-- push notification cho user.
-
-2. Function `autoUnlockUsers`:
-- chạy định kỳ, tự mở khóa khi đến hạn.
-
-## 8.6 Xóa user toàn diện
-
-1. Web admin gọi function HTTPS `deleteUserAccount` để xóa Auth account.
-2. Sau đó dọn dữ liệu Firestore/Storage liên quan:
-- user doc, verification doc/folder, rooms/folder ảnh, appointments, notifications, saved/chat artifacts, `cccd_registry`.
-3. Tránh để lại dữ liệu “mồ côi”.
-
----
-
-## 9) Security Rules đang áp dụng
-
-## 9.1 Firestore rules (file `firestore.rules`)
-- `users`:
-  - user chỉ sửa whitelist field profile.
-  - không tự nâng role lên admin.
-  - có field presence `isOnline`, `lastSeen`.
-- `rooms`:
-  - tạo bài cần đúng điều kiện `canPostRoom()`.
-  - public chỉ đọc bài `approved/expired`; owner/admin có quyền rộng hơn.
-- `verifications`:
-  - user tạo hồ sơ xác minh của chính mình.
-  - update giới hạn theo trạng thái.
-- `slot_upgrade_requests`:
-  - client tạo request chờ thanh toán.
-  - trạng thái trả tiền (`paid/failed/expired`) do backend/admin xử lý.
-  - client chỉ được hủy khi đang chờ.
-- `cccd_registry`:
-  - chống trùng CCCD.
-- `appointments`, `chats/messages`, `savedPosts`, `notifications`:
-  - kiểm tra quyền participant/owner/admin.
-
-## 9.2 Storage rules (file `storage.rules`)
-- Chỉ cho phép ảnh và giới hạn dung lượng:
-  - avatar tối đa 5MB.
-  - ảnh room/chat tối đa 15MB.
-  - ảnh verification tối đa 10MB.
-- Quyền truy cập theo owner/admin/participant.
-- Mặc định deny tất cả path không khai báo.
-
----
-
-## 10) Mapping theo lớp code (Android app)
-
-Repositories chính:
-- `repository/AuthRepository.kt`: auth + profile + lock-check + delete-account call.
-- `repository/RoomRepository.kt`: CRUD bài, quota, purchasedSlots, saved posts.
-- `repository/VerificationRepository.kt`: OCR local + upload + verify docs.
-- `repository/AppointmentRepository.kt`: lịch hẹn.
-- `repository/ChatRepository.kt`: chat + ảnh + reactions.
-- `repository/UserRepository.kt`: tìm kiếm hồ sơ user.
-
-ViewModel nổi bật:
-- `PostViewModel.kt`: điều phối đăng bài + pre-check quota.
-- `VerifyLandlordViewModel.kt`: điều phối xác minh CCCD.
-- `SearchViewModel.kt`: lọc/sắp xếp kết quả tìm kiếm.
-- `BookingViewModel.kt`: lifecycle lịch hẹn.
-- `ChatViewModel.kt`: gửi/nhận chat và trạng thái đọc.
-- `ProfileViewModel.kt`: profile + đăng xuất.
-
----
-
-## 11) Hướng dẫn chạy và deploy
-
-## 11.1 Chạy app Android
-
+## 21. Cách build và chạy
+
+### Yêu cầu môi trường
+- Android Studio
+- JDK 11
+- Firebase project đã cấu hình đúng
+- `google-services.json` hợp lệ
+
+### Chạy project
+1. Mở thư mục project bằng Android Studio.
+2. Sync Gradle.
+3. Run trên emulator hoặc thiết bị thật.
+
+### Lệnh build / test thường dùng
 ```bash
-./gradlew clean
-./gradlew assembleDebug
-```
-
-Mở bằng Android Studio, đảm bảo đã có `google-services.json` đúng project Firebase.
-
-## 11.2 Chạy web admin (Hosting)
-
-```bash
-cd C:\Users\tiend\Admin_TimTro_New
-firebase deploy --only hosting
-```
-
-Deploy nhanh theo script hiện có:
-
-```bash
-deploy.bat
-```
-
-(`deploy.bat` đang dùng `hosting:channel:deploy ...` rồi clone sang live)
-
-## 11.3 Deploy Cloud Functions
-
-```bash
-cd C:\Users\tiend\Admin_TimTro_New\phamtriendat_doantotnghiep
-npm install
-firebase deploy --only functions
-```
-
-Set secret SePay token:
-
-```bash
-firebase functions:secrets:set SEPAY_API_TOKEN
-```
-
-## 11.4 Deploy rules
-
-```bash
-cd C:\Users\tiend\AndroidStudioProjects\Doantotnghiep
-firebase deploy --only firestore:rules
-firebase deploy --only storage
+./gradlew.bat assembleDebug testDebugUnitTest
+./gradlew.bat lintDebug
 ```
 
 ---
 
-## 12) Checklist demo cho giảng viên
+## 22. Khi cần sửa tính năng thì mở file nào trước
 
-1. Tạo user mới trên app (Email/Password hoặc Phone).
-2. Chụp CCCD 2 mặt -> submit xác minh.
-3. Kiểm tra trên web admin: hồ sơ xác minh xuất hiện.
-4. Admin duyệt hồ sơ -> app mở quyền đăng bài.
-5. User đăng bài -> bài vào trạng thái `pending`.
-6. Admin duyệt bài -> bài thành `approved`.
-7. User thử hết quota -> mở dialog nâng cấp.
-8. Quét QR, chuyển khoản đúng nội dung `REQ_...`.
-9. Function đối soát chạy -> request `paid`, `purchasedSlots` tăng, app đổi nút hoàn tất.
-10. Test khóa user -> app bị chặn; hết hạn lock -> auto unlock.
-11. Test trạng thái online/offline:
-    - đăng nhập app -> web hiển thị online.
-    - logout app -> web hiển thị offline + thời gian.
-12. Test xóa user từ admin -> dữ liệu liên quan được dọn.
+### Đăng nhập / đăng ký / đổi mật khẩu
+- `View/Auth/LoginActivity.kt`
+- `View/Auth/RegisterActivity.kt`
+- `View/Auth/ForgotPasswordActivity.kt`
+- `View/Auth/ResetPasswordActivity.kt`
+- `ViewModel/AuthViewModel.kt`
+- `repository/AuthRepository.kt`
+
+### Tìm phòng
+- `View/Fragment/SearchFragment.kt`
+- `View/Auth/SearchResultsActivity.kt`
+- `ViewModel/SearchViewModel.kt`
+- `repository/RoomRepository.kt`
+
+### Đăng bài
+- `View/Fragment/PostFragment.kt`
+- `ViewModel/PostViewModel.kt`
+- `repository/RoomRepository.kt`
+
+### Xác minh CCCD
+- `View/Auth/VerifyLandlordActivity.kt`
+- `View/Auth/CccdCameraActivity.kt`
+- `ViewModel/VerifyLandlordViewModel.kt`
+- `repository/VerificationRepository.kt`
+
+### Đặt lịch xem phòng
+- `View/Auth/BookingActivity.kt`
+- `View/Auth/MyAppointmentsActivity.kt`
+- `ViewModel/BookingViewModel.kt`
+- `repository/AppointmentRepository.kt`
+
+### Chat
+- `View/Auth/ChatActivity.kt`
+- `View/Auth/ConversationsActivity.kt`
+- `repository/ChatRepository.kt`
+- `ViewModel/ChatViewModel.kt`
+
+### Hồ sơ người dùng
+- `View/Fragment/ProfileFragment.kt`
+- `View/Auth/UserProfileActivity.kt`
+- `ViewModel/ProfileViewModel.kt`
+
+### Bài đăng của tôi
+- `View/Auth/MyPostsActivity.kt`
+- `View/Auth/MyPostDetailActivity.kt`
+- `View/Auth/EditPostActivity.kt`
+- `ViewModel/MyPostsViewModel.kt`
+- `ViewModel/EditPostViewModel.kt`
 
 ---
 
-## 13) Ghi chú quan trọng khi bảo trì
+## 23. Nếu lỗi thì nên debug theo thứ tự nào
 
-- Không đổi tên field Firestore tùy ý vì app, web admin và function đang dùng chung schema.
-- Các trạng thái workflow quan trọng cần giữ đúng enum:
-  - `rooms.status`: `pending/approved/rejected/expired`
-  - `verifications.status`: `pending`, `pending_admin_review`, `approved`, `rejected`
-  - `slot_upgrade_requests.status`: `waiting_for_payment/paid/expired/failed/cancelled`
-- Nếu thay đổi flow thanh toán, phải sửa đồng bộ:
-  - `PostFragment.kt` (tạo request + listener)
-  - `processPendingSlotUpgradePayments` (match giao dịch)
-  - Rules `slot_upgrade_requests`
-- Nếu đổi logic xác minh CCCD, sửa đồng bộ:
-  - `VerificationRepository.kt` (client submit)
-  - `autoReviewVerificationByCloudVision` (backend auto review)
-  - Web admin màn duyệt xác minh (`public/app.js`)
+Khi gặp một lỗi, nên đi theo chuỗi sau:
 
+1. **Màn hình nào lỗi?**
+   - Activity / Fragment nào đang mở?
+
+2. **ViewModel nào nhận dữ liệu?**
+   - Xem observer, LiveData, input validation.
+
+3. **Repository nào chạm Firebase?**
+   - Query Firestore nào?
+   - Upload Storage nào?
+   - Có lỗi quyền không?
+
+4. **Dữ liệu Firestore thực tế ra sao?**
+   - Kiểu dữ liệu có đúng không?
+   - Field có tồn tại không?
+   - Status có đúng chữ không?
+
+5. **Quy tắc Firebase Rules / Storage Rules**
+   - Có chặn quyền đọc / ghi không?
+
+6. **Logcat / exception**
+   - Xem cụ thể exception để biết là null, cast sai, permission hay network.
+
+---
+
+## 24. Ghi chú quan trọng về dự án
+
+- Đây là một app có khá nhiều luồng nghiệp vụ, không chỉ là app tìm phòng đơn giản.
+- Dữ liệu đã được tách theo lớp khá rõ: `View` → `ViewModel` → `Repository`.
+- Có nhiều màn hình và nhiều trạng thái tài khoản, vì vậy khi sửa nên đọc từ luồng dữ liệu trước rồi mới đọc UI.
+- `RoomRepository` là một file cực kỳ quan trọng vì nó chứa gần như toàn bộ logic liên quan phòng trọ.
+- `MainActivity` là trung tâm điều phối app shell, badge và notification.
+
+---
+
+## 25. Tóm tắt ngắn gọn để nhớ nhanh
+
+- **Home**: xem bài nổi bật, bài mới, khu vực phổ biến.
+- **Search**: lọc và tìm phòng.
+- **Post**: đăng bài, xác minh, mua thêm lượt.
+- **Profile**: hồ sơ cá nhân, bài của tôi, lịch hẹn, cài đặt.
+- **Auth**: đăng nhập / đăng ký / quên mật khẩu.
+- **Firebase**: là backend chính của toàn bộ app.
+
+Nếu muốn hiểu nhanh một tính năng, hãy đọc theo thứ tự:
+
+**Activity/Fragment → ViewModel → Repository → Firestore/Storage rules**
+
+---
+
+## 26. Kết luận
+
+`TIM TRO 24/7` là một ứng dụng Android tương đối đầy đủ cho bài toán tìm phòng trọ và quản lý đăng bài cho thuê. Project này có các lớp xử lý rõ ràng, nhiều nghiệp vụ thực tế, và đã tích hợp khá sâu với Firebase.
+
+Nếu bạn cần, tôi có thể làm tiếp một trong các bản sau:
+
+1. Viết **README rút gọn hơn nhưng đẹp và chuẩn để nộp đồ án**.
+2. Viết **README song ngữ Việt - Anh**.
+3. Viết **tài liệu kiến trúc chi tiết hơn theo từng file**.
+4. Viết **bản hướng dẫn chạy dự án từ A đến Z cho người mới**.

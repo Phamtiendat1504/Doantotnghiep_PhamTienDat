@@ -48,6 +48,8 @@
                 android:id="@+id/tvSheetName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:maxLines="1"
+                android:ellipsize="end"
                 android:text="Tên chủ trọ"
                 android:textColor="#111827"
                 android:textSize="20sp"

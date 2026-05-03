@@ -53,13 +53,16 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
                 tvAddress.text = "Bài đăng này đã bị xóa hoặc đã được cho thuê"
                 tvPrice.text = ""
                 tvDescription.text = ""
+                layoutRoomInfo.removeAllViews()
+                layoutAmenities.removeAllViews()
+                layoutOwnerInfo.removeAllViews()
             }
         }
 
         viewModel.errorMessage.observe(this) { error ->
             if (!error.isNullOrEmpty()) {
                 tvTitle.text = "Không thể tải thông tin"
-                tvAddress.text = "Vui lòng kiểm tra kết nối và thử lại"
+                tvAddress.text = error
                 tvPrice.text = ""
                 tvDescription.text = ""
             }
@@ -94,7 +97,7 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
         tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
         tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
 
-        val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
+        val imageUrls = (data["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: listOf()
         setupImageSlider(imageUrls)
         setupRoomInfo(data)
         setupAmenities(data)
@@ -141,6 +144,7 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
                 val img = ImageView(parent.context).apply {
                     layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
                     scaleType = ImageView.ScaleType.CENTER_CROP
+                    setBackgroundColor(0xFFEDEDED.toInt())
                 }
                 return object : RecyclerView.ViewHolder(img) {}
             }

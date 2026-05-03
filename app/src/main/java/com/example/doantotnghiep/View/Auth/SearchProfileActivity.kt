@@ -76,15 +76,25 @@ class SearchProfileActivity : AppCompatActivity() {
         }
     }
 
+    private var searchRunnable: Runnable? = null
+    private val searchHandler = android.os.Handler(android.os.Looper.getMainLooper())
+
     private fun setupSearch() {
         edtSearch.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
             override fun afterTextChanged(s: Editable?) {
                 val query = s?.toString()?.trim() ?: ""
+                
+                searchRunnable?.let { searchHandler.removeCallbacks(it) }
+
                 if (query.length >= 2) {
                     layoutEmpty.visibility = View.GONE
-                    viewModel.searchUsers(query)
+                    
+                    searchRunnable = Runnable {
+                        viewModel.searchUsers(query)
+                    }
+                    searchHandler.postDelayed(searchRunnable!!, 400)
                 } else if (query.isEmpty()) {
                     adapter.submitList(emptyList())
                     layoutEmpty.visibility = View.VISIBLE
@@ -92,6 +102,21 @@ class SearchProfileActivity : AppCompatActivity() {
                 }
             }
         })
+
+        edtSearch.setOnEditorActionListener { v, actionId, event ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH ||
+                actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE ||
+                (event != null && event.keyCode == android.view.KeyEvent.KEYCODE_ENTER && event.action == android.view.KeyEvent.ACTION_DOWN)
+            ) {
+                // Ẩn bàn phím
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+                edtSearch.clearFocus()
+                true
+            } else {
+                false
+            }
+        }
 
         edtSearch.requestFocus()
     }

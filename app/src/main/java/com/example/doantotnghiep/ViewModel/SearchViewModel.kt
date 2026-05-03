@@ -6,7 +6,11 @@ import androidx.lifecycle.ViewModel
 import com.example.doantotnghiep.Utils.LocationNormalizer
 import com.example.doantotnghiep.repository.RoomRepository
 import kotlin.math.abs
+import kotlin.math.asin
+import kotlin.math.cos
 import kotlin.math.max
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class SearchViewModel : ViewModel() {
 
@@ -15,8 +19,8 @@ class SearchViewModel : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    private val _errorMessage = MutableLiveData<String>()
-    val errorMessage: LiveData<String> = _errorMessage
+    private val _errorMessage = MutableLiveData<String?>()
+    val errorMessage: LiveData<String?> = _errorMessage
 
     private val _searchResults = MutableLiveData<List<RoomItem>>()
     val searchResults: LiveData<List<RoomItem>> = _searchResults
@@ -38,11 +42,15 @@ class SearchViewModel : ViewModel() {
         val hasWater: Boolean,
         val roomCount: Int,
         val rentedCount: Int,
-        val createdAt: Long
+        val createdAt: Long,
+        val lat: Double = 0.0,
+        val lng: Double = 0.0,
+        val distanceKm: Double = -1.0  // -1 = chưa tính khoảng cách
     )
 
     fun searchByQuery(query: String) {
         _isLoading.value = true
+        _errorMessage.value = null
         repository.searchApprovedRooms(
             onSuccess = { docs ->
                 _isLoading.value = false
@@ -92,6 +100,7 @@ class SearchViewModel : ViewModel() {
         hasWater: Boolean
     ) {
         _isLoading.value = true
+        _errorMessage.value = null
 
         val wardFilter = LocationNormalizer.normalizeWard(ward)
         val districtFilter = LocationNormalizer.normalizeDistrict(district)
@@ -165,6 +174,58 @@ class SearchViewModel : ViewModel() {
                 _searchResults.value = emptyList()
             }
         )
+    }
+
+    // ────────────────────────────────────────────────
+    // Tìm kiếm theo vị trí bản đồ (Haversine)
+    // ────────────────────────────────────────────────
+    fun searchNearby(lat: Double, lng: Double, radiusKm: Double) {
+        _isLoading.value = true
+        _errorMessage.value = null
+
+        repository.searchApprovedRooms(
+            onSuccess = { docs ->
+                _isLoading.value = false
+
+                val results = docs.mapNotNull { doc ->
+                    val item = mapToRoomItem(doc.id, doc.data)
+
+                    // Bỏ qua phòng không có tọa độ
+                    if (item.lat == 0.0 && item.lng == 0.0) return@mapNotNull null
+                    // Bỏ qua phòng hết chỗ
+                    if (!hasAvailableRoom(item)) return@mapNotNull null
+
+                    val distKm = haversineKm(lat, lng, item.lat, item.lng)
+                    if (distKm > radiusKm) return@mapNotNull null
+
+                    item.copy(distanceKm = distKm)
+                }.sortedBy { it.distanceKm }
+
+                _searchResults.value = results
+            },
+            onFailure = { e ->
+                _isLoading.value = false
+                _errorMessage.value = e
+                _searchResults.value = emptyList()
+            }
+        )
+    }
+
+    /**
+     * Công thức Haversine – tính khoảng cách (km) giữa 2 tọa độ GPS.
+     * Độ chính xác ~0.5% – đủ tốt cho bán kính vài km.
+     */
+    private fun haversineKm(
+        lat1: Double, lng1: Double,
+        lat2: Double, lng2: Double
+    ): Double {
+        val r = 6371.0  // Bán kính Trái Đất (km)
+        val dLat = Math.toRadians(lat2 - lat1)
+        val dLng = Math.toRadians(lng2 - lng1)
+        val a = sin(dLat / 2).let { it * it } +
+                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
+                sin(dLng / 2).let { it * it }
+        return r * 2 * asin(sqrt(a))
     }
 
     private fun matchesLocation(item: RoomItem, mode: String, wardFilter: String, districtFilter: String): Boolean {
@@ -288,7 +349,7 @@ class SearchViewModel : ViewModel() {
             address = data["address"] as? String ?: "",
             ward = data["ward"] as? String ?: "",
             district = data["district"] as? String ?: "",
-            firstImage = (data["imageUrls"] as? List<String>)?.firstOrNull() ?: "",
+            firstImage = (data["imageUrls"] as? List<*>)?.mapNotNull { it as? String }?.firstOrNull() ?: "",
             price = (data["price"] as? Number)?.toLong() ?: 0L,
             area = (data["area"] as? Number)?.toInt() ?: 0,
             peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0,
@@ -298,7 +359,9 @@ class SearchViewModel : ViewModel() {
             hasWater = data["hasWater"] as? Boolean ?: false,
             roomCount = (data["roomCount"] as? Number)?.toInt() ?: 0,
             rentedCount = (data["rentedCount"] as? Number)?.toInt() ?: 0,
-            createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L
+            createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
+            lat = (data["latitude"] as? Number)?.toDouble() ?: 0.0,
+            lng = (data["longitude"] as? Number)?.toDouble() ?: 0.0
         )
     }
 

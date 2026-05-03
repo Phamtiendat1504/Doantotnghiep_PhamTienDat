@@ -60,9 +60,9 @@ class BookingActivity : AppCompatActivity() {
         val roomTitle = intent.getStringExtra("roomTitle") ?: ""
         val roomAddress = intent.getStringExtra("roomAddress") ?: ""
         val roomPrice = intent.getLongExtra("roomPrice", 0)
-        tvRoomTitle.text = roomTitle
-        tvRoomAddress.text = roomAddress
-        tvRoomPrice.text = "${formatter.format(roomPrice)} đ/tháng"
+        tvRoomTitle.text = roomTitle.ifBlank { "Chưa có tiêu đề" }
+        tvRoomAddress.text = roomAddress.ifBlank { "Chưa có địa chỉ" }
+        tvRoomPrice.text = if (roomPrice > 0) "${formatter.format(roomPrice)} đ/tháng" else "Liên hệ"
 
         // Load thông tin user mặc định
         viewModel.loadUserInfo()

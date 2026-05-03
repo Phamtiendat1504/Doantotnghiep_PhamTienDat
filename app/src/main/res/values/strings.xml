@@ -1,4 +1,4 @@
-﻿<resources>
+<resources>
     <!-- App name -->
     <string name="app_name">Tìm trọ 24/7</string>
 
@@ -103,11 +103,11 @@
     <!-- Status & Messages -->
     <string name="status_pending">⏳ Chờ xác nhận</string>
     <string name="status_confirmed">✓ Đã xác nhận</string>
-    <string name="status_tenant_confirmed">✅ Cả hai đã xác nhận</string>
+    <string name="status_tenant_confirmed">Cả hai đã xác nhận</string>
     <string name="status_rejected">✗ Đã từ chối</string>
     <string name="status_approved">✓ Đã duyệt</string>
-    <string name="status_rented">🏠 Đã cho thuê</string>
-    <string name="status_cancelled_by_tenant">❌ Bạn đã hủy</string>
+    <string name="status_rented">Đã cho thuê</string>
+    <string name="status_cancelled_by_tenant">Bạn đã hủy</string>
     <string name="status_cancelled_by_system">🚫 Đã hủy (phòng hết)</string>
 
     <!-- Appointment Actions -->

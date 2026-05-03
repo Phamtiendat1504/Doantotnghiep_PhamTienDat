@@ -8,10 +8,16 @@ import com.example.doantotnghiep.Model.User
 import com.example.doantotnghiep.repository.AppointmentRepository
 import com.example.doantotnghiep.repository.AuthRepository
 import com.example.doantotnghiep.repository.RoomRepository
+import com.example.doantotnghiep.repository.RoomRentedNotice
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
 
 class BookingViewModel : ViewModel() {
+
+    data class AppointmentAccess(
+        val isHostAccess: Boolean,
+        val effectiveRole: String
+    )
 
     private val repository = AppointmentRepository()
 
@@ -19,6 +25,7 @@ class BookingViewModel : ViewModel() {
     private val authRepository = AuthRepository()
     private val roomRepository = RoomRepository()
     private var appointmentListener: ListenerRegistration? = null
+    private var roomRentedNoticeListener: ListenerRegistration? = null
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -52,6 +59,54 @@ class BookingViewModel : ViewModel() {
 
     private val _timeConflicts = MutableLiveData<Map<String, Int>>()
     val timeConflicts: LiveData<Map<String, Int>> = _timeConflicts
+
+    private val _appointmentAccess = MutableLiveData<AppointmentAccess>()
+    val appointmentAccess: LiveData<AppointmentAccess> = _appointmentAccess
+
+    private val _roomRentedNotice = MutableLiveData<RoomRentedNotice?>()
+    val roomRentedNotice: LiveData<RoomRentedNotice?> = _roomRentedNotice
+
+    fun initializeAppointmentsScreen() {
+        val uid = getCurrentUserId()
+        if (uid.isNullOrBlank()) {
+            _errorMessage.value = "Chưa đăng nhập"
+            return
+        }
+
+        listenRoomRentedNotices(uid)
+        _isLoading.value = true
+        repository.loadCurrentUserAppointmentAccess(
+            onSuccess = { isHostAccess, effectiveRole ->
+                _isLoading.value = false
+                _appointmentAccess.value = AppointmentAccess(isHostAccess, effectiveRole)
+                repository.markAllAppointmentsRead(uid, effectiveRole)
+
+                if (isHostAccess) {
+                    fetchBothAppointments()
+                } else {
+                    fetchAppointmentsByRole()
+                }
+            },
+            onFailure = {
+                _isLoading.value = false
+                fetchAppointmentsByRole()
+            }
+        )
+    }
+
+    private fun listenRoomRentedNotices(uid: String) {
+        roomRentedNoticeListener?.remove()
+        roomRentedNoticeListener = repository.listenRoomRentedNotices(
+            uid = uid,
+            onNotice = { notice -> _roomRentedNotice.value = notice },
+            onError = { error -> _errorMessage.value = error }
+        )
+    }
+
+    fun markRoomRentedNoticeRead(notificationId: String) {
+        repository.markRoomRentedNoticeRead(notificationId)
+        _roomRentedNotice.value = null
+    }
 
     fun checkExistingAppointment(tenantId: String, roomId: String, onResult: (Boolean, String?, String?, Long?) -> Unit) {
         repository.checkExistingAppointment(tenantId, roomId, onResult)
@@ -323,5 +378,6 @@ class BookingViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         appointmentListener?.remove()
+        roomRentedNoticeListener?.remove()
     }
 }

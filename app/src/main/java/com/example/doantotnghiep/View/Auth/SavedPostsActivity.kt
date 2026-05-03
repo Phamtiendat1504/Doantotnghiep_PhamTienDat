@@ -24,6 +24,7 @@ class SavedPostsActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
     private lateinit var btnBack: ImageView
+    private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 
     private lateinit var viewModel: SavedPostsViewModel
 
@@ -41,6 +42,7 @@ class SavedPostsActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvEmpty = findViewById(R.id.tvEmpty)
         btnBack = findViewById(R.id.btnBack)
+        swipeRefreshLayout = findViewById(R.id.swipeRefreshLayout)
         btnBack.setOnClickListener { finish() }
 
         viewModel = ViewModelProvider(this)[SavedPostsViewModel::class.java]
@@ -65,10 +67,16 @@ class SavedPostsActivity : AppCompatActivity() {
             if (!error.isNullOrEmpty()) {
                 tvEmpty.text = "Lỗi tải dữ liệu"
                 tvEmpty.visibility = View.VISIBLE
+                swipeRefreshLayout.isRefreshing = false
             }
         }
 
+        swipeRefreshLayout.setOnRefreshListener {
+            viewModel.loadSavedPosts()
+        }
+
         viewModel.deleteResult.observe(this) { _ ->
+            swipeRefreshLayout.isRefreshing = false
             viewModel.loadSavedPosts()
         }
 

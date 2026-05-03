@@ -159,14 +159,20 @@ class ProfileViewModel : ViewModel() {
                 var numPeople = 0
                 var numMessages = 0
                 for (doc in snap.documents) {
-                    val deletedMap = doc.get("deletedFor") as? Map<String, Long> ?: mapOf()
+                    val deletedMap = (doc.get("deletedFor") as? Map<*, *>)
+                        ?.mapNotNull { (key, value) ->
+                            val safeKey = key as? String ?: return@mapNotNull null
+                            val safeValue = (value as? Number)?.toLong() ?: return@mapNotNull null
+                            safeKey to safeValue
+                        }
+                        ?.toMap() ?: emptyMap()
                     val myDeletedAt = deletedMap[uid] ?: 0L
                     val lastMsgAt = doc.getLong("lastMessageAt") ?: 0L
                     if (myDeletedAt > 0L && lastMsgAt <= myDeletedAt) {
                         continue // Chat đã bị xóa
                     }
 
-                    val unreadCount = doc.get("unreadCount.$uid") as? Long ?: 0L
+                    val unreadCount = (doc.get("unreadCount.$uid") as? Number)?.toLong() ?: 0L
                     if (unreadCount > 0) {
                         numPeople++
                         numMessages += unreadCount.toInt()

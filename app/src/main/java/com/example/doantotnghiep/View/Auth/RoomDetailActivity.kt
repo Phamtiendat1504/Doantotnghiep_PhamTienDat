@@ -1,6 +1,8 @@
 package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
+import android.location.Address
+import android.os.Build
 import android.location.Geocoder
 import android.net.Uri
 import android.os.Bundle
@@ -12,6 +14,7 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.RatingBar
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.ViewModelProvider
@@ -39,7 +42,9 @@ import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 class RoomDetailActivity : AppCompatActivity() {
 
@@ -73,6 +78,7 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var btnReadMore: TextView
 
     private lateinit var viewModel: RoomViewModel
+    private var currentUid: String? = null
 
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
@@ -80,7 +86,6 @@ class RoomDetailActivity : AppCompatActivity() {
         DecimalFormat("#,###", symbols)
     }
 
-    private val uid by lazy { viewModel.getCurrentUserId() }
     private var currentRoomId = ""
     private var currentRoomData: Map<String, Any> = emptyMap()
     private var googleMap: GoogleMap? = null
@@ -98,7 +103,6 @@ class RoomDetailActivity : AppCompatActivity() {
         
         // Làm trong suốt Status Bar và xử lý Edge-to-Edge
         androidx.core.view.WindowCompat.setDecorFitsSystemWindows(window, false)
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
         
         setContentView(R.layout.activity_room_detail)
         
@@ -106,6 +110,7 @@ class RoomDetailActivity : AppCompatActivity() {
         btnBackContainer = findViewById(R.id.btnBackContainer)
 
         viewModel = ViewModelProvider(this)[RoomViewModel::class.java]
+        currentUid = FirebaseAuth.getInstance().currentUser?.uid
 
         initViews()
         setupGoogleMap()
@@ -192,12 +197,12 @@ class RoomDetailActivity : AppCompatActivity() {
 
         // Trạng thái lưu bài
         viewModel.isSaved.observe(this) { saved ->
+            btnSave.text = ""
+            btnSave.setIconResource(R.drawable.ic_bookmark)
             if (saved) {
-                btnSave.setIconResource(R.drawable.ic_save) // Dùng icon đã lưu
-                btnSave.setIconTintResource(R.color.secondary)
+                btnSave.iconTint = ContextCompat.getColorStateList(this, R.color.primary)
             } else {
-                btnSave.setIconResource(R.drawable.ic_bookmark)
-                btnSave.setIconTintResource(R.color.primary)
+                btnSave.iconTint = ContextCompat.getColorStateList(this, R.color.gray_500)
             }
         }
 
@@ -252,16 +257,27 @@ class RoomDetailActivity : AppCompatActivity() {
         currentRoomId = doc.id
         currentRoomData = data
 
+        // Reset các nút để tránh trạng thái còn sót từ phòng xem trước
+        btnSave.visibility = View.VISIBLE
+        btnBooking.visibility = View.VISIBLE
+        btnAddReview.visibility = View.VISIBLE
+        btnBooking.isEnabled = true
+        btnBooking.text = "Đặt lịch"
+        btnBooking.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
+        btnSave.text = ""
+        btnSave.setIconResource(R.drawable.ic_bookmark)
+        btnSave.iconTint = ContextCompat.getColorStateList(this, R.color.gray_500)
+
         tvRoomNumber.text = "Phòng ${String.format("%02d", index + 1)}"
         tvTitle.text = data["title"] as? String ?: "Chưa có tiêu đề"
 
-        val price = data["price"] as? Long ?: 0
+        val price = (data["price"] as? Number)?.toLong() ?: 0L
         tvPrice.text = "${formatter.format(price)} đ/tháng"
 
         val address = data["address"] as? String ?: ""
         val ward = data["ward"] as? String ?: ""
         val district = data["district"] as? String ?: ""
-        tvAddress.text = if (address.isNotEmpty()) "$address, $ward, $district" else "$ward, $district"
+        tvAddress.text = listOf(address, ward, district).filter { it.isNotBlank() }.joinToString(", ").ifBlank { "Chưa cập nhật địa chỉ" }
 
         val desc = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
         tvDescription.text = desc
@@ -292,7 +308,7 @@ class RoomDetailActivity : AppCompatActivity() {
         tvSpecPeople.text = if (peopleCount > 0) "$peopleCount người" else "-- người"
         tvSpecType.text = roomType
 
-        val imageUrls = data["imageUrls"] as? List<String> ?: listOf()
+        val imageUrls = (data["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
         setupImageSlider(imageUrls)
         setupRoomInfo(data)
         setupAmenities(data)
@@ -303,15 +319,15 @@ class RoomDetailActivity : AppCompatActivity() {
         setupMapSection(address, ward, district, latitude, longitude)
 
         val status = data["status"] as? String ?: "pending"
-        // Lấy chủ sở hữu bài đăng
         val roomOwnerId = data["userId"] as? String ?: ""
-        val isOwner = uid != null && uid == roomOwnerId
+        val isOwner = currentUid != null && currentUid == roomOwnerId
 
         if (status == "rented") {
             btnBooking.isEnabled = false
             btnBooking.text = "Phòng đã cho thuê"
             btnBooking.setBackgroundColor(0xFF9E9E9E.toInt())
             btnSave.visibility = View.GONE
+            btnAddReview.visibility = View.GONE
             tvPrice.text = "ĐÃ CHO THUÊ"
             tvPrice.setTextColor(0xFFE53935.toInt())
         } else if (isOwner) {
@@ -502,7 +518,9 @@ class RoomDetailActivity : AppCompatActivity() {
     }
 
     private fun setupActionButtons() {
-        if (uid == null) {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        currentUid = userId
+        if (userId.isNullOrBlank()) {
             btnSave.visibility = View.VISIBLE
             btnBooking.visibility = View.VISIBLE
             btnSave.setIconResource(R.drawable.ic_bookmark)
@@ -513,12 +531,12 @@ class RoomDetailActivity : AppCompatActivity() {
         }
 
         // Load role, trạng thái lưu, trạng thái đặt lịch qua ViewModel
-        viewModel.loadUserRole(uid!!)
-        viewModel.checkSavedStatus(uid!!, currentRoomId)
-        viewModel.checkActiveBooking(uid!!, currentRoomId)
+        viewModel.loadUserRole(userId)
+        viewModel.checkSavedStatus(userId, currentRoomId)
+        viewModel.checkActiveBooking(userId, currentRoomId)
 
         btnSave.setOnClickListener {
-            viewModel.toggleSavePost(uid!!, currentRoomId, currentRoomData)
+            viewModel.toggleSavePost(userId, currentRoomId, currentRoomData)
         }
     }
 
@@ -566,16 +584,7 @@ class RoomDetailActivity : AppCompatActivity() {
         }
 
         geocodeExecutor.execute {
-            var resolvedLatLng: LatLng? = null
-            try {
-                val geocoder = Geocoder(this, Locale("vi", "VN"))
-                val result = geocoder.getFromLocationName(fullAddress, 1)
-                if (!result.isNullOrEmpty()) {
-                    val first = result.first()
-                    resolvedLatLng = LatLng(first.latitude, first.longitude)
-                }
-            } catch (_: Exception) {
-            }
+            val resolvedLatLng = runCatching { geocodeAddress(fullAddress) }.getOrNull()
 
             val target = resolvedLatLng ?: mapFallbackLatLng
             runOnUiThread {
@@ -589,6 +598,31 @@ class RoomDetailActivity : AppCompatActivity() {
                 map.animateCamera(CameraUpdateFactory.newLatLngZoom(target, if (resolvedLatLng != null) 15f else 11f))
                 lastResolvedLatLng = resolvedLatLng
             }
+        }
+    }
+
+    private fun geocodeAddress(fullAddress: String): LatLng? {
+        val geocoder = Geocoder(this, Locale("vi", "VN"))
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            var firstAddress: Address? = null
+            val latch = CountDownLatch(1)
+            geocoder.getFromLocationName(fullAddress, 1, object : Geocoder.GeocodeListener {
+                override fun onGeocode(addresses: MutableList<Address>) {
+                    firstAddress = addresses.firstOrNull()
+                    latch.countDown()
+                }
+
+                override fun onError(errorMessage: String?) {
+                    latch.countDown()
+                }
+            })
+            latch.await(4, TimeUnit.SECONDS)
+            firstAddress?.let { LatLng(it.latitude, it.longitude) }
+        } else {
+            @Suppress("DEPRECATION")
+            geocoder.getFromLocationName(fullAddress, 1)
+                ?.firstOrNull()
+                ?.let { LatLng(it.latitude, it.longitude) }
         }
     }
 
@@ -617,15 +651,13 @@ class RoomDetailActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (currentRoomId.isNotEmpty() && uid != null) {
-            viewModel.checkActiveBooking(uid!!, currentRoomId)
+        val userId = FirebaseAuth.getInstance().currentUser?.uid
+        currentUid = userId
+        if (currentRoomId.isNotEmpty() && !userId.isNullOrBlank()) {
+            viewModel.checkActiveBooking(userId, currentRoomId)
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        geocodeExecutor.shutdownNow()
-    }
 
     private fun promptLogin() {
         androidx.appcompat.app.AlertDialog.Builder(this)
@@ -707,6 +739,11 @@ class RoomDetailActivity : AppCompatActivity() {
         
         dialog.setContentView(view)
         dialog.show()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        geocodeExecutor.shutdownNow()
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -802,7 +839,15 @@ class RoomDetailActivity : AppCompatActivity() {
 
             if (pet.isNotEmpty()) {
                 val petName = data["petName"] as? String ?: ""
-                val text = if (pet == "Cho nuôi" && petName.isNotEmpty()) "Cho nuôi ($petName)" else pet
+                val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
+                val text = if (pet == "Cho nuôi") {
+                    val details = mutableListOf<String>()
+                    if (petName.isNotEmpty()) details.add(petName)
+                    if (petCount > 0) details.add("Số lượng: $petCount")
+                    if (details.isNotEmpty()) "Cho nuôi (${details.joinToString(" - ")})" else "Cho nuôi"
+                } else {
+                    pet
+                }
                 addInfoRow("Thú cưng", text)
             }
         }
@@ -944,7 +989,7 @@ class RoomDetailActivity : AppCompatActivity() {
                 .collection("users").document(landlordId).get()
                 .addOnSuccessListener { doc ->
                     if (doc.exists() && doc.getString("avatarUrl")?.isNotEmpty() == true) {
-                        savedAvatarUrl = doc.getString("avatarUrl")!!
+                        savedAvatarUrl = doc.getString("avatarUrl").orEmpty()
                         ivAvatar.setPadding(0, 0, 0, 0)
                         ivAvatar.imageTintList = null
                         Glide.with(this).load(savedAvatarUrl).circleCrop().into(ivAvatar)
@@ -959,12 +1004,13 @@ class RoomDetailActivity : AppCompatActivity() {
         }
         
         btnChat.setOnClickListener {
-            val currentUid = uid
-            if (currentUid == null) {
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            currentUid = userId
+            if (userId.isNullOrBlank()) {
                 startActivity(Intent(this, LoginActivity::class.java))
                 return@setOnClickListener
             }
-            if (currentUid == landlordId) return@setOnClickListener  // không tự nhắn mình
+            if (userId == landlordId) return@setOnClickListener  // không tự nhắn mình
             startActivity(
                 Intent(this, ChatActivity::class.java).apply {
                     putExtra(ChatActivity.EXTRA_OTHER_UID,    landlordId)
@@ -1053,12 +1099,13 @@ class RoomDetailActivity : AppCompatActivity() {
         
         btnSheetChat.setOnClickListener {
             dialog.dismiss()
-            val currentUid = uid
-            if (currentUid == null) {
+            val userId = FirebaseAuth.getInstance().currentUser?.uid
+            currentUid = userId
+            if (userId.isNullOrBlank()) {
                 startActivity(Intent(this, LoginActivity::class.java))
                 return@setOnClickListener
             }
-            if (currentUid == landlordId) return@setOnClickListener
+            if (userId == landlordId) return@setOnClickListener
             startActivity(
                 Intent(this, ChatActivity::class.java).apply {
                     putExtra(ChatActivity.EXTRA_OTHER_UID,    landlordId)
@@ -1087,7 +1134,7 @@ class RoomDetailActivity : AppCompatActivity() {
             textSize = 14f
             setTypeface(null, android.graphics.Typeface.BOLD)
             if (isPhone) {
-                text = "📞 $value"
+                text = "SĐT: $value"
                 setTextColor(0xFF1565C0.toInt())
                 paintFlags = paintFlags or android.graphics.Paint.UNDERLINE_TEXT_FLAG
                 isClickable = true
@@ -1107,13 +1154,15 @@ class RoomDetailActivity : AppCompatActivity() {
         val addr = roomData["address"] as? String ?: ""
         val ward = roomData["ward"] as? String ?: ""
         val district = roomData["district"] as? String ?: ""
+        val imageUrls = (roomData["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+        val roomPrice = (roomData["price"] as? Number)?.toLong() ?: 0L
         return Intent(this, BookingActivity::class.java).apply {
             putExtra("roomId", roomId)
             putExtra("landlordId", roomData["userId"] as? String ?: "")
             putExtra("roomTitle", roomData["title"] as? String ?: "")
             putExtra("roomAddress", if (addr.isNotEmpty()) "$addr, $ward, $district" else "$ward, $district")
-            putExtra("roomPrice", roomData["price"] as? Long ?: 0)
-            putExtra("roomImageUrl", (roomData["imageUrls"] as? List<String>)?.firstOrNull() ?: "")
+            putExtra("roomPrice", roomPrice)
+            putExtra("roomImageUrl", imageUrls.firstOrNull() ?: "")
             putExtra("landlordName", roomData["ownerName"] as? String ?: "")
             putExtra("landlordPhone", roomData["ownerPhone"] as? String ?: "")
         }

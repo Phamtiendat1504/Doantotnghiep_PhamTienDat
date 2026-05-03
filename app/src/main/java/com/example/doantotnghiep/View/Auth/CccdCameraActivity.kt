@@ -1,4 +1,4 @@
-﻿package com.example.doantotnghiep.View.Auth
+package com.example.doantotnghiep.View.Auth
 
 import android.Manifest
 import android.content.pm.PackageManager
@@ -73,23 +73,23 @@ class CccdCameraActivity : AppCompatActivity() {
             "SOCIALIST REPUBLIC OF VIET NAM",
             "IDENTITY CARD"
         )
-        private const val MIN_MEAN_LUMA = 58.0
-        private const val MAX_MEAN_LUMA = 205.0
-        private const val MAX_DARK_RATIO = 0.42
-        private const val MAX_BRIGHT_RATIO = 0.28
-        private const val MIN_CONTRAST_STD = 30.0
-        private const val MIN_SHARPNESS = 28.0
-        private const val MIN_TEXT_BLOCKS_FRONT = 3
-        private const val MIN_TEXT_BLOCKS_BACK = 2
-        private const val MIN_TEXT_CHARS_FRONT = 30
-        private const val MIN_TEXT_CHARS_BACK = 22
-        private const val MIN_TEXT_SPREAD_X_FRONT = 0.68
-        private const val MIN_TEXT_SPREAD_X_BACK = 0.68
-        private const val MIN_TEXT_SPREAD_Y = 0.35
-        private const val MIN_TEXT_COVERAGE = 0.22
-        private const val AUTO_CAPTURE_MIN_STABLE_FRAMES = 2
+        private const val MIN_MEAN_LUMA = 30.0
+        private const val MAX_MEAN_LUMA = 230.0
+        private const val MAX_DARK_RATIO = 0.70
+        private const val MAX_BRIGHT_RATIO = 0.45
+        private const val MIN_CONTRAST_STD = 15.0
+        private const val MIN_SHARPNESS = 10.0
+        private const val MIN_TEXT_BLOCKS_FRONT = 2
+        private const val MIN_TEXT_BLOCKS_BACK = 1
+        private const val MIN_TEXT_CHARS_FRONT = 20
+        private const val MIN_TEXT_CHARS_BACK = 15
+        private const val MIN_TEXT_SPREAD_X_FRONT = 0.40
+        private const val MIN_TEXT_SPREAD_X_BACK = 0.40
+        private const val MIN_TEXT_SPREAD_Y = 0.20
+        private const val MIN_TEXT_COVERAGE = 0.10
+        private const val AUTO_CAPTURE_MIN_STABLE_FRAMES = 3
         private const val AUTO_CAPTURE_ANALYZE_INTERVAL_MS = 700L
-        private const val AUTO_CAPTURE_REARM_DELAY_MS = 900L
+        private const val AUTO_CAPTURE_REARM_DELAY_MS = 1200L
     }
 
     private lateinit var previewView: PreviewView
@@ -107,8 +107,13 @@ class CccdCameraActivity : AppCompatActivity() {
     @Volatile private var isAnalyzingPreviewFrame = false
     @Volatile private var captureInProgress = false
     @Volatile private var autoCaptureLocked = false
+    @Volatile private var isDestroyed = false
     private var stableValidFrameCount = 0
     private var lastPreviewAnalyzeAt = 0L
+
+    // Cache tọa độ guide frame tại thời điểm bấm chụp để tránh đọc View trên wrong thread
+    private var cachedGuideRect: android.graphics.Rect? = null
+    private var cachedPreviewRect: android.graphics.Rect? = null
 
     private val requestCameraPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -137,6 +142,7 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
+        isDestroyed = true
         super.onDestroy()
         cameraController?.clearImageAnalysisAnalyzer()
         analysisExecutor.shutdown()
@@ -209,6 +215,21 @@ class CccdCameraActivity : AppCompatActivity() {
             tvGuideSub.text = "Đang tự động nhận diện ảnh, vui lòng giữ máy ổn định..."
         }
         btnCapture.isEnabled = false
+
+        // Cache vị trí guide và preview trước khi chụp để dùng an toàn trong callback
+        cachedGuideRect = android.graphics.Rect(
+            guideFrame.x.toInt(),
+            guideFrame.y.toInt(),
+            (guideFrame.x + guideFrame.width).toInt(),
+            (guideFrame.y + guideFrame.height).toInt()
+        )
+        cachedPreviewRect = android.graphics.Rect(
+            previewView.x.toInt(),
+            previewView.y.toInt(),
+            (previewView.x + previewView.width).toInt(),
+            (previewView.y + previewView.height).toInt()
+        )
+
         val outputFile = createOutputFile()
         val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
 
@@ -304,18 +325,21 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     private fun resetCaptureState() {
+        if (isDestroyed) return
         captureInProgress = false
         btnCapture.isEnabled = true
         setupGuideText()
         mainHandler.postDelayed({
-            autoCaptureLocked = false
-            stableValidFrameCount = 0
+            if (!isDestroyed) {
+                autoCaptureLocked = false
+                stableValidFrameCount = 0
+            }
         }, AUTO_CAPTURE_REARM_DELAY_MS)
     }
 
-    @OptIn(ExperimentalGetImage::class)
+    @androidx.annotation.OptIn(ExperimentalGetImage::class)
     private fun analyzePreviewFrame(imageProxy: ImageProxy) {
-        if (captureInProgress || autoCaptureLocked) {
+        if (isDestroyed || captureInProgress || autoCaptureLocked) {
             imageProxy.close()
             return
         }
@@ -343,20 +367,39 @@ class CccdCameraActivity : AppCompatActivity() {
                     imageWidth = inputImage.width.toFloat(),
                     imageHeight = inputImage.height.toFloat()
                 )
-                val frameMetrics = analyzeOcrFrameMetrics(visionText, inputImage.width, inputImage.height)
 
                 val sideValid = if (captureSide == SIDE_BACK) {
                     isBackSide(sideSignals)
                 } else {
                     isFrontSide(sideSignals)
                 }
-                val completenessOk = sideValid && validateCardCompleteness(frameMetrics) == null
-                val centerAligned = isGuideCenterAligned(visionText, inputImage.width, inputImage.height)
-                val stable = completenessOk && centerAligned
+
+                // Dùng điều kiện đơn giản hơn cho preview (không dùng completenessOk hoặc isGuideCenterAligned):
+                // Chỉ cần nhận ra đúng mặt thẻ + có đủ text cơ bản trong frame.
+                // Ngưỡng này phù hợp với full camera frame (không phải ảnh đã crop).
+                val hasEnoughText = visionText.textBlocks.size >= 2 &&
+                    visionText.text.replace("\\s+".toRegex(), "").length >= 15
+                val stable = sideValid && hasEnoughText
 
                 stableValidFrameCount = if (stable) {
-                    stableValidFrameCount + 1
+                    val newCount = stableValidFrameCount + 1
+                    // Hiển thị feedback cho user khi đếm đếm gần đủ
+                    mainHandler.post {
+                        if (!isDestroyed && !captureInProgress) {
+                            when (newCount) {
+                                1 -> tvGuideSub.text = "Đã nhận ra thẻ... giữ nguyên"
+                                2 -> tvGuideSub.text = "Đã nhận ra thẻ... giữ nguyên..."
+                                else -> tvGuideSub.text = "Đang tự động chụp..."
+                            }
+                        }
+                    }
+                    newCount
                 } else {
+                    if (stableValidFrameCount > 0) {
+                        mainHandler.post {
+                            if (!isDestroyed && !captureInProgress) setupGuideText()
+                        }
+                    }
                     0
                 }
 
@@ -403,16 +446,10 @@ class CccdCameraActivity : AppCompatActivity() {
                     }
                 } else {
                     val wrongSideMessage = when {
-                        isLikelySideRotated(signals) ->
-                            "Ảnh thẻ đang bị xoay lệch 90 độ. Vui lòng đặt CCCD nằm ngang, đúng chiều rồi chụp lại."
                         captureSide == SIDE_FRONT && isBackSide(signals) ->
                             "Bạn đang chụp nhầm MẶT SAU vào ô MẶT TRƯỚC. Vui lòng lật lại đúng MẶT TRƯỚC CCCD."
                         captureSide == SIDE_BACK && isFrontSide(signals) ->
                             "Bạn đang chụp nhầm MẶT TRƯỚC vào ô MẶT SAU. Vui lòng lật lại đúng MẶT SAU CCCD."
-                        captureSide == SIDE_FRONT && isLikelyUpsideDownFront(signals) ->
-                            "Ảnh MẶT TRƯỚC đang bị chụp ngược. Vui lòng xoay thẻ đúng chiều rồi chụp lại."
-                        captureSide == SIDE_BACK && isLikelyUpsideDownBack(signals) ->
-                            "Ảnh MẶT SAU đang bị chụp ngược. Vui lòng xoay thẻ đúng chiều rồi chụp lại."
                         else -> null
                     }
                     onDone(
@@ -573,6 +610,7 @@ class CccdCameraActivity : AppCompatActivity() {
         val spanW = (maxRight - minLeft).coerceAtLeast(1).toDouble()
         val spanH = (maxBottom - minTop).coerceAtLeast(1).toDouble()
         val cccdRegex = Regex("(?:\\d[\\s.\\-]*){12}")
+        val compactCccdRegex = Regex("\\d{12}")
 
         return OcrFrameMetrics(
             textBlockCount = blockCount,
@@ -580,7 +618,7 @@ class CccdCameraActivity : AppCompatActivity() {
             spreadX = spanW / frameWidth,
             spreadY = spanH / frameHeight,
             coverageRatio = (spanW * spanH) / (frameWidth * frameHeight),
-            hasCccdCandidate = cccdRegex.containsMatchIn(visionText.text)
+            hasCccdCandidate = cccdRegex.containsMatchIn(visionText.text) || compactCccdRegex.containsMatchIn(visionText.text)
         )
     }
 
@@ -703,35 +741,23 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     private fun isFrontSide(signals: SideSignals): Boolean {
-        val orientationOk = signals.frontHeaderYRatio == null || signals.frontHeaderYRatio <= 0.62f
-        val notSideRotated = !isLikelySideRotated(signals)
-        return signals.frontScore >= 2 &&
-            !signals.hasMrz &&
-            signals.frontScore >= signals.backScore &&
-            orientationOk &&
-            notSideRotated
+        return signals.frontScore >= 1
     }
 
     private fun isBackSide(signals: SideSignals): Boolean {
-        val hasBackSignal = signals.backScore >= 1 || signals.hasMrz
-        val orientationOk = signals.mrzYRatio == null || signals.mrzYRatio >= 0.48f
-        val notSideRotated = !isLikelySideRotated(signals)
-        return hasBackSignal &&
-            (signals.hasMrz || signals.backScore >= signals.frontScore) &&
-            orientationOk &&
-            notSideRotated
+        return signals.backScore >= 1 || signals.hasMrz
     }
 
     private fun isLikelySideRotated(signals: SideSignals): Boolean {
-        return signals.verticalTextBlockRatio >= 0.56f
+        return false // Removed strict rotation checks to avoid false negatives
     }
 
     private fun isLikelyUpsideDownFront(signals: SideSignals): Boolean {
-        return signals.frontHeaderYRatio != null && signals.frontHeaderYRatio > 0.62f
+        return false // Removed strict upside down checks
     }
 
     private fun isLikelyUpsideDownBack(signals: SideSignals): Boolean {
-        return signals.mrzYRatio != null && signals.mrzYRatio < 0.48f
+        return false // Removed strict upside down checks
     }
 
     private fun normalizeNoAccentUpper(text: String): String {
@@ -741,19 +767,41 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     private fun cropToGuide(bitmap: Bitmap): Bitmap? {
-        val previewWidth = previewView.width.toFloat().coerceAtLeast(1f)
-        val previewHeight = previewView.height.toFloat().coerceAtLeast(1f)
+        // Dùng các giá trị đã cache từ lúc bấm chụp để tránh đọc View khi có vấn đề layout
+        val guide = cachedGuideRect
+        val preview = cachedPreviewRect
+
+        val previewWidth: Float
+        val previewHeight: Float
+        val guideLeft: Float
+        val guideTop: Float
+        val guideRight: Float
+        val guideBottom: Float
+
+        if (guide != null && preview != null && guide.width() > 0 && guide.height() > 0) {
+            previewWidth = (preview.right - preview.left).toFloat().coerceAtLeast(1f)
+            previewHeight = (preview.bottom - preview.top).toFloat().coerceAtLeast(1f)
+            guideLeft = (guide.left - preview.left).toFloat().coerceIn(0f, previewWidth)
+            guideTop = (guide.top - preview.top).toFloat().coerceIn(0f, previewHeight)
+            guideRight = (guide.right - preview.left).toFloat().coerceIn(0f, previewWidth)
+            guideBottom = (guide.bottom - preview.top).toFloat().coerceIn(0f, previewHeight)
+        } else {
+            // Fallback: đọc trực tiếp từ View
+            previewWidth = previewView.width.toFloat().coerceAtLeast(1f)
+            previewHeight = previewView.height.toFloat().coerceAtLeast(1f)
+            guideLeft = (guideFrame.x - previewView.x).coerceIn(0f, previewWidth)
+            guideTop = (guideFrame.y - previewView.y).coerceIn(0f, previewHeight)
+            guideRight = (guideFrame.x + guideFrame.width - previewView.x).coerceIn(0f, previewWidth)
+            guideBottom = (guideFrame.y + guideFrame.height - previewView.y).coerceIn(0f, previewHeight)
+        }
+
+        if (guideRight <= guideLeft || guideBottom <= guideTop) return null
 
         val displayScale = min(previewWidth / bitmap.width.toFloat(), previewHeight / bitmap.height.toFloat())
         val displayedWidth = bitmap.width * displayScale
         val displayedHeight = bitmap.height * displayScale
         val displayLeft = (previewWidth - displayedWidth) / 2f
         val displayTop = (previewHeight - displayedHeight) / 2f
-
-        val guideLeft = (guideFrame.x - previewView.x).coerceIn(0f, previewWidth)
-        val guideTop = (guideFrame.y - previewView.y).coerceIn(0f, previewHeight)
-        val guideRight = (guideFrame.x + guideFrame.width - previewView.x).coerceIn(0f, previewWidth)
-        val guideBottom = (guideFrame.y + guideFrame.height - previewView.y).coerceIn(0f, previewHeight)
 
         val intersectLeft = maxOf(guideLeft, displayLeft)
         val intersectTop = maxOf(guideTop, displayTop)
@@ -826,4 +874,3 @@ class CccdCameraActivity : AppCompatActivity() {
         return File(dir, "cccd_${sidePrefix}_${System.currentTimeMillis()}.jpg")
     }
 }
-

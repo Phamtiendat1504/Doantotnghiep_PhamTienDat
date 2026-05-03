@@ -103,7 +103,7 @@ class SupportTicketsActivity : AppCompatActivity() {
             allTickets
         } else {
             allTickets.filter { it.status == currentFilter }
-        }
+        }.sortedByDescending { it.updatedAt ?: it.createdAt ?: 0L }
         emptyView.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
         rvTickets.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
         adapter.submitList(filtered, selectedTicketId)

@@ -20,7 +20,30 @@ object PresenceManager {
     fun goOffline() = updatePresence(isOnline = false)
 
     fun goOfflineAndThen(onComplete: () -> Unit) {
-        updatePresence(isOnline = false, onComplete = onComplete)
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        if (uid.isNullOrBlank()) {
+            onComplete()
+            return
+        }
+        var isDone = false
+        val task = db.collection("users").document(uid).update(
+            mapOf(
+                "isOnline" to false,
+                "lastSeen"  to System.currentTimeMillis()
+            )
+        )
+        task.addOnCompleteListener {
+            if (!isDone) {
+                isDone = true
+                onComplete()
+            }
+        }
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (!isDone) {
+                isDone = true
+                onComplete()
+            }
+        }, 1500)
     }
 
     private fun updatePresence(isOnline: Boolean, onComplete: (() -> Unit)? = null) {

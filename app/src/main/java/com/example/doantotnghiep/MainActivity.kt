@@ -1,4 +1,4 @@
-﻿package com.example.doantotnghiep
+package com.example.doantotnghiep
 
 import android.Manifest
 import android.content.Intent
@@ -36,15 +36,14 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mainViewModel: MainViewModel
     private var userStatusListener: ListenerRegistration? = null
-    private var appointmentListenerL: ListenerRegistration? = null
-    private var appointmentListenerT: ListenerRegistration? = null
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private val authRepository = com.example.doantotnghiep.repository.AuthRepository()
 
     // Launcher xin quyền thông báo (Android 13+)
     private val requestNotificationPermission =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                Log.d("FCM", "Quyền thông báo được cấp, đang lấy FCM Token...")
+                Log.d("FCM", "Quyền thông báo được cấp, đang cập nhật FCM Token...")
                 fetchAndSaveFcmToken()
             } else {
                 Log.w("FCM", "Người dùng từ chối quyền thông báo.")
@@ -118,18 +117,16 @@ class MainActivity : AppCompatActivity() {
                 startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyAppointmentsActivity::class.java))
             }, 500)
         } else {
+            bottomNav.selectedItemId = R.id.nav_home
             loadFragment(HomeFragment())
         }
 
         bottomNav.setOnItemSelectedListener { item ->
-            val isLoggedIn = FirebaseAuth.getInstance().currentUser != null
             when (item.itemId) {
                 R.id.nav_home -> loadFragment(HomeFragment())
                 R.id.nav_search -> loadFragment(SearchFragment())
                 R.id.nav_ai -> return@setOnItemSelectedListener false
-                R.id.nav_post -> {
-                    loadFragment(PostFragment())
-                }
+                R.id.nav_post -> loadFragment(PostFragment())
                 R.id.nav_profile -> loadFragment(ProfileFragment())
             }
             true
@@ -226,6 +223,12 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         userStatusListener?.remove()
+        networkCallback?.let {
+            try {
+                (getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager).unregisterNetworkCallback(it)
+            } catch (_: Exception) {
+            }
+        }
     }
 
     private fun observeNetworkStatus() {
@@ -234,17 +237,23 @@ class MainActivity : AppCompatActivity() {
             .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
             .build()
 
-        connectivityManager.registerNetworkCallback(networkRequest, object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                // Có mạng
-            }
-
+        networkCallback?.let {
+            runCatching { connectivityManager.unregisterNetworkCallback(it) }
+                .onFailure { error -> Log.w("MainActivity", "Network callback was already unregistered", error) }
+        }
+        val callback = object : ConnectivityManager.NetworkCallback() {
             override fun onLost(network: Network) {
                 runOnUiThread {
-                    Toast.makeText(this@MainActivity, "Mất kết nối Internet. Dữ liệu sẽ được đồng bộ khi có mạng lại.", Toast.LENGTH_LONG).show()
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Mất kết nối Internet. Dữ liệu sẽ được đồng bộ khi có mạng lại.",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
-        })
+        }
+        networkCallback = callback
+        connectivityManager.registerNetworkCallback(networkRequest, callback)
     }
 
     private fun loadFragment(fragment: Fragment) {
@@ -290,7 +299,6 @@ class MainActivity : AppCompatActivity() {
     private fun fetchAndSaveFcmToken() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
-            Log.d("FCM", "FCM Token: $token")
             val updates = hashMapOf<String, Any>(
                 "fcmToken" to token,
                 "lastLoginAt" to System.currentTimeMillis()
@@ -298,8 +306,8 @@ class MainActivity : AppCompatActivity() {
             FirebaseFirestore.getInstance()
                 .collection("users")
                 .document(uid)
-                .update(updates)
-                .addOnSuccessListener { Log.d("FCM", "Cập nhật Token và thời gian đăng nhập thành công!") }
+                .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                .addOnSuccessListener { Log.d("FCM", "Cập nhật Token và thời gian đăng nhập thành công.") }
                 .addOnFailureListener { e -> Log.e("FCM", "Lỗi cập nhật thông tin: ${e.message}") }
         }
     }
