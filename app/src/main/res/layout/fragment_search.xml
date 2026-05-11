@@ -11,72 +11,72 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="24dp">
+        android:paddingBottom="@dimen/spacing_24">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/bg_header_wave"
             android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingTop="44dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="22dp">
+            android:paddingStart="@dimen/padding_xlarge"
+            android:paddingTop="@dimen/dimen_44dp"
+            android:paddingEnd="@dimen/padding_xlarge"
+            android:paddingBottom="@dimen/dimen_22dp">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/search_screen_title"
                 android:textColor="@color/white"
-                android:textSize="24sp"
+                android:textSize="@dimen/text_size_24"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/elevation_4"
                 android:text="@string/search_screen_subtitle"
                 android:textColor="@color/primary_light"
-                android:textSize="13sp" />
+                android:textSize="@dimen/text_size_13" />
         </LinearLayout>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="-12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/dimen_minus_12dp"
+            android:layout_marginEnd="@dimen/padding_large"
             app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="3dp">
+            app:cardCornerRadius="@dimen/spacing_18"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/search_section_area_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:text="@string/search_area_type_label"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:textSize="@dimen/text_size_12" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupAreaType"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="@dimen/elevation_6"
                     app:selectionRequired="true"
                     app:singleSelection="true">
 
@@ -98,19 +98,19 @@
                         app:chipBackgroundColor="@color/chip_bg_color" />
                 </com.google.android.material.chip.ChipGroup>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:text="@string/search_scope_label"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:textSize="@dimen/text_size_12" />
 
                 <com.google.android.material.chip.ChipGroup
                     android:id="@+id/chipGroupSearchScope"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="@dimen/elevation_6"
                     app:selectionRequired="true"
                     app:singleSelection="true">
 
@@ -132,73 +132,73 @@
                         app:chipBackgroundColor="@color/chip_bg_color" />
                 </com.google.android.material.chip.ChipGroup>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:text="@string/search_area_picker_label"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:textSize="@dimen/text_size_12" />
 
                 <com.google.android.material.textfield.TextInputLayout
                     style="@style/OutlinedBoxRounded"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="@dimen/elevation_6"
                     app:endIconMode="dropdown_menu"
                     app:hintEnabled="false">
 
                     <AutoCompleteTextView
                         android:id="@+id/autoArea"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="@dimen/dimen_48dp"
                         android:completionThreshold="1"
-                        android:dropDownHeight="300dp"
+                        android:dropDownHeight="@dimen/dimen_300dp"
                         android:hint="@string/search_area_picker_hint"
                         android:inputType="text"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp"
+                        android:paddingStart="@dimen/padding_medium"
+                        android:paddingEnd="@dimen/padding_medium"
                         android:singleLine="true" />
                 </com.google.android.material.textfield.TextInputLayout>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:text="@string/search_address_optional"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:textSize="@dimen/text_size_12" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtAddress"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_height="@dimen/dimen_48dp"
+                    android:layout_marginTop="@dimen/elevation_6"
                     android:background="@drawable/bg_spinner_new"
                     android:hint="@string/search_address_hint"
                     android:inputType="text"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp"
-                    android:textSize="14sp" />
+                    android:paddingStart="@dimen/padding_medium"
+                    android:paddingEnd="@dimen/padding_medium"
+                    android:textSize="@dimen/text_size_14" />
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- ────── Card: Tìm theo vị trí bản đồ ────── -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginEnd="@dimen/padding_large"
             app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="3dp">
+            app:cardCornerRadius="@dimen/spacing_18"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
                 <!-- Tiêu đề -->
                 <LinearLayout
@@ -207,56 +207,56 @@
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="📍 Tìm theo vị trí bản đồ"
+                        android:text="@string/txt_tim_theo_vi_tri_ban_o"
                         android:textColor="@color/text_primary"
-                        android:textSize="16sp"
+                        android:textSize="@dimen/text_size_16"
                         android:textStyle="bold" />
 
                 </LinearLayout>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Tìm phòng gần vị trí bạn chọn trên bản đồ"
+                    android:layout_marginTop="@dimen/elevation_4"
+                    android:text="@string/txt_tim_phong_gan_vi_tri_ban_"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:textSize="@dimen/text_size_12" />
 
                 <!-- Nút chọn vị trí -->
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnPickMapLocation"
                     style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="12dp"
-                    android:text="Chọn vị trí trên bản đồ"
+                    android:layout_height="@dimen/dimen_48dp"
+                    android:layout_marginTop="@dimen/padding_medium"
+                    android:text="@string/txt_chon_vi_tri_tren_ban_o"
                     android:textAllCaps="false"
                     android:textColor="@color/primary"
-                    app:cornerRadius="12dp"
+                    app:cornerRadius="@dimen/padding_medium"
                     app:icon="@drawable/ic_location"
                     app:iconGravity="textStart"
-                    app:iconPadding="8dp"
+                    app:iconPadding="@dimen/padding_small"
                     app:iconTint="@color/primary"
                     app:strokeColor="@color/primary"
-                    app:strokeWidth="1.2dp" />
+                    app:strokeWidth="@dimen/dimen_1_2dp" />
 
                 <!-- Địa chỉ đã chọn + nút xóa (ẩn mặc định) -->
                 <LinearLayout
                     android:id="@+id/layoutMapSelected"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:background="@drawable/bg_input_disabled"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:padding="10dp"
+                    android:padding="@dimen/corner_radius_10"
                     android:visibility="gone">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvMapSelectedAddress"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
@@ -264,15 +264,15 @@
                         android:maxLines="2"
                         android:ellipsize="end"
                         android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_size_13" />
 
                     <ImageView
                         android:id="@+id/btnClearMapLocation"
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
-                        android:layout_marginStart="8dp"
+                        android:layout_width="@dimen/spacing_24"
+                        android:layout_height="@dimen/spacing_24"
+                        android:layout_marginStart="@dimen/padding_small"
                         android:background="?attr/selectableItemBackgroundBorderless"
-                        android:padding="2dp"
+                        android:padding="@dimen/stroke_2"
                         android:src="@drawable/ic_close"
                         app:tint="@color/text_secondary" />
                 </LinearLayout>
@@ -282,7 +282,7 @@
                     android:id="@+id/layoutRadiusPicker"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:orientation="vertical"
                     android:visibility="gone">
 
@@ -292,21 +292,21 @@
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Bán kính tìm kiếm"
+                            android:text="@string/txt_ban_kinh_tim_kiem"
                             android:textColor="@color/text_hint"
-                            android:textSize="12sp" />
+                            android:textSize="@dimen/text_size_12" />
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/tvRadiusValue"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="2 km"
+                            android:text="@string/txt_2_km"
                             android:textColor="@color/primary"
-                            android:textSize="13sp"
+                            android:textSize="@dimen/text_size_13"
                             android:textStyle="bold" />
                     </LinearLayout>
 
@@ -314,7 +314,7 @@
                         android:id="@+id/seekBarRadius"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="@dimen/elevation_4"
                         android:max="4"
                         android:progress="1"
                         android:progressTint="@color/primary"
@@ -325,49 +325,49 @@
                         android:layout_height="wrap_content"
                         android:orientation="horizontal">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="1km"
+                            android:text="@string/txt_1km"
                             android:textColor="@color/text_hint"
-                            android:textSize="11sp" />
+                            android:textSize="@dimen/text_size_11" />
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="5km"
+                            android:text="@string/txt_5km"
                             android:textColor="@color/text_hint"
-                            android:textSize="11sp" />
+                            android:textSize="@dimen/text_size_11" />
                     </LinearLayout>
                 </LinearLayout>
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- ────── Card: Khoảng giá ────── -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginEnd="@dimen/padding_large"
             app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="3dp">
+            app:cardCornerRadius="@dimen/spacing_18"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/search_section_price_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold" />
 
 
@@ -376,7 +376,7 @@
                     android:id="@+id/chipGroupPrice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     app:singleSelection="true">
 
                     <com.google.android.material.chip.Chip
@@ -425,7 +425,7 @@
                     style="@style/Widget.MaterialComponents.Chip.Choice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
+                    android:layout_marginTop="@dimen/elevation_6"
                     android:text="@string/search_price_custom"
                     app:chipBackgroundColor="@color/chip_bg_color" />
 
@@ -433,7 +433,7 @@
                     style="@style/OutlinedBoxRounded"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/padding_small"
                     android:hint="@string/search_price_custom_hint"
                     app:errorEnabled="false">
 
@@ -445,50 +445,50 @@
                         android:visibility="gone" />
                 </com.google.android.material.textfield.TextInputLayout>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginEnd="@dimen/padding_large"
             app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="3dp">
+            app:cardCornerRadius="@dimen/spacing_18"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/search_section_room_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:text="@string/search_room_type"
                     android:textColor="@color/text_hint"
-                    android:textSize="12sp" />
+                    android:textSize="@dimen/text_size_12" />
 
                 <RadioGroup
                     android:id="@+id/rgRoomStyle"
                     android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="6dp"
+                    android:layout_height="@dimen/dimen_48dp"
+                    android:layout_marginTop="@dimen/elevation_6"
                     android:background="@drawable/bg_spinner_new"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="12dp"
-                    android:paddingEnd="12dp">
+                    android:paddingStart="@dimen/padding_medium"
+                    android:paddingEnd="@dimen/padding_medium">
 
                     <RadioButton
                         android:id="@+id/rbShared"
@@ -497,7 +497,7 @@
                         android:layout_weight="1"
                         android:buttonTint="@color/primary"
                         android:text="@string/search_room_shared"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_size_14" />
 
                     <RadioButton
                         android:id="@+id/rbPrivate"
@@ -506,98 +506,98 @@
                         android:layout_weight="1"
                         android:buttonTint="@color/primary"
                         android:text="@string/search_room_private"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_size_14" />
                 </RadioGroup>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:orientation="horizontal">
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
+                        android:layout_marginEnd="@dimen/padding_small"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/search_area_m2"
                             android:textColor="@color/text_hint"
-                            android:textSize="12sp" />
+                            android:textSize="@dimen/text_size_12" />
 
-                        <EditText
+                        <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/edtRoomArea"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="6dp"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:layout_marginTop="@dimen/elevation_6"
                             android:background="@drawable/bg_spinner_new"
                             android:hint="@string/search_area_hint"
                             android:inputType="number"
-                            android:paddingStart="12dp"
-                            android:textSize="14sp" />
+                            android:paddingStart="@dimen/padding_medium"
+                            android:textSize="@dimen/text_size_14" />
                     </LinearLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/padding_small"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/search_people"
                             android:textColor="@color/text_hint"
-                            android:textSize="12sp" />
+                            android:textSize="@dimen/text_size_12" />
 
-                        <EditText
+                        <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/edtPeopleCount"
                             android:layout_width="match_parent"
-                            android:layout_height="48dp"
-                            android:layout_marginTop="6dp"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:layout_marginTop="@dimen/elevation_6"
                             android:background="@drawable/bg_spinner_new"
                             android:hint="@string/search_people_hint"
                             android:inputType="number"
-                            android:paddingStart="12dp"
-                            android:textSize="14sp" />
+                            android:paddingStart="@dimen/padding_medium"
+                            android:textSize="@dimen/text_size_14" />
                     </LinearLayout>
                 </LinearLayout>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginEnd="@dimen/padding_large"
             app:cardBackgroundColor="@android:color/white"
-            app:cardCornerRadius="18dp"
-            app:cardElevation="3dp">
+            app:cardCornerRadius="@dimen/spacing_18"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/search_section_amenities_title"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -607,26 +607,26 @@
                         android:layout_height="wrap_content"
                         android:layout_weight="0.35"
                         android:buttonTint="@color/primary"
-                        android:text="Wifi"
-                        android:textSize="14sp" />
+                        android:text="@string/txt_wifi"
+                        android:textSize="@dimen/text_size_14" />
 
-                    <EditText
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edtWifiPrice"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="@dimen/dimen_44dp"
                         android:layout_weight="0.65"
                         android:background="@drawable/bg_spinner_new"
                         android:enabled="false"
                         android:hint="@string/search_wifi_price_hint"
                         android:inputType="number"
-                        android:paddingStart="10dp"
-                        android:textSize="13sp" />
+                        android:paddingStart="@dimen/corner_radius_10"
+                        android:textSize="@dimen/text_size_13" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/padding_small"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -637,25 +637,25 @@
                         android:layout_weight="0.35"
                         android:buttonTint="@color/primary"
                         android:text="@string/search_electric"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_size_14" />
 
-                    <EditText
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edtElectricPrice"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="@dimen/dimen_44dp"
                         android:layout_weight="0.65"
                         android:background="@drawable/bg_spinner_new"
                         android:enabled="false"
                         android:hint="@string/search_electric_price_hint"
                         android:inputType="number"
-                        android:paddingStart="10dp"
-                        android:textSize="13sp" />
+                        android:paddingStart="@dimen/corner_radius_10"
+                        android:textSize="@dimen/text_size_13" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/padding_small"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
@@ -666,19 +666,19 @@
                         android:layout_weight="0.35"
                         android:buttonTint="@color/primary"
                         android:text="@string/search_water"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_size_14" />
 
-                    <EditText
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edtWaterPrice"
                         android:layout_width="0dp"
-                        android:layout_height="44dp"
+                        android:layout_height="@dimen/dimen_44dp"
                         android:layout_weight="0.65"
                         android:background="@drawable/bg_spinner_new"
                         android:enabled="false"
                         android:hint="@string/search_water_price_hint"
                         android:inputType="number"
-                        android:paddingStart="10dp"
-                        android:textSize="13sp" />
+                        android:paddingStart="@dimen/corner_radius_10"
+                        android:textSize="@dimen/text_size_13" />
                 </LinearLayout>
 
                 <LinearLayout
@@ -706,46 +706,46 @@
                             android:text="@string/search_curfew_custom" />
                     </RadioGroup>
 
-                    <EditText
+                    <com.google.android.material.textfield.TextInputEditText
                         android:id="@+id/edtCurfewTime"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/search_curfew_hint" />
                 </LinearLayout>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnResetFilter"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="14dp"
-            android:layout_marginEnd="16dp"
+            android:layout_height="@dimen/dimen_48dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/padding_large"
             android:text="@string/search_reset_filter"
             android:textAllCaps="false"
             android:textColor="@color/primary"
-            app:cornerRadius="14dp"
+            app:cornerRadius="@dimen/spacing_14"
             app:strokeColor="@color/primary"
-            app:strokeWidth="1.2dp" />
+            app:strokeWidth="@dimen/dimen_1_2dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSearch"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="12dp"
-            android:layout_marginEnd="16dp"
+            android:layout_height="@dimen/dimen_52dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/padding_medium"
+            android:layout_marginEnd="@dimen/padding_large"
             android:text="@string/search_submit"
             android:textAllCaps="false"
-            android:textSize="15sp"
+            android:textSize="@dimen/text_size_15"
             android:textStyle="bold"
             app:backgroundTint="@color/primary"
-            app:cornerRadius="14dp"
+            app:cornerRadius="@dimen/spacing_14"
             app:icon="@drawable/ic_search"
             app:iconGravity="textStart"
-            app:iconPadding="8dp"
+            app:iconPadding="@dimen/padding_small"
             app:iconTint="@android:color/white" />
 
     </LinearLayout>

@@ -63,9 +63,13 @@ dependencies {
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-functions-ktx")
 
     // Glide (hiển thị ảnh)
     implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // Markwon (Markdown rendering for Chat AI)
+    implementation("io.noties.markwon:core:4.6.2")
 
     // Security
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

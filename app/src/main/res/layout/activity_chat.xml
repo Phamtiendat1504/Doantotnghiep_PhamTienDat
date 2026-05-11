@@ -4,80 +4,80 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:fitsSystemWindows="true"
-    android:background="#F5F7FA">
+    android:background="@color/bg_light">
 
     <!-- ── HEADER ─────────────────────────────────────────────── -->
     <LinearLayout
         android:id="@+id/chatHeader"
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="@dimen/dimen_64dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="16dp"
+        android:paddingStart="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_large"
         android:background="@color/bg_white"
-        android:elevation="4dp">
+        android:elevation="@dimen/elevation_4">
 
         <ImageView
             android:id="@+id/btnChatBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="10dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_back"
             app:tint="@color/text_primary"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            app:cardCornerRadius="20dp"
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="@dimen/image_size_40"
+            android:layout_height="@dimen/image_size_40"
+            app:cardCornerRadius="@dimen/padding_xlarge"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#F1F3F4"
-            android:layout_marginStart="4dp">
+            app:cardBackgroundColor="@color/color_F1F3F4"
+            android:layout_marginStart="@dimen/elevation_4">
             <ImageView
                 android:id="@+id/ivChatPartnerAvatar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_person"
-                android:padding="8dp"
-                app:tint="#999999" />
-        </androidx.cardview.widget.CardView>
+                android:padding="@dimen/padding_small"
+                app:tint="@color/text_hint" />
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:layout_marginStart="10dp">
+            android:layout_marginStart="@dimen/corner_radius_10">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvChatPartnerName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tên người dùng"
-                android:textSize="16sp"
+                android:text="@string/txt_ten_nguoi_dung"
+                android:textSize="@dimen/text_size_16"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvChatStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Đang hoạt động"
-                android:textSize="12sp"
-                android:textColor="#4CAF50" />
+                android:text="@string/txt_ang_hoat_ong"
+                android:textSize="@dimen/text_size_12"
+                android:textColor="@color/color_4CAF50" />
 
         </LinearLayout>
 
         <ImageView
             android:id="@+id/btnCall"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="10dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_phone"
             app:tint="@color/primary"
             android:background="?attr/selectableItemBackgroundBorderless"
@@ -93,10 +93,10 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingStart="8dp"
-        android:paddingEnd="8dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp" />
+        android:paddingStart="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_small"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/padding_small" />
 
     <!-- ── INPUT BAR ──────────────────────────────────────────── -->
     <LinearLayout
@@ -105,84 +105,84 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="@color/bg_white"
-        android:paddingStart="12dp"
-        android:paddingEnd="12dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:elevation="8dp">
+        android:paddingStart="@dimen/padding_medium"
+        android:paddingEnd="@dimen/padding_medium"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/padding_small"
+        android:elevation="@dimen/padding_small">
 
         <ImageView
             android:id="@+id/btnAttachImage"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="4dp"
-            android:padding="10dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
+            android:layout_marginEnd="@dimen/elevation_4"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_add_photo"
-            app:tint="#5F6368"
+            app:tint="@color/color_5F6368"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
             
         <ImageView
             android:id="@+id/btnCamera"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="8dp"
-            android:padding="10dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
+            android:layout_marginEnd="@dimen/padding_small"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_camera"
-            app:tint="#5F6368"
+            app:tint="@color/color_5F6368"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            app:cardCornerRadius="24dp"
+            app:cardCornerRadius="@dimen/spacing_24"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#F1F3F4">
+            app:cardBackgroundColor="@color/color_F1F3F4">
 
-            <EditText
+            <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etChatInput"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:minHeight="44dp"
+                android:minHeight="@dimen/dimen_44dp"
                 android:maxLines="4"
                 android:background="@null"
-                android:paddingStart="16dp"
-                android:paddingEnd="16dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:hint="Nhắn tin..."
-                android:textSize="15sp"
+                android:paddingStart="@dimen/padding_large"
+                android:paddingEnd="@dimen/padding_large"
+                android:paddingTop="@dimen/corner_radius_10"
+                android:paddingBottom="@dimen/corner_radius_10"
+                android:hint="@string/txt_nhan_tin"
+                android:textSize="@dimen/text_size_15"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_hint"
                 android:imeOptions="actionSend"
                 android:inputType="textMultiLine|textCapSentences" />
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnSendMessage"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginStart="8dp"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="2dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
+            android:layout_marginStart="@dimen/padding_small"
+            app:cardCornerRadius="@dimen/dimen_22dp"
+            app:cardElevation="@dimen/stroke_2"
             app:cardBackgroundColor="@color/primary"
             android:clickable="true"
             android:focusable="true">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="@dimen/dimen_22dp"
+                android:layout_height="@dimen/dimen_22dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_send"
                 android:padding="0dp"
                 app:tint="@color/white" />
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
     </LinearLayout>
 

@@ -327,17 +327,33 @@ class ChatRepository {
 
     /**
      * Xóa 1 tin nhắn (chỉ người gửi mới được xóa).
+     * Bổ sung: Xóa luôn file ảnh trên Storage nếu tin nhắn có chứa ảnh.
      */
     fun deleteMessage(
         chatId: String,
         messageId: String,
+        imageUrl: String,
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        db.collection("chats").document(chatId)
+        val msgRef = db.collection("chats").document(chatId)
             .collection("messages").document(messageId)
-            .delete()
-            .addOnSuccessListener { onSuccess() }
+            
+        msgRef.delete()
+            .addOnSuccessListener { 
+                onSuccess()
+                // Xóa ảnh nền trên Storage để tiết kiệm dung lượng
+                if (imageUrl.isNotEmpty()) {
+                    try {
+                        FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl).delete()
+                            .addOnFailureListener { e ->
+                                android.util.Log.e("ChatRepo", "Lỗi xóa ảnh cũ trên Storage: ${e.message}")
+                            }
+                    } catch (e: Exception) {
+                        android.util.Log.e("ChatRepo", "Lỗi getReferenceFromUrl: ${e.message}")
+                    }
+                }
+            }
             .addOnFailureListener { onFailure(it.message ?: "Lỗi xóa tin nhắn") }
     }
 

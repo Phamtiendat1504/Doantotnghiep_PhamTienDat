@@ -125,7 +125,13 @@ class SearchViewModel : ViewModel() {
             else -> 0.0
         }
 
-        repository.searchApprovedRooms(
+        // Tối ưu hóa: Dùng câu truy vấn Server-side từ repository thay vì lấy hết
+        val queryDistrict = if (searchMode == "district" || searchMode == "ward" || district.isNotBlank()) district else ""
+        val queryWard = if (searchMode == "ward" || ward.isNotBlank()) ward else ""
+
+        repository.searchRoomsWithBasicFilters(
+            district = queryDistrict,
+            ward = queryWard,
             onSuccess = { docs ->
                 _isLoading.value = false
 
@@ -133,6 +139,8 @@ class SearchViewModel : ViewModel() {
                     val item = mapToRoomItem(doc.id, doc.data)
 
                     if (!hasAvailableRoom(item)) return@mapNotNull null
+                    
+                    // Vẫn giữ check location client-side đề phòng trường hợp lỗi chuẩn hóa chuỗi
                     if (!matchesLocation(item, mode, wardFilter, districtFilter)) return@mapNotNull null
                     if (!matchesPrice(item.price, minPrice, maxPrice)) return@mapNotNull null
                     if (!matchesArea(item.area, minArea, maxArea)) return@mapNotNull null
@@ -183,7 +191,9 @@ class SearchViewModel : ViewModel() {
         _isLoading.value = true
         _errorMessage.value = null
 
-        repository.searchApprovedRooms(
+        repository.searchNearbyRooms(
+            lat = lat,
+            radiusKm = radiusKm,
             onSuccess = { docs ->
                 _isLoading.value = false
 

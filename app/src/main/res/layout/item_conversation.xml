@@ -5,44 +5,44 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingStart="16dp"
-    android:paddingEnd="16dp"
-    android:paddingTop="12dp"
-    android:paddingBottom="12dp"
+    android:paddingStart="@dimen/padding_large"
+    android:paddingEnd="@dimen/padding_large"
+    android:paddingTop="@dimen/padding_medium"
+    android:paddingBottom="@dimen/padding_medium"
     android:background="?attr/selectableItemBackground"
     android:clickable="true"
     android:focusable="true">
 
     <!-- Avatar người kia -->
     <FrameLayout
-        android:layout_width="54dp"
-        android:layout_height="54dp">
+        android:layout_width="@dimen/dimen_54dp"
+        android:layout_height="@dimen/dimen_54dp">
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="54dp"
-            android:layout_height="54dp"
-            app:cardCornerRadius="27dp"
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="@dimen/dimen_54dp"
+            android:layout_height="@dimen/dimen_54dp"
+            app:cardCornerRadius="@dimen/dimen_27dp"
             app:cardElevation="0dp"
-            app:cardBackgroundColor="#F1F3F4">
+            app:cardBackgroundColor="@color/color_F1F3F4">
 
             <ImageView
                 android:id="@+id/ivConvAvatar"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:src="@drawable/ic_person"
-                android:padding="12dp"
-                app:tint="#999999" />
+                android:padding="@dimen/padding_medium"
+                app:tint="@color/text_hint" />
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Unread badge nhỏ ở góc avatar -->
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvConvUnreadBadge"
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="@dimen/padding_xlarge"
+            android:layout_height="@dimen/padding_xlarge"
             android:layout_gravity="top|end"
             android:gravity="center"
-            android:textSize="10sp"
+            android:textSize="@dimen/text_size_10"
             android:textStyle="bold"
             android:textColor="@color/white"
             android:background="@drawable/bg_badge_red"
@@ -56,42 +56,42 @@
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:layout_marginStart="12dp">
+        android:layout_marginStart="@dimen/padding_medium">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvConvName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tên người dùng"
-            android:textSize="15sp"
+            android:text="@string/txt_ten_nguoi_dung"
+            android:textSize="@dimen/text_size_15"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
             android:maxLines="1"
             android:ellipsize="end" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvConvLastMessage"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Tin nhắn cuối..."
-            android:textSize="13sp"
+            android:text="@string/txt_tin_nhan_cuoi"
+            android:textSize="@dimen/text_size_13"
             android:textColor="@color/text_hint"
-            android:layout_marginTop="2dp"
+            android:layout_marginTop="@dimen/stroke_2"
             android:maxLines="1"
             android:ellipsize="end" />
 
     </LinearLayout>
 
     <!-- Thời gian -->
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvConvTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:text="12:00"
-        android:textSize="12sp"
+        android:layout_marginStart="@dimen/padding_small"
+        android:text="@string/txt_12_00"
+        android:textSize="@dimen/text_size_12"
         android:textColor="@color/text_hint"
         android:layout_gravity="top"
-        android:layout_marginTop="2dp" />
+        android:layout_marginTop="@dimen/stroke_2" />
 
 </LinearLayout>

@@ -233,12 +233,17 @@ class PostFragment : Fragment() {
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
         val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
         val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+        val layoutSteps = verifyRequiredView?.findViewById<View>(R.id.layoutSteps)
+        val imgVerifyStatus = verifyRequiredView?.findViewById<ImageView>(R.id.imgVerifyStatus)
 
         tvVerifyTitle?.text = "Xác minh\nChủ cho thuê"
-        tvVerifyStatus?.text = "Để tham gia vào cộng đồng tìm trọ minh bạch, bạn vui lòng hoàn tất xác minh danh tính. Việc này giúp tăng độ tin cậy đối với khách hàng và đảm bảo quyền lợi pháp lý cho bạn."
+        tvVerifyStatus?.text = "Hoàn tất xác minh danh tính để bắt đầu đăng tin và tiếp cận hàng ngàn khách thuê tiềm năng."
+        imgVerifyStatus?.setImageResource(R.drawable.ic_shield_check)
+        imgVerifyStatus?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.WHITE)
 
+        layoutSteps?.visibility = View.VISIBLE
         btnStartVerify?.visibility = View.VISIBLE
-        btnStartVerify?.text = "BẮT ĐẦU XÁC MINH NGAY"
+        btnStartVerify?.text = "TIẾN HÀNH XÁC MINH"
         tvViewRules?.visibility = View.VISIBLE
     }
 
@@ -248,14 +253,17 @@ class PostFragment : Fragment() {
 
         val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
-        val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
-        val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+        val layoutBottomActions = verifyRequiredView?.findViewById<View>(R.id.layoutBottomActions)
+        val layoutSteps = verifyRequiredView?.findViewById<View>(R.id.layoutSteps)
+        val imgVerifyStatus = verifyRequiredView?.findViewById<ImageView>(R.id.imgVerifyStatus)
 
         tvVerifyTitle?.text = "Đang chờ\nPhê duyệt"
-        tvVerifyStatus?.text = "Hồ sơ của bạn đã được gửi thành công. Đội ngũ kiểm duyệt đang tiến hành xác minh thông tin. Vui lòng quay lại sau 24-48h làm việc."
+        tvVerifyStatus?.text = "Hồ sơ xác minh của bạn đã được gửi thành công.\n\nĐội ngũ kiểm duyệt đang tiến hành đối chiếu thông tin. Xin vui lòng quay lại kiểm tra sau 24 - 48 giờ làm việc."
+        imgVerifyStatus?.setImageResource(R.drawable.ic_shield_check) // Dùng tạm shield check
+        imgVerifyStatus?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FFE082")) // Màu vàng nhạt
 
-        btnStartVerify?.visibility = View.GONE
-        tvViewRules?.visibility = View.VISIBLE
+        layoutSteps?.visibility = View.GONE
+        layoutBottomActions?.visibility = View.GONE
     }
 
     private fun showRejectedStatus(reason: String) {
@@ -265,14 +273,19 @@ class PostFragment : Fragment() {
         val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
         val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
-        val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+        val layoutBottomActions = verifyRequiredView?.findViewById<View>(R.id.layoutBottomActions)
+        val layoutSteps = verifyRequiredView?.findViewById<View>(R.id.layoutSteps)
+        val imgVerifyStatus = verifyRequiredView?.findViewById<ImageView>(R.id.imgVerifyStatus)
 
         tvVerifyTitle?.text = "Xác minh\nBị từ chối"
-        tvVerifyStatus?.text = "Rất tiếc, hồ sơ của bạn chưa đáp ứng đủ điều kiện.\nLý do: $reason\n\nVui lòng cập nhật lại thông tin chính xác để gửi lại yêu cầu."
+        tvVerifyStatus?.text = "Rất tiếc, hồ sơ của bạn chưa đáp ứng đủ điều kiện.\nLý do: $reason\n\nVui lòng chuẩn bị lại giấy tờ và thực hiện xác minh lại từ đầu."
+        imgVerifyStatus?.setImageResource(R.drawable.ic_close)
+        imgVerifyStatus?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#FF8A80")) // Màu đỏ nhạt
 
+        layoutSteps?.visibility = View.GONE
+        layoutBottomActions?.visibility = View.VISIBLE
         btnStartVerify?.visibility = View.VISIBLE
         btnStartVerify?.text = "GỬI LẠI YÊU CẦU"
-        tvViewRules?.visibility = View.VISIBLE
     }
 
     private fun showPostForm() {
@@ -290,15 +303,18 @@ class PostFragment : Fragment() {
 
         val tvVerifyTitle = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyTitle)
         val tvVerifyStatus = verifyRequiredView?.findViewById<TextView>(R.id.tvVerifyStatus)
-        val btnStartVerify = verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)
-        val tvViewRules = verifyRequiredView?.findViewById<TextView>(R.id.tvViewRulesBeforeVerify)
+        val layoutBottomActions = verifyRequiredView?.findViewById<View>(R.id.layoutBottomActions)
+        val layoutSteps = verifyRequiredView?.findViewById<View>(R.id.layoutSteps)
+        val imgVerifyStatus = verifyRequiredView?.findViewById<ImageView>(R.id.imgVerifyStatus)
 
         tvVerifyTitle?.text = "Đã cấp quyền\nĐăng bài"
-        tvVerifyStatus?.text = "Tài khoản của bạn đã được admin duyệt. " +
-                "Hệ thống sẽ mở đăng bài sau " + formatRemainingTime(unlockAt - now) +
-                " (dự kiến lúc " + formatDateTime(unlockAt) + ")."
-        btnStartVerify?.visibility = View.GONE
-        tvViewRules?.visibility = View.VISIBLE
+        tvVerifyStatus?.text = "Tài khoản của bạn đã được admin duyệt thành công.\n\nHệ thống sẽ mở chức năng đăng bài sau " + formatRemainingTime(unlockAt - now) +
+                "\n(Dự kiến lúc " + formatDateTime(unlockAt) + ")."
+        imgVerifyStatus?.setImageResource(R.drawable.ic_shield_check)
+        imgVerifyStatus?.imageTintList = android.content.res.ColorStateList.valueOf(android.graphics.Color.parseColor("#A5D6A7")) // Màu xanh lá nhạt
+
+        layoutSteps?.visibility = View.GONE
+        layoutBottomActions?.visibility = View.GONE
     }
 
     private fun showPostUnlockWaitingDialog(unlockAt: Long, now: Long) {
@@ -566,18 +582,25 @@ class PostFragment : Fragment() {
 
         viewModel.postResult.observe(viewLifecycleOwner) { result ->
             if (result != null) {
-                val (postId, thumbnailUrl) = result
+                val (postId, remainMessage) = result
                 viewModel.resetPostResult()
                 PostNotificationHelper.showSuccess(requireContext(), lastPostedTitle)
                 resetForm(view)
-                val intent = Intent(requireContext(), com.example.doantotnghiep.View.Auth.PostSuccessActivity::class.java).apply {
-                    putExtra("postId", postId)
-                    putExtra("thumbnail", thumbnailUrl)
-                    putExtra("title", lastPostedTitle)
-                    putExtra("price", lastPostedPrice)
-                    putExtra("location", lastPostedLocation)
+                
+                // Hiển thị Dialog thông báo số dư lượt đăng trước khi chuyển màn hình
+                MessageUtils.showSuccessDialog(
+                    requireContext(),
+                    "Đăng bài thành công",
+                    remainMessage ?: "Bài đăng đã được duyệt thành công."
+                ) {
+                    val intent = Intent(requireContext(), com.example.doantotnghiep.View.Auth.PostSuccessActivity::class.java).apply {
+                        putExtra("postId", postId)
+                        putExtra("title", lastPostedTitle)
+                        putExtra("price", lastPostedPrice)
+                        putExtra("location", lastPostedLocation)
+                    }
+                    startActivity(intent)
                 }
-                startActivity(intent)
             }
         }
 
@@ -789,10 +812,16 @@ class PostFragment : Fragment() {
         val btnAccept = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnAcceptRules)
 
         btnAccept.setOnClickListener {
+            dialog.dismiss()
             if (isFirstTime) {
                 viewModel.markRulesAccepted()
+                // Hiển thị Dialog thông báo Quota ngay sau khi đồng ý nội quy
+                MessageUtils.showInfoDialog(
+                    requireContext(),
+                    "Quyền lợi đăng bài",
+                    "Chúc mừng bạn đã trở thành Chủ trọ!\n\nBạn được cấp 3 lượt đăng bài miễn phí. Mỗi ngày, nếu sử dụng hết 3 lượt, bạn sẽ cần chờ 24 giờ (tính từ lần đăng bài cũ nhất) để hệ thống cấp lại 3 lượt mới.\n\n*Lưu ý: Lượt miễn phí không được cộng dồn qua các ngày.*"
+                )
             }
-            dialog.dismiss()
         }
 
         dialog.show()
@@ -827,8 +856,9 @@ class PostFragment : Fragment() {
     data class SlotPackage(val label: String, val code: String, val slots: Int, val price: Int)
 
     private val slotPackages = listOf(
-        SlotPackage("+3 lượt đăng bài",  "GOI01", 3,  15_000),
-        SlotPackage("+10 lượt đăng bài", "GOI02", 10, 50_000)
+        SlotPackage("+3 lượt đăng bài",  "GOI01", 3,  10_000),
+        SlotPackage("+5 lượt đăng bài (Phổ biến)", "GOI02", 5, 20_000),
+        SlotPackage("+10 lượt đăng bài", "GOI03", 10, 40_000)
     )
 
     // ⚠️ ĐIỀN THÔNG TIN NGÂN HÀNG CỦA BẠN VÀO ĐÂY:
@@ -859,6 +889,10 @@ class PostFragment : Fragment() {
         dialogView.findViewById<android.view.View>(R.id.layoutPkg2).setOnClickListener {
             packageSelected = true
             dialog.dismiss(); showPaymentQrDialog(slotPackages[1])
+        }
+        dialogView.findViewById<android.view.View>(R.id.layoutPkg3).setOnClickListener {
+            packageSelected = true
+            dialog.dismiss(); showPaymentQrDialog(slotPackages[2])
         }
 
         val edtCustomSlots = dialogView.findViewById<EditText>(R.id.edtCustomSlots)

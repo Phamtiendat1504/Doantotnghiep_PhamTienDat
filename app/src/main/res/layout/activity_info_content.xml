@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
+    android:background="@color/bg_light"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
@@ -20,25 +20,25 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/padding_large">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvInfoTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Thông tin"
+                android:text="@string/txt_thong_tin"
                 android:textColor="@color/text_primary"
-                android:textSize="22sp"
+                android:textSize="@dimen/dimen_22sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvInfoContent"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:lineSpacingExtra="4dp"
+                android:layout_marginTop="@dimen/padding_medium"
+                android:lineSpacingExtra="@dimen/elevation_4"
                 android:textColor="@color/text_primary"
-                android:textSize="15sp" />
+                android:textSize="@dimen/text_size_15" />
         </LinearLayout>
     </ScrollView>
 

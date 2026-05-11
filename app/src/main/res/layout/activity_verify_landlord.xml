@@ -11,252 +11,252 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="24dp">
+        android:paddingBottom="@dimen/spacing_24">
 
         <!-- Header -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@color/primary"
-            android:paddingStart="20dp"
-            android:paddingEnd="20dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="20dp"
+            android:paddingStart="@dimen/padding_xlarge"
+            android:paddingEnd="@dimen/padding_xlarge"
+            android:paddingTop="@dimen/padding_large"
+            android:paddingBottom="@dimen/padding_xlarge"
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
             <ImageView
                 android:id="@+id/btnBack"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="@dimen/dimen_36dp"
+                android:layout_height="@dimen/dimen_36dp"
                 android:src="@drawable/ic_back"
-                app:tint="#FFFFFF"
-                android:padding="6dp" />
+                app:tint="@color/bg_white"
+                android:padding="@dimen/elevation_6" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Mở khóa quyền đăng bài"
-                android:textSize="20sp"
+                android:text="@string/txt_mo_khoa_quyen_ang_bai"
+                android:textSize="@dimen/text_size_20"
                 android:textStyle="bold"
                 android:textColor="@color/white"
-                android:layout_marginStart="12dp" />
+                android:layout_marginStart="@dimen/padding_medium" />
 
         </LinearLayout>
 
         <!-- Thông tin cá nhân -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="14dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp"
-            app:cardBackgroundColor="#FFFFFF">
+            android:layout_margin="@dimen/spacing_14"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/elevation_3"
+            app:cardBackgroundColor="@color/bg_white">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="14dp">
+                    android:layout_marginBottom="@dimen/spacing_14">
 
                     <View
-                        android:layout_width="4dp"
-                        android:layout_height="20dp"
+                        android:layout_width="@dimen/elevation_4"
+                        android:layout_height="@dimen/padding_xlarge"
                         android:background="@color/primary" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Thông tin cá nhân"
-                        android:textSize="15sp"
+                        android:text="@string/txt_thong_tin_ca_nhan"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"
-                        android:layout_marginStart="8dp" />
+                        android:layout_marginStart="@dimen/padding_small" />
 
                 </LinearLayout>
 
                 <!-- Họ và tên -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Họ và tên *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_ho_va_ten"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="@dimen/elevation_4" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtFullName"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:hint="Họ và tên theo CCCD"
-                    android:textSize="14sp"
-                    android:paddingStart="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:hint="@string/txt_ho_va_ten_theo_cccd"
+                    android:textSize="@dimen/text_size_14"
+                    android:paddingStart="@dimen/padding_medium"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="textPersonName"
                     android:enabled="false"
                     android:textColor="@color/text_primary"
                     android:alpha="0.85"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="@dimen/padding_medium" />
 
                 <!-- Số CCCD -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Số CCCD/CMND *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_so_cccd_cmnd"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="@dimen/elevation_4" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtCccdNumber"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:hint="Nhập số CCCD (12 số)"
-                    android:textSize="14sp"
-                    android:paddingStart="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:hint="@string/txt_nhap_so_cccd_12_so"
+                    android:textSize="@dimen/text_size_14"
+                    android:paddingStart="@dimen/padding_medium"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="number"
                     android:maxLength="12"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="@dimen/padding_medium" />
 
                 <!-- Số điện thoại -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Số điện thoại *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_so_ien_thoai"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="@dimen/elevation_4" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtPhone"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:hint="Số điện thoại liên hệ"
-                    android:textSize="14sp"
-                    android:paddingStart="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:hint="@string/txt_so_ien_thoai_lien_he"
+                    android:textSize="@dimen/text_size_14"
+                    android:paddingStart="@dimen/padding_medium"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="phone"
                     android:enabled="false"
                     android:textColor="@color/text_primary"
                     android:alpha="0.85"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="@dimen/padding_medium" />
 
                 <!-- Email (tự động lấy từ tài khoản, không đổi được) -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Email đăng ký *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_email_ang_ky"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="@dimen/elevation_4" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtEmail"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:hint="Email tài khoản của bạn"
-                    android:textSize="14sp"
-                    android:paddingStart="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:hint="@string/txt_email_tai_khoan_cua_ban"
+                    android:textSize="@dimen/text_size_14"
+                    android:paddingStart="@dimen/padding_medium"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="textEmailAddress"
                     android:enabled="false"
                     android:textColor="@color/text_primary"
                     android:alpha="0.85"
-                    android:layout_marginBottom="12dp" />
+                    android:layout_marginBottom="@dimen/padding_medium" />
 
                 <!-- Địa chỉ thường trú -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Địa chỉ thường trú *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_ia_chi_thuong_tru"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="4dp" />
+                    android:layout_marginBottom="@dimen/elevation_4" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtAddress"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:hint="Địa chỉ thường trú (tự điền nếu đã cập nhật)"
-                    android:textSize="14sp"
-                    android:paddingStart="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:hint="@string/txt_ia_chi_thuong_tru_tu_ien_"
+                    android:textSize="@dimen/text_size_14"
+                    android:paddingStart="@dimen/padding_medium"
                     android:background="@drawable/bg_edit_post"
                     android:inputType="textPostalAddress" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Ảnh CCCD -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="14dp"
-            android:layout_marginBottom="14dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp"
-            app:cardBackgroundColor="#FFFFFF">
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/spacing_14"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/elevation_3"
+            app:cardBackgroundColor="@color/bg_white">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="14dp">
+                    android:layout_marginBottom="@dimen/spacing_14">
 
                     <View
-                        android:layout_width="4dp"
-                        android:layout_height="20dp"
+                        android:layout_width="@dimen/elevation_4"
+                        android:layout_height="@dimen/padding_xlarge"
                         android:background="@color/secondary" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Ảnh CCCD/CMND"
-                        android:textSize="15sp"
+                        android:text="@string/txt_anh_cccd_cmnd"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary"
-                        android:layout_marginStart="8dp" />
+                        android:layout_marginStart="@dimen/padding_small" />
 
                 </LinearLayout>
 
                 <!-- Mặt trước -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mặt trước CCCD *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_mat_truoc_cccd"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="@dimen/padding_small" />
 
                 <FrameLayout
                     android:id="@+id/frameFront"
                     android:layout_width="match_parent"
-                    android:layout_height="180dp"
+                    android:layout_height="@dimen/dimen_180dp"
                     android:background="@drawable/bg_edit_post"
-                    android:layout_marginBottom="16dp">
+                    android:layout_marginBottom="@dimen/padding_large">
 
                     <LinearLayout
                         android:id="@+id/layoutFrontPlaceholder"
@@ -266,18 +266,18 @@
                         android:gravity="center">
 
                         <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="@dimen/image_size_40"
+                            android:layout_height="@dimen/image_size_40"
                             android:src="@drawable/ic_camera"
-                            app:tint="#999999" />
+                            app:tint="@color/text_hint" />
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bấm để chụp ảnh mặt trước"
-                            android:textSize="13sp"
+                            android:text="@string/txt_bam_e_chup_anh_mat_truoc"
+                            android:textSize="@dimen/text_size_13"
                             android:textColor="@color/text_hint"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="@dimen/padding_small" />
 
                     </LinearLayout>
 
@@ -291,21 +291,21 @@
                 </FrameLayout>
 
                 <!-- Mặt sau -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mặt sau CCCD *"
-                    android:textSize="13sp"
+                    android:text="@string/txt_mat_sau_cccd"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary"
-                    android:layout_marginBottom="8dp" />
+                    android:layout_marginBottom="@dimen/padding_small" />
 
                 <FrameLayout
                     android:id="@+id/frameBack"
                     android:layout_width="match_parent"
-                    android:layout_height="180dp"
+                    android:layout_height="@dimen/dimen_180dp"
                     android:background="@drawable/bg_edit_post"
-                    android:layout_marginBottom="8dp">
+                    android:layout_marginBottom="@dimen/padding_small">
 
                     <LinearLayout
                         android:id="@+id/layoutBackPlaceholder"
@@ -315,18 +315,18 @@
                         android:gravity="center">
 
                         <ImageView
-                            android:layout_width="40dp"
-                            android:layout_height="40dp"
+                            android:layout_width="@dimen/image_size_40"
+                            android:layout_height="@dimen/image_size_40"
                             android:src="@drawable/ic_camera"
-                            app:tint="#999999" />
+                            app:tint="@color/text_hint" />
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Bấm để chụp ảnh mặt sau"
-                            android:textSize="13sp"
+                            android:text="@string/txt_bam_e_chup_anh_mat_sau"
+                            android:textSize="@dimen/text_size_13"
                             android:textColor="@color/text_hint"
-                            android:layout_marginTop="8dp" />
+                            android:layout_marginTop="@dimen/padding_small" />
 
                     </LinearLayout>
 
@@ -345,115 +345,115 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:padding="10dp"
+                    android:padding="@dimen/corner_radius_10"
                     android:background="@drawable/bg_amenity_row"
-                    android:layout_marginTop="12dp">
+                    android:layout_marginTop="@dimen/padding_medium">
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/spacing_18"
+                        android:layout_height="@dimen/spacing_18"
                         android:src="@drawable/ic_lock"
-                        app:tint="#2E7D32" />
+                        app:tint="@color/success" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Chúng tôi cam kết bảo mật thông tin cá nhân của bạn và chỉ dùng cho mục đích xác thực danh tính."
-                        android:textSize="11sp"
-                        android:textColor="#2E7D32"
-                        android:layout_marginStart="10dp"
+                        android:text="@string/txt_chung_toi_cam_ket_bao_mat"
+                        android:textSize="@dimen/text_size_11"
+                        android:textColor="@color/success"
+                        android:layout_marginStart="@dimen/corner_radius_10"
                         android:textStyle="italic" />
 
                 </LinearLayout>
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Quy định & Cam kết -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="14dp"
-            android:layout_marginBottom="16dp"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="2dp">
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/padding_large"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/stroke_2">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp"
-                android:background="#F8F9FA">
+                android:padding="@dimen/padding_large"
+                android:background="@color/color_F8F9FA">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:layout_marginBottom="10dp">
+                    android:layout_marginBottom="@dimen/corner_radius_10">
 
                     <ImageView
-                        android:layout_width="20dp"
-                        android:layout_height="20dp"
+                        android:layout_width="@dimen/padding_xlarge"
+                        android:layout_height="@dimen/padding_xlarge"
                         android:src="@drawable/ic_info"
                         app:tint="@color/primary" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Quy định &amp; Trách nhiệm của người đăng bài"
-                        android:textSize="15sp"
+                        android:text="@string/txt_quy_inh_amp_trach_nhiem_c"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
                         android:textColor="@color/primary"
-                        android:layout_marginStart="8dp" />
+                        android:layout_marginStart="@dimen/padding_small" />
                 </LinearLayout>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="1. Cung cấp thông tin phòng trọ và hình ảnh thực tế, chính xác.\n2. Tuyệt đối không đăng tải thông tin sai lệch hoặc gây nhầm lẫn.\n3. Người đăng tự chịu trách nhiệm về tính pháp lý và an toàn của căn hộ.\n4. Phản hồi thắc mắc của khách thuê một cách lịch sự, đúng hẹn."
-                    android:textSize="13sp"
-                    android:textColor="#555555"
-                    android:lineSpacingExtra="4dp" />
+                    android:text="@string/txt_1_cung_cap_thong_tin_phon"
+                    android:textSize="@dimen/text_size_13"
+                    android:textColor="@color/color_555555"
+                    android:lineSpacingExtra="@dimen/elevation_4" />
 
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Điều khoản cam kết -->
         <CheckBox
             android:id="@+id/cbCommit"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="16dp"
-            android:layout_marginEnd="16dp"
-            android:layout_marginBottom="16dp"
-            android:text="Tôi đã đọc và cam đoan tuân thủ mọi quy định trên."
-            android:textSize="13sp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginEnd="@dimen/padding_large"
+            android:layout_marginBottom="@dimen/padding_large"
+            android:text="@string/txt_toi_a_oc_va_cam_oan_tuan_"
+            android:textSize="@dimen/text_size_13"
             android:textColor="@color/text_primary"
-            android:buttonTint="#1976D2"
-            android:paddingStart="8dp" />
+            android:buttonTint="@color/bottom_nav_selected"
+            android:paddingStart="@dimen/padding_small" />
 
         <!-- Nút gửi -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmitVerify"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:text="Gửi yêu cầu xác minh"
-            android:textSize="16sp"
+            android:layout_height="@dimen/dimen_52dp"
+            android:text="@string/txt_gui_yeu_cau_xac_minh"
+            android:textSize="@dimen/text_size_16"
             android:textAllCaps="false"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="14dp"
-            app:backgroundTint="#1976D2"
-            app:cornerRadius="14dp" />
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            app:backgroundTint="@color/bottom_nav_selected"
+            app:cornerRadius="@dimen/spacing_14" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="@dimen/padding_medium"
             android:visibility="gone" />
 
     </LinearLayout>

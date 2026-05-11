@@ -94,21 +94,21 @@ class SearchProfileActivity : AppCompatActivity() {
                     searchRunnable = Runnable {
                         viewModel.searchUsers(query)
                     }
-                    searchHandler.postDelayed(searchRunnable!!, 400)
+                    searchHandler.postDelayed(searchRunnable!!, 400) // Debounce 400ms
                 } else if (query.isEmpty()) {
                     adapter.submitList(emptyList())
                     layoutEmpty.visibility = View.VISIBLE
-                    (layoutEmpty.getChildAt(1) as? android.widget.TextView)?.text = "Gõ tên để tìm người dùng"
+                    (layoutEmpty.getChildAt(1) as? android.widget.TextView)?.text = "Nhập ít nhất 2 ký tự để tìm kiếm"
                 }
             }
         })
 
+        // Bấm Done trên bàn phím thì ẩn bàn phím đi
         edtSearch.setOnEditorActionListener { v, actionId, event ->
             if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH ||
                 actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE ||
                 (event != null && event.keyCode == android.view.KeyEvent.KEYCODE_ENTER && event.action == android.view.KeyEvent.ACTION_DOWN)
             ) {
-                // Ẩn bàn phím
                 val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
                 imm.hideSoftInputFromWindow(v.windowToken, 0)
                 edtSearch.clearFocus()
@@ -116,6 +116,16 @@ class SearchProfileActivity : AppCompatActivity() {
             } else {
                 false
             }
+        }
+        
+        // Chạm vào vùng trống RecyclerView sẽ tự động ẩn bàn phím
+        rvResults.setOnTouchListener { v, event ->
+            if (event.action == android.view.MotionEvent.ACTION_DOWN) {
+                val imm = getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+                imm.hideSoftInputFromWindow(v.windowToken, 0)
+                edtSearch.clearFocus()
+            }
+            false
         }
 
         edtSearch.requestFocus()

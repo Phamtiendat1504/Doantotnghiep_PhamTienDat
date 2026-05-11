@@ -4,39 +4,39 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F7FA">
+    android:background="@color/bg_light">
 
     <!-- ── HEADER ─────────────────────────────────────────────── -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="@dimen/dimen_64dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="8dp"
-        android:paddingEnd="16dp"
+        android:paddingStart="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_large"
         android:background="@color/bg_white"
-        android:elevation="4dp">
+        android:elevation="@dimen/elevation_4">
 
         <ImageView
             android:id="@+id/btnConvBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:padding="10dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_back"
             app:tint="@color/text_primary"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Tin nhắn"
-            android:textSize="18sp"
+            android:text="@string/txt_tin_nhan"
+            android:textSize="@dimen/text_size_18"
             android:textStyle="bold"
             android:textColor="@color/text_primary"
-            android:layout_marginStart="8dp" />
+            android:layout_marginStart="@dimen/padding_small" />
 
     </LinearLayout>
 
@@ -51,27 +51,27 @@
         android:visibility="gone">
 
         <ImageView
-            android:layout_width="80dp"
-            android:layout_height="80dp"
+            android:layout_width="@dimen/dimen_80dp"
+            android:layout_height="@dimen/dimen_80dp"
             android:src="@drawable/ic_ai"
-            app:tint="#CCCCCC"
+            app:tint="@color/text_disabled"
             android:alpha="0.6" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chưa có cuộc trò chuyện nào"
-            android:textSize="16sp"
-            android:textColor="#AAAAAA"
-            android:layout_marginTop="16dp" />
+            android:text="@string/txt_chua_co_cuoc_tro_chuyen_n"
+            android:textSize="@dimen/text_size_16"
+            android:textColor="@color/color_AAAAAA"
+            android:layout_marginTop="@dimen/padding_large" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Hãy tìm phòng và nhắn tin với chủ nhà!"
-            android:textSize="13sp"
-            android:textColor="#CCCCCC"
-            android:layout_marginTop="6dp" />
+            android:text="@string/txt_hay_tim_phong_va_nhan_tin"
+            android:textSize="@dimen/text_size_13"
+            android:textColor="@color/text_disabled"
+            android:layout_marginTop="@dimen/elevation_6" />
 
     </LinearLayout>
 
@@ -82,7 +82,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingTop="8dp"
-        android:paddingBottom="80dp" />
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/dimen_80dp" />
 
 </LinearLayout>

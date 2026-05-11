@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="3dp"
+    android:layout_marginBottom="@dimen/corner_radius_10"
+    app:cardCornerRadius="@dimen/padding_large"
+    app:cardElevation="@dimen/elevation_3"
     app:cardBackgroundColor="@color/bg_white">
 
     <LinearLayout
@@ -16,9 +16,9 @@
 
         <!-- Ảnh phòng -->
         <FrameLayout
-            android:layout_width="110dp"
+            android:layout_width="@dimen/dimen_110dp"
             android:layout_height="match_parent"
-            android:minHeight="110dp">
+            android:minHeight="@dimen/dimen_110dp">
 
             <com.google.android.material.imageview.ShapeableImageView
                 android:id="@+id/imgRoom"
@@ -36,20 +36,20 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
-            android:padding="12dp">
+            android:padding="@dimen/padding_medium">
 
             <!-- Tiêu đề -->
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tiêu đề phòng"
-                android:textSize="13.5sp"
+                android:text="@string/txt_tieu_e_phong"
+                android:textSize="@dimen/dimen_13_5sp"
                 android:textStyle="bold"
                 android:textColor="@color/text_primary"
                 android:maxLines="2"
                 android:ellipsize="end"
-                android:lineSpacingExtra="2dp" />
+                android:lineSpacingExtra="@dimen/stroke_2" />
 
             <!-- Địa chỉ -->
             <LinearLayout
@@ -57,34 +57,34 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal"
                 android:gravity="center_vertical"
-                android:layout_marginTop="6dp">
+                android:layout_marginTop="@dimen/elevation_6">
 
                 <ImageView
-                    android:layout_width="11dp"
-                    android:layout_height="11dp"
+                    android:layout_width="@dimen/dimen_11dp"
+                    android:layout_height="@dimen/dimen_11dp"
                     android:src="@drawable/ic_location"
                     app:tint="@color/text_hint"
-                    android:layout_marginEnd="4dp" />
+                    android:layout_marginEnd="@dimen/elevation_4" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvLocation"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Quận, Thành phố"
-                    android:textSize="11.5sp"
+                    android:text="@string/txt_quan_thanh_pho"
+                    android:textSize="@dimen/dimen_11_5sp"
                     android:textColor="@color/text_hint"
                     android:maxLines="1"
                     android:ellipsize="end" />
 
             </LinearLayout>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvPostedDate"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="Đăng ngày 01/01/2026"
-                android:textSize="11sp"
+                android:layout_marginTop="@dimen/elevation_4"
+                android:text="@string/txt_ang_ngay_01_01_2026"
+                android:textSize="@dimen/text_size_11"
                 android:textColor="@color/text_hint"
                 android:maxLines="1"
                 android:ellipsize="end"
@@ -112,17 +112,17 @@
                     android:gravity="center_vertical">
 
                     <View
-                        android:layout_width="3dp"
-                        android:layout_height="14dp"
+                        android:layout_width="@dimen/elevation_3"
+                        android:layout_height="@dimen/spacing_14"
                         android:background="@color/secondary"
-                        android:layout_marginEnd="5dp" />
+                        android:layout_marginEnd="@dimen/dimen_5dp" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="0 đ/tháng"
-                        android:textSize="12.5sp"
+                        android:text="@string/txt_0_thang"
+                        android:textSize="@dimen/dimen_12_5sp"
                         android:textStyle="bold"
                         android:maxLines="1"
                         android:ellipsize="end"
@@ -131,29 +131,29 @@
                 </LinearLayout>
 
                 <!-- Trạng thái badge -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvRoomStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginEnd="6dp"
-                    android:text="Còn phòng"
-                    android:textSize="11sp"
+                    android:layout_marginEnd="@dimen/elevation_6"
+                    android:text="@string/txt_con_phong"
+                    android:textSize="@dimen/text_size_11"
                     android:textColor="@color/primary"
                     android:textStyle="bold"
                     android:visibility="gone" />
 
                 <!-- Diện tích badge -->
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvArea"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_chip_info"
-                    android:paddingStart="6dp"
-                    android:paddingEnd="6dp"
-                    android:paddingTop="3dp"
-                    android:paddingBottom="3dp"
-                    android:text="0 m²"
-                    android:textSize="11sp"
+                    android:paddingStart="@dimen/elevation_6"
+                    android:paddingEnd="@dimen/elevation_6"
+                    android:paddingTop="@dimen/elevation_3"
+                    android:paddingBottom="@dimen/elevation_3"
+                    android:text="@string/txt_0_m"
+                    android:textSize="@dimen/text_size_11"
                     android:textColor="@color/primary"
                     android:textStyle="bold"
                     android:visibility="gone" />
@@ -164,4 +164,4 @@
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

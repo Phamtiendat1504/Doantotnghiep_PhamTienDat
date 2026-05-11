@@ -129,7 +129,7 @@ class ChatViewModel : ViewModel() {
             onFailure("Bạn chỉ có thể xóa tin nhắn của chính mình")
             return
         }
-        repository.deleteMessage(currentChatId, message.id, onSuccess, onFailure)
+        repository.deleteMessage(currentChatId, message.id, message.imageUrl, onSuccess, onFailure)
     }
 
     /**

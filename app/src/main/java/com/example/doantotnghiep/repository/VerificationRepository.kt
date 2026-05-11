@@ -344,6 +344,13 @@ class VerificationRepository {
         }
     }
 
+    fun releaseCccd(cccdNumber: String) {
+        val normalizedCccd = normalizeDigits(cccdNumber)
+        if (normalizedCccd.length == 12) {
+            db.collection("cccd_registry").document(normalizedCccd).delete()
+        }
+    }
+
     fun submitVerification(
         fullName: String,
         email: String,

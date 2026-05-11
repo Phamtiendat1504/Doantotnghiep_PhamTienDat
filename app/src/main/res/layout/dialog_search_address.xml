@@ -12,31 +12,31 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:background="@drawable/bg_dialog_header"
-        android:padding="20dp"
+        android:padding="@dimen/padding_xlarge"
         android:gravity="center">
 
         <ImageView
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/dimen_48dp"
+            android:layout_height="@dimen/dimen_48dp"
             android:src="@drawable/ic_search_location"
             app:tint="@android:color/white"
-            android:layout_marginBottom="8dp" />
+            android:layout_marginBottom="@dimen/padding_small" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tìm địa chỉ"
-            android:textSize="18sp"
+            android:text="@string/txt_tim_ia_chi"
+            android:textSize="@dimen/text_size_18"
             android:textStyle="bold"
             android:textColor="@android:color/white" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Nhập địa chỉ hoặc tên khu vực"
-            android:textSize="12sp"
-            android:textColor="#CCffffff"
-            android:layout_marginTop="2dp" />
+            android:text="@string/txt_nhap_ia_chi_hoac_ten_khu_"
+            android:textSize="@dimen/text_size_12"
+            android:textColor="@color/color_CCFFFFFF"
+            android:layout_marginTop="@dimen/stroke_2" />
 
     </LinearLayout>
 
@@ -45,34 +45,34 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
+        android:padding="@dimen/padding_xlarge"
         android:background="@android:color/white">
 
         <!-- Search input box -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="52dp"
+            android:layout_height="@dimen/dimen_52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/bg_search_input"
-            android:paddingStart="14dp"
-            android:paddingEnd="14dp">
+            android:paddingStart="@dimen/spacing_14"
+            android:paddingEnd="@dimen/spacing_14">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="@dimen/padding_xlarge"
+                android:layout_height="@dimen/padding_xlarge"
                 android:src="@android:drawable/ic_menu_search"
-                android:layout_marginEnd="10dp" />
+                android:layout_marginEnd="@dimen/corner_radius_10" />
 
-            <EditText
+            <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtSearchQuery"
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
-                android:hint="VD: 15 Nguyễn Văn Linh, Hà Đông..."
-                android:textSize="14sp"
-                android:textColor="#1A1A2E"
-                android:textColorHint="#999999"
+                android:hint="@string/txt_vd_15_nguyen_van_linh_ha_"
+                android:textSize="@dimen/text_size_14"
+                android:textColor="@color/text_primary"
+                android:textColorHint="@color/text_hint"
                 android:background="@null"
                 android:imeOptions="actionSearch"
                 android:inputType="textPostalAddress"
@@ -81,44 +81,44 @@
 
         </LinearLayout>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mẹo: Nhập số nhà, tên đường hoặc tên khu vực"
-            android:textSize="11sp"
-            android:textColor="#888888"
-            android:layout_marginTop="8dp"
-            android:layout_marginStart="4dp" />
+            android:text="@string/txt_meo_nhap_so_nha_ten_uong_"
+            android:textSize="@dimen/text_size_11"
+            android:textColor="@color/color_888888"
+            android:layout_marginTop="@dimen/padding_small"
+            android:layout_marginStart="@dimen/elevation_4" />
 
         <!-- Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginTop="20dp"
+            android:layout_marginTop="@dimen/padding_xlarge"
             android:gravity="end">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDialogCancel"
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"
                 android:layout_width="wrap_content"
-                android:layout_height="44dp"
-                android:text="Hủy"
-                android:textSize="14sp"
-                android:layout_marginEnd="8dp"
+                android:layout_height="@dimen/dimen_44dp"
+                android:text="@string/action_cancel"
+                android:textSize="@dimen/text_size_14"
+                android:layout_marginEnd="@dimen/padding_small"
                 app:strokeColor="@color/primary"
                 android:textColor="@color/primary"
-                app:cornerRadius="10dp" />
+                app:cornerRadius="@dimen/corner_radius_10" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnDialogSearch"
                 android:layout_width="wrap_content"
-                android:layout_height="44dp"
-                android:text="Tìm kiếm"
-                android:textSize="14sp"
+                android:layout_height="@dimen/dimen_44dp"
+                android:text="@string/txt_tim_kiem"
+                android:textSize="@dimen/text_size_14"
                 android:textAllCaps="false"
                 app:backgroundTint="@color/primary"
-                app:cornerRadius="10dp" />
+                app:cornerRadius="@dimen/corner_radius_10" />
 
         </LinearLayout>
 

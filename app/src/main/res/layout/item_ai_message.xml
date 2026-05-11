@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingStart="16dp"
+    android:paddingEnd="16dp"
+    android:paddingTop="6dp"
+    android:paddingBottom="6dp">
+
+    <!-- Bong bóng của Người dùng (Bên Phải) -->
+    <LinearLayout
+        android:id="@+id/layoutUserFull"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentEnd="true"
+        android:layout_marginStart="48dp"
+        android:orientation="vertical"
+        android:gravity="end">
+
+        <LinearLayout
+            android:id="@+id/layoutUser"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_message_sent"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp"
+            android:paddingTop="12dp"
+            android:paddingBottom="12dp"
+            android:elevation="1dp">
+
+            <TextView
+                android:id="@+id/tvUserMessage"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="@color/white"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvUserTime"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:layout_marginEnd="4dp"
+            android:textColor="#888888"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <!-- Bong bóng của AI (Bên Trái) -->
+    <LinearLayout
+        android:id="@+id/layoutAIFull"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentStart="true"
+        android:layout_marginEnd="48dp"
+        android:orientation="horizontal"
+        android:gravity="bottom">
+
+        <ImageView
+            android:id="@+id/ivAIAvatar"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:layout_marginBottom="16dp"
+            android:src="@drawable/ic_ai_assistant"
+            android:background="@drawable/circle_background"
+            android:padding="6dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:gravity="start">
+            
+            <TextView
+                android:id="@+id/tvAIName"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginBottom="4dp"
+                android:text="Trợ lý AI"
+                android:textColor="#555555"
+                android:textSize="12sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/layoutAI"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_message_received"
+                android:paddingStart="16dp"
+                android:paddingEnd="16dp"
+                android:paddingTop="12dp"
+                android:paddingBottom="12dp"
+                android:elevation="1dp">
+
+                <TextView
+                    android:id="@+id/tvAIMessage"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#050505"
+                    android:textSize="15sp"
+                    android:lineSpacingExtra="4dp" />
+            </LinearLayout>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvSuggestedRooms"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:clipToPadding="false"
+                android:orientation="vertical"
+                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/tvAITime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:layout_marginStart="4dp"
+                android:textColor="#888888"
+                android:textSize="11sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</RelativeLayout>

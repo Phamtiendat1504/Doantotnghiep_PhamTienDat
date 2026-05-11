@@ -130,6 +130,9 @@ class VerifyLandlordViewModel : ViewModel() {
                             return@runAutoCheckCccd
                         }
 
+                        // Nếu không pass và không gửi admin, giải phóng CCCD để lần sau (hoặc người khác) nhập lại không bị lỗi
+                        repository.releaseCccd(cccd)
+
                         _isLoading.value = false
                         val remain = autoResult.remainingAutoRetries
                         _errorMessage.value = buildString {

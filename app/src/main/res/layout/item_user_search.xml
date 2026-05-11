@@ -4,58 +4,58 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="16dp"
+    android:padding="@dimen/padding_large"
     android:gravity="center_vertical"
     android:background="?attr/selectableItemBackground">
 
     <!-- Avatar -->
     <de.hdodenhof.circleimageview.CircleImageView
         android:id="@+id/ivAvatar"
-        android:layout_width="52dp"
-        android:layout_height="52dp"
+        android:layout_width="@dimen/dimen_52dp"
+        android:layout_height="@dimen/dimen_52dp"
         android:src="@drawable/ic_person"
         app:civ_border_color="@color/primary"
-        app:civ_border_width="2dp"/>
+        app:civ_border_width="@dimen/stroke_2"/>
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:layout_marginStart="14dp">
+        android:layout_marginStart="@dimen/spacing_14">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvUserName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textSize="15sp"
+            android:textSize="@dimen/text_size_15"
             android:textStyle="bold"
             android:textColor="@color/text_primary"/>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvRoomCount"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:textSize="13sp"
+            android:layout_marginTop="@dimen/elevation_4"
+            android:textSize="@dimen/text_size_13"
             android:textColor="@color/text_secondary"/>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvVerifiedBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Đã xác minh"
-            android:textSize="12sp"
+            android:layout_marginTop="@dimen/elevation_4"
+            android:text="@string/txt_a_xac_minh"
+            android:textSize="@dimen/text_size_12"
             android:textColor="@color/primary"
             android:visibility="gone"/>
     </LinearLayout>
 
     <ImageView
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="@dimen/padding_xlarge"
+        android:layout_height="@dimen/padding_xlarge"
         android:src="@drawable/ic_arrow_right"
-        app:tint="#CCCCCC"
+        app:tint="@color/text_disabled"
         android:contentDescription="Xem hồ sơ"/>
 
 </LinearLayout>

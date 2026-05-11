@@ -1,33 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginHorizontal="16dp"
-    android:layout_marginVertical="5dp"
-    app:cardCornerRadius="16dp"
+    android:layout_marginHorizontal="@dimen/padding_large"
+    android:layout_marginVertical="@dimen/dimen_5dp"
+    app:cardCornerRadius="@dimen/padding_large"
     app:cardElevation="0dp"
-    app:cardBackgroundColor="#FFFFFF">
+    app:cardBackgroundColor="@color/bg_white">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:padding="14dp">
+        android:padding="@dimen/spacing_14">
 
         <!-- Icon -->
         <FrameLayout
             android:id="@+id/iconWrap"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
             android:background="@drawable/bg_notif_icon"
-            android:layout_marginEnd="12dp">
+            android:layout_marginEnd="@dimen/padding_medium">
 
             <ImageView
                 android:id="@+id/ivIcon"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="@dimen/dimen_22dp"
+                android:layout_height="@dimen/dimen_22dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_notification"
                 android:contentDescription="icon" />
@@ -40,48 +40,48 @@
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvNotifTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Tiêu đề"
-                android:textSize="13.5sp"
+                android:text="@string/post_info_label_title"
+                android:textSize="@dimen/dimen_13_5sp"
                 android:textStyle="bold"
-                android:textColor="#0F172A"
+                android:textColor="@color/color_0F172A"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvNotifMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Nội dung thông báo"
-                android:textSize="12.5sp"
-                android:textColor="#64748B"
+                android:layout_marginTop="@dimen/stroke_2"
+                android:text="@string/txt_noi_dung_thong_bao"
+                android:textSize="@dimen/dimen_12_5sp"
+                android:textColor="@color/color_64748B"
                 android:maxLines="2"
                 android:ellipsize="end"
-                android:lineSpacingExtra="2dp" />
+                android:lineSpacingExtra="@dimen/stroke_2" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvNotifTime"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="5dp"
-                android:text="Vừa xong"
-                android:textSize="11sp"
-                android:textColor="#94A3B8"
+                android:layout_marginTop="@dimen/dimen_5dp"
+                android:text="@string/txt_vua_xong"
+                android:textSize="@dimen/text_size_11"
+                android:textColor="@color/color_94A3B8"
                 android:fontFamily="sans-serif-medium" />
         </LinearLayout>
 
         <!-- Unread dot -->
         <View
             android:id="@+id/unreadDot"
-            android:layout_width="9dp"
-            android:layout_height="9dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="@dimen/dimen_9dp"
+            android:layout_height="@dimen/dimen_9dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:background="@drawable/bg_unread_dot"
             android:visibility="gone" />
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

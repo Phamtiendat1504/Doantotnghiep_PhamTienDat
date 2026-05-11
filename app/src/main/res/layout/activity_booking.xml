@@ -4,362 +4,362 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
+    android:background="@color/bg_light"
     android:fillViewport="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:paddingBottom="24dp">
+        android:paddingBottom="@dimen/spacing_24">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="#1976D2"
+            android:background="@color/bottom_nav_selected"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="20dp"
-            android:paddingTop="16dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="16dp">
+            android:paddingStart="@dimen/padding_xlarge"
+            android:paddingTop="@dimen/padding_large"
+            android:paddingEnd="@dimen/padding_xlarge"
+            android:paddingBottom="@dimen/padding_large">
 
             <ImageView
                 android:id="@+id/btnBack"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
-                android:padding="6dp"
+                android:layout_width="@dimen/dimen_36dp"
+                android:layout_height="@dimen/dimen_36dp"
+                android:padding="@dimen/elevation_6"
                 android:src="@drawable/ic_back"
-                app:tint="#FFFFFF" />
+                app:tint="@color/bg_white" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:paddingStart="50dp"
-                android:text="Đặt lịch hẹn xem phòng"
-                android:textColor="#FFFFFF"
-                android:textSize="20sp"
+                android:layout_marginStart="@dimen/padding_medium"
+                android:paddingStart="@dimen/dimen_50dp"
+                android:text="@string/txt_at_lich_hen_xem_phong"
+                android:textColor="@color/bg_white"
+                android:textSize="@dimen/text_size_20"
                 android:textStyle="bold" />
 
         </LinearLayout>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_margin="14dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp">
+            android:layout_margin="@dimen/spacing_14"
+            app:cardBackgroundColor="@color/bg_white"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="10dp"
+                    android:layout_marginBottom="@dimen/corner_radius_10"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <View
-                        android:layout_width="4dp"
-                        android:layout_height="20dp"
-                        android:background="#1976D2" />
+                        android:layout_width="@dimen/elevation_4"
+                        android:layout_height="@dimen/padding_xlarge"
+                        android:background="@color/bottom_nav_selected" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Thông tin phòng"
-                        android:textColor="#1A1A2E"
-                        android:textSize="15sp"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:text="@string/txt_thong_tin_phong"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
                 </LinearLayout>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvRoomTitle"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text=""
-                    android:textColor="#1A1A2E"
-                    android:textSize="16sp"
+                    android:text="@string/txt_tieu_e_phong_tro"
+                    android:textColor="@color/text_primary"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvRoomAddress"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text=""
-                    android:textColor="#666666"
-                    android:textSize="13sp" />
+                    android:layout_marginTop="@dimen/elevation_4"
+                    android:text="@string/txt_ia_chi_phong"
+                    android:textColor="@color/text_secondary"
+                    android:textSize="@dimen/text_size_13" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvRoomPrice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text=""
-                    android:textColor="#D32F2F"
-                    android:textSize="15sp"
+                    android:layout_marginTop="@dimen/elevation_4"
+                    android:text="@string/txt_0_thang"
+                    android:textColor="@color/error"
+                    android:textSize="@dimen/text_size_15"
                     android:textStyle="bold" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="14dp"
-            android:layout_marginBottom="14dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp">
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/spacing_14"
+            app:cardBackgroundColor="@color/bg_white"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <View
-                        android:layout_width="4dp"
-                        android:layout_height="20dp"
-                        android:background="#1976D2" />
+                        android:layout_width="@dimen/elevation_4"
+                        android:layout_height="@dimen/padding_xlarge"
+                        android:background="@color/bottom_nav_selected" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Thông tin người hẹn"
-                        android:textColor="#1A1A2E"
-                        android:textSize="15sp"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:text="@string/txt_thong_tin_nguoi_hen"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
                 </LinearLayout>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="Họ và tên *"
-                    android:textColor="#444444"
-                    android:textSize="13sp"
+                    android:layout_marginBottom="@dimen/elevation_4"
+                    android:text="@string/txt_ho_va_ten"
+                    android:textColor="@color/color_444444"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtFullName"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:background="@drawable/bg_spinner_new"
-                    android:hint="Nhập họ và tên"
+                    android:hint="@string/txt_nhap_ho_va_ten"
                     android:inputType="textPersonName"
-                    android:paddingStart="12dp"
-                    android:textSize="14sp" />
+                    android:paddingStart="@dimen/padding_medium"
+                    android:textSize="@dimen/text_size_14" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="Giới tính *"
-                    android:textColor="#444444"
-                    android:textSize="13sp"
+                    android:layout_marginBottom="@dimen/elevation_4"
+                    android:text="@string/txt_gioi_tinh"
+                    android:textColor="@color/color_444444"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
                 <RadioGroup
                     android:id="@+id/rgGender"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:background="@drawable/bg_spinner_new"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="8dp">
+                    android:paddingStart="@dimen/padding_small">
 
                     <RadioButton
                         android:id="@+id/rbMale"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:buttonTint="#1976D2"
-                        android:text="Nam"
-                        android:textSize="14sp" />
+                        android:buttonTint="@color/bottom_nav_selected"
+                        android:text="@string/txt_nam"
+                        android:textSize="@dimen/text_size_14" />
 
                     <RadioButton
                         android:id="@+id/rbFemale"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:buttonTint="#1976D2"
-                        android:text="Nữ"
-                        android:textSize="14sp" />
+                        android:buttonTint="@color/bottom_nav_selected"
+                        android:text="@string/txt_nu"
+                        android:textSize="@dimen/text_size_14" />
 
                 </RadioGroup>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="Số điện thoại *"
-                    android:textColor="#444444"
-                    android:textSize="13sp"
+                    android:layout_marginBottom="@dimen/elevation_4"
+                    android:text="@string/txt_so_ien_thoai"
+                    android:textColor="@color/color_444444"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtPhone"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:background="@drawable/bg_spinner_new"
-                    android:hint="Nhập số điện thoại"
+                    android:hint="@string/hint_phone"
                     android:inputType="phone"
                     android:maxLength="10"
-                    android:paddingStart="12dp"
-                    android:textSize="14sp" />
+                    android:paddingStart="@dimen/padding_medium"
+                    android:textSize="@dimen/text_size_14" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="14dp"
-            android:layout_marginBottom="14dp"
-            app:cardBackgroundColor="#FFFFFF"
-            app:cardCornerRadius="14dp"
-            app:cardElevation="3dp">
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/spacing_14"
+            app:cardBackgroundColor="@color/bg_white"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/elevation_3">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="16dp">
+                android:padding="@dimen/padding_large">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="12dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <View
-                        android:layout_width="4dp"
-                        android:layout_height="20dp"
-                        android:background="#1976D2" />
+                        android:layout_width="@dimen/elevation_4"
+                        android:layout_height="@dimen/padding_xlarge"
+                        android:background="@color/bottom_nav_selected" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:text="Thời gian hẹn"
-                        android:textColor="#1A1A2E"
-                        android:textSize="15sp"
+                        android:layout_marginStart="@dimen/padding_small"
+                        android:text="@string/txt_thoi_gian_hen"
+                        android:textColor="@color/text_primary"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
                 </LinearLayout>
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="Chọn ngày *"
-                    android:textColor="#444444"
-                    android:textSize="13sp"
+                    android:layout_marginBottom="@dimen/elevation_4"
+                    android:text="@string/txt_chon_ngay"
+                    android:textColor="@color/color_444444"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvSelectDate"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:background="@drawable/bg_spinner_new"
                     android:drawableEnd="@drawable/ic_arrow_right"
                     android:gravity="center_vertical"
-                    android:hint="Bấm để chọn ngày"
-                    android:paddingStart="12dp"
-                    android:textSize="14sp" />
+                    android:hint="@string/txt_bam_e_chon_ngay"
+                    android:paddingStart="@dimen/padding_medium"
+                    android:textSize="@dimen/text_size_14" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="Chọn giờ *"
-                    android:textColor="#444444"
-                    android:textSize="13sp"
+                    android:layout_marginBottom="@dimen/elevation_4"
+                    android:text="@string/txt_chon_gio"
+                    android:textColor="@color/color_444444"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvSelectTime"
                     android:layout_width="match_parent"
-                    android:layout_height="46dp"
-                    android:layout_marginBottom="12dp"
+                    android:layout_height="@dimen/dimen_46dp"
+                    android:layout_marginBottom="@dimen/padding_medium"
                     android:background="@drawable/bg_spinner_new"
                     android:drawableEnd="@drawable/ic_arrow_right"
                     android:gravity="center_vertical"
-                    android:hint="Bấm để chọn giờ"
-                    android:paddingStart="12dp"
-                    android:textSize="14sp" />
+                    android:hint="@string/txt_bam_e_chon_gio"
+                    android:paddingStart="@dimen/padding_medium"
+                    android:textSize="@dimen/text_size_14" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
-                    android:text="Ghi chú thêm"
-                    android:textColor="#444444"
-                    android:textSize="13sp"
+                    android:layout_marginBottom="@dimen/elevation_4"
+                    android:text="@string/txt_ghi_chu_them"
+                    android:textColor="@color/color_444444"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtNote"
                     android:layout_width="match_parent"
-                    android:layout_height="80dp"
+                    android:layout_height="@dimen/dimen_80dp"
                     android:background="@drawable/bg_spinner_new"
                     android:gravity="top"
-                    android:hint="Ý kiến thêm (không bắt buộc)"
+                    android:hint="@string/txt_y_kien_them_khong_bat_buo"
                     android:inputType="textMultiLine"
-                    android:paddingStart="12dp"
-                    android:paddingTop="10dp"
-                    android:textSize="14sp" />
+                    android:paddingStart="@dimen/padding_medium"
+                    android:paddingTop="@dimen/corner_radius_10"
+                    android:textSize="@dimen/text_size_14" />
 
             </LinearLayout>
 
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmit"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginStart="14dp"
-            android:layout_marginEnd="14dp"
-            android:text="Gửi yêu cầu đặt lịch"
+            android:layout_height="@dimen/dimen_52dp"
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:text="@string/txt_gui_yeu_cau_at_lich"
             android:textAllCaps="false"
-            android:textSize="16sp"
-            app:backgroundTint="#1976D2"
-            app:cornerRadius="14dp" />
+            android:textSize="@dimen/text_size_16"
+            app:backgroundTint="@color/bottom_nav_selected"
+            app:cornerRadius="@dimen/spacing_14" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/corner_radius_10"
             android:visibility="gone" />
 
     </LinearLayout>

@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     app:cardBackgroundColor="@color/bg_white"
-    app:cardCornerRadius="20dp"
-    app:cardElevation="12dp">
+    app:cardCornerRadius="@dimen/padding_xlarge"
+    app:cardElevation="@dimen/padding_medium">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="18dp"
-        android:paddingTop="16dp"
-        android:paddingEnd="18dp"
-        android:paddingBottom="16dp">
+        android:paddingStart="@dimen/spacing_18"
+        android:paddingTop="@dimen/padding_large"
+        android:paddingEnd="@dimen/spacing_18"
+        android:paddingBottom="@dimen/padding_large">
 
         <FrameLayout
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
             android:background="@drawable/bg_icon_circle_light_blue"
             android:foregroundGravity="center">
 
             <ProgressBar
                 android:id="@+id/progressLoading"
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="@dimen/dimen_22dp"
+                android:layout_height="@dimen/dimen_22dp"
                 android:layout_gravity="center"
                 android:indeterminate="true"
                 android:indeterminateTint="@color/primary" />
@@ -35,29 +35,29 @@
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="@dimen/padding_medium"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvLoadingTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Đang xử lý"
+                android:text="@string/post_step_2_badge"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_size_16"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvLoadingMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:lineSpacingExtra="1dp"
-                android:text="Vui lòng chờ..."
+                android:layout_marginTop="@dimen/elevation_4"
+                android:lineSpacingExtra="@dimen/stroke_1"
+                android:text="@string/txt_vui_long_cho"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_size_14" />
         </LinearLayout>
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

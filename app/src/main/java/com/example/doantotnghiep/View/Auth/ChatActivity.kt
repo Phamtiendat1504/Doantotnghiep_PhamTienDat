@@ -10,8 +10,12 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
@@ -101,28 +105,40 @@ class ChatActivity : AppCompatActivity() {
 
     private val pickImageLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri: android.net.Uri? ->
         if (uri != null) {
-            // Không upload ngay mà gửi qua ViewModel
             val loadingDialog = MessageUtils.showLoadingDialog(
                 context = this,
                 title = "\u0110ang g\u1eedi \u1ea3nh",
-                message = "\u1ea2nh \u0111ang \u0111\u01b0\u1ee3c t\u1ea3i l\u00ean, vui l\u00f2ng ch\u1edd."
+                message = "Đang nén và tải ảnh lên, vui l\u00f2ng ch\u1edd."
             )
 
-            viewModel.sendImageMessage(
-                imageUri = uri,
-                text = etInput.text.toString().trim(),
-                onSuccess = {
-                    loadingDialog.dismiss()
-                    etInput.text.clear()
-                    if (adapter.itemCount > 0) {
-                        rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
+            // Chạy nén ảnh trên luồng nền để tránh đơ UI
+            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                val compressedUri = com.example.doantotnghiep.Utils.ImageUtils.compressImage(this@ChatActivity, uri)
+                
+                withContext(Dispatchers.Main) {
+                    if (compressedUri == null) {
+                        loadingDialog.dismiss()
+                        MessageUtils.showErrorDialog(this@ChatActivity, "Lỗi", "Không thể nén ảnh, vui lòng chọn ảnh khác.")
+                        return@withContext
                     }
-                },
-                onFailure = { err ->
-                    loadingDialog.dismiss()
-                    MessageUtils.showErrorDialog(this, "Lỗi", "Không thể gửi ảnh: $err")
+
+                    viewModel.sendImageMessage(
+                        imageUri = compressedUri,
+                        text = etInput.text.toString().trim(),
+                        onSuccess = {
+                            loadingDialog.dismiss()
+                            etInput.text.clear()
+                            if (adapter.itemCount > 0) {
+                                rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
+                            }
+                        },
+                        onFailure = { err ->
+                            loadingDialog.dismiss()
+                            MessageUtils.showErrorDialog(this@ChatActivity, "Lỗi", "Không thể gửi ảnh: $err")
+                        }
+                    )
                 }
-            )
+            }
         }
     }
 
@@ -135,23 +151,37 @@ class ChatActivity : AppCompatActivity() {
                 val loadingDialog = MessageUtils.showLoadingDialog(
                     context = this,
                     title = "\u0110ang g\u1eedi \u1ea3nh",
-                    message = "\u1ea2nh \u0111ang \u0111\u01b0\u1ee3c t\u1ea3i l\u00ean, vui l\u00f2ng ch\u1edd."
+                    message = "Đang nén và tải ảnh lên, vui l\u00f2ng ch\u1edd."
                 )
-                viewModel.sendImageMessage(
-                    imageUri = uri,
-                    text = etInput.text.toString().trim(),
-                    onSuccess = {
-                        loadingDialog.dismiss()
-                        etInput.text.clear()
-                        if (adapter.itemCount > 0) {
-                            rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
+
+                // Nén ảnh trên luồng nền
+                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                    val compressedUri = com.example.doantotnghiep.Utils.ImageUtils.compressImage(this@ChatActivity, uri)
+
+                    withContext(Dispatchers.Main) {
+                        if (compressedUri == null) {
+                            loadingDialog.dismiss()
+                            MessageUtils.showErrorDialog(this@ChatActivity, "Lỗi", "Không thể xử lý ảnh, vui lòng chụp lại.")
+                            return@withContext
                         }
-                    },
-                    onFailure = { err ->
-                        loadingDialog.dismiss()
-                        MessageUtils.showErrorDialog(this, "Lỗi", "Không thể gửi ảnh: $err")
+
+                        viewModel.sendImageMessage(
+                            imageUri = compressedUri,
+                            text = etInput.text.toString().trim(),
+                            onSuccess = {
+                                loadingDialog.dismiss()
+                                etInput.text.clear()
+                                if (adapter.itemCount > 0) {
+                                    rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
+                                }
+                            },
+                            onFailure = { err ->
+                                loadingDialog.dismiss()
+                                MessageUtils.showErrorDialog(this@ChatActivity, "Lỗi", "Không thể gửi ảnh: $err")
+                            }
+                        )
                     }
-                )
+                }
             }
         }
     }

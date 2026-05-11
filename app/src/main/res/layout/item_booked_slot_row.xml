@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="@dimen/padding_medium">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,37 +13,37 @@
         android:gravity="center_vertical">
 
         <ImageView
-            android:layout_width="16dp"
-            android:layout_height="16dp"
+            android:layout_width="@dimen/padding_large"
+            android:layout_height="@dimen/padding_large"
             android:src="@drawable/ic_calendar"
-            app:tint="#FFA000"
+            app:tint="@color/color_FFA000"
             android:contentDescription="Calendar Icon"/>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvSlotDate"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="20/12/2023"
-            android:textSize="14sp"
+            android:text="@string/txt_20_12_2023"
+            android:textSize="@dimen/text_size_14"
             android:textColor="@color/text_primary"
-            android:layout_marginStart="8dp"/>
+            android:layout_marginStart="@dimen/padding_small"/>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvSlotTime"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="14:00"
-            android:textSize="14sp"
+            android:text="@string/txt_14_00"
+            android:textSize="@dimen/text_size_14"
             android:textStyle="bold"
-            android:textColor="#E65100"/>
+            android:textColor="@color/warning"/>
 
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:background="#F5F5F5"
-        android:layout_marginTop="12dp"/>
+        android:layout_height="@dimen/stroke_1"
+        android:background="@color/gray_100"
+        android:layout_marginTop="@dimen/padding_medium"/>
 
 </LinearLayout>

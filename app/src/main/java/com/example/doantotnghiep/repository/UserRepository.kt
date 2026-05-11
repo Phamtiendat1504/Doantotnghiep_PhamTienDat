@@ -88,8 +88,8 @@ class UserRepository {
     }
 
     /**
-     * Tìm kiếm người dùng theo tiền tố tên (prefix search).
-     * Firestore hỗ trợ: fullName >= query AND fullName < query + '\uf8ff'
+     * TỐI ƯU HÓA: Tìm kiếm người dùng bằng Prefix Search (Server-side)
+     * Tránh tình trạng tải toàn bộ database về điện thoại gây Crash và tốn chi phí.
      */
     fun searchUsersByName(
         query: String,
@@ -101,23 +101,23 @@ class UserRepository {
             return
         }
         
-        // Vì Firebase mặc định là Case-Sensitive (phân biệt hoa thường) và Model của bạn
-        // không có trường lưu `fullNameLowerCase`, nên chúng ta chạy Lọc ở phía Client
-        // Dùng `contains(ignoreCase = true)` hỗ trợ tìm cả chuỗi con và không phân biệt HOA/thường.
-        // D\u00f9ng Source.SERVER \u0111\u1ec3 \u0111\u1ea3m b\u1ea3o l\u1ea5y isVerified m\u1edbi nh\u1ea5t, tr\u00e1nh cache c\u0169
-        // Dùng Source.DEFAULT (mặc định) để tìm kiếm nhanh hơn nhờ Cache của Firestore.
-        // Tránh tình trạng đơ ứng dụng khi phải tải toàn bộ danh sách users liên tục từ Server.
+        // Trick để Query chính xác: Capitalize (Viết hoa) chữ cái đầu của query
+        // Ví dụ: người dùng gõ "phạm", ta chuyển thành "Phạm" để khớp với Data lưu trên Firebase.
+        val formattedQuery = query.split(" ").joinToString(" ") { word ->
+            word.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+        }
+
         db.collection("users")
+            .orderBy("fullName")
+            .startAt(formattedQuery)
+            .endAt(formattedQuery + "\uf8ff")
+            .limit(30)
             .get()
             .addOnSuccessListener { docs ->
-                // QUAN TRỌNG: Không dùng toObject() — isVerified (Kotlin Boolean tiền tố "is")
-                // bị Firestore SDK map nhầm sang field "verified" thay vì "isVerified" → luôn false.
                 val users = docs.mapNotNull { doc ->
-                    val fullName = doc.getString("fullName") ?: return@mapNotNull null
-                    if (!fullName.contains(query, ignoreCase = true)) return@mapNotNull null
                     User(
                         uid              = doc.id,
-                        fullName         = fullName,
+                        fullName         = doc.getString("fullName") ?: "",
                         email            = doc.getString("email") ?: "",
                         phone            = doc.getString("phone") ?: "",
                         address          = doc.getString("address") ?: "",
@@ -136,9 +136,13 @@ class UserRepository {
                         createdAt        = doc.getLong("createdAt") ?: 0L,
                         purchasedSlots   = doc.getLong("purchasedSlots")?.toInt() ?: 0
                     )
-                }.take(30)
-
-                onSuccess(users)
+                }
+                
+                // Vì prefix search có thể dính các kết quả không chính xác 100% nếu người dùng gõ chuỗi con,
+                // ta filter nhẹ lại một lần nữa ở Client cho chắc chắn (bây giờ dữ liệu trả về chỉ max 30 cái)
+                val finalUsers = users.filter { it.fullName.contains(query, ignoreCase = true) }
+                
+                onSuccess(finalUsers)
             }
             .addOnFailureListener { e ->
                 onFailure("Lỗi tìm kiếm: ${e.message}")

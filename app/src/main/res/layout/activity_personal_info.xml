@@ -14,36 +14,36 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:background="@color/primary"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp"
+        android:paddingStart="@dimen/padding_large"
+        android:paddingEnd="@dimen/padding_large"
+        android:paddingTop="@dimen/spacing_14"
+        android:paddingBottom="@dimen/spacing_14"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/btnBack"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="8dp"
-            android:paddingEnd="8dp"
-            android:paddingTop="6dp"
-            android:paddingBottom="6dp"
-            android:text="Quay lại"
+            android:paddingStart="@dimen/padding_small"
+            android:paddingEnd="@dimen/padding_small"
+            android:paddingTop="@dimen/elevation_6"
+            android:paddingBottom="@dimen/elevation_6"
+            android:text="@string/txt_quay_lai"
             android:textColor="@android:color/white"
-            android:textSize="15sp"
+            android:textSize="@dimen/text_size_15"
             android:textStyle="bold" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="12dp"
-            android:text="Thông tin cá nhân"
+            android:layout_marginStart="@dimen/padding_medium"
+            android:text="@string/txt_thong_tin_ca_nhan"
             android:textColor="@android:color/white"
-            android:textSize="20sp"
-            android:paddingStart="30dp"
+            android:textSize="@dimen/text_size_20"
+            android:paddingStart="@dimen/dimen_30dp"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -62,30 +62,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:paddingTop="16dp"
-            android:paddingBottom="28dp">
+            android:paddingStart="@dimen/padding_large"
+            android:paddingEnd="@dimen/padding_large"
+            android:paddingTop="@dimen/padding_large"
+            android:paddingBottom="@dimen/image_size_28">
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/padding_medium"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/padding_large">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tài khoản"
+                        android:text="@string/txt_tai_khoan"
                         android:textColor="@color/primary"
-                        android:textSize="13sp"
+                        android:textSize="@dimen/text_size_13"
                         android:textStyle="bold" />
 
                     <com.google.android.material.textfield.TextInputLayout
@@ -93,8 +93,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Họ và tên"
+                        android:layout_marginTop="@dimen/corner_radius_10"
+                        android:hint="@string/txt_ho_va_ten_1"
                         app:errorEnabled="true">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -111,8 +111,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Email"
+                        android:layout_marginTop="@dimen/corner_radius_10"
+                        android:hint="@string/label_email"
                         app:errorEnabled="true">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -129,8 +129,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Số điện thoại"
+                        android:layout_marginTop="@dimen/corner_radius_10"
+                        android:hint="@string/txt_so_ien_thoai_1"
                         app:errorEnabled="true">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -144,103 +144,103 @@
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/padding_medium"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/padding_medium"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/padding_large">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Hồ sơ"
+                        android:text="@string/txt_ho_so"
                         android:textColor="@color/primary"
-                        android:textSize="13sp"
+                        android:textSize="@dimen/text_size_13"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:text="Ngày sinh"
+                        android:layout_marginTop="@dimen/corner_radius_10"
+                        android:text="@string/txt_ngay_sinh"
                         android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
+                        android:textSize="@dimen/text_size_12" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
-                        android:layout_marginTop="6dp"
+                        android:layout_height="@dimen/dimen_48dp"
+                        android:layout_marginTop="@dimen/elevation_6"
                         android:background="@drawable/bg_spinner_new"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="12dp"
-                        android:paddingEnd="12dp">
+                        android:paddingStart="@dimen/padding_medium"
+                        android:paddingEnd="@dimen/padding_medium">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/tvBirthday"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Chưa cập nhật"
+                            android:text="@string/txt_chua_cap_nhat"
                             android:textColor="@color/text_hint"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14" />
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/btnPickDate"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Chọn"
+                            android:text="@string/txt_chon"
                             android:textColor="@color/primary"
-                            android:textSize="13sp"
+                            android:textSize="@dimen/text_size_13"
                             android:textStyle="bold"
                             android:visibility="gone" />
 
                     </LinearLayout>
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:text="Giới tính"
+                        android:layout_marginTop="@dimen/padding_medium"
+                        android:text="@string/txt_gioi_tinh_1"
                         android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
+                        android:textSize="@dimen/text_size_12" />
 
                     <RadioGroup
                         android:id="@+id/rgGender"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/elevation_6"
                         android:orientation="horizontal">
 
                         <RadioButton
                             android:id="@+id/rbMale"
                             android:layout_width="0dp"
-                            android:layout_height="40dp"
+                            android:layout_height="@dimen/image_size_40"
                             android:layout_weight="1"
                             android:buttonTint="@color/primary"
                             android:enabled="false"
-                            android:text="Nam"
-                            android:textSize="14sp" />
+                            android:text="@string/txt_nam"
+                            android:textSize="@dimen/text_size_14" />
 
                         <RadioButton
                             android:id="@+id/rbFemale"
                             android:layout_width="0dp"
-                            android:layout_height="40dp"
+                            android:layout_height="@dimen/image_size_40"
                             android:layout_weight="1"
                             android:buttonTint="@color/primary"
                             android:enabled="false"
-                            android:text="Nữ"
-                            android:textSize="14sp" />
+                            android:text="@string/txt_nu"
+                            android:textSize="@dimen/text_size_14" />
 
                     </RadioGroup>
 
@@ -249,8 +249,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Nghề nghiệp"
+                        android:layout_marginTop="@dimen/corner_radius_10"
+                        android:hint="@string/txt_nghe_nghiep"
                         app:errorEnabled="true">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -267,8 +267,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:hint="Địa chỉ"
+                        android:layout_marginTop="@dimen/corner_radius_10"
+                        android:hint="@string/txt_ia_chi"
                         app:errorEnabled="true">
 
                         <com.google.android.material.textfield.TextInputEditText
@@ -282,52 +282,52 @@
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEdit"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="16dp"
-                android:text="Thay đổi thông tin"
+                android:layout_height="@dimen/dimen_50dp"
+                android:layout_marginTop="@dimen/padding_large"
+                android:text="@string/txt_thay_oi_thong_tin"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="@dimen/text_size_15"
                 app:backgroundTint="@color/primary"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="@dimen/padding_medium" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnSave"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="10dp"
-                android:text="Lưu thông tin"
+                android:layout_height="@dimen/dimen_50dp"
+                android:layout_marginTop="@dimen/corner_radius_10"
+                android:text="@string/txt_luu_thong_tin"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="@dimen/text_size_15"
                 android:visibility="gone"
                 app:backgroundTint="@color/primary"
-                app:cornerRadius="12dp" />
+                app:cornerRadius="@dimen/padding_medium" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnCancel"
                 android:layout_width="match_parent"
-                android:layout_height="50dp"
-                android:layout_marginTop="8dp"
-                android:text="Hủy"
+                android:layout_height="@dimen/dimen_50dp"
+                android:layout_marginTop="@dimen/padding_small"
+                android:text="@string/action_cancel"
                 android:textAllCaps="false"
                 android:textColor="@color/primary"
-                android:textSize="15sp"
+                android:textSize="@dimen/text_size_15"
                 android:visibility="gone"
                 app:backgroundTint="@android:color/white"
-                app:cornerRadius="12dp"
+                app:cornerRadius="@dimen/padding_medium"
                 app:strokeColor="@color/primary"
-                app:strokeWidth="1dp" />
+                app:strokeWidth="@dimen/stroke_1" />
 
             <ProgressBar
                 android:id="@+id/progressBar"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="@dimen/padding_medium"
                 android:visibility="gone" />
 
         </LinearLayout>

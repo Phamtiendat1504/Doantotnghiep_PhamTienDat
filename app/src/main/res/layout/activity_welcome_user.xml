@@ -8,28 +8,28 @@
 
     <View
         android:id="@+id/decorTopRight"
-        android:layout_width="220dp"
-        android:layout_height="220dp"
-        android:layout_marginTop="-96dp"
-        android:layout_marginEnd="-72dp"
+        android:layout_width="@dimen/dimen_220dp"
+        android:layout_height="@dimen/dimen_220dp"
+        android:layout_marginTop="@dimen/dimen_minus_96dp"
+        android:layout_marginEnd="@dimen/dimen_minus_72dp"
         android:background="@drawable/bg_circle_white_alpha"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
     <View
         android:id="@+id/decorBottomLeft"
-        android:layout_width="180dp"
-        android:layout_height="180dp"
-        android:layout_marginStart="-64dp"
-        android:layout_marginBottom="-58dp"
+        android:layout_width="@dimen/dimen_180dp"
+        android:layout_height="@dimen/dimen_180dp"
+        android:layout_marginStart="@dimen/dimen_minus_64dp"
+        android:layout_marginBottom="@dimen/dimen_minus_58dp"
         android:background="@drawable/bg_circle_white_alpha"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
 
     <View
         android:id="@+id/pulseDot1"
-        android:layout_width="18dp"
-        android:layout_height="18dp"
+        android:layout_width="@dimen/spacing_18"
+        android:layout_height="@dimen/spacing_18"
         android:background="@drawable/bg_dot_white"
         app:layout_constraintBottom_toTopOf="@id/welcomeCard"
         app:layout_constraintEnd_toEndOf="@id/welcomeCard"
@@ -39,8 +39,8 @@
 
     <View
         android:id="@+id/pulseDot2"
-        android:layout_width="12dp"
-        android:layout_height="12dp"
+        android:layout_width="@dimen/padding_medium"
+        android:layout_height="@dimen/padding_medium"
         android:background="@drawable/bg_dot_white"
         app:layout_constraintBottom_toBottomOf="@id/welcomeCard"
         app:layout_constraintEnd_toStartOf="@id/welcomeCard"
@@ -53,13 +53,13 @@
         android:id="@+id/welcomeCard"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginHorizontal="24dp"
+        android:layout_marginHorizontal="@dimen/spacing_24"
         android:background="@drawable/bg_welcome_card"
         android:gravity="center_horizontal"
         android:orientation="vertical"
-        android:paddingHorizontal="24dp"
-        android:paddingTop="28dp"
-        android:paddingBottom="24dp"
+        android:paddingHorizontal="@dimen/spacing_24"
+        android:paddingTop="@dimen/image_size_28"
+        android:paddingBottom="@dimen/spacing_24"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -68,10 +68,10 @@
 
         <FrameLayout
             android:id="@+id/logoPlate"
-            android:layout_width="108dp"
-            android:layout_height="108dp"
+            android:layout_width="@dimen/dimen_108dp"
+            android:layout_height="@dimen/dimen_108dp"
             android:background="@drawable/bg_splash_logo_plate"
-            android:padding="20dp">
+            android:padding="@dimen/padding_xlarge">
 
             <ImageView
                 android:layout_width="match_parent"
@@ -80,61 +80,61 @@
                 android:src="@drawable/ic_logo" />
         </FrameLayout>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvWelcomeLine"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:text="Chào mừng đến với Tìm Trọ 24/7"
-            android:textColor="#EAF3FF"
-            android:textSize="15sp" />
+            android:layout_marginTop="@dimen/spacing_18"
+            android:text="@string/txt_chao_mung_en_voi_tim_tro_"
+            android:textColor="@color/color_EAF3FF"
+            android:textSize="@dimen/text_size_15" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvWelcomeUserName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/padding_small"
             android:fontFamily="sans-serif-medium"
             android:gravity="center"
-            android:text="Bạn"
+            android:text="@string/txt_ban"
             android:textColor="@color/white"
-            android:textSize="30sp"
+            android:textSize="@dimen/dimen_30sp"
             android:textStyle="bold" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvWelcomeSubtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="@dimen/corner_radius_10"
             android:gravity="center"
-            android:text="Đặt hẹn lịch phòng và quản lý bài đăng trên chính điện thoại của bạn"
-            android:textColor="#DAE9FF"
-            android:textSize="14sp" />
+            android:text="@string/txt_at_hen_lich_phong_va_quan"
+            android:textColor="@color/color_DAE9FF"
+            android:textSize="@dimen/text_size_14" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnStartApp"
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="24dp"
-            android:text="Bắt đầu khám phá"
+            android:layout_height="@dimen/dimen_52dp"
+            android:layout_marginTop="@dimen/spacing_24"
+            android:text="@string/txt_bat_au_kham_pha"
             android:textAllCaps="false"
             android:textColor="@color/on_primary"
-            android:textSize="16sp"
+            android:textSize="@dimen/text_size_16"
             app:backgroundTint="@color/primary"
-            app:cornerRadius="14dp"
+            app:cornerRadius="@dimen/spacing_14"
             app:icon="@drawable/ic_check_circle"
             app:iconGravity="textStart"
-            app:iconPadding="8dp"
+            app:iconPadding="@dimen/padding_small"
             app:iconTint="@android:color/white" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvAutoHint"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Tự động chuyển sau 5 giây..."
-            android:textColor="#CFE2FF"
-            android:textSize="12sp" />
+            android:layout_marginTop="@dimen/padding_medium"
+            android:text="@string/txt_tu_ong_chuyen_sau_5_giay"
+            android:textColor="@color/color_CFE2FF"
+            android:textSize="@dimen/text_size_12" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

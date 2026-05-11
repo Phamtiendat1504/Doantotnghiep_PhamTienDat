@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#F5F7FA"
+    android:background="@color/bg_light"
     android:orientation="vertical">
 
     <androidx.appcompat.widget.Toolbar
@@ -22,41 +22,41 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="@dimen/padding_large">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Cài đặt"
+                android:text="@string/txt_cai_at"
                 android:textColor="@color/text_primary"
-                android:textSize="22sp"
+                android:textSize="@dimen/dimen_22sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:layout_marginBottom="14dp"
-                android:text="Tùy chỉnh thông báo và tài khoản"
+                android:layout_marginTop="@dimen/elevation_4"
+                android:layout_marginBottom="@dimen/spacing_14"
+                android:text="@string/txt_tuy_chinh_thong_bao_va_ta"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp" />
+                android:textSize="@dimen/text_size_13" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Thông báo"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:text="@string/home_notification"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="@dimen/spacing_14"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -65,19 +65,19 @@
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="@dimen/bottom_nav_height"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp">
+                        android:paddingStart="@dimen/spacing_14"
+                        android:paddingEnd="@dimen/spacing_14">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Bật thông báo"
+                            android:text="@string/txt_bat_thong_bao"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_size_15" />
 
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switchPushAll"
@@ -87,24 +87,24 @@
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#EEEEEE" />
+                        android:layout_height="@dimen/stroke_1"
+                        android:background="@color/gray_200" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="@dimen/bottom_nav_height"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp">
+                        android:paddingStart="@dimen/spacing_14"
+                        android:paddingEnd="@dimen/spacing_14">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Thông báo tin nhắn"
+                            android:text="@string/txt_thong_bao_tin_nhan"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_size_15" />
 
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switchPushChat"
@@ -114,24 +114,24 @@
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#EEEEEE" />
+                        android:layout_height="@dimen/stroke_1"
+                        android:background="@color/gray_200" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="@dimen/bottom_nav_height"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp">
+                        android:paddingStart="@dimen/spacing_14"
+                        android:paddingEnd="@dimen/spacing_14">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Thông báo lịch hẹn"
+                            android:text="@string/txt_thong_bao_lich_hen"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_size_15" />
 
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switchPushAppointment"
@@ -141,24 +141,24 @@
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#EEEEEE" />
+                        android:layout_height="@dimen/stroke_1"
+                        android:background="@color/gray_200" />
 
                     <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="@dimen/bottom_nav_height"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp">
+                        android:paddingStart="@dimen/spacing_14"
+                        android:paddingEnd="@dimen/spacing_14">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Thông báo hệ thống"
+                            android:text="@string/txt_thong_bao_he_thong"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_size_15" />
 
                         <androidx.appcompat.widget.SwitchCompat
                             android:id="@+id/switchPushSystem"
@@ -166,69 +166,69 @@
                             android:layout_height="wrap_content" />
                     </LinearLayout>
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Hỗ trợ"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:text="@string/txt_ho_tro"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="@dimen/spacing_14"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:id="@+id/btnSupportCenter"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="@dimen/bottom_nav_height"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
+                    android:paddingStart="@dimen/spacing_14"
+                    android:paddingEnd="@dimen/spacing_14">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Trung tâm hỗ trợ"
+                        android:text="@string/txt_trung_tam_ho_tro"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="@dimen/text_size_15" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/spacing_18"
+                        android:layout_height="@dimen/spacing_18"
                         android:src="@drawable/ic_arrow_right"
-                        app:tint="#BDBDBD" />
+                        app:tint="@color/gray_400" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Nội dung ứng dụng"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:text="@string/txt_noi_dung_ung_dung"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="@dimen/spacing_14"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -238,213 +238,213 @@
                     <LinearLayout
                         android:id="@+id/btnTerms"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="@dimen/bottom_nav_height"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp">
+                        android:paddingStart="@dimen/spacing_14"
+                        android:paddingEnd="@dimen/spacing_14">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Điều khoản sử dụng"
+                            android:text="@string/settings_terms_title"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_size_15" />
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="@dimen/spacing_18"
+                            android:layout_height="@dimen/spacing_18"
                             android:src="@drawable/ic_arrow_right"
-                            app:tint="#BDBDBD" />
+                            app:tint="@color/gray_400" />
                     </LinearLayout>
 
                     <View
                         android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="#EEEEEE" />
+                        android:layout_height="@dimen/stroke_1"
+                        android:background="@color/gray_200" />
 
                     <LinearLayout
                         android:id="@+id/btnAbout"
                         android:layout_width="match_parent"
-                        android:layout_height="56dp"
+                        android:layout_height="@dimen/bottom_nav_height"
                         android:background="?attr/selectableItemBackground"
                         android:clickable="true"
                         android:focusable="true"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingStart="14dp"
-                        android:paddingEnd="14dp">
+                        android:paddingStart="@dimen/spacing_14"
+                        android:paddingEnd="@dimen/spacing_14">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
                             android:layout_weight="1"
-                            android:text="Giới thiệu ứng dụng"
+                            android:text="@string/settings_about_title"
                             android:textColor="@color/text_primary"
-                            android:textSize="15sp" />
+                            android:textSize="@dimen/text_size_15" />
 
                         <ImageView
-                            android:layout_width="18dp"
-                            android:layout_height="18dp"
+                            android:layout_width="@dimen/spacing_18"
+                            android:layout_height="@dimen/spacing_18"
                             android:src="@drawable/ic_arrow_right"
-                            app:tint="#BDBDBD" />
+                            app:tint="@color/gray_400" />
                     </LinearLayout>
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Dữ liệu"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:text="@string/txt_du_lieu"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="@dimen/spacing_14"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:id="@+id/btnClearImageCache"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="@dimen/bottom_nav_height"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
+                    android:paddingStart="@dimen/spacing_14"
+                    android:paddingEnd="@dimen/spacing_14">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Xóa bộ nhớ tạm ảnh"
+                        android:text="@string/txt_xoa_bo_nho_tam_anh"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="@dimen/text_size_15" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvCacheSize"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="8dp"
-                        android:text="0 B"
+                        android:layout_marginEnd="@dimen/padding_small"
+                        android:text="@string/txt_0_b"
                         android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
+                        android:textSize="@dimen/text_size_12" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/spacing_18"
+                        android:layout_height="@dimen/spacing_18"
                         android:src="@drawable/ic_arrow_right"
-                        app:tint="#BDBDBD" />
+                        app:tint="@color/gray_400" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Tài khoản"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:text="@string/txt_tai_khoan"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
+                android:layout_marginBottom="@dimen/spacing_14"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:id="@+id/btnDeleteAccount"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="@dimen/bottom_nav_height"
                     android:background="?attr/selectableItemBackground"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
+                    android:paddingStart="@dimen/spacing_14"
+                    android:paddingEnd="@dimen/spacing_14">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Yêu cầu hủy tài khoản"
+                        android:text="@string/txt_yeu_cau_huy_tai_khoan"
                         android:textColor="@color/secondary"
-                        android:textSize="15sp"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/spacing_18"
+                        android:layout_height="@dimen/spacing_18"
                         android:src="@drawable/ic_arrow_right"
                         app:tint="@color/secondary" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="14dp"
-                android:text="Lưu ý: Khi hủy tài khoản, hệ thống sẽ xóa dữ liệu liên quan khỏi backend và không thể khôi phục."
-                android:textColor="#B00020"
-                android:textSize="12sp" />
+                android:layout_marginBottom="@dimen/spacing_14"
+                android:text="@string/txt_luu_y_khi_huy_tai_khoan_h"
+                android:textColor="@color/color_B00020"
+                android:textSize="@dimen/text_size_12" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Ứng dụng"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:text="@string/txt_ung_dung"
                 android:textColor="@color/text_hint"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="2dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/stroke_2">
 
                 <LinearLayout
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
+                    android:layout_height="@dimen/bottom_nav_height"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp">
+                    android:paddingStart="@dimen/spacing_14"
+                    android:paddingEnd="@dimen/spacing_14">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:text="Phiên bản ứng dụng"
+                        android:text="@string/txt_phien_ban_ung_dung"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp" />
+                        android:textSize="@dimen/text_size_15" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvAppVersion"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Phiên bản 1.0"
+                        android:text="@string/txt_phien_ban_1_0"
                         android:textColor="@color/text_hint"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_size_13" />
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </ScrollView>
 

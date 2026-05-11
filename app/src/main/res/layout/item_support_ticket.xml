@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="16dp"
-    android:layout_marginEnd="16dp"
-    android:layout_marginTop="8dp"
-    android:layout_marginBottom="8dp"
+    android:layout_marginStart="@dimen/padding_large"
+    android:layout_marginEnd="@dimen/padding_large"
+    android:layout_marginTop="@dimen/padding_small"
+    android:layout_marginBottom="@dimen/padding_small"
     app:cardBackgroundColor="@color/bg_white"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="3dp">
+    app:cardCornerRadius="@dimen/padding_large"
+    app:cardElevation="@dimen/elevation_3">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:padding="16dp">
+        android:padding="@dimen/padding_large">
 
         <View
             android:id="@+id/viewTicketUnread"
-            android:layout_width="10dp"
-            android:layout_height="10dp"
+            android:layout_width="@dimen/corner_radius_10"
+            android:layout_height="@dimen/corner_radius_10"
             android:layout_gravity="center_vertical"
-            android:layout_marginEnd="12dp"
+            android:layout_marginEnd="@dimen/padding_medium"
             android:background="@drawable/bg_badge_red"
             android:visibility="gone" />
 
@@ -38,7 +38,7 @@
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvTicketTitle"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
@@ -46,50 +46,50 @@
                     android:ellipsize="end"
                     android:maxLines="1"
                     android:textColor="@color/text_primary"
-                    android:textSize="16sp"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvTicketStatus"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:background="@drawable/bg_badge_blue"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
+                    android:paddingStart="@dimen/corner_radius_10"
+                    android:paddingEnd="@dimen/corner_radius_10"
+                    android:paddingTop="@dimen/elevation_4"
+                    android:paddingBottom="@dimen/elevation_4"
                     android:textColor="@color/primary"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_size_12"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvTicketCategory"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="@dimen/elevation_4"
                 android:textColor="@color/primary"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvTicketLastMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/padding_small"
                 android:ellipsize="end"
                 android:maxLines="2"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp"
-                android:lineSpacingExtra="2dp" />
+                android:textSize="@dimen/text_size_14"
+                android:lineSpacingExtra="@dimen/stroke_2" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvTicketTime"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/padding_small"
                 android:textColor="@color/text_hint"
-                android:textSize="12sp" />
+                android:textSize="@dimen/text_size_12" />
         </LinearLayout>
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

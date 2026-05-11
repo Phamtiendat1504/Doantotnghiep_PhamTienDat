@@ -9,37 +9,37 @@
     <LinearLayout
         android:id="@+id/headerDecor"
         android:layout_width="0dp"
-        android:layout_height="220dp"
+        android:layout_height="@dimen/dimen_220dp"
         android:background="@drawable/bg_header_wave"
         android:gravity="bottom"
         android:orientation="vertical"
-        android:paddingStart="24dp"
-        android:paddingTop="24dp"
-        android:paddingEnd="24dp"
-        android:paddingBottom="24dp"
+        android:paddingStart="@dimen/spacing_24"
+        android:paddingTop="@dimen/spacing_24"
+        android:paddingEnd="@dimen/spacing_24"
+        android:paddingBottom="@dimen/spacing_24"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textColor="@color/white"
-            android:textSize="12sp"
+            android:textSize="@dimen/text_size_12"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/contentCard"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="-36dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="16dp"
+        android:layout_marginStart="@dimen/padding_large"
+        android:layout_marginTop="@dimen/dimen_minus_36dp"
+        android:layout_marginEnd="@dimen/padding_large"
+        android:layout_marginBottom="@dimen/padding_large"
         app:cardBackgroundColor="@color/white"
-        app:cardCornerRadius="20dp"
-        app:cardElevation="5dp"
+        app:cardCornerRadius="@dimen/padding_xlarge"
+        app:cardElevation="@dimen/dimen_5dp"
         app:layout_constraintBottom_toTopOf="@id/buttonContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -49,44 +49,44 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="18dp">
+            android:padding="@dimen/spacing_18">
 
             <LinearLayout
-                android:layout_width="56dp"
-                android:layout_height="56dp"
+                android:layout_width="@dimen/bottom_nav_height"
+                android:layout_height="@dimen/bottom_nav_height"
                 android:background="@drawable/bg_icon_circle_light_blue"
                 android:gravity="center"
                 android:orientation="vertical">
 
                 <ImageView
-                    android:layout_width="26dp"
-                    android:layout_height="26dp"
+                    android:layout_width="@dimen/dimen_26dp"
+                    android:layout_height="@dimen/dimen_26dp"
                     android:contentDescription="@null"
                     android:src="@drawable/ic_home_document"
                     app:tint="@color/primary" />
             </LinearLayout>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
+                android:layout_marginTop="@dimen/spacing_14"
                 android:text="@string/guest_post_title"
                 android:textColor="@color/text_primary"
-                android:textSize="26sp"
+                android:textSize="@dimen/dimen_26sp"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/padding_small"
                 android:text="@string/guest_post_subtitle"
                 android:textColor="@color/text_hint"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_size_14" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="@dimen/padding_large"
                 android:orientation="vertical">
 
                 <LinearLayout
@@ -96,54 +96,54 @@
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/spacing_18"
+                        android:layout_height="@dimen/spacing_18"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_shield_check"
                         app:tint="@color/primary" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/padding_small"
                         android:text="@string/guest_post_point_1"
                         android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_size_13" />
                 </LinearLayout>
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
+                    android:layout_marginTop="@dimen/corner_radius_10"
                     android:gravity="center_vertical"
                     android:orientation="horizontal">
 
                     <ImageView
-                        android:layout_width="18dp"
-                        android:layout_height="18dp"
+                        android:layout_width="@dimen/spacing_18"
+                        android:layout_height="@dimen/spacing_18"
                         android:contentDescription="@null"
                         android:src="@drawable/ic_check_circle"
                         app:tint="@color/primary" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
+                        android:layout_marginStart="@dimen/padding_small"
                         android:text="@string/guest_post_point_2"
                         android:textColor="@color/text_primary"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_size_13" />
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
     <LinearLayout
         android:id="@+id/buttonContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginBottom="20dp"
+        android:layout_marginStart="@dimen/padding_large"
+        android:layout_marginEnd="@dimen/padding_large"
+        android:layout_marginBottom="@dimen/padding_xlarge"
         android:orientation="vertical"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
@@ -152,30 +152,30 @@
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuestLogin"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
+            android:layout_height="@dimen/dimen_54dp"
             android:text="@string/guest_post_login_cta"
             android:textAllCaps="false"
             android:textColor="@color/white"
-            android:textSize="16sp"
+            android:textSize="@dimen/text_size_16"
             android:textStyle="bold"
             app:backgroundTint="@color/primary"
-            app:cornerRadius="14dp"
+            app:cornerRadius="@dimen/spacing_14"
             app:elevation="0dp" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnGuestRegister"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="match_parent"
-            android:layout_height="54dp"
-            android:layout_marginTop="10dp"
+            android:layout_height="@dimen/dimen_54dp"
+            android:layout_marginTop="@dimen/corner_radius_10"
             android:text="@string/guest_post_register_cta"
             android:textAllCaps="false"
             android:textColor="@color/primary"
-            android:textSize="16sp"
+            android:textSize="@dimen/text_size_16"
             android:textStyle="bold"
-            app:cornerRadius="14dp"
+            app:cornerRadius="@dimen/spacing_14"
             app:strokeColor="@color/primary"
-            app:strokeWidth="1.5dp" />
+            app:strokeWidth="@dimen/stroke_1_5" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#000000">
+    android:background="@color/color_000000">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
@@ -14,33 +14,33 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvGuide"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="24dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginStart="@dimen/padding_xlarge"
+        android:layout_marginTop="@dimen/spacing_24"
+        android:layout_marginEnd="@dimen/padding_xlarge"
         android:gravity="center"
-        android:text="Đặt Căn Cước Công Dân nằm ngang bên trong khung"
-        android:textColor="#FFFFFFFF"
-        android:textSize="17sp"
+        android:text="@string/txt_at_can_cuoc_cong_dan_nam_"
+        android:textColor="@color/white"
+        android:textSize="@dimen/dimen_17sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvGuideSub"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="20dp"
+        android:layout_marginStart="@dimen/padding_xlarge"
+        android:layout_marginTop="@dimen/padding_small"
+        android:layout_marginEnd="@dimen/padding_xlarge"
         android:gravity="center"
-        android:text="Không nghiêng, không bị lòe, không cắt mặt Căn Cước Công Dân"
-        android:textColor="#CCFFFFFF"
-        android:textSize="13sp"
+        android:text="@string/txt_khong_nghieng_khong_bi_lo"
+        android:textColor="@color/color_CCFFFFFF"
+        android:textSize="@dimen/text_size_13"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvGuide" />
@@ -49,7 +49,7 @@
         android:id="@+id/overlayTop"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#7A000000"
+        android:background="@color/color_7A000000"
         app:layout_constraintBottom_toTopOf="@id/guideFrame"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -59,7 +59,7 @@
         android:id="@+id/overlayBottom"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#7A000000"
+        android:background="@color/color_7A000000"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -69,7 +69,7 @@
         android:id="@+id/overlayLeft"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#7A000000"
+        android:background="@color/color_7A000000"
         app:layout_constraintBottom_toBottomOf="@id/guideFrame"
         app:layout_constraintEnd_toStartOf="@id/guideFrame"
         app:layout_constraintStart_toStartOf="parent"
@@ -79,7 +79,7 @@
         android:id="@+id/overlayRight"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:background="#7A000000"
+        android:background="@color/color_7A000000"
         app:layout_constraintBottom_toBottomOf="@id/guideFrame"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/guideFrame"
@@ -91,8 +91,8 @@
         android:layout_height="0dp"
         android:background="@drawable/bg_cccd_guide_frame"
         android:clipToOutline="true"
-        android:layout_marginStart="22dp"
-        android:layout_marginEnd="22dp"
+        android:layout_marginStart="@dimen/dimen_22dp"
+        android:layout_marginEnd="@dimen/dimen_22dp"
         app:layout_constraintBottom_toTopOf="@id/cameraControlBar"
         app:layout_constraintDimensionRatio="H,1.58:1"
         app:layout_constraintEnd_toEndOf="parent"
@@ -104,9 +104,9 @@
         android:id="@+id/cameraControlBar"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:layout_marginBottom="28dp"
+        android:layout_marginStart="@dimen/padding_xlarge"
+        android:layout_marginEnd="@dimen/padding_xlarge"
+        android:layout_marginBottom="@dimen/image_size_28"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -115,13 +115,13 @@
 
         <ImageButton
             android:id="@+id/btnCloseCamera"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="@dimen/dimen_48dp"
+            android:layout_height="@dimen/dimen_48dp"
             android:background="@android:color/transparent"
             android:contentDescription="Close camera"
-            android:padding="8dp"
+            android:padding="@dimen/padding_small"
             android:src="@drawable/ic_close"
-            app:tint="#FFFFFFFF" />
+            app:tint="@color/white" />
 
         <Space
             android:layout_width="0dp"
@@ -130,16 +130,16 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCaptureCccd"
-            android:layout_width="66dp"
-            android:layout_height="66dp"
+            android:layout_width="@dimen/dimen_66dp"
+            android:layout_height="@dimen/dimen_66dp"
             android:insetLeft="0dp"
             android:insetRight="0dp"
             android:insetTop="0dp"
             android:insetBottom="0dp"
-            app:cornerRadius="33dp"
-            app:backgroundTint="#FFFFFFFF"
-            app:strokeColor="#55000000"
-            app:strokeWidth="2dp" />
+            app:cornerRadius="@dimen/dimen_33dp"
+            app:backgroundTint="@color/white"
+            app:strokeColor="@color/color_55000000"
+            app:strokeWidth="@dimen/stroke_2" />
 
         <Space
             android:layout_width="0dp"
@@ -147,8 +147,8 @@
             android:layout_weight="1" />
 
         <Space
-            android:layout_width="48dp"
-            android:layout_height="48dp" />
+            android:layout_width="@dimen/dimen_48dp"
+            android:layout_height="@dimen/dimen_48dp" />
     </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

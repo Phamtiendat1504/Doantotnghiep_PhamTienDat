@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:background="@color/bg_light"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="@dimen/spacing_14">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,21 +15,21 @@
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="@dimen/dimen_36dp"
+            android:layout_height="@dimen/dimen_36dp"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:padding="6dp"
+            android:padding="@dimen/elevation_6"
             android:src="@drawable/ic_back"
             app:tint="@color/text_primary" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:layout_weight="1"
-            android:text="Chọn vị trí phòng"
+            android:text="@string/txt_chon_vi_tri_phong"
             android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_size_18"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -37,29 +37,29 @@
         android:id="@+id/btnSearchPlace"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
-        android:layout_marginTop="12dp"
-        android:text="Tìm địa chỉ với Google Maps"
+        android:layout_height="@dimen/dimen_50dp"
+        android:layout_marginTop="@dimen/padding_medium"
+        android:text="@string/txt_tim_ia_chi_voi_google_map"
         android:textAllCaps="false"
-        app:cornerRadius="12dp" />
+        app:cornerRadius="@dimen/padding_medium" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvPickedAddress"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="@dimen/corner_radius_10"
         android:background="@drawable/bg_input_disabled"
-        android:padding="12dp"
-        android:text="Chưa chọn vị trí"
+        android:padding="@dimen/padding_medium"
+        android:text="@string/txt_chua_chon_vi_tri"
         android:textColor="@color/text_secondary"
-        android:textSize="13sp" />
+        android:textSize="@dimen/text_size_13" />
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="@dimen/padding_medium"
         android:layout_weight="1"
-        app:cardCornerRadius="14dp"
+        app:cardCornerRadius="@dimen/spacing_14"
         app:cardElevation="0dp">
 
         <androidx.fragment.app.FragmentContainerView
@@ -67,41 +67,41 @@
             android:name="com.google.android.gms.maps.SupportMapFragment"
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:text="Nhấn lên bản đồ để đặt marker hoặc tìm địa chỉ."
+        android:layout_marginTop="@dimen/padding_small"
+        android:text="@string/txt_nhan_len_ban_o_e_at_marke"
         android:textColor="@color/text_secondary"
-        android:textSize="12sp" />
+        android:textSize="@dimen/text_size_12" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="@dimen/corner_radius_10"
         android:orientation="horizontal">
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginEnd="6dp"
+            android:layout_height="@dimen/dimen_48dp"
+            android:layout_marginEnd="@dimen/elevation_6"
             android:layout_weight="1"
-            android:text="Hủy"
+            android:text="@string/action_cancel"
             android:textAllCaps="false"
-            app:cornerRadius="12dp" />
+            app:cornerRadius="@dimen/padding_medium" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnConfirm"
             android:layout_width="0dp"
-            android:layout_height="48dp"
-            android:layout_marginStart="6dp"
+            android:layout_height="@dimen/dimen_48dp"
+            android:layout_marginStart="@dimen/elevation_6"
             android:layout_weight="1"
-            android:text="Xác nhận vị trí"
+            android:text="@string/txt_xac_nhan_vi_tri"
             android:textAllCaps="false"
-            app:cornerRadius="12dp" />
+            app:cornerRadius="@dimen/padding_medium" />
     </LinearLayout>
 </LinearLayout>

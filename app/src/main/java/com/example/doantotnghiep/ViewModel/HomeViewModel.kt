@@ -3,10 +3,15 @@ package com.example.doantotnghiep.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.doantotnghiep.View.Adapter.RoomItem
 import com.example.doantotnghiep.repository.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 class HomeViewModel : ViewModel() {
 
@@ -51,17 +56,20 @@ class HomeViewModel : ViewModel() {
     private val REFRESH_INTERVAL = 60 * 60 * 1000L
     private val NEW_ROOMS_PAGE_SIZE = 10L
 
-    private val rotationHandler = android.os.Handler(android.os.Looper.getMainLooper())
     private var allFeaturedRoomsList: List<RoomItem> = emptyList()
+    private var rotationJob: Job? = null
 
-    private val rotationRunnable = object : Runnable {
-        override fun run() {
-            if (allFeaturedRoomsList.isNotEmpty()) {
-                val shuffled = allFeaturedRoomsList.shuffled().take(10)
-                _featuredRooms.value = shuffled
-                rotationHandler.postDelayed(this, 10000L) // Rotate every 10s
-            } else {
-                _featuredRooms.value = emptyList()
+    private fun startFeaturedRotation() {
+        rotationJob?.cancel()
+        rotationJob = viewModelScope.launch {
+            while (isActive) {
+                if (allFeaturedRoomsList.isNotEmpty()) {
+                    val shuffled = allFeaturedRoomsList.shuffled().take(10)
+                    _featuredRooms.value = shuffled
+                } else {
+                    _featuredRooms.value = emptyList()
+                }
+                delay(10000L) // Rotate every 10s
             }
         }
     }
@@ -112,9 +120,8 @@ class HomeViewModel : ViewModel() {
             allFeaturedRoomsList = featuredList
             _isLoadingFeatured.value = false
             
-            // Start rotation
-            rotationHandler.removeCallbacks(rotationRunnable)
-            rotationRunnable.run()
+            // Start rotation using Coroutines
+            startFeaturedRotation()
         }
     }
 
@@ -210,7 +217,7 @@ class HomeViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         notificationListener?.remove()
-        rotationHandler.removeCallbacks(rotationRunnable)
+        rotationJob?.cancel()
     }
 
     fun loadNotificationBadge() {

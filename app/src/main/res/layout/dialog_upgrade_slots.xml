@@ -13,23 +13,23 @@
         android:background="@color/primary"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="20dp">
+        android:padding="@dimen/padding_xlarge">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Mua thêm lượt đăng bài"
-            android:textSize="20sp"
+            android:text="@string/txt_mua_them_luot_ang_bai"
+            android:textSize="@dimen/text_size_20"
             android:textStyle="bold"
             android:textColor="@android:color/white" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Chọn gói hoặc nhập số lượng bạn muốn"
-            android:textSize="14sp"
-            android:textColor="#E0F2FE"
-            android:layout_marginTop="4dp" />
+            android:text="@string/txt_chon_goi_hoac_nhap_so_luo"
+            android:textSize="@dimen/text_size_14"
+            android:textColor="@color/color_E0F2FE"
+            android:layout_marginTop="@dimen/elevation_4" />
 
     </LinearLayout>
 
@@ -38,7 +38,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp"
+        android:padding="@dimen/padding_xlarge"
         android:background="@android:color/white">
 
         <!-- Gói 1 -->
@@ -49,8 +49,8 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/bg_slot_package_normal"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp">
+            android:padding="@dimen/padding_large"
+            android:layout_marginBottom="@dimen/padding_medium">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -58,20 +58,20 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="+3 lượt đăng bài"
-                    android:textSize="16sp"
+                    android:text="3 lượt đăng bài"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
             </LinearLayout>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="15.000 đ"
-                android:textSize="16sp"
+                android:text="10.000đ"
+                android:textSize="@dimen/text_size_16"
                 android:textStyle="bold"
                 android:textColor="@color/primary" />
         </LinearLayout>
@@ -84,8 +84,8 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/bg_slot_package_normal"
-            android:padding="16dp"
-            android:layout_marginBottom="12dp">
+            android:padding="@dimen/padding_large"
+            android:layout_marginBottom="@dimen/padding_medium">
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -93,33 +93,68 @@
                 android:layout_weight="1"
                 android:orientation="vertical">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="+10 lượt đăng bài"
-                    android:textSize="16sp"
+                    android:text="5 lượt đăng bài (Phổ biến)"
+                    android:textSize="@dimen/text_size_16"
+                    android:textStyle="bold"
+                    android:textColor="#D32F2F" />
+            </LinearLayout>
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20.000đ"
+                android:textSize="@dimen/text_size_16"
+                android:textStyle="bold"
+                android:textColor="#D32F2F" />
+        </LinearLayout>
+
+        <!-- Gói 3 -->
+        <LinearLayout
+            android:id="@+id/layoutPkg3"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:background="@drawable/bg_slot_package_normal"
+            android:padding="@dimen/padding_large"
+            android:layout_marginBottom="@dimen/padding_medium">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="10 lượt đăng bài"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
             </LinearLayout>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="50.000 đ"
-                android:textSize="16sp"
+                android:text="40.000đ"
+                android:textSize="@dimen/text_size_16"
                 android:textStyle="bold"
                 android:textColor="@color/primary" />
         </LinearLayout>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Hoặc nhập số lượng tùy chọn (1 lượt = 5.000 đ):"
-            android:textSize="14sp"
-            android:textColor="#333333"
+            android:text="@string/txt_hoac_nhap_so_luong_tuy_ch"
+            android:textSize="@dimen/text_size_14"
+            android:textColor="@color/color_333333"
             android:textStyle="bold"
-            android:layout_marginTop="10dp"
-            android:layout_marginBottom="8dp"/>
+            android:layout_marginTop="@dimen/corner_radius_10"
+            android:layout_marginBottom="@dimen/padding_small"/>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -127,42 +162,42 @@
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:background="@drawable/bg_slot_package_normal"
-            android:padding="8dp"
-            android:layout_marginBottom="20dp">
+            android:padding="@dimen/padding_small"
+            android:layout_marginBottom="@dimen/padding_xlarge">
 
-            <EditText
+            <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/edtCustomSlots"
                 android:layout_width="0dp"
-                android:layout_height="50dp"
+                android:layout_height="@dimen/dimen_50dp"
                 android:layout_weight="1"
                 android:background="@android:color/transparent"
-                android:hint="Nhập số lượt..."
+                android:hint="@string/txt_nhap_so_luot"
                 android:inputType="number"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:textSize="16sp"
+                android:paddingStart="@dimen/padding_medium"
+                android:paddingEnd="@dimen/padding_medium"
+                android:textSize="@dimen/text_size_16"
                 android:textColor="@color/primary"
-                android:textColorHint="#999999" />
+                android:textColorHint="@color/text_hint" />
 
             <View
-                android:layout_width="1dp"
-                android:layout_height="30dp"
-                android:background="#EEEEEE"
-                android:layout_marginEnd="8dp"/>
+                android:layout_width="@dimen/stroke_1"
+                android:layout_height="@dimen/dimen_30dp"
+                android:background="@color/gray_200"
+                android:layout_marginEnd="@dimen/padding_small"/>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
                 android:gravity="center"
-                android:layout_marginEnd="12dp">
+                android:layout_marginEnd="@dimen/padding_medium">
                 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvCustomPrice"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="0 đ"
-                    android:textSize="16sp"
+                    android:text="@string/txt_0"
+                    android:textSize="@dimen/text_size_16"
                     android:textStyle="bold"
                     android:textColor="@color/primary" />
             </LinearLayout>
@@ -170,11 +205,11 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnBuyCustom"
                 android:layout_width="wrap_content"
-                android:layout_height="50dp"
-                android:text="Mua"
+                android:layout_height="@dimen/dimen_50dp"
+                android:text="@string/txt_mua"
                 android:textAllCaps="false"
                 android:enabled="false"
-                app:cornerRadius="8dp" />
+                app:cornerRadius="@dimen/padding_small" />
         </LinearLayout>
 
         <!-- Nút đóng -->
@@ -182,11 +217,11 @@
             android:id="@+id/btnCloseUpgrade"
             style="@style/Widget.MaterialComponents.Button.TextButton"
             android:layout_width="match_parent"
-            android:layout_height="50dp"
-            android:text="Để sau"
+            android:layout_height="@dimen/dimen_50dp"
+            android:text="@string/txt_e_sau"
             android:textAllCaps="false"
-            android:textSize="16sp"
-            android:textColor="#666666" />
+            android:textSize="@dimen/text_size_16"
+            android:textColor="@color/text_secondary" />
 
     </LinearLayout>
 

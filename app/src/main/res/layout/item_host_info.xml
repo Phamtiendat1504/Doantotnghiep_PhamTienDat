@@ -5,83 +5,83 @@
     android:layout_height="wrap_content"
     android:gravity="center_vertical"
     android:orientation="horizontal"
-    android:padding="4dp">
+    android:padding="@dimen/elevation_4">
 
-    <androidx.cardview.widget.CardView
-        android:layout_width="58dp"
-        android:layout_height="58dp"
-        app:cardBackgroundColor="#EFF3F8"
-        app:cardCornerRadius="29dp"
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="@dimen/dimen_58dp"
+        android:layout_height="@dimen/dimen_58dp"
+        app:cardBackgroundColor="@color/color_EFF3F8"
+        app:cardCornerRadius="@dimen/dimen_29dp"
         app:cardElevation="0dp">
 
         <ImageView
             android:id="@+id/ivHostAvatar"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:padding="12dp"
+            android:padding="@dimen/padding_medium"
             android:src="@drawable/ic_person"
-            app:tint="#90A4AE" />
-    </androidx.cardview.widget.CardView>
+            app:tint="@color/color_90A4AE" />
+    </com.google.android.material.card.MaterialCardView>
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:layout_marginStart="14dp"
+        android:layout_marginStart="@dimen/spacing_14"
         android:orientation="vertical">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvHostName"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:maxLines="1"
             android:ellipsize="end"
-            android:text="Chủ nhà"
-            android:textColor="#111827"
-            android:textSize="16sp"
+            android:text="@string/txt_chu_nha"
+            android:textColor="@color/color_111827"
+            android:textSize="@dimen/text_size_16"
             android:textStyle="bold" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvHostStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="@dimen/elevation_3"
             android:maxLines="1"
             android:ellipsize="end"
-            android:text="Đã xác minh"
-            android:textColor="#10B981"
-            android:textSize="13sp" />
+            android:text="@string/txt_a_xac_minh"
+            android:textColor="@color/color_10B981"
+            android:textSize="@dimen/text_size_13" />
     </LinearLayout>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnChatHost"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
+        android:layout_width="@dimen/dimen_44dp"
+        android:layout_height="@dimen/dimen_44dp"
         android:insetBottom="0dp"
         android:insetLeft="0dp"
         android:insetRight="0dp"
         android:insetTop="0dp"
         android:padding="0dp"
-        app:cornerRadius="22dp"
+        app:cornerRadius="@dimen/dimen_22dp"
         app:icon="@drawable/ic_ai"
         app:iconGravity="textStart"
         app:iconPadding="0dp"
         app:iconTint="@color/primary"
-        app:strokeColor="#DCE3EA" />
+        app:strokeColor="@color/color_DCE3EA" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnCallHost"
-        android:layout_width="44dp"
-        android:layout_height="44dp"
-        android:layout_marginStart="8dp"
+        android:layout_width="@dimen/dimen_44dp"
+        android:layout_height="@dimen/dimen_44dp"
+        android:layout_marginStart="@dimen/padding_small"
         android:insetBottom="0dp"
         android:insetLeft="0dp"
         android:insetRight="0dp"
         android:insetTop="0dp"
         android:padding="0dp"
         app:backgroundTint="@color/primary"
-        app:cornerRadius="22dp"
+        app:cornerRadius="@dimen/dimen_22dp"
         app:icon="@drawable/ic_phone"
         app:iconGravity="textStart"
         app:iconPadding="0dp" />

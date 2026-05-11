@@ -10,35 +10,35 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/bg_white"
-        app:elevation="2dp">
+        app:elevation="@dimen/stroke_2">
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="64dp"
+            android:layout_height="@dimen/dimen_64dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
-            android:paddingStart="8dp"
-            android:paddingEnd="16dp">
+            android:paddingStart="@dimen/padding_small"
+            android:paddingEnd="@dimen/padding_large">
 
             <ImageView
                 android:id="@+id/btnSupportBack"
-                android:layout_width="44dp"
-                android:layout_height="44dp"
+                android:layout_width="@dimen/dimen_44dp"
+                android:layout_height="@dimen/dimen_44dp"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:clickable="true"
                 android:focusable="true"
-                android:padding="10dp"
+                android:padding="@dimen/corner_radius_10"
                 android:src="@drawable/ic_back"
                 app:tint="@color/text_primary" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
+                android:layout_marginStart="@dimen/padding_small"
                 android:layout_weight="1"
-                android:text="Trung tâm hỗ trợ"
+                android:text="@string/txt_trung_tam_ho_tro"
                 android:textColor="@color/text_primary"
-                android:textSize="20sp"
+                android:textSize="@dimen/text_size_20"
                 android:textStyle="bold" />
         </LinearLayout>
 
@@ -46,10 +46,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clipToPadding="false"
-            android:paddingStart="12dp"
-            android:paddingTop="12dp"
-            android:paddingEnd="12dp"
-            android:paddingBottom="12dp"
+            android:paddingStart="@dimen/padding_medium"
+            android:paddingTop="@dimen/padding_medium"
+            android:paddingEnd="@dimen/padding_medium"
+            android:paddingBottom="@dimen/padding_medium"
             android:scrollbars="none">
 
             <RadioGroup
@@ -61,75 +61,75 @@
                 <RadioButton
                     android:id="@+id/rbAllTickets"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="@dimen/dimen_36dp"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:background="@drawable/selector_ticket_filter_bg"
                     android:button="@null"
                     android:checked="true"
-                    android:elevation="1dp"
+                    android:elevation="@dimen/stroke_1"
                     android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Tất cả"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="@dimen/padding_large"
+                    android:text="@string/txt_tat_ca"
                     android:textColor="@color/selector_ticket_filter_text"
                     android:textStyle="bold" />
 
                 <RadioButton
                     android:id="@+id/rbNewTickets"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="@dimen/dimen_36dp"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:background="@drawable/selector_ticket_filter_bg"
                     android:button="@null"
-                    android:elevation="1dp"
+                    android:elevation="@dimen/stroke_1"
                     android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Mới"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="@dimen/padding_large"
+                    android:text="@string/txt_moi"
                     android:textColor="@color/selector_ticket_filter_text"
                     android:textStyle="bold" />
 
                 <RadioButton
                     android:id="@+id/rbProgressTickets"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="@dimen/dimen_36dp"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:background="@drawable/selector_ticket_filter_bg"
                     android:button="@null"
-                    android:elevation="1dp"
+                    android:elevation="@dimen/stroke_1"
                     android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Đang xử lý"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="@dimen/padding_large"
+                    android:text="@string/post_step_2_badge"
                     android:textColor="@color/selector_ticket_filter_text"
                     android:textStyle="bold" />
 
                 <RadioButton
                     android:id="@+id/rbResolvedTickets"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
-                    android:layout_marginEnd="8dp"
+                    android:layout_height="@dimen/dimen_36dp"
+                    android:layout_marginEnd="@dimen/padding_small"
                     android:background="@drawable/selector_ticket_filter_bg"
                     android:button="@null"
-                    android:elevation="1dp"
+                    android:elevation="@dimen/stroke_1"
                     android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Đã xử lý"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="@dimen/padding_large"
+                    android:text="@string/txt_a_xu_ly"
                     android:textColor="@color/selector_ticket_filter_text"
                     android:textStyle="bold" />
 
                 <RadioButton
                     android:id="@+id/rbClosedTickets"
                     android:layout_width="wrap_content"
-                    android:layout_height="36dp"
+                    android:layout_height="@dimen/dimen_36dp"
                     android:background="@drawable/selector_ticket_filter_bg"
                     android:button="@null"
-                    android:elevation="1dp"
+                    android:elevation="@dimen/stroke_1"
                     android:gravity="center"
-                    android:paddingStart="16dp"
-                    android:paddingEnd="16dp"
-                    android:text="Đã đóng"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="@dimen/padding_large"
+                    android:text="@string/txt_a_ong"
                     android:textColor="@color/selector_ticket_filter_text"
                     android:textStyle="bold" />
             </RadioGroup>
@@ -146,8 +146,8 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:clipToPadding="false"
-            android:paddingTop="8dp"
-            android:paddingBottom="96dp" />
+            android:paddingTop="@dimen/padding_small"
+            android:paddingBottom="@dimen/dimen_96dp" />
 
         <LinearLayout
             android:id="@+id/layoutTicketEmpty"
@@ -155,34 +155,34 @@
             android:layout_height="match_parent"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="32dp"
+            android:padding="@dimen/image_size_32"
             android:visibility="gone">
 
             <ImageView
-                android:layout_width="120dp"
-                android:layout_height="120dp"
-                android:padding="16dp"
+                android:layout_width="@dimen/image_size_120"
+                android:layout_height="@dimen/image_size_120"
+                android:padding="@dimen/padding_large"
                 android:src="@drawable/ic_info"
                 app:tint="@color/text_hint" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="@dimen/padding_large"
                 android:gravity="center"
-                android:text="Bạn chưa có yêu cầu hỗ trợ nào"
+                android:text="@string/txt_ban_chua_co_yeu_cau_ho_tr"
                 android:textColor="@color/text_primary"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_size_18"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/padding_small"
                 android:gravity="center"
-                android:text="Bấm nút dấu cộng bên dưới để tạo yêu cầu mới. Đội ngũ admin sẽ phản hồi sớm nhất có thể."
+                android:text="@string/txt_bam_nut_dau_cong_ben_duoi"
                 android:textColor="@color/text_secondary"
-                android:textSize="14sp" />
+                android:textSize="@dimen/text_size_14" />
         </LinearLayout>
     </FrameLayout>
 
@@ -191,10 +191,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
-        android:layout_margin="24dp"
+        android:layout_margin="@dimen/spacing_24"
         android:backgroundTint="@color/primary"
         android:src="@drawable/ic_add"
         app:tint="@color/white"
-        app:elevation="6dp" />
+        app:elevation="@dimen/elevation_6" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

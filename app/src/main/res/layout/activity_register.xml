@@ -21,32 +21,32 @@
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="@dimen/dimen_36dp"
+            android:layout_height="@dimen/dimen_36dp"
             android:layout_gravity="start"
-            android:layout_marginStart="16dp"
-            android:layout_marginTop="8dp"
+            android:layout_marginStart="@dimen/padding_large"
+            android:layout_marginTop="@dimen/padding_small"
             android:contentDescription="Quay lại"
-            android:padding="4dp"
+            android:padding="@dimen/elevation_4"
             android:src="@drawable/ic_back"
             app:tint="@color/on_primary" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="TẠO TÀI KHOẢN"
+            android:layout_marginTop="@dimen/elevation_4"
+            android:text="@string/txt_tao_tai_khoan"
             android:textColor="@color/on_primary"
-            android:textSize="22sp"
+            android:textSize="@dimen/dimen_22sp"
             android:textStyle="bold" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Điền thông tin để bắt đầu sử dụng dịch vụ"
+            android:layout_marginTop="@dimen/elevation_4"
+            android:text="@string/txt_ien_thong_tin_e_bat_au_su"
             android:textColor="@color/primary_light"
-            android:textSize="13sp" />
+            android:textSize="@dimen/text_size_13" />
 
     </LinearLayout>
 
@@ -64,42 +64,42 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingStart="20dp"
-            android:paddingTop="20dp"
-            android:paddingEnd="20dp"
-            android:paddingBottom="32dp">
+            android:paddingStart="@dimen/padding_xlarge"
+            android:paddingTop="@dimen/padding_xlarge"
+            android:paddingEnd="@dimen/padding_xlarge"
+            android:paddingBottom="@dimen/image_size_32">
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 app:cardBackgroundColor="@color/bg_white"
-                app:cardCornerRadius="20dp"
-                app:cardElevation="8dp">
+                app:cardCornerRadius="@dimen/padding_xlarge"
+                app:cardElevation="@dimen/padding_small">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="20dp">
+                    android:padding="@dimen/padding_xlarge">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/tilFullName"
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:hint="Nhập họ và tên"
+                        android:hint="@string/txt_nhap_ho_va_ten"
                         app:errorEnabled="true"
                         app:helperText="Ví dụ: Nguyễn Văn An"
                         app:helperTextEnabled="true"
-                        app:helperTextTextColor="#888888">
+                        app:helperTextTextColor="@color/color_888888">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/edtFullName"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:drawableStart="@drawable/ic_person"
-                            android:drawablePadding="12dp"
-                            android:drawableTint="#888888"
+                            android:drawablePadding="@dimen/padding_medium"
+                            android:drawableTint="@color/color_888888"
                             android:inputType="textPersonName" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -109,8 +109,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Điền thông tin email"
+                        android:layout_marginTop="@dimen/padding_medium"
+                        android:hint="@string/txt_ien_thong_tin_email"
                         app:errorEnabled="true"
                         app:helperText="Ví dụ: abcdef123@gmail.com"
                         app:helperTextEnabled="true">
@@ -120,8 +120,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:drawableStart="@drawable/ic_email"
-                            android:drawablePadding="12dp"
-                            android:drawableTint="#888888"
+                            android:drawablePadding="@dimen/padding_medium"
+                            android:drawableTint="@color/color_888888"
                             android:inputType="textEmailAddress" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -131,8 +131,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Nhập số điện thoại"
+                        android:layout_marginTop="@dimen/padding_medium"
+                        android:hint="@string/hint_phone"
                         app:errorEnabled="true"
                         app:helperText="Ví dụ: 08xxxxxxxx"
                         app:helperTextEnabled="true">
@@ -142,8 +142,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:drawableStart="@drawable/ic_phone"
-                            android:drawablePadding="12dp"
-                            android:drawableTint="#888888"
+                            android:drawablePadding="@dimen/padding_medium"
+                            android:drawableTint="@color/color_888888"
                             android:inputType="phone" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -153,21 +153,21 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Nhập mật khẩu"
+                        android:layout_marginTop="@dimen/padding_medium"
+                        android:hint="@string/hint_password"
                         app:endIconMode="password_toggle"
                         app:errorEnabled="true"
                         app:helperText="Tối thiểu 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
                         app:helperTextEnabled="true"
-                        app:helperTextTextColor="#888888">
+                        app:helperTextTextColor="@color/color_888888">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/edtPassword"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:drawableStart="@drawable/ic_lock"
-                            android:drawablePadding="12dp"
-                            android:drawableTint="#888888"
+                            android:drawablePadding="@dimen/padding_medium"
+                            android:drawableTint="@color/color_888888"
                             android:inputType="textPassword" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -177,8 +177,8 @@
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="12dp"
-                        android:hint="Xác nhận lại mật khẩu"
+                        android:layout_marginTop="@dimen/padding_medium"
+                        android:hint="@string/txt_xac_nhan_lai_mat_khau"
                         app:endIconMode="password_toggle"
                         app:errorEnabled="true">
 
@@ -187,8 +187,8 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:drawableStart="@drawable/ic_lock"
-                            android:drawablePadding="12dp"
-                            android:drawableTint="#888888"
+                            android:drawablePadding="@dimen/padding_medium"
+                            android:drawableTint="@color/color_888888"
                             android:inputType="textPassword" />
 
                     </com.google.android.material.textfield.TextInputLayout>
@@ -196,49 +196,49 @@
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/btnRegister"
                         android:layout_width="match_parent"
-                        android:layout_height="52dp"
-                        android:layout_marginTop="24dp"
-                        android:text="ĐĂNG KÝ TÀI KHOẢN"
+                        android:layout_height="@dimen/dimen_52dp"
+                        android:layout_marginTop="@dimen/spacing_24"
+                        android:text="@string/txt_ang_ky_tai_khoan"
                         android:textAllCaps="false"
-                        android:textSize="16sp"
+                        android:textSize="@dimen/text_size_16"
                         app:backgroundTint="@color/primary"
-                        app:cornerRadius="14dp" />
+                        app:cornerRadius="@dimen/spacing_14" />
 
                     <ProgressBar
                         android:id="@+id/progressBar"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_gravity="center"
-                        android:layout_marginTop="12dp"
+                        android:layout_marginTop="@dimen/padding_medium"
                         android:visibility="gone" />
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="16dp"
+                android:layout_marginTop="@dimen/padding_xlarge"
+                android:layout_marginBottom="@dimen/padding_large"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Đã có tài khoản? "
+                    android:text="@string/register_have_account"
                     android:textColor="@color/text_secondary"
-                    android:textSize="14sp" />
+                    android:textSize="@dimen/text_size_14" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvGoToLogin"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Đăng nhập ngay"
+                    android:text="@string/txt_ang_nhap_ngay"
                     android:textColor="@color/primary"
-                    android:textSize="14sp"
+                    android:textSize="@dimen/text_size_14"
                     android:textStyle="bold" />
 
             </LinearLayout>

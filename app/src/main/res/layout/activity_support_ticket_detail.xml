@@ -9,64 +9,64 @@
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="64dp"
+        android:layout_height="@dimen/dimen_64dp"
         android:background="@color/bg_white"
-        android:elevation="4dp"
+        android:elevation="@dimen/elevation_4"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="8dp"
-        android:paddingEnd="12dp">
+        android:paddingStart="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_medium">
 
         <ImageView
             android:id="@+id/btnSupportDetailBack"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:padding="10dp"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_back"
             app:tint="@color/text_primary" />
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:layout_weight="1"
             android:orientation="vertical">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvSupportDetailTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:ellipsize="end"
                 android:maxLines="1"
-                android:text="Chi tiết hỗ trợ"
+                android:text="@string/txt_chi_tiet_ho_tro"
                 android:textColor="@color/text_primary"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_size_16"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvSupportDetailStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Admin sẽ phản hồi trong thời gian sớm nhất"
+                android:layout_marginTop="@dimen/stroke_2"
+                android:text="@string/txt_admin_se_phan_hoi_trong_t"
                 android:textColor="@color/text_hint"
-                android:textSize="12sp" />
+                android:textSize="@dimen/text_size_12" />
         </LinearLayout>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/btnCloseTicket"
             android:layout_width="wrap_content"
-            android:layout_height="40dp"
+            android:layout_height="@dimen/image_size_40"
             android:background="?attr/selectableItemBackground"
             android:gravity="center"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:text="Đóng"
+            android:paddingStart="@dimen/corner_radius_10"
+            android:paddingEnd="@dimen/corner_radius_10"
+            android:text="@string/action_close"
             android:textColor="@color/error"
-            android:textSize="13sp"
+            android:textSize="@dimen/text_size_13"
             android:textStyle="bold" />
     </LinearLayout>
 
@@ -76,20 +76,20 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:clipToPadding="false"
-        android:paddingStart="8dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="8dp"
-        android:paddingBottom="8dp" />
+        android:paddingStart="@dimen/padding_small"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_small"
+        android:paddingBottom="@dimen/padding_small" />
 
-    <androidx.cardview.widget.CardView
+    <com.google.android.material.card.MaterialCardView
         android:id="@+id/cardImagePreview"
-        android:layout_width="110dp"
-        android:layout_height="110dp"
-        android:layout_marginStart="12dp"
-        android:layout_marginBottom="6dp"
+        android:layout_width="@dimen/dimen_110dp"
+        android:layout_height="@dimen/dimen_110dp"
+        android:layout_marginStart="@dimen/padding_medium"
+        android:layout_marginBottom="@dimen/elevation_6"
         android:visibility="gone"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp">
+        app:cardCornerRadius="@dimen/padding_medium"
+        app:cardElevation="@dimen/stroke_2">
 
         <FrameLayout
             android:layout_width="match_parent"
@@ -101,90 +101,90 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/btnRemovePreview"
-                android:layout_width="28dp"
-                android:layout_height="28dp"
+                android:layout_width="@dimen/image_size_28"
+                android:layout_height="@dimen/image_size_28"
                 android:layout_gravity="top|end"
-                android:layout_margin="5dp"
+                android:layout_margin="@dimen/dimen_5dp"
                 android:background="@drawable/bg_badge_red"
                 android:gravity="center"
-                android:text="×"
+                android:text="@string/string_1frh8a"
                 android:textColor="@color/white"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_size_18"
                 android:textStyle="bold" />
         </FrameLayout>
-    </androidx.cardview.widget.CardView>
+    </com.google.android.material.card.MaterialCardView>
 
     <LinearLayout
         android:id="@+id/layoutSupportInput"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/bg_white"
-        android:elevation="8dp"
+        android:elevation="@dimen/padding_small"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:paddingStart="12dp"
-        android:paddingTop="8dp"
-        android:paddingEnd="12dp"
-        android:paddingBottom="8dp">
+        android:paddingStart="@dimen/padding_medium"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingEnd="@dimen/padding_medium"
+        android:paddingBottom="@dimen/padding_small">
 
         <ImageView
             android:id="@+id/btnSupportAttachImage"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:clickable="true"
             android:focusable="true"
-            android:padding="10dp"
+            android:padding="@dimen/corner_radius_10"
             android:src="@drawable/ic_add_photo"
-            app:tint="#5F6368" />
+            app:tint="@color/color_5F6368" />
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="4dp"
-            android:layout_marginEnd="8dp"
+            android:layout_marginStart="@dimen/elevation_4"
+            android:layout_marginEnd="@dimen/padding_small"
             android:layout_weight="1"
-            app:cardBackgroundColor="#F1F3F4"
-            app:cardCornerRadius="24dp"
+            app:cardBackgroundColor="@color/color_F1F3F4"
+            app:cardCornerRadius="@dimen/spacing_24"
             app:cardElevation="0dp">
 
-            <EditText
+            <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/etSupportMessage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:background="@null"
-                android:hint="Nhập nội dung hỗ trợ..."
+                android:hint="@string/txt_nhap_noi_dung_ho_tro"
                 android:imeOptions="actionSend"
                 android:inputType="textMultiLine|textCapSentences"
                 android:maxLines="4"
-                android:minHeight="44dp"
-                android:paddingStart="16dp"
-                android:paddingTop="10dp"
-                android:paddingEnd="16dp"
-                android:paddingBottom="10dp"
+                android:minHeight="@dimen/dimen_44dp"
+                android:paddingStart="@dimen/padding_large"
+                android:paddingTop="@dimen/corner_radius_10"
+                android:paddingEnd="@dimen/padding_large"
+                android:paddingBottom="@dimen/corner_radius_10"
                 android:textColor="@color/text_primary"
                 android:textColorHint="@color/text_hint"
-                android:textSize="15sp" />
-        </androidx.cardview.widget.CardView>
+                android:textSize="@dimen/text_size_15" />
+        </com.google.android.material.card.MaterialCardView>
 
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/btnSupportSend"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
             android:clickable="true"
             android:focusable="true"
             app:cardBackgroundColor="@color/primary"
-            app:cardCornerRadius="22dp"
-            app:cardElevation="2dp">
+            app:cardCornerRadius="@dimen/dimen_22dp"
+            app:cardElevation="@dimen/stroke_2">
 
             <ImageView
-                android:layout_width="22dp"
-                android:layout_height="22dp"
+                android:layout_width="@dimen/dimen_22dp"
+                android:layout_height="@dimen/dimen_22dp"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_send"
                 app:tint="@color/white" />
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 </LinearLayout>

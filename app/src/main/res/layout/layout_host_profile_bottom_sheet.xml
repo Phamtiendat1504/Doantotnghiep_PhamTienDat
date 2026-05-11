@@ -5,27 +5,27 @@
     android:layout_height="wrap_content"
     android:background="@drawable/bg_top_rounded_white"
     android:orientation="vertical"
-    android:padding="22dp">
+    android:padding="@dimen/dimen_22dp">
 
     <View
-        android:layout_width="42dp"
-        android:layout_height="4dp"
+        android:layout_width="@dimen/dimen_42dp"
+        android:layout_height="@dimen/elevation_4"
         android:layout_gravity="center_horizontal"
-        android:layout_marginBottom="20dp"
-        android:background="#D5DBE2" />
+        android:layout_marginBottom="@dimen/padding_xlarge"
+        android:background="@color/color_D5DBE2" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:layout_marginBottom="18dp">
+        android:layout_marginBottom="@dimen/spacing_18">
 
-        <androidx.cardview.widget.CardView
-            android:layout_width="78dp"
-            android:layout_height="78dp"
-            app:cardBackgroundColor="#EEF2F6"
-            app:cardCornerRadius="39dp"
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="@dimen/dimen_78dp"
+            android:layout_height="@dimen/dimen_78dp"
+            app:cardBackgroundColor="@color/color_EEF2F6"
+            app:cardCornerRadius="@dimen/dimen_39dp"
             app:cardElevation="0dp">
 
             <ImageView
@@ -34,79 +34,79 @@
                 android:layout_height="match_parent"
                 android:scaleType="centerCrop"
                 android:src="@drawable/ic_person"
-                app:tint="#9AA7B2" />
-        </androidx.cardview.widget.CardView>
+                app:tint="@color/color_9AA7B2" />
+        </com.google.android.material.card.MaterialCardView>
 
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="14dp"
+            android:layout_marginStart="@dimen/spacing_14"
             android:orientation="vertical">
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvSheetName"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:maxLines="1"
                 android:ellipsize="end"
-                android:text="Tên chủ trọ"
-                android:textColor="#111827"
-                android:textSize="20sp"
+                android:text="@string/txt_ten_chu_tro"
+                android:textColor="@color/color_111827"
+                android:textSize="@dimen/text_size_20"
                 android:textStyle="bold" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvSheetStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:text="Chủ nhà"
-                android:textColor="#4B5563"
-                android:textSize="14sp" />
+                android:layout_marginTop="@dimen/elevation_3"
+                android:text="@string/txt_chu_nha"
+                android:textColor="@color/color_4B5563"
+                android:textSize="@dimen/text_size_14" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="@dimen/padding_small"
                 android:background="@drawable/bg_badge_tenant"
-                android:backgroundTint="#E8F5E9"
+                android:backgroundTint="@color/success_surface"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingStart="8dp"
-                android:paddingTop="2dp"
-                android:paddingEnd="8dp"
-                android:paddingBottom="2dp">
+                android:paddingStart="@dimen/padding_small"
+                android:paddingTop="@dimen/stroke_2"
+                android:paddingEnd="@dimen/padding_small"
+                android:paddingBottom="@dimen/stroke_2">
 
                 <ImageView
-                    android:layout_width="12dp"
-                    android:layout_height="12dp"
+                    android:layout_width="@dimen/padding_medium"
+                    android:layout_height="@dimen/padding_medium"
                     android:src="@drawable/ic_check_circle" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvSheetVerified"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="4dp"
-                    android:text="Đã xác minh"
-                    android:textColor="#2E7D32"
-                    android:textSize="12sp" />
+                    android:layout_marginStart="@dimen/elevation_4"
+                    android:text="@string/txt_a_xac_minh"
+                    android:textColor="@color/success"
+                    android:textSize="@dimen/text_size_12" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>
 
     <View
         android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginBottom="14dp"
-        android:background="#E8ECF1" />
+        android:layout_height="@dimen/stroke_1"
+        android:layout_marginBottom="@dimen/spacing_14"
+        android:background="@color/color_E8ECF1" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="12dp"
-        android:text="Thông tin liên hệ"
-        android:textColor="#111827"
-        android:textSize="16sp"
+        android:layout_marginBottom="@dimen/padding_medium"
+        android:text="@string/txt_thong_tin_lien_he"
+        android:textColor="@color/color_111827"
+        android:textSize="@dimen/text_size_16"
         android:textStyle="bold" />
 
     <LinearLayout
@@ -114,22 +114,22 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="@dimen/padding_medium">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="@dimen/padding_xlarge"
+            android:layout_height="@dimen/padding_xlarge"
             android:src="@drawable/ic_phone"
-            app:tint="#6B7280" />
+            app:tint="@color/color_6B7280" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvSheetPhone"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:text="0999 999 999"
-            android:textColor="#1F2937"
-            android:textSize="15sp" />
+            android:layout_marginStart="@dimen/padding_medium"
+            android:text="@string/txt_0999_999_999"
+            android:textColor="@color/color_1F2937"
+            android:textSize="@dimen/text_size_15" />
     </LinearLayout>
 
     <LinearLayout
@@ -137,22 +137,22 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:layout_marginBottom="12dp">
+        android:layout_marginBottom="@dimen/padding_medium">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="@dimen/padding_xlarge"
+            android:layout_height="@dimen/padding_xlarge"
             android:src="@drawable/ic_email"
-            app:tint="#6B7280" />
+            app:tint="@color/color_6B7280" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvSheetEmail"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:text="email@example.com"
-            android:textColor="#1F2937"
-            android:textSize="15sp" />
+            android:layout_marginStart="@dimen/padding_medium"
+            android:text="@string/txt_email_example_com"
+            android:textColor="@color/color_1F2937"
+            android:textSize="@dimen/text_size_15" />
     </LinearLayout>
 
     <LinearLayout
@@ -160,22 +160,22 @@
         android:layout_height="wrap_content"
         android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:layout_marginBottom="22dp">
+        android:layout_marginBottom="@dimen/dimen_22dp">
 
         <ImageView
-            android:layout_width="20dp"
-            android:layout_height="20dp"
+            android:layout_width="@dimen/padding_xlarge"
+            android:layout_height="@dimen/padding_xlarge"
             android:src="@drawable/ic_calendar_clear"
-            app:tint="#6B7280" />
+            app:tint="@color/color_6B7280" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvSheetJoinDate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
-            android:text="Tham gia từ: 01/01/2023"
-            android:textColor="#1F2937"
-            android:textSize="15sp" />
+            android:layout_marginStart="@dimen/padding_medium"
+            android:text="@string/txt_tham_gia_tu_01_01_2023"
+            android:textColor="@color/color_1F2937"
+            android:textSize="@dimen/text_size_15" />
     </LinearLayout>
 
     <LinearLayout
@@ -187,28 +187,28 @@
             android:id="@+id/btnSheetChat"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="0dp"
-            android:layout_height="52dp"
-            android:layout_marginEnd="8dp"
+            android:layout_height="@dimen/dimen_52dp"
+            android:layout_marginEnd="@dimen/padding_small"
             android:layout_weight="1"
-            android:text="Nhắn tin"
+            android:text="@string/txt_nhan_tin_1"
             android:textAllCaps="false"
-            app:cornerRadius="12dp"
+            app:cornerRadius="@dimen/padding_medium"
             app:icon="@drawable/ic_ai"
             app:iconGravity="textStart"
             app:iconTint="@color/primary"
-            app:strokeColor="#DCE3EA"
+            app:strokeColor="@color/color_DCE3EA"
             android:textColor="@color/primary" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSheetCall"
             android:layout_width="0dp"
-            android:layout_height="52dp"
-            android:layout_marginStart="8dp"
+            android:layout_height="@dimen/dimen_52dp"
+            android:layout_marginStart="@dimen/padding_small"
             android:layout_weight="1"
-            android:text="Gọi điện"
+            android:text="@string/txt_goi_ien"
             android:textAllCaps="false"
             app:backgroundTint="@color/primary"
-            app:cornerRadius="12dp"
+            app:cornerRadius="@dimen/padding_medium"
             app:icon="@drawable/ic_phone"
             app:iconGravity="textStart" />
     </LinearLayout>

@@ -9,31 +9,31 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:background="#F5F7FA"
+        android:background="@color/bg_light"
         android:overScrollMode="never">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="100dp">
+            android:paddingBottom="@dimen/image_size_100">
 
             <!-- Premium Header -->
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="240dp">
+                android:layout_height="@dimen/dimen_240dp">
 
                 <View
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
+                    android:layout_height="@dimen/header_height"
                     android:background="@drawable/bg_header_wave" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:paddingHorizontal="24dp"
-                    android:paddingTop="50dp">
+                    android:paddingHorizontal="@dimen/spacing_24"
+                    android:paddingTop="@dimen/dimen_50dp">
 
                     <RelativeLayout
                         android:layout_width="match_parent"
@@ -44,122 +44,122 @@
                             android:layout_height="wrap_content"
                             android:orientation="vertical">
 
-                            <TextView
+                            <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvGreetingLabel"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="CHÀO BUỔI SÁNG,"
-                                android:textSize="12sp"
+                                android:text="@string/txt_chao_buoi_sang"
+                                android:textSize="@dimen/text_size_12"
                                 android:textStyle="bold"
                                 android:textColor="@color/primary_light"
                                 android:letterSpacing="0.15" />
 
-                            <TextView
+                            <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvUserName"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Phạm Tiến Đạt"
-                                android:textSize="26sp"
+                                android:text="@string/txt_pham_tien_at"
+                                android:textSize="@dimen/dimen_26sp"
                                 android:textStyle="bold"
                                 android:textColor="@color/white"
-                                android:layout_marginTop="2dp" />
+                                android:layout_marginTop="@dimen/stroke_2" />
 
-                            <TextView
+                            <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvCurrentDate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Thứ Hai, 11/04/2026"
-                                android:textSize="12sp"
+                                android:text="@string/txt_thu_hai_11_04_2026"
+                                android:textSize="@dimen/text_size_12"
                                 android:textColor="@color/primary_light"
-                                android:layout_marginTop="4dp"
+                                android:layout_marginTop="@dimen/elevation_4"
                                 android:alpha="0.9" />
                         </LinearLayout>
 
                         <!-- Only Notification Icon allowed -->
                         <FrameLayout
                             android:id="@+id/btnNotificationContainer"
-                            android:layout_width="45dp"
-                            android:layout_height="45dp"
+                            android:layout_width="@dimen/dimen_45dp"
+                            android:layout_height="@dimen/dimen_45dp"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
                             android:background="@drawable/bg_circle_white_alpha">
 
                             <ImageView
                                 android:id="@+id/btnNotification"
-                                android:layout_width="22dp"
-                                android:layout_height="22dp"
+                                android:layout_width="@dimen/dimen_22dp"
+                                android:layout_height="@dimen/dimen_22dp"
                                 android:layout_gravity="center"
                                 android:src="@drawable/ic_notification"
                                 app:tint="@color/white" />
 
-                            <TextView
+                            <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/tvNotificationBadge"
-                                android:layout_width="16dp"
-                                android:layout_height="16dp"
+                                android:layout_width="@dimen/padding_large"
+                                android:layout_height="@dimen/padding_large"
                                 android:layout_gravity="top|end"
                                 android:background="@drawable/bg_badge_red"
                                 android:gravity="center"
-                                android:text="0"
+                                android:text="@string/txt_0_1"
                                 android:textColor="@color/white"
-                                android:textSize="9sp"
+                                android:textSize="@dimen/dimen_9sp"
                                 android:textStyle="bold"
                                 android:visibility="gone" />
                         </FrameLayout>
                     </RelativeLayout>
 
                     <!-- Minimalist Search Box (No Icons) -->
-                    <androidx.cardview.widget.CardView
+                    <com.google.android.material.card.MaterialCardView
                         android:layout_width="match_parent"
-                        android:layout_height="60dp"
-                        android:layout_marginTop="30dp"
-                        app:cardCornerRadius="14dp"
-                        app:cardElevation="8dp">
+                        android:layout_height="@dimen/dimen_60dp"
+                        android:layout_marginTop="@dimen/dimen_30dp"
+                        app:cardCornerRadius="@dimen/spacing_14"
+                        app:cardElevation="@dimen/padding_small">
 
                         <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="match_parent"
                             android:gravity="center_vertical"
                             android:orientation="horizontal"
-                            android:paddingHorizontal="16dp">
+                            android:paddingHorizontal="@dimen/padding_large">
 
-                            <EditText
+                            <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edtHomeSearch"
                                 android:layout_width="0dp"
                                 android:layout_height="match_parent"
                                 android:layout_weight="1"
                                 android:background="@null"
-                                android:hint="Tìm kiếm khu vực hoặc tên trọ..."
-                                android:textSize="15sp"
+                                android:hint="@string/txt_tim_kiem_khu_vuc_hoac_ten"
+                                android:textSize="@dimen/text_size_15"
                                 android:textColor="@color/text_primary"
                                 android:inputType="text"
                                 android:imeOptions="actionSearch"/>
 
-                            <TextView
+                            <com.google.android.material.textview.MaterialTextView
                                 android:id="@+id/btnSearchLabel"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="TÌM KIẾM"
+                                android:text="@string/txt_tim_kiem_1"
                                 android:textColor="@color/primary"
                                 android:textStyle="bold"
-                                android:textSize="13sp"
-                                android:paddingHorizontal="12dp"
-                                android:paddingVertical="8dp"
+                                android:textSize="@dimen/text_size_13"
+                                android:paddingHorizontal="@dimen/padding_medium"
+                                android:paddingVertical="@dimen/padding_small"
                                 android:letterSpacing="0.05" />
                         </LinearLayout>
-                    </androidx.cardview.widget.CardView>
+                    </com.google.android.material.card.MaterialCardView>
 
                 </LinearLayout>
             </FrameLayout>
 
             <!-- Tra cứu hồ sơ chủ trọ -->
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="24dp"
-                android:layout_marginTop="16dp"
-                app:cardBackgroundColor="#0F172A"
-                app:cardCornerRadius="16dp"
-                app:cardElevation="8dp">
+                android:layout_marginHorizontal="@dimen/spacing_24"
+                android:layout_marginTop="@dimen/padding_large"
+                app:cardBackgroundColor="@color/color_0F172A"
+                app:cardCornerRadius="@dimen/padding_large"
+                app:cardElevation="@dimen/padding_small">
 
                 <LinearLayout
                     android:id="@+id/btnSearchProfileView"
@@ -168,92 +168,92 @@
                     android:background="?attr/selectableItemBackground"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:paddingHorizontal="16dp"
-                    android:paddingVertical="18dp">
+                    android:paddingHorizontal="@dimen/padding_large"
+                    android:paddingVertical="@dimen/spacing_18">
 
                     <FrameLayout
-                        android:layout_width="46dp"
-                        android:layout_height="46dp"
+                        android:layout_width="@dimen/dimen_46dp"
+                        android:layout_height="@dimen/dimen_46dp"
                         android:background="@drawable/bg_circle_white_alpha"
                         android:foreground="?attr/selectableItemBackgroundBorderless">
 
                         <ImageView
-                            android:layout_width="24dp"
-                            android:layout_height="24dp"
+                            android:layout_width="@dimen/spacing_24"
+                            android:layout_height="@dimen/spacing_24"
                             android:layout_gravity="center"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_shield_check"
-                            app:tint="#38BDF8" />
+                            app:tint="@color/color_38BDF8" />
                     </FrameLayout>
 
                     <LinearLayout
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="14dp"
+                        android:layout_marginStart="@dimen/spacing_14"
                         android:layout_weight="1"
                         android:orientation="vertical">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tra cứu thông tin người dùng"
-                            android:textColor="#F8FAFC"
-                            android:textSize="13sp"
+                            android:text="@string/txt_tra_cuu_thong_tin_nguoi_d"
+                            android:textColor="@color/color_F8FAFC"
+                            android:textSize="@dimen/text_size_13"
                             android:textStyle="bold" />
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_marginTop="4dp"
-                            android:lineSpacingExtra="2dp"
-                            android:text="Xem đánh giá &amp; xác thực danh tính để đảm bảo an toàn"
-                            android:textColor="#94A3B8"
-                            android:textSize="12sp" />
+                            android:layout_marginTop="@dimen/elevation_4"
+                            android:lineSpacingExtra="@dimen/stroke_2"
+                            android:text="@string/txt_xem_anh_gia_amp_xac_thuc_"
+                            android:textColor="@color/color_94A3B8"
+                            android:textSize="@dimen/text_size_12" />
                     </LinearLayout>
 
                     <LinearLayout
                         android:id="@+id/btnSearchProfile"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
+                        android:layout_marginStart="@dimen/padding_medium"
                         android:background="@drawable/bg_badge_blue"
                         android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingHorizontal="14dp"
-                        android:paddingVertical="8dp">
+                        android:paddingHorizontal="@dimen/spacing_14"
+                        android:paddingVertical="@dimen/padding_small">
 
-                        <TextView
+                        <com.google.android.material.textview.MaterialTextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="Tra cứu"
+                            android:text="@string/txt_tra_cuu"
                             android:textColor="@color/white"
-                            android:textSize="12sp"
+                            android:textSize="@dimen/text_size_12"
                             android:textStyle="bold" />
 
                         <ImageView
-                            android:layout_width="14dp"
-                            android:layout_height="14dp"
-                            android:layout_marginStart="4dp"
+                            android:layout_width="@dimen/spacing_14"
+                            android:layout_height="@dimen/spacing_14"
+                            android:layout_marginStart="@dimen/elevation_4"
                             android:contentDescription="@null"
                             android:src="@drawable/ic_arrow_right"
-                            app:tint="#FFFFFF" />
+                            app:tint="@color/bg_white" />
                     </LinearLayout>
                 </LinearLayout>
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Sections with Typography Focus -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:paddingHorizontal="24dp"
-                android:layout_marginTop="20dp">
+                android:paddingHorizontal="@dimen/spacing_24"
+                android:layout_marginTop="@dimen/padding_xlarge">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="KHÁM PHÁ KHU VỰC"
-                    android:textSize="11sp"
+                    android:text="@string/txt_kham_pha_khu_vuc"
+                    android:textSize="@dimen/text_size_11"
                     android:textStyle="bold"
                     android:textColor="@color/text_secondary"
                     android:letterSpacing="0.2" />
@@ -262,8 +262,8 @@
                     android:id="@+id/chipGroupPopularAreas"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="12dp"
-                    app:chipSpacingHorizontal="10dp" />
+                    android:layout_marginTop="@dimen/padding_medium"
+                    app:chipSpacingHorizontal="@dimen/corner_radius_10" />
             </LinearLayout>
 
 
@@ -273,18 +273,18 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="28dp">
+                android:layout_marginTop="@dimen/image_size_28">
 
                 <RelativeLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:paddingHorizontal="24dp">
+                    android:paddingHorizontal="@dimen/spacing_24">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Phòng nổi bật"
-                        android:textSize="22sp"
+                        android:text="@string/home_featured_rooms"
+                        android:textSize="@dimen/dimen_22sp"
                         android:textStyle="bold"
                         android:textColor="@color/text_primary" />
 
@@ -293,19 +293,19 @@
                 <View
                     android:id="@+id/skeletonFeatured"
                     android:layout_width="match_parent"
-                    android:layout_height="200dp"
-                    android:layout_marginHorizontal="24dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_height="@dimen/header_height"
+                    android:layout_marginHorizontal="@dimen/spacing_24"
+                    android:layout_marginTop="@dimen/padding_large"
                     android:background="@drawable/bg_skeleton"
                     android:visibility="gone" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvNoFeatured"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:padding="50dp"
-                    android:text="Hiện chưa có dữ liệu nổi bật"
+                    android:padding="@dimen/dimen_50dp"
+                    android:text="@string/txt_hien_chua_co_du_lieu_noi_"
                     android:textColor="@color/text_secondary"
                     android:visibility="gone" />
 
@@ -313,9 +313,9 @@
                     android:id="@+id/rvFeaturedRooms"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="@dimen/padding_large"
                     android:clipToPadding="false"
-                    android:paddingHorizontal="18dp" />
+                    android:paddingHorizontal="@dimen/spacing_18" />
             </LinearLayout>
 
             <!-- New Rooms -->
@@ -323,32 +323,32 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:layout_marginTop="40dp"
-                android:paddingHorizontal="24dp">
+                android:layout_marginTop="@dimen/image_size_40"
+                android:paddingHorizontal="@dimen/spacing_24">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Mới đăng tải"
-                    android:textSize="22sp"
+                    android:text="@string/txt_moi_ang_tai"
+                    android:textSize="@dimen/dimen_22sp"
                     android:textStyle="bold"
                     android:textColor="@color/text_primary" />
 
                 <View
                     android:id="@+id/skeletonNewRooms"
                     android:layout_width="match_parent"
-                    android:layout_height="240dp"
-                    android:layout_marginTop="16dp"
+                    android:layout_height="@dimen/dimen_240dp"
+                    android:layout_marginTop="@dimen/padding_large"
                     android:background="@drawable/bg_skeleton"
                     android:visibility="gone" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvNoNewRooms"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    android:padding="50dp"
-                    android:text="Đang cập nhật danh sách mới nhất..."
+                    android:padding="@dimen/dimen_50dp"
+                    android:text="@string/txt_ang_cap_nhat_danh_sach_mo"
                     android:textColor="@color/text_secondary"
                     android:visibility="gone" />
 
@@ -356,16 +356,16 @@
                     android:id="@+id/rvNewRooms"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="16dp"
+                    android:layout_marginTop="@dimen/padding_large"
                     android:nestedScrollingEnabled="false" />
 
                 <com.google.android.material.button.MaterialButton
                     android:id="@+id/btnLoadMore"
                     style="@style/Widget.MaterialComponents.Button.TextButton"
                     android:layout_width="match_parent"
-                    android:layout_height="56dp"
-                    android:layout_marginTop="20dp"
-                    android:text="Xem thêm bài viết"
+                    android:layout_height="@dimen/bottom_nav_height"
+                    android:layout_marginTop="@dimen/padding_xlarge"
+                    android:text="@string/txt_xem_them_bai_viet"
                     android:textColor="@color/primary"
                     android:visibility="gone" />
             </LinearLayout>
@@ -374,7 +374,7 @@
     </androidx.core.widget.NestedScrollView>
 
     <!-- Hidden compatibility IDs -->
-    <TextView android:id="@+id/tvGreeting" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
+    <com.google.android.material.textview.MaterialTextView android:id="@+id/tvGreeting" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
     <HorizontalScrollView android:id="@+id/scrollRecentSearch" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />
     <LinearLayout android:id="@+id/layoutRecentSearch" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" android:orientation="horizontal" />
     <ImageView android:id="@+id/btnHomeSearch" android:layout_width="0dp" android:layout_height="0dp" android:visibility="gone" />

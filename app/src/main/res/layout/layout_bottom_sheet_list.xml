@@ -3,30 +3,30 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp"
+    android:padding="@dimen/padding_xlarge"
     android:background="@drawable/bg_bottom_sheet">
 
     <View
-        android:layout_width="40dp"
-        android:layout_height="4dp"
+        android:layout_width="@dimen/image_size_40"
+        android:layout_height="@dimen/elevation_4"
         android:layout_gravity="center"
-        android:background="#E0E0E0"
-        android:layout_marginBottom="16dp"/>
+        android:background="@color/bg_card"
+        android:layout_marginBottom="@dimen/padding_large"/>
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvSheetTitle"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Lịch bận"
-        android:textSize="18sp"
+        android:text="@string/txt_lich_ban"
+        android:textSize="@dimen/text_size_18"
         android:textStyle="bold"
         android:textColor="@color/text_primary"
-        android:layout_marginBottom="16dp"/>
+        android:layout_marginBottom="@dimen/padding_large"/>
 
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:maxHeight="400dp">
+        android:maxHeight="@dimen/dimen_400dp">
         <LinearLayout
             android:id="@+id/layoutSheetList"
             android:layout_width="match_parent"

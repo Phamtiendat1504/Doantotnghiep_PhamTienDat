@@ -154,6 +154,11 @@
             android:name=".View.Auth.UserProfileActivity"
             android:exported="false" />
 
+        <activity
+            android:name=".View.Auth.AIChatActivity"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Firebase Messaging Service - nhận Push Notification từ FCM -->
 
         <service

@@ -66,15 +66,15 @@ class RoomRepository {
                     .filter { it >= windowStart }
                     .sorted()
 
-                // LƯU Ý: Đã mua gói thì SẼ TRỪ VÀO GÓI TRƯỚC (không tặng 3 lượt miễn phí khi đang còn gói)
-                if (purchasedSlots > 0) {
-                    onAllowed(purchasedSlots, true)
+                // ƯU TIÊN 1: Sử dụng 3 lượt miễn phí mỗi ngày trước (Xài hàng Free trước)
+                if (recentPosts.size < limitPer24h) {
+                    onAllowed((limitPer24h - recentPosts.size).coerceAtLeast(0), false)
                     return@addOnSuccessListener
                 }
 
-                // Nếu KHÔNG mua gói (hoặc đã dùng hết gói), thì mới áp dụng luật 3 lượt miễn phí mỗi 24h
-                if (recentPosts.size < limitPer24h) {
-                    onAllowed((limitPer24h - recentPosts.size).coerceAtLeast(0), false)
+                // ƯU TIÊN 2: Khi đã dùng hết lượt miễn phí trong ngày, mới bắt đầu trừ vào gói mua thêm (Paid)
+                if (purchasedSlots > 0) {
+                    onAllowed(purchasedSlots, true)
                     return@addOnSuccessListener
                 }
 
@@ -455,6 +455,53 @@ class RoomRepository {
         db.collection("rooms").whereEqualTo("status", "approved").get()
             .addOnSuccessListener { docs -> onSuccess(docs.toList()) }
             .addOnFailureListener { e -> onFailure("Lỗi tìm kiếm: ${e.message}") }
+    }
+
+    // Tối ưu hóa: Lọc Quận/Phường trực tiếp trên server thay vì tải hết toàn bộ database về
+    fun searchRoomsWithBasicFilters(
+        district: String,
+        ward: String,
+        onSuccess: (List<com.google.firebase.firestore.QueryDocumentSnapshot>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        var query = db.collection("rooms").whereEqualTo("status", "approved")
+        
+        if (district.isNotBlank() && !district.contains("Chọn", ignoreCase = true)) {
+            query = query.whereEqualTo("district", district)
+        }
+        if (ward.isNotBlank() && !ward.contains("Chọn", ignoreCase = true)) {
+            query = query.whereEqualTo("ward", ward)
+        }
+
+        query.get()
+            .addOnSuccessListener { docs -> onSuccess(docs.toList()) }
+            .addOnFailureListener { e -> onFailure("Lỗi tìm kiếm khu vực: ${e.message}") }
+    }
+
+    // Tối ưu hóa: Tìm kiếm bằng Bounding Box theo Latitude để giảm số lượt tải dữ liệu từ Firestore
+    fun searchNearbyRooms(
+        lat: Double,
+        radiusKm: Double,
+        onSuccess: (List<com.google.firebase.firestore.QueryDocumentSnapshot>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        // 1 độ vĩ tuyến tương đương khoảng 111.32 km
+        val latDelta = radiusKm / 111.32
+        val minLat = lat - latDelta
+        val maxLat = lat + latDelta
+
+        // FIX: Phải thêm whereEqualTo("status", "approved") để thỏa mãn Security Rules của Firestore.
+        // LƯU Ý: Việc thêm filter này yêu cầu bạn phải tạo một Composite Index cho (status: ASC, latitude: ASC) 
+        // trong Firebase Console, nếu không sẽ gặp lỗi "The query requires an index".
+        db.collection("rooms")
+            .whereEqualTo("status", "approved")
+            .whereGreaterThanOrEqualTo("latitude", minLat)
+            .whereLessThanOrEqualTo("latitude", maxLat)
+            .get()
+            .addOnSuccessListener { docs -> 
+                onSuccess(docs.toList()) 
+            }
+            .addOnFailureListener { e -> onFailure("Lỗi tìm kiếm quanh đây: ${e.message}") }
     }
 
     // --- RoomViewModel ---

@@ -49,29 +49,87 @@ class PostViewModel : ViewModel() {
     private val _postQuotaBlocked = MutableLiveData<PostQuotaBlockInfo?>()
     val postQuotaBlocked: LiveData<PostQuotaBlockInfo?> = _postQuotaBlocked
 
+    private var userListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+    private var verificationListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
+
     fun loadUserObject() {
-        authRepository.loadUserObject(
-            onSuccess = { user: User? -> 
-                if (user != null && !user.isVerified && user.role != "admin") {
-                    authRepository.loadVerificationStatusDetail(
-                        onSuccess = { status: String?, reason: String? ->
-                            val waitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
-                            if (status in waitingStatuses) {
-                                _userObject.value = user.copy(role = "pending")
-                            } else if (status == "rejected") {
-                                _userObject.value = user.copy(role = "rejected", occupation = reason ?: "")
-                            } else {
-                                _userObject.value = user
-                            }
-                        },
-                        onFailure = { _ -> _userObject.value = user }
-                    )
+        val uid = getCurrentUserId() ?: run {
+            _userObject.value = null
+            return
+        }
+
+        userListenerRegistration?.remove()
+        userListenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("users").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) {
+                    return@addSnapshotListener
+                }
+
+                val user = User(
+                    uid           = snapshot.getString("uid") ?: uid,
+                    fullName      = snapshot.getString("fullName") ?: "",
+                    email         = snapshot.getString("email") ?: "",
+                    phone         = snapshot.getString("phone") ?: "",
+                    address       = snapshot.getString("address") ?: "",
+                    birthday      = snapshot.getString("birthday") ?: "",
+                    gender        = snapshot.getString("gender") ?: "",
+                    occupation    = snapshot.getString("occupation") ?: "",
+                    avatarUrl     = snapshot.getString("avatarUrl") ?: "",
+                    role          = snapshot.getString("role") ?: "user",
+                    isVerified    = snapshot.getBoolean("isVerified") ?: false,
+                    hasAcceptedRules = snapshot.getBoolean("hasAcceptedRules") ?: false,
+                    isLocked      = snapshot.getBoolean("isLocked") ?: false,
+                    lockReason    = snapshot.getString("lockReason") ?: "",
+                    lockUntil     = snapshot.getLong("lockUntil") ?: 0L,
+                    postingUnlockAt = snapshot.getLong("postingUnlockAt") ?: 0L,
+                    verifiedAt    = snapshot.getLong("verifiedAt") ?: 0L,
+                    createdAt     = snapshot.getLong("createdAt") ?: 0L,
+                    purchasedSlots = (snapshot.getLong("purchasedSlots") ?: 0L).toInt()
+                )
+
+                if (!user.isVerified && user.role != "admin") {
+                    listenVerificationStatus(user, uid)
                 } else {
+                    verificationListenerRegistration?.remove()
+                    verificationListenerRegistration = null
                     _userObject.value = user
                 }
-            },
-            onFailure = { error: String -> _errorMessage.value = error }
-        )
+            }
+    }
+
+    private fun listenVerificationStatus(baseUser: User, uid: String) {
+        verificationListenerRegistration?.remove()
+        verificationListenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("verifications").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null || snapshot == null || !snapshot.exists()) {
+                    _userObject.value = baseUser
+                    return@addSnapshotListener
+                }
+                
+                val status = snapshot.getString("status")
+                val reason = snapshot.getString("rejectReason")
+                val autoCheckStatus = snapshot.getString("autoCheckStatus")
+                val waitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
+                
+                // Xử lý tự động chuyển form nếu autoCheck là pass (chờ cloud function update users)
+                if (autoCheckStatus == "pass" || status == "approved") {
+                    _userObject.value = baseUser.copy(isVerified = true)
+                } else if (status in waitingStatuses) {
+                    _userObject.value = baseUser.copy(role = "pending")
+                } else if (status == "rejected") {
+                    _userObject.value = baseUser.copy(role = "rejected", occupation = reason ?: "")
+                } else {
+                    _userObject.value = baseUser
+                }
+            }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        userListenerRegistration?.remove()
+        verificationListenerRegistration?.remove()
     }
 
     fun markRulesAccepted() {
@@ -157,7 +215,13 @@ class PostViewModel : ViewModel() {
             usePurchasedSlot = usePurchasedSlot,
             onSuccess = { roomId: String, thumbnailUrl: String? ->
                 _isLoading.value = false
-                _postResult.value = Pair(roomId, thumbnailUrl)
+                val remainMessage = if (usePurchasedSlot) {
+                    "Bài đăng đã được duyệt. Bạn vừa sử dụng 1 lượt đăng bài tính phí (Mua thêm)."
+                } else {
+                    "Bài đăng đã được duyệt. Bạn đang sử dụng lượt đăng bài miễn phí trong ngày."
+                }
+                // Dùng thumbnailUrl để chứa câu thông báo (trick để khỏi sửa quá nhiều data class)
+                _postResult.value = Pair(roomId, remainMessage)
             },
             onFailure = { error: String ->
                 _isLoading.value = false

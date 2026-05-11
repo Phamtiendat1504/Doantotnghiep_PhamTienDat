@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F5F7FA">
+    android:background="@color/bg_light">
 
     <!-- Header -->
     <LinearLayout
@@ -12,9 +12,9 @@
         android:layout_height="wrap_content"
         android:background="@color/primary"
         android:orientation="vertical"
-        android:paddingTop="48dp"
-        android:paddingBottom="16dp"
-        android:paddingHorizontal="16dp">
+        android:paddingTop="@dimen/dimen_48dp"
+        android:paddingBottom="@dimen/padding_large"
+        android:paddingHorizontal="@dimen/padding_large">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -24,61 +24,61 @@
 
             <ImageView
                 android:id="@+id/btnBackSearch"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="@dimen/image_size_40"
+                android:layout_height="@dimen/image_size_40"
                 android:src="@drawable/ic_back"
-                android:padding="8dp"
+                android:padding="@dimen/padding_small"
                 app:tint="@color/white"
                 android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="Quay lại"/>
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Tìm kiếm người dùng"
+                android:text="@string/txt_tim_kiem_nguoi_dung"
                 android:textColor="@color/white"
-                android:textSize="18sp"
+                android:textSize="@dimen/text_size_18"
                 android:textStyle="bold"
-                android:layout_marginStart="8dp"/>
+                android:layout_marginStart="@dimen/padding_small"/>
         </LinearLayout>
 
         <!-- Search bar -->
-        <androidx.cardview.widget.CardView
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="52dp"
-            android:layout_marginTop="12dp"
-            app:cardCornerRadius="26dp"
-            app:cardElevation="4dp">
+            android:layout_height="@dimen/dimen_52dp"
+            android:layout_marginTop="@dimen/padding_medium"
+            app:cardCornerRadius="@dimen/dimen_26dp"
+            app:cardElevation="@dimen/elevation_4">
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingHorizontal="16dp">
+                android:paddingHorizontal="@dimen/padding_large">
 
                 <ImageView
-                    android:layout_width="20dp"
-                    android:layout_height="20dp"
+                    android:layout_width="@dimen/padding_xlarge"
+                    android:layout_height="@dimen/padding_xlarge"
                     android:src="@drawable/ic_search"
-                    app:tint="#999999"
+                    app:tint="@color/text_hint"
                     android:contentDescription="Tìm kiếm"/>
 
-                <EditText
+                <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/edtSearchProfile"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
-                    android:layout_marginStart="10dp"
+                    android:layout_marginStart="@dimen/corner_radius_10"
                     android:layout_weight="1"
                     android:background="@null"
-                    android:hint="Nhập tên người cần tìm..."
-                    android:textSize="15sp"
+                    android:hint="@string/txt_nhap_ten_nguoi_can_tim"
+                    android:textSize="@dimen/text_size_15"
                     android:inputType="textPersonName"
                     android:imeOptions="actionSearch"
                     android:singleLine="true"/>
             </LinearLayout>
-        </androidx.cardview.widget.CardView>
+        </com.google.android.material.card.MaterialCardView>
     </LinearLayout>
 
     <!-- Loading indicator -->
@@ -87,7 +87,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="@dimen/spacing_24"
         android:visibility="gone"/>
 
     <!-- Empty state -->
@@ -97,23 +97,23 @@
         android:layout_height="wrap_content"
         android:orientation="vertical"
         android:gravity="center"
-        android:padding="48dp"
+        android:padding="@dimen/dimen_48dp"
         android:visibility="visible">
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Tìm người dùng"
+            android:text="@string/txt_tim_nguoi_dung"
             android:textColor="@color/text_primary"
-            android:textSize="20sp"
+            android:textSize="@dimen/text_size_20"
             android:textStyle="bold"/>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="Gõ tên để tìm người dùng"
-            android:textSize="15sp"
+            android:layout_marginTop="@dimen/padding_small"
+            android:text="@string/txt_go_ten_e_tim_nguoi_dung"
+            android:textSize="@dimen/text_size_15"
             android:textColor="@color/text_secondary"
             android:gravity="center"/>
     </LinearLayout>
@@ -123,9 +123,9 @@
         android:id="@+id/rvSearchProfile"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="@dimen/padding_small"
         android:clipToPadding="false"
-        android:paddingHorizontal="16dp"
-        android:paddingBottom="16dp"/>
+        android:paddingHorizontal="@dimen/padding_large"
+        android:paddingBottom="@dimen/padding_large"/>
 
 </LinearLayout>

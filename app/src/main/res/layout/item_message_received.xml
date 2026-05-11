@@ -4,19 +4,19 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:paddingTop="2dp"
-    android:paddingBottom="2dp">
+    android:paddingTop="@dimen/stroke_2"
+    android:paddingBottom="@dimen/stroke_2">
 
     <!-- Thời gian -->
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvTimeReceived"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
-        android:textSize="11sp"
-        android:textColor="#AAAAAA"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp"
+        android:textSize="@dimen/text_size_11"
+        android:textColor="@color/color_AAAAAA"
+        android:paddingTop="@dimen/padding_small"
+        android:paddingBottom="@dimen/elevation_4"
         android:visibility="gone" />
 
     <LinearLayout
@@ -30,21 +30,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginStart="8dp"
-            android:layout_marginEnd="56dp"
-            android:layout_marginBottom="2dp"
+            android:layout_marginStart="@dimen/padding_small"
+            android:layout_marginEnd="@dimen/bottom_nav_height"
+            android:layout_marginBottom="@dimen/stroke_2"
             android:gravity="start">
 
             <!-- Hình ảnh -->
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardImageReceived"
                 xmlns:app="http://schemas.android.com/apk/res-auto"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="@dimen/padding_large"
                 app:cardElevation="0dp"
-                app:cardBackgroundColor="#E0E0E0"
-                android:layout_marginBottom="4dp"
+                app:cardBackgroundColor="@color/bg_card"
+                android:layout_marginBottom="@dimen/elevation_4"
                 android:visibility="gone">
                 
                 <ImageView
@@ -52,45 +52,45 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:adjustViewBounds="true"
-                    android:maxWidth="250dp"
-                    android:maxHeight="300dp"
+                    android:maxWidth="@dimen/dimen_250dp"
+                    android:maxHeight="@dimen/dimen_300dp"
                     android:scaleType="centerCrop" />
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Bubble tin nhắn -->
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/tvMessageReceived"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Tin nhắn mẫu"
-                android:textSize="15sp"
+                android:text="@string/txt_tin_nhan_mau"
+                android:textSize="@dimen/text_size_15"
                 android:textColor="@color/text_primary"
                 android:background="@drawable/bg_bubble_received"
-                android:paddingStart="14dp"
-                android:paddingEnd="14dp"
-                android:paddingTop="10dp"
-                android:paddingBottom="10dp"
-                android:maxWidth="280dp" />
+                android:paddingStart="@dimen/spacing_14"
+                android:paddingEnd="@dimen/spacing_14"
+                android:paddingTop="@dimen/corner_radius_10"
+                android:paddingBottom="@dimen/corner_radius_10"
+                android:maxWidth="@dimen/dimen_280dp" />
 
         </LinearLayout>
 
     </LinearLayout>
 
     <!-- Emoji Reactions (hiện bên trái, sát bubble) -->
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvReactionsReceived"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
-        android:layout_marginStart="10dp"
-        android:layout_marginTop="-6dp"
-        android:textSize="14sp"
-        android:background="#FFFFFF"
-        android:elevation="2dp"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp"
-        android:paddingTop="1dp"
-        android:paddingBottom="1dp"
+        android:layout_marginStart="@dimen/corner_radius_10"
+        android:layout_marginTop="@dimen/dimen_minus_6dp"
+        android:textSize="@dimen/text_size_14"
+        android:background="@color/bg_white"
+        android:elevation="@dimen/stroke_2"
+        android:paddingStart="@dimen/elevation_4"
+        android:paddingEnd="@dimen/elevation_4"
+        android:paddingTop="@dimen/stroke_1"
+        android:paddingBottom="@dimen/stroke_1"
         android:visibility="gone" />
 
 </LinearLayout>

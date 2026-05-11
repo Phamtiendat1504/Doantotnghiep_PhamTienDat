@@ -25,6 +25,10 @@ import androidx.camera.view.LifecycleCameraController
 import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.exifinterface.media.ExifInterface
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.google.android.material.button.MaterialButton
@@ -254,73 +258,79 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     private fun handleCapturedFile(file: File) {
-        val bitmap = decodeBitmapWithExif(file)
-        if (bitmap == null) {
-            resetCaptureState()
-            MessageUtils.showErrorDialog(this, "Lỗi ảnh", "Không đọc được ảnh vừa chụp. Vui lòng chụp lại.")
-            return
-        }
-
-        val cropped = cropToGuide(bitmap)
-        if (cropped == null) {
-            resetCaptureState()
-            bitmap.recycle()
-            file.delete()
-            MessageUtils.showInfoDialog(
-                this,
-                "Ảnh chưa đúng khung",
-                "Không xác định được đúng vùng khung chụp. Vui lòng đặt lại CCCD vào khung và chụp lại."
-            )
-            return
-        }
-
-        if (cropped.width <= cropped.height) {
-            resetCaptureState()
-            if (cropped != bitmap) cropped.recycle()
-            bitmap.recycle()
-            file.delete()
-            MessageUtils.showInfoDialog(
-                this,
-                "Ảnh chưa đúng khung",
-                "Vui lòng đặt CCCD nằm ngang trong khung và chụp lại."
-            )
-            return
-        }
-
-        val qualityError = validateImageQuality(cropped)
-        if (qualityError != null) {
-            resetCaptureState()
-            if (cropped != bitmap) cropped.recycle()
-            bitmap.recycle()
-            file.delete()
-            MessageUtils.showInfoDialog(
-                this,
-                "Ảnh chưa hợp lệ",
-                qualityError
-            )
-            return
-        }
-
-        validateCccdFromFrame(cropped) { valid, errorMessage ->
-            if (!valid) {
-                resetCaptureState()
-                if (cropped != bitmap) cropped.recycle()
-                bitmap.recycle()
-                file.delete()
-                MessageUtils.showInfoDialog(
-                    this,
-                    "Ảnh chưa hợp lệ",
-                    errorMessage
-                )
-                return@validateCccdFromFrame
+        tvGuideSub.text = "Đang xử lý ảnh, vui lòng đợi..."
+        lifecycleScope.launch(Dispatchers.IO) {
+            val bitmap = decodeBitmapWithExif(file)
+            if (bitmap == null) {
+                withContext(Dispatchers.Main) {
+                    resetCaptureState()
+                    MessageUtils.showErrorDialog(this@CccdCameraActivity, "Lỗi ảnh", "Không đọc được ảnh vừa chụp. Vui lòng chụp lại.")
+                }
+                return@launch
             }
 
-            saveBitmapToFile(cropped, file)
-            if (cropped != bitmap) cropped.recycle()
-            bitmap.recycle()
-            val resultIntent = android.content.Intent().putExtra(EXTRA_OUTPUT_URI, Uri.fromFile(file).toString())
-            setResult(RESULT_OK, resultIntent)
-            finish()
+            val cropped = cropToGuide(bitmap)
+            if (cropped == null) {
+                withContext(Dispatchers.Main) {
+                    resetCaptureState()
+                    bitmap.recycle()
+                    file.delete()
+                    MessageUtils.showInfoDialog(
+                        this@CccdCameraActivity,
+                        "Ảnh chưa đúng khung",
+                        "Không xác định được đúng vùng khung chụp. Vui lòng đặt lại CCCD vào khung và chụp lại."
+                    )
+                }
+                return@launch
+            }
+
+            if (cropped.width <= cropped.height) {
+                withContext(Dispatchers.Main) {
+                    resetCaptureState()
+                    if (cropped != bitmap) cropped.recycle()
+                    bitmap.recycle()
+                    file.delete()
+                    MessageUtils.showInfoDialog(
+                        this@CccdCameraActivity,
+                        "Ảnh chưa đúng khung",
+                        "Vui lòng đặt CCCD nằm ngang trong khung và chụp lại."
+                    )
+                }
+                return@launch
+            }
+
+            // Đã vô hiệu hóa kiểm tra chất lượng pixel thủ công để ưu tiên ML Kit OCR
+            // val qualityError = validateImageQuality(cropped)
+            // if (qualityError != null) { ... }
+
+            withContext(Dispatchers.Main) {
+                validateCccdFromFrame(cropped) { valid, errorMessage ->
+                    if (!valid) {
+                        resetCaptureState()
+                        if (cropped != bitmap) cropped.recycle()
+                        bitmap.recycle()
+                        file.delete()
+                        MessageUtils.showInfoDialog(
+                            this@CccdCameraActivity,
+                            "Ảnh chưa hợp lệ",
+                            errorMessage
+                        )
+                        return@validateCccdFromFrame
+                    }
+
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        saveBitmapToFile(cropped, file)
+                        if (cropped != bitmap) cropped.recycle()
+                        bitmap.recycle()
+                        
+                        withContext(Dispatchers.Main) {
+                            val resultIntent = android.content.Intent().putExtra(EXTRA_OUTPUT_URI, Uri.fromFile(file).toString())
+                            setResult(RESULT_OK, resultIntent)
+                            finish()
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -797,7 +807,8 @@ class CccdCameraActivity : AppCompatActivity() {
 
         if (guideRight <= guideLeft || guideBottom <= guideTop) return null
 
-        val displayScale = min(previewWidth / bitmap.width.toFloat(), previewHeight / bitmap.height.toFloat())
+        // Chuyển sang dùng maxOf vì PreviewView đang dùng FILL_CENTER
+        val displayScale = maxOf(previewWidth / bitmap.width.toFloat(), previewHeight / bitmap.height.toFloat())
         val displayedWidth = bitmap.width * displayScale
         val displayedHeight = bitmap.height * displayScale
         val displayLeft = (previewWidth - displayedWidth) / 2f
@@ -810,10 +821,19 @@ class CccdCameraActivity : AppCompatActivity() {
 
         if (intersectRight <= intersectLeft || intersectBottom <= intersectTop) return null
 
-        val leftPct = ((intersectLeft - displayLeft) / displayedWidth).coerceIn(0f, 1f)
-        val topPct = ((intersectTop - displayTop) / displayedHeight).coerceIn(0f, 1f)
-        val rightPct = ((intersectRight - displayLeft) / displayedWidth).coerceIn(0f, 1f)
-        val bottomPct = ((intersectBottom - displayTop) / displayedHeight).coerceIn(0f, 1f)
+        // Mở rộng vùng crop thêm 5% mỗi chiều để bù trừ rung tay, tránh cắt lẹm viền thẻ
+        val expandX = (intersectRight - intersectLeft) * 0.05f
+        val expandY = (intersectBottom - intersectTop) * 0.05f
+        
+        val finalLeft = maxOf(intersectLeft - expandX, displayLeft)
+        val finalTop = maxOf(intersectTop - expandY, displayTop)
+        val finalRight = minOf(intersectRight + expandX, displayLeft + displayedWidth)
+        val finalBottom = minOf(intersectBottom + expandY, displayTop + displayedHeight)
+
+        val leftPct = ((finalLeft - displayLeft) / displayedWidth).coerceIn(0f, 1f)
+        val topPct = ((finalTop - displayTop) / displayedHeight).coerceIn(0f, 1f)
+        val rightPct = ((finalRight - displayLeft) / displayedWidth).coerceIn(0f, 1f)
+        val bottomPct = ((finalBottom - displayTop) / displayedHeight).coerceIn(0f, 1f)
 
         val left = (leftPct * bitmap.width).roundToInt().coerceIn(0, bitmap.width - 1)
         val top = (topPct * bitmap.height).roundToInt().coerceIn(0, bitmap.height - 1)

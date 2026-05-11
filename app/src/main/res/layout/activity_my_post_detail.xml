@@ -12,38 +12,38 @@
         android:background="@color/primary"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingStart="16dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="14dp"
-        android:paddingBottom="14dp">
+        android:paddingStart="@dimen/padding_large"
+        android:paddingEnd="@dimen/padding_large"
+        android:paddingTop="@dimen/spacing_14"
+        android:paddingBottom="@dimen/spacing_14">
 
         <ImageView
             android:id="@+id/btnBack"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:padding="6dp"
+            android:layout_width="@dimen/dimen_36dp"
+            android:layout_height="@dimen/dimen_36dp"
+            android:padding="@dimen/elevation_6"
             android:src="@drawable/ic_back"
             app:tint="@android:color/white" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="10dp"
-            android:text="Chi tiết bài đăng"
+            android:layout_marginStart="@dimen/corner_radius_10"
+            android:text="@string/txt_chi_tiet_bai_ang"
             android:textColor="@android:color/white"
-            android:textSize="20sp"
+            android:textSize="@dimen/text_size_20"
             android:textStyle="bold" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvStatusBadge"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingStart="10dp"
-            android:paddingEnd="10dp"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp"
-            android:textSize="12sp"
+            android:paddingStart="@dimen/corner_radius_10"
+            android:paddingEnd="@dimen/corner_radius_10"
+            android:paddingTop="@dimen/elevation_4"
+            android:paddingBottom="@dimen/elevation_4"
+            android:textSize="@dimen/text_size_12"
             android:textStyle="bold" />
 
     </LinearLayout>
@@ -57,30 +57,30 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingBottom="24dp">
+            android:paddingBottom="@dimen/spacing_24">
 
             <FrameLayout
                 android:layout_width="match_parent"
-                android:layout_height="230dp">
+                android:layout_height="@dimen/dimen_230dp">
 
                 <androidx.viewpager2.widget.ViewPager2
                     android:id="@+id/viewPagerImages"
                     android:layout_width="match_parent"
                     android:layout_height="match_parent" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvImageCount"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="bottom|end"
-                    android:layout_margin="10dp"
-                    android:background="#66000000"
-                    android:paddingStart="10dp"
-                    android:paddingEnd="10dp"
-                    android:paddingTop="4dp"
-                    android:paddingBottom="4dp"
+                    android:layout_margin="@dimen/corner_radius_10"
+                    android:background="@color/color_66000000"
+                    android:paddingStart="@dimen/corner_radius_10"
+                    android:paddingEnd="@dimen/corner_radius_10"
+                    android:paddingTop="@dimen/elevation_4"
+                    android:paddingBottom="@dimen/elevation_4"
                     android:textColor="@android:color/white"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_size_12"
                     android:textStyle="bold" />
 
             </FrameLayout>
@@ -89,220 +89,220 @@
                 android:id="@+id/layoutRejectReason"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="12dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/padding_medium"
                 android:background="@color/bg_error"
                 android:gravity="center_vertical"
                 android:orientation="vertical"
-                android:padding="12dp"
+                android:padding="@dimen/padding_medium"
                 android:visibility="gone">
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Thông báo"
+                    android:text="@string/home_notification"
                     android:textColor="@color/secondary"
-                    android:textSize="13sp"
+                    android:textSize="@dimen/text_size_13"
                     android:textStyle="bold" />
 
-                <TextView
+                <com.google.android.material.textview.MaterialTextView
                     android:id="@+id/tvRejectReason"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="@dimen/elevation_4"
                     android:textColor="@color/secondary"
-                    android:textSize="13sp" />
+                    android:textSize="@dimen/text_size_13" />
 
             </LinearLayout>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="12dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/padding_medium"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="3dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/elevation_3">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/padding_large">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvTitle"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textColor="@color/text_primary"
-                        android:textSize="19sp"
+                        android:textSize="@dimen/dimen_19sp"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvPrice"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="@dimen/padding_small"
                         android:textColor="@color/secondary"
-                        android:textSize="22sp"
+                        android:textSize="@dimen/dimen_22sp"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvAddress"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="@dimen/padding_small"
                         android:textColor="@color/text_secondary"
-                        android:textSize="13sp" />
+                        android:textSize="@dimen/text_size_13" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvPostDate"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="@dimen/elevation_4"
                         android:textColor="@color/text_hint"
-                        android:textSize="12sp" />
+                        android:textSize="@dimen/text_size_12" />
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="10dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/corner_radius_10"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="3dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/elevation_3">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/padding_large">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Thông tin phòng"
+                        android:text="@string/txt_thong_tin_phong"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
                     <LinearLayout
                         android:id="@+id/layoutRoomInfo"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/elevation_6"
                         android:orientation="vertical" />
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="10dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/corner_radius_10"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="3dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/elevation_3">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/padding_large">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Tiện ích"
+                        android:text="@string/txt_tien_ich"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
                     <LinearLayout
                         android:id="@+id/layoutAmenities"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
+                        android:layout_marginTop="@dimen/elevation_6"
                         android:orientation="vertical" />
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
-            <androidx.cardview.widget.CardView
+            <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="10dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/corner_radius_10"
                 app:cardBackgroundColor="@android:color/white"
-                app:cardCornerRadius="14dp"
-                app:cardElevation="3dp">
+                app:cardCornerRadius="@dimen/spacing_14"
+                app:cardElevation="@dimen/elevation_3">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:orientation="vertical"
-                    android:padding="16dp">
+                    android:padding="@dimen/padding_large">
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Mô tả"
+                        android:text="@string/txt_mo_ta"
                         android:textColor="@color/text_primary"
-                        android:textSize="15sp"
+                        android:textSize="@dimen/text_size_15"
                         android:textStyle="bold" />
 
-                    <TextView
+                    <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/tvDescription"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:lineSpacingExtra="3dp"
+                        android:layout_marginTop="@dimen/elevation_6"
+                        android:lineSpacingExtra="@dimen/elevation_3"
                         android:textColor="@color/text_primary"
-                        android:textSize="14sp" />
+                        android:textSize="@dimen/text_size_14" />
 
                 </LinearLayout>
 
-            </androidx.cardview.widget.CardView>
+            </com.google.android.material.card.MaterialCardView>
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnMarkRented"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="14dp"
-                android:text="Đã cho thuê"
+                android:layout_height="@dimen/dimen_52dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/spacing_14"
+                android:text="@string/status_rented"
                 android:textAllCaps="false"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_size_16"
                 android:visibility="gone"
-                app:backgroundTint="#2E7D32"
-                app:cornerRadius="14dp" />
+                app:backgroundTint="@color/success"
+                app:cornerRadius="@dimen/spacing_14" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEditPost"
                 android:layout_width="match_parent"
-                android:layout_height="52dp"
-                android:layout_marginStart="16dp"
-                android:layout_marginEnd="16dp"
-                android:layout_marginTop="10dp"
-                android:text="Sửa và đăng lại"
+                android:layout_height="@dimen/dimen_52dp"
+                android:layout_marginStart="@dimen/padding_large"
+                android:layout_marginEnd="@dimen/padding_large"
+                android:layout_marginTop="@dimen/corner_radius_10"
+                android:text="@string/txt_sua_va_ang_lai"
                 android:textAllCaps="false"
-                android:textSize="16sp"
+                android:textSize="@dimen/text_size_16"
                 android:visibility="gone"
-                app:backgroundTint="#1976D2"
-                app:cornerRadius="14dp" />
+                app:backgroundTint="@color/bottom_nav_selected"
+                app:cornerRadius="@dimen/spacing_14" />
 
         </LinearLayout>
 

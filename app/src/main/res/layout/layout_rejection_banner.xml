@@ -1,21 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView
+<com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginStart="14dp"
-    android:layout_marginEnd="14dp"
-    android:layout_marginTop="14dp"
-    app:cardCornerRadius="12dp"
-    app:cardBackgroundColor="#FFFFEBEE"
-    app:cardElevation="2dp">
+    android:layout_marginStart="@dimen/spacing_14"
+    android:layout_marginEnd="@dimen/spacing_14"
+    android:layout_marginTop="@dimen/spacing_14"
+    app:cardCornerRadius="@dimen/padding_medium"
+    app:cardBackgroundColor="@color/color_FFFFEBEE"
+    app:cardElevation="@dimen/stroke_2">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:padding="@dimen/padding_large">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -24,38 +24,38 @@
             android:gravity="center_vertical">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="@dimen/padding_xlarge"
+                android:layout_height="@dimen/padding_xlarge"
                 android:src="@android:drawable/stat_notify_error"
-                app:tint="#D32F2F" />
+                app:tint="@color/error" />
 
-            <TextView
+            <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="BÀI VIẾT BỊ TỪ CHỐI"
-                android:textSize="16sp"
+                android:text="@string/txt_bai_viet_bi_tu_choi"
+                android:textSize="@dimen/text_size_16"
                 android:textStyle="bold"
                 android:textColor="@color/secondary"
-                android:layout_marginStart="8dp" />
+                android:layout_marginStart="@dimen/padding_small" />
         </LinearLayout>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/tvRejectReason"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Lý do: Ảnh chưa rõ thông tin"
-            android:textSize="14sp"
+            android:text="@string/txt_ly_do_anh_chua_ro_thong_t"
+            android:textSize="@dimen/text_size_14"
             android:textColor="@color/secondary_dark"
-            android:layout_marginTop="6dp" />
+            android:layout_marginTop="@dimen/elevation_6" />
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Vui lòng chỉnh sửa các thông tin theo yêu cầu và bấm 'Cập nhật bài viết' để gửi duyệt lại."
-            android:textSize="12sp"
+            android:text="@string/txt_vui_long_chinh_sua_cac_th"
+            android:textSize="@dimen/text_size_12"
             android:textColor="@color/secondary_dark"
-            android:layout_marginTop="8dp"
+            android:layout_marginTop="@dimen/padding_small"
             android:fontStyle="italic" />
 
     </LinearLayout>
-</androidx.cardview.widget.CardView>
+</com.google.android.material.card.MaterialCardView>

@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="20dp">
+    android:padding="@dimen/padding_xlarge">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -13,60 +13,60 @@
         android:orientation="horizontal">
 
         <FrameLayout
-            android:layout_width="44dp"
-            android:layout_height="44dp"
+            android:layout_width="@dimen/dimen_44dp"
+            android:layout_height="@dimen/dimen_44dp"
             android:background="@drawable/bg_icon_circle_light_blue">
 
             <ImageView
-                android:layout_width="20dp"
-                android:layout_height="20dp"
+                android:layout_width="@dimen/padding_xlarge"
+                android:layout_height="@dimen/padding_xlarge"
                 android:layout_gravity="center"
                 android:src="@drawable/ic_info"
                 app:tint="@color/primary" />
         </FrameLayout>
 
-        <TextView
+        <com.google.android.material.textview.MaterialTextView
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="12dp"
+            android:layout_marginStart="@dimen/padding_medium"
             android:layout_weight="1"
-            android:text="Đã hết lượt đăng bài hôm nay"
+            android:text="@string/txt_a_het_luot_ang_bai_hom_na"
             android:textColor="@color/text_primary"
-            android:textSize="18sp"
+            android:textSize="@dimen/text_size_18"
             android:textStyle="bold" />
     </LinearLayout>
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvQuotaMessage"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:lineSpacingExtra="2dp"
+        android:layout_marginTop="@dimen/spacing_14"
+        android:lineSpacingExtra="@dimen/stroke_2"
         android:textColor="@color/text_secondary"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_size_14" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvQuotaUnlockAt"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="@dimen/corner_radius_10"
         android:textColor="@color/primary"
-        android:textSize="14sp"
+        android:textSize="@dimen/text_size_14"
         android:textStyle="bold" />
 
-    <TextView
+    <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvQuotaCountdown"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="@dimen/padding_small"
         android:textColor="@color/error"
-        android:textSize="14sp"
+        android:textSize="@dimen/text_size_14"
         android:textStyle="bold" />
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="18dp"
+        android:layout_marginTop="@dimen/spacing_18"
         android:gravity="end"
         android:orientation="horizontal">
 
@@ -75,7 +75,7 @@
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Đóng"
+            android:text="@string/action_close"
             android:textAllCaps="false"
             app:strokeColor="@color/gray_300" />
 
@@ -84,9 +84,9 @@
             style="@style/Widget.MaterialComponents.Button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginStart="10dp"
+            android:layout_marginStart="@dimen/corner_radius_10"
             android:backgroundTint="@color/primary"
-            android:text="Nâng cấp thêm lượt"
+            android:text="@string/txt_nang_cap_them_luot"
             android:textAllCaps="false"
             android:textColor="@color/white" />
     </LinearLayout>

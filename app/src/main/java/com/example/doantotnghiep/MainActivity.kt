@@ -133,7 +133,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         fabAI.setOnClickListener {
-            MessageUtils.showInfoDialog(this, "Thông báo", "Chatbox AI đang được phát triển, vui lòng quay lại sau!")
+            val intent = Intent(this, com.example.doantotnghiep.View.Auth.AIChatActivity::class.java)
+            startActivity(intent)
         }
     }
 
