@@ -268,16 +268,45 @@ class ChatActivity : AppCompatActivity() {
         otherName: String,
         otherAvatar: String
     ) {
-        FirebaseFirestore.getInstance().collection("users").document(myUid)
-            .get()
-            .addOnSuccessListener { doc ->
-                val myName   = doc.getString("fullName") ?: "Tôi"
-                val myAvatar = doc.getString("avatarUrl") ?: ""
-                viewModel.openChat(myUid, myName, myAvatar, otherUid, otherName, otherAvatar)
+        val db = FirebaseFirestore.getInstance()
+
+        // Bước 1: Kiểm tra tài khoản người kia còn tồn tại không (có thể bị admin xóa)
+        db.collection("users").document(otherUid).get()
+            .addOnSuccessListener { otherDoc ->
+                if (!otherDoc.exists()) {
+                    // Tài khoản người kia đã bị xóa khỏi hệ thống
+                    androidx.appcompat.app.AlertDialog.Builder(this)
+                        .setTitle("Tài khoản không tồn tại")
+                        .setMessage("Tài khoản của người dùng này đã bị xóa khỏi hệ thống. Bạn không thể tiếp tục cuộc trò chuyện.")
+                        .setPositiveButton("Đã hiểu") { _, _ -> finish() }
+                        .setCancelable(false)
+                        .show()
+                    return@addOnSuccessListener
+                }
+
+                // Bước 2: Tài khoản hợp lệ → tải thông tin của mình rồi mở chat
+                db.collection("users").document(myUid).get()
+                    .addOnSuccessListener { myDoc ->
+                        val myName   = myDoc.getString("fullName") ?: "Tôi"
+                        val myAvatar = myDoc.getString("avatarUrl") ?: ""
+                        viewModel.openChat(myUid, myName, myAvatar, otherUid, otherName, otherAvatar)
+                    }
+                    .addOnFailureListener {
+                        // Fallback nếu không tải được thông tin của mình
+                        viewModel.openChat(myUid, "Tôi", "", otherUid, otherName, otherAvatar)
+                    }
             }
             .addOnFailureListener {
-                // Fallback nếu không tải được tên
-                viewModel.openChat(myUid, "Tôi", "", otherUid, otherName, otherAvatar)
+                // Lỗi mạng khi check → vẫn cho vào chat, tránh chặn người dùng oan
+                db.collection("users").document(myUid).get()
+                    .addOnSuccessListener { myDoc ->
+                        val myName   = myDoc.getString("fullName") ?: "Tôi"
+                        val myAvatar = myDoc.getString("avatarUrl") ?: ""
+                        viewModel.openChat(myUid, myName, myAvatar, otherUid, otherName, otherAvatar)
+                    }
+                    .addOnFailureListener {
+                        viewModel.openChat(myUid, "Tôi", "", otherUid, otherName, otherAvatar)
+                    }
             }
     }
 

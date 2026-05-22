@@ -1,0 +1,154 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="Times New Roman, Times, serif">
+
+  <!-- Background (Pure White) -->
+  <rect width="960" height="600" fill="#ffffff" rx="12" stroke="#000000" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="480" y="38" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Hình 2.4: Sơ đồ phân quyền Firebase Storage theo từng đường dẫn</text>
+  <text x="480" y="58" text-anchor="middle" font-size="12" fill="#000000">Cơ chế kiểm soát truy cập và ràng buộc tệp tin lưu trữ trong storage.rules</text>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- ROLES (VAI TRÒ NGƯỜI DÙNG - NỀN TRẮNG CHỮ ĐEN) -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <!-- Role: Người dùng -->
+  <rect x="60" y="95" width="250" height="90" rx="10" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="185" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#000000">Người dùng</text>
+  <text x="185" y="145" text-anchor="middle" font-size="10.5" fill="#000000" font-weight="bold">Đã đăng nhập</text>
+  <text x="185" y="162" text-anchor="middle" font-size="10" fill="#000000">Xem ảnh công khai, nhắn tin, gửi yêu cầu</text>
+
+  <!-- Role: Người đăng tin -->
+  <rect x="355" y="95" width="250" height="90" rx="10" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#000000">Người đăng tin</text>
+  <text x="480" y="145" text-anchor="middle" font-size="10.5" fill="#000000" font-weight="bold">Đã xác minh danh tính</text>
+  <text x="480" y="162" text-anchor="middle" font-size="10" fill="#000000">Quản lý và tải ảnh phòng trọ cá nhân</text>
+
+  <!-- Role: Quản trị viên hệ thống -->
+  <rect x="650" y="95" width="250" height="90" rx="10" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <text x="775" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#000000">Quản trị viên hệ thống</text>
+  <text x="775" y="145" text-anchor="middle" font-size="10.5" fill="#000000" font-weight="bold">Tài khoản Admin</text>
+  <text x="775" y="162" text-anchor="middle" font-size="10" fill="#000000">Quản lý toàn bộ tài nguyên hệ thống</text>
+
+  <!-- Kế thừa quyền Arrow -->
+  <line x1="355" y1="140" x2="318" y2="140" stroke="#000000" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowBlack)"/>
+  <text x="336.5" y="133" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">Kế thừa</text>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- CLOUD STORAGE CONTAINER -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <rect x="40" y="215" width="880" height="350" rx="12" fill="#ffffff" stroke="#000000" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="55" y="233" font-size="11" font-weight="bold" fill="#000000">KHO LƯU TRỮ CLOUD STORAGE</text>
+
+  <!-- 1. avatars/{userId} (Ảnh đại diện) -->
+  <rect x="60" y="250" width="260" height="135" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="60" y="250" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="190" y="268" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Ảnh đại diện (avatars)</text>
+  
+  <text x="72" y="295" font-size="10.5" font-weight="bold" fill="#000000">Đọc:</text>
+  <text x="110" y="295" font-size="10" fill="#000000">Công khai (Mọi người dùng)</text>
+  
+  <text x="72" y="315" font-size="10.5" font-weight="bold" fill="#000000">Ghi:</text>
+  <text x="110" y="315" font-size="10" fill="#000000">Chính chủ tài khoản hoặc Admin</text>
+
+  <text x="72" y="340" font-size="10.5" font-weight="bold" fill="#000000">Ràng buộc tệp tải lên:</text>
+  <text x="72" y="355" font-size="9.5" fill="#000000">• Định dạng ảnh hình ảnh</text>
+  <text x="72" y="368" font-size="9.5" fill="#000000">• Dung lượng tối đa 5 MB</text>
+
+  <!-- 2. rooms/{roomId} (Ảnh phòng trọ) -->
+  <rect x="350" y="250" width="260" height="135" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="350" y="250" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="480" y="268" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Ảnh phòng trọ (rooms)</text>
+  
+  <text x="362" y="295" font-size="10.5" font-weight="bold" fill="#000000">Đọc:</text>
+  <text x="400" y="295" font-size="10" fill="#000000">Công khai (Hiển thị danh sách)</text>
+  
+  <text x="362" y="315" font-size="10.5" font-weight="bold" fill="#000000">Ghi:</text>
+  <text x="400" y="315" font-size="10" fill="#000000">Người đăng tin sở hữu hoặc Admin</text>
+
+  <text x="362" y="340" font-size="10.5" font-weight="bold" fill="#000000">Ràng buộc tệp tải lên:</text>
+  <text x="362" y="355" font-size="9.5" fill="#000000">• Định dạng ảnh hình ảnh</text>
+  <text x="362" y="368" font-size="9.5" fill="#000000">• Dung lượng tối đa 15 MB</text>
+
+  <!-- 3. chat_images/{chatId} (Ảnh nhắn tin) -->
+  <rect x="640" y="250" width="260" height="135" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="640" y="250" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="770" y="268" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Ảnh tin nhắn (chat_images)</text>
+  
+  <text x="652" y="295" font-size="10.5" font-weight="bold" fill="#000000">Đọc:</text>
+  <text x="690" y="295" font-size="10" fill="#000000">Thành viên phòng chat</text>
+  
+  <text x="652" y="315" font-size="10.5" font-weight="bold" fill="#000000">Ghi:</text>
+  <text x="690" y="315" font-size="10" fill="#000000">Thành viên cuộc trò chuyện</text>
+
+  <text x="652" y="340" font-size="10.5" font-weight="bold" fill="#000000">Ràng buộc tệp tải lên:</text>
+  <text x="652" y="355" font-size="9.5" fill="#000000">• Định dạng ảnh hình ảnh</text>
+  <text x="652" y="368" font-size="9.5" fill="#000000">• Dung lượng tối đa 15 MB</text>
+
+  <!-- 4. verifications/{userId} (Ảnh xác minh) -->
+  <rect x="60" y="405" width="260" height="140" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="60" y="405" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="190" y="423" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Ảnh xác minh (verifications)</text>
+  
+  <text x="72" y="450" font-size="10.5" font-weight="bold" fill="#000000">Đọc:</text>
+  <text x="110" y="450" font-size="10" fill="#000000">Chính chủ tài khoản hoặc Admin</text>
+  
+  <text x="72" y="470" font-size="10.5" font-weight="bold" fill="#000000">Ghi:</text>
+  <text x="110" y="470" font-size="10" fill="#000000">Chính chủ tài khoản hoặc Admin</text>
+
+  <text x="72" y="495" font-size="10.5" font-weight="bold" fill="#000000">Ràng buộc tệp tải lên:</text>
+  <text x="72" y="510" font-size="9.5" fill="#000000">• Định dạng ảnh hình ảnh (CCCD)</text>
+  <text x="72" y="523" font-size="9.5" fill="#000000">• Dung lượng tối đa 10 MB</text>
+
+  <!-- 5. support_images/{ticketId} (Ảnh hỗ trợ) -->
+  <rect x="350" y="405" width="260" height="140" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="350" y="405" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="480" y="423" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Ảnh hỗ trợ (support_images)</text>
+  
+  <text x="362" y="450" font-size="10.5" font-weight="bold" fill="#000000">Đọc:</text>
+  <text x="400" y="450" font-size="10" fill="#000000">Chủ phiếu hỗ trợ hoặc Admin</text>
+  
+  <text x="362" y="470" font-size="10.5" font-weight="bold" fill="#000000">Ghi:</text>
+  <text x="400" y="470" font-size="10" fill="#000000">Chủ phiếu hỗ trợ hoặc Admin</text>
+
+  <text x="362" y="495" font-size="10.5" font-weight="bold" fill="#000000">Ràng buộc tệp tải lên:</text>
+  <text x="362" y="510" font-size="9.5" fill="#000000">• Định dạng ảnh hình ảnh</text>
+  <text x="362" y="523" font-size="9.5" fill="#000000">• Dung lượng tối đa 10 MB</text>
+
+  <!-- 6. Mặc định từ chối ({allPaths}) -->
+  <rect x="640" y="405" width="260" height="140" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="640" y="405" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="770" y="423" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Mặc định từ chối (tất cả khác)</text>
+  
+  <text x="652" y="450" font-size="10.5" font-weight="bold" fill="#000000">Đọc:</text>
+  <text x="690" y="450" font-size="10" fill="#000000" font-weight="bold">Bị từ chối hoàn toàn</text>
+  
+  <text x="652" y="470" font-size="10.5" font-weight="bold" fill="#000000">Ghi:</text>
+  <text x="690" y="470" font-size="10" fill="#000000" font-weight="bold">Bị từ chối hoàn toàn</text>
+
+  <text x="652" y="495" font-size="10.5" font-weight="bold" fill="#000000">Nguyên tắc bảo mật:</text>
+  <text x="652" y="510" font-size="9.5" fill="#000000">• Đóng toàn bộ đường dẫn phụ</text>
+  <text x="652" y="523" font-size="9.5" fill="#000000">• Chỉ mở những gì được khai báo</text>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- CONNECTIVE ARROWS FROM ROLES TO STORAGE -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <!-- User Role to Storage -->
+  <line x1="185" y1="185" x2="185" y2="210" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowBlack)"/>
+
+  <!-- Poster Role to Storage -->
+  <line x1="480" y1="185" x2="480" y2="210" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowBlack)"/>
+
+  <!-- Admin Role to Storage -->
+  <line x1="775" y1="185" x2="775" y2="210" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowBlack)"/>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- ARROW MARKERS DEFINITIONS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <defs>
+    <marker id="arrowBlack" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#000000"/>
+    </marker>
+  </defs>
+
+</svg>

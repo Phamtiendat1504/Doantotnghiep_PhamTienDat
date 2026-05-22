@@ -14,7 +14,6 @@ import com.example.doantotnghiep.View.Adapter.NotificationItem
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
-import com.google.firebase.firestore.Query
 
 class NotificationsActivity : AppCompatActivity() {
 
@@ -26,16 +25,19 @@ class NotificationsActivity : AppCompatActivity() {
 
     private val adapter = NotificationAdapter { item ->
         // Bấm vào thông báo -> đánh dấu đã xem
+        // BUG-FCM-04: Set cả seen và isRead để đồng bộ với markAllRead()
         if (!item.isRead) {
             FirebaseFirestore.getInstance()
                 .collection("notifications")
                 .document(item.id)
-                .update("seen", true)
+                .update(mapOf("seen" to true, "isRead" to true))
         }
         if (item.type == "support_reply" && item.ticketId.isNotBlank()) {
             startActivity(Intent(this, SupportTicketDetailActivity::class.java).apply {
                 putExtra(SupportTicketDetailActivity.EXTRA_TICKET_ID, item.ticketId)
                 putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, item.ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
+                // Bug #3: Thêm status mặc định để tránh ticketStatus rỗng ban đầu
+                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
             })
         }
     }
@@ -86,7 +88,6 @@ class NotificationsActivity : AppCompatActivity() {
                     val isSeen = (data["seen"] as? Boolean)
                         ?: (data["isRead"] as? Boolean)
                         ?: false
-                    
                     NotificationItem(
                         id = doc.id,
                         title = data["title"] as? String ?: "",
@@ -97,17 +98,15 @@ class NotificationsActivity : AppCompatActivity() {
                         isRead = isSeen,
                         createdAt = data["createdAt"] as? Long ?: 0L
                     )
-                }
+                }.sortedByDescending { it.createdAt }
 
-                val sortedList = list.sortedByDescending { it.createdAt }
-
-                if (sortedList.isEmpty()) {
+                if (list.isEmpty()) {
                     emptyState.visibility = View.VISIBLE
                     rvNotifications.visibility = View.GONE
                 } else {
                     emptyState.visibility = View.GONE
                     rvNotifications.visibility = View.VISIBLE
-                    adapter.submitList(sortedList)
+                    adapter.submitList(list)
                 }
             }
     }

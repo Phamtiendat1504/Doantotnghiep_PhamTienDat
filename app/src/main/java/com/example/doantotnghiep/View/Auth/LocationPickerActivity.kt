@@ -32,6 +32,7 @@ class LocationPickerActivity : AppCompatActivity() {
         const val EXTRA_RESULT_ADDRESS   = "result_address"
         const val EXTRA_RESULT_LAT       = "result_lat"
         const val EXTRA_RESULT_LNG       = "result_lng"
+        const val EXTRA_IS_STRICT        = "is_strict"
     }
 
     private lateinit var btnBack: ImageView
@@ -43,6 +44,8 @@ class LocationPickerActivity : AppCompatActivity() {
     private var googleMap: GoogleMap? = null
     private var selectedLatLng: LatLng? = null
     private var selectedAddress: String = ""
+    private var selectedAddressObj: android.location.Address? = null
+    private var isStrict: Boolean = false
     private val hanoiLatLng = LatLng(21.0285, 105.8542)
     private val geocodeExecutor = Executors.newSingleThreadExecutor()
 
@@ -52,6 +55,8 @@ class LocationPickerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_location_picker)
+
+        isStrict = intent.getBooleanExtra(EXTRA_IS_STRICT, false)
 
         btnBack         = findViewById(R.id.btnBack)
         btnSearchPlace  = findViewById(R.id.btnSearchPlace)
@@ -195,6 +200,7 @@ class LocationPickerActivity : AppCompatActivity() {
     private fun applyGeocoderResult(addr: android.location.Address) {
         val latLng = LatLng(addr.latitude, addr.longitude)
         selectedLatLng  = latLng
+        selectedAddressObj = addr
         selectedAddress = (0..addr.maxAddressLineIndex)
             .joinToString(", ") { addr.getAddressLine(it) }
         renderPickedAddress()
@@ -211,8 +217,10 @@ class LocationPickerActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1) { results ->
                     if (!isFinishing && !isDestroyed) runOnUiThread {
-                        selectedAddress = results.firstOrNull()?.getAddressLine(0)
-                            ?: "${latLng.latitude}, ${latLng.longitude}"
+                        val addrObj = results.firstOrNull()
+                        selectedAddressObj = addrObj
+                        val addr = addrObj?.getAddressLine(0)
+                        if (!addr.isNullOrBlank()) selectedAddress = addr
                         renderPickedAddress()
                     }
                 }
@@ -221,8 +229,10 @@ class LocationPickerActivity : AppCompatActivity() {
                     geocoder.getFromLocation(latLng.latitude, latLng.longitude, 1)
                 } catch (_: Exception) { null }
                 if (!isFinishing && !isDestroyed) runOnUiThread {
-                    selectedAddress = result?.firstOrNull()?.getAddressLine(0)
-                        ?: "${latLng.latitude}, ${latLng.longitude}"
+                    val addrObj = result?.firstOrNull()
+                    selectedAddressObj = addrObj
+                    val addr = addrObj?.getAddressLine(0)
+                    if (!addr.isNullOrBlank()) selectedAddress = addr
                     renderPickedAddress()
                 }
             }
@@ -237,13 +247,13 @@ class LocationPickerActivity : AppCompatActivity() {
         val initial  = intent.getStringExtra(EXTRA_INITIAL_ADDRESS).orEmpty().trim()
         val ward     = intent.getStringExtra(EXTRA_INITIAL_WARD).orEmpty().trim()
         val district = intent.getStringExtra(EXTRA_INITIAL_DISTRICT).orEmpty().trim()
+        if (initial.isEmpty() && ward.isEmpty() && district.isEmpty()) return
         val full = buildString {
             if (initial.isNotEmpty())  append(initial).append(", ")
             if (ward.isNotEmpty())     append(ward).append(", ")
             if (district.isNotEmpty()) append(district).append(", ")
             append("H\u00e0 N\u1ed9i")
         }
-        if (full.isBlank()) return
 
         geocodeExecutor.execute {
             val geocoder = Geocoder(this, Locale("vi", "VN"))
@@ -253,6 +263,7 @@ class LocationPickerActivity : AppCompatActivity() {
                         val latLng = LatLng(addr.latitude, addr.longitude)
                         if (!isFinishing && !isDestroyed) runOnUiThread {
                             selectedLatLng  = latLng
+                            selectedAddressObj = addr
                             selectedAddress = addr.getAddressLine(0) ?: full
                             renderPickedAddress()
                             updateMarker(latLng, true)
@@ -267,6 +278,7 @@ class LocationPickerActivity : AppCompatActivity() {
                     val latLng = LatLng(addr.latitude, addr.longitude)
                     if (!isFinishing && !isDestroyed) runOnUiThread {
                         selectedLatLng  = latLng
+                        selectedAddressObj = addr
                         selectedAddress = addr.getAddressLine(0) ?: full
                         renderPickedAddress()
                         updateMarker(latLng, true)
@@ -296,12 +308,40 @@ class LocationPickerActivity : AppCompatActivity() {
             if (selectedAddress.isNotBlank()) selectedAddress else "Ch\u01b0a ch\u1ecdn v\u1ecb tr\u00ed"
     }
 
+    private fun isAddressTooGeneral(address: String, addrObj: android.location.Address?): Boolean {
+        if (addrObj != null) {
+            val thoroughfare = addrObj.thoroughfare
+            val subThoroughfare = addrObj.subThoroughfare
+            if (!thoroughfare.isNullOrBlank() || !subThoroughfare.isNullOrBlank()) {
+                return false
+            }
+        }
+
+        val addressLower = address.lowercase(Locale.getDefault())
+        val specificKeywords = listOf(
+            "số ", "ngõ", "ngách", "hẻm", "kiệt", "thôn", "ấp", "đường", "phố", "tổ", "khu", "sn ", "bản", "đội"
+        )
+        val hasSpecificKeyword = specificKeywords.any { addressLower.contains(it) }
+
+        return !hasSpecificKeyword
+    }
+
     private fun confirmSelection() {
         val latLng = selectedLatLng
         if (latLng == null) {
-            Toast.makeText(this, "Vui l\u00f2ng ch\u1ecdn v\u1ecb tr\u00ed tr\u00ean b\u1ea3n \u0111\u1ed3", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Vui lòng chọn vị trí trên bản đồ", Toast.LENGTH_SHORT).show()
             return
         }
+
+        if (isStrict && isAddressTooGeneral(selectedAddress, selectedAddressObj)) {
+            AlertDialog.Builder(this)
+                .setTitle("Địa chỉ chưa cụ thể")
+                .setMessage("Vui lòng nhập hoặc chọn vị trí chi tiết hơn (bao gồm số nhà, ngõ hoặc tên đường cụ thể) để người thuê dễ dàng tìm thấy phòng trọ của bạn.")
+                .setPositiveButton("Đã hiểu", null)
+                .show()
+            return
+        }
+
         setResult(Activity.RESULT_OK, Intent().apply {
             putExtra(EXTRA_RESULT_LAT, latLng.latitude)
             putExtra(EXTRA_RESULT_LNG, latLng.longitude)

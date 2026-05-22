@@ -48,6 +48,10 @@ class SearchViewModel : ViewModel() {
         val distanceKm: Double = -1.0  // -1 = chưa tính khoảng cách
     )
 
+    fun resetErrorMessage() {
+        _errorMessage.value = null
+    }
+
     fun searchByQuery(query: String) {
         _isLoading.value = true
         _errorMessage.value = null

@@ -15,23 +15,36 @@ class ForgotPasswordViewModel : ViewModel() {
     private val _emailError = MutableLiveData<String?>()
     val emailError: LiveData<String?> = _emailError
 
-    private val _phoneError = MutableLiveData<String?>()
-    val phoneError: LiveData<String?> = _phoneError
-
     private val _generalError = MutableLiveData<String?>()
     val generalError: LiveData<String?> = _generalError
 
     private val _sendEmailSuccess = MutableLiveData<String?>()
     val sendEmailSuccess: LiveData<String?> = _sendEmailSuccess
 
+    private val resetAttemptTimestamps = ArrayDeque<Long>()
+    private val MAX_RESET_ATTEMPTS = 3
+    private val RESET_WINDOW_MS = 120_000L
+
     fun clearSendEmailSuccess() {
         _sendEmailSuccess.value = null
     }
 
-    fun requestPasswordReset(email: String, phone: String) {
-        _emailError.value = null
-        _phoneError.value = null
+    fun clearGeneralError() {
         _generalError.value = null
+    }
+
+    fun requestPasswordReset(email: String) {
+        _emailError.value = null
+        _generalError.value = null
+
+        val now = System.currentTimeMillis()
+        resetAttemptTimestamps.removeAll { now - it > RESET_WINDOW_MS }
+        if (resetAttemptTimestamps.size >= MAX_RESET_ATTEMPTS) {
+            val waitSeconds = ((RESET_WINDOW_MS - (now - resetAttemptTimestamps.first())) / 1000).coerceAtLeast(1)
+            _generalError.value = "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi $waitSeconds giây rồi thử lại."
+            return
+        }
+        resetAttemptTimestamps.addLast(now)
 
         if (email.isBlank()) {
             _emailError.value = "Vui lòng nhập email"
@@ -41,35 +54,12 @@ class ForgotPasswordViewModel : ViewModel() {
             _emailError.value = "Email không hợp lệ"
             return
         }
-        if (phone.isBlank()) {
-            _phoneError.value = "Vui lòng nhập số điện thoại"
-            return
-        }
-        if (phone.length < 10) {
-            _phoneError.value = "Số điện thoại không hợp lệ"
-            return
-        }
-
         _isLoading.value = true
-        repository.verifyEmailAndPhone(
+        repository.sendPasswordResetEmail(
             email = email,
-            phone = phone,
-            onFound = {
-                repository.sendPasswordResetEmail(
-                    email = email,
-                    onSuccess = {
-                        _isLoading.value = false
-                        _sendEmailSuccess.value = email
-                    },
-                    onFailure = { error ->
-                        _isLoading.value = false
-                        _generalError.value = error
-                    }
-                )
-            },
-            onNotFound = {
+            onSuccess = {
                 _isLoading.value = false
-                _generalError.value = "Email và số điện thoại không khớp với tài khoản nào"
+                _sendEmailSuccess.value = email
             },
             onFailure = { error ->
                 _isLoading.value = false

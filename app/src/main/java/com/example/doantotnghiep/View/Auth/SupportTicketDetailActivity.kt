@@ -69,13 +69,16 @@ class SupportTicketDetailActivity : AppCompatActivity() {
         viewModel.listenTicket(
             ticketId,
             onUpdate = { ticket ->
-                ticketStatus = ticket.status
-                findViewById<TextView>(R.id.tvSupportDetailTitle).text = ticket.title.ifBlank {
-                    intent.getStringExtra(EXTRA_TICKET_TITLE) ?: "Chi tiết hỗ trợ"
+                // Bug #2: Kiểm tra Activity chưa bị destroy trước khi cập nhật UI
+                if (!isDestroyed) {
+                    ticketStatus = ticket.status
+                    findViewById<TextView>(R.id.tvSupportDetailTitle).text = ticket.title.ifBlank {
+                        intent.getStringExtra(EXTRA_TICKET_TITLE) ?: "Chi tiết hỗ trợ"
+                    }
+                    updateStatusUi(ticketStatus)
                 }
-                updateStatusUi(ticketStatus)
             },
-            onError = { MessageUtils.showErrorDialog(this, "Lỗi", it) }
+            onError = { if (!isDestroyed) MessageUtils.showErrorDialog(this, "Lỗi", it) }
         )
         viewModel.listenMessages(ticketId)
     }

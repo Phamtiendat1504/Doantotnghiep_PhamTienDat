@@ -18,6 +18,7 @@ import com.example.doantotnghiep.ViewModel.VerifyLandlordViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
+import java.io.File
 
 class VerifyLandlordActivity : AppCompatActivity() {
 
@@ -76,6 +77,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
         viewModel = ViewModelProvider(this)[VerifyLandlordViewModel::class.java]
 
         checkCurrentStatusBeforeShow()
+        clearAllCameraTempFolder()
     }
 
     private fun checkCurrentStatusBeforeShow() {
@@ -129,6 +131,9 @@ class VerifyLandlordActivity : AppCompatActivity() {
                                 "Hồ sơ của bạn đã được gửi và đang được hệ thống xử lý. Nếu cần can thiệp thủ công, admin sẽ phản hồi trong 24 giờ."
                             ) { finish() }
                         } else {
+                            if (!verifyDoc.exists()) {
+                                viewModel.resetFailureCounter(this@VerifyLandlordActivity)
+                            }
                             setupForm()
                         }
                     }
@@ -175,6 +180,7 @@ class VerifyLandlordActivity : AppCompatActivity() {
 
         viewModel.submitResult.observe(this) { result ->
             if (result == null) return@observe
+            cleanupTempFiles()
             if (result.status == VerifyLandlordViewModel.SubmitStatus.ESCALATED_TO_ADMIN) {
                 MessageUtils.showInfoDialog(
                     this,
@@ -266,8 +272,12 @@ class VerifyLandlordActivity : AppCompatActivity() {
         val front = frontUri
         val back = backUri
 
-        if (cccd.length != 12) {
-            MessageUtils.showInfoDialog(this, "Số CCCD không hợp lệ", "Vui lòng nhập đúng 12 số CCCD.")
+        if (!isValidVietnameseCccd(cccd)) {
+            MessageUtils.showInfoDialog(
+                this,
+                "Số CCCD không hợp lệ",
+                "Số CCCD phải gồm đúng 12 chữ số theo định dạng chuẩn của Bộ Công An Việt Nam."
+            )
             return
         }
         if (address.isEmpty() || front == null || back == null) {
@@ -297,5 +307,39 @@ class VerifyLandlordActivity : AppCompatActivity() {
             frontUri = front,
             backUri = back
         )
+    }
+
+    private fun isValidVietnameseCccd(cccd: String): Boolean {
+        if (cccd.length != 12 || !cccd.all { it.isDigit() }) return false
+        val provinceCode = cccd.substring(0, 3).toIntOrNull() ?: return false
+        if (provinceCode < 1 || provinceCode > 96) return false
+        val genderCentury = cccd[3] - '0'
+        if (genderCentury < 0 || genderCentury > 9) return false
+        return true
+    }
+
+    private fun cleanupTempFiles() {
+        try {
+            frontUri?.path?.let { File(it).takeIf { f -> f.exists() }?.delete() }
+            backUri?.path?.let { File(it).takeIf { f -> f.exists() }?.delete() }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun clearAllCameraTempFolder() {
+        try {
+            val dir = File(filesDir, "verification_camera")
+            if (dir.exists() && dir.isDirectory) {
+                dir.listFiles()?.forEach { file ->
+                    // Xóa các file nháp cũ hơn 2 giờ để giải phóng dung lượng ổ cứng
+                    if (System.currentTimeMillis() - file.lastModified() > 2 * 60 * 60 * 1000) {
+                        file.delete()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

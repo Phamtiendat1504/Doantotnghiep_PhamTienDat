@@ -23,7 +23,13 @@ class AuthRepository {
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
     private val mainHandler = Handler(Looper.getMainLooper())
-    private val httpClient by lazy { OkHttpClient() }
+    private val httpClient by lazy {
+        OkHttpClient.Builder()
+            .connectTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(30, java.util.concurrent.TimeUnit.SECONDS)
+            .build()
+    }
 
     fun register(fullName: String, email: String, phone: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val normalizedEmail = email.trim().lowercase()
@@ -33,90 +39,88 @@ class AuthRepository {
             return
         }
 
-        // Bước 1: Kiểm tra số điện thoại đã được đăng ký chưa (Firestore)
-        // Bước 2: Kiểm tra email đã tồn tại trong Firestore chưa
-        db.collection("users")
-            .whereEqualTo("phone", phone)
-            .limit(1)
-            .get()
-            .addOnSuccessListener { phoneSnapshot ->
-                if (!phoneSnapshot.isEmpty) {
+        // Bước 1: Kiểm tra số điện thoại đã được đăng ký chưa qua phone_registry (public read)
+        db.collection("phone_registry").document(phone).get()
+            .addOnSuccessListener { phoneDoc ->
+                if (phoneDoc.exists()) {
                     onFailure("Số điện thoại này đã được đăng ký cho tài khoản khác")
                     return@addOnSuccessListener
                 }
 
-                db.collection("users")
-                    .whereEqualTo("email", normalizedEmail)
-                    .limit(1)
-                    .get()
-                    .addOnSuccessListener { emailSnapshot ->
-                        if (!emailSnapshot.isEmpty) {
-                            onFailure("Email này đã được sử dụng")
+                // Bước 2: Tạo tài khoản Firebase Auth (Auth tự chặn email trùng)
+                auth.createUserWithEmailAndPassword(normalizedEmail, password)
+                    .addOnSuccessListener { result ->
+                        val firebaseUser = result.user ?: auth.currentUser
+                        val uid = firebaseUser?.uid
+                        if (uid.isNullOrBlank()) {
+                            onFailure("Đăng ký thất bại: không lấy được UID tài khoản")
                             return@addOnSuccessListener
                         }
-
-                        // Bước 3: Tạo tài khoản Firebase Auth (Auth vẫn là lớp bảo vệ cuối cho trùng email)
-                        auth.createUserWithEmailAndPassword(normalizedEmail, password)
-                            .addOnSuccessListener { result ->
-                                val firebaseUser = result.user ?: auth.currentUser
-                                val uid = firebaseUser?.uid
-                                if (uid.isNullOrBlank()) {
-                                    onFailure("Đăng ký thất bại: không lấy được UID tài khoản")
-                                    return@addOnSuccessListener
-                                }
-                                val createdAt = System.currentTimeMillis()
-                                // Ghi map tường minh để chắc chắn đúng tên field theo Firestore Rules.
-                                val userData = hashMapOf<String, Any>(
-                                    "uid" to uid,
-                                    "fullName" to fullName,
-                                    "email" to normalizedEmail,
-                                    "phone" to phone,
-                                    "address" to "",
-                                    "birthday" to "",
-                                    "gender" to "",
-                                    "occupation" to "",
-                                    "avatarUrl" to "",
-                                    "role" to "user",
-                                    "isVerified" to false,
-                                    "hasAcceptedRules" to false,
-                                    "isLocked" to false,
-                                    "lockReason" to "",
-                                    "lockUntil" to 0L,
-                                    "postingUnlockAt" to 0L,
-                                    "verifiedAt" to 0L,
-                                    "createdAt" to createdAt,
-                                    "purchasedSlots" to 0L
+                        val createdAt = System.currentTimeMillis()
+                        // Ghi map tường minh để chắc chắn đúng tên field theo Firestore Rules.
+                        val userData = hashMapOf<String, Any>(
+                            "uid" to uid,
+                            "fullName" to fullName,
+                            "email" to normalizedEmail,
+                            "phone" to phone,
+                            "address" to "",
+                            "birthday" to "",
+                            "gender" to "",
+                            "occupation" to "",
+                            "avatarUrl" to "",
+                            "role" to "user",
+                            "isVerified" to false,
+                            "hasAcceptedRules" to false,
+                            "isLocked" to false,
+                            "lockReason" to "",
+                            "lockUntil" to 0L,
+                            "postingUnlockAt" to 0L,
+                            "verifiedAt" to 0L,
+                            "createdAt" to createdAt,
+                            "purchasedSlots" to 0L
+                        )
+                        // Làm mới token trước khi ghi Firestore để giảm lỗi race-condition.
+                        firebaseUser.getIdToken(true)
+                            .addOnSuccessListener {
+                                // Bước 3: Ghi users + phone_registry trong một batch
+                                val batch = db.batch()
+                                batch.set(db.collection("users").document(uid), userData)
+                                batch.set(
+                                    db.collection("phone_registry").document(phone),
+                                    hashMapOf("uid" to uid, "phone" to phone)
                                 )
-                                // Làm mới token trước khi ghi Firestore để giảm lỗi race-condition.
-                                firebaseUser.getIdToken(true)
-                                    .addOnSuccessListener {
-                                        saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
-                                    }
-                                    .addOnFailureListener {
-                                        saveUserProfileWithRetry(uid, userData, onSuccess, onFailure)
+                                batch.commit()
+                                    .addOnSuccessListener { onSuccess() }
+                                    .addOnFailureListener { e ->
+                                        onFailure("Đăng ký thất bại: ${e.message}")
                                     }
                             }
-                            .addOnFailureListener { e ->
-                                val errorCode = (e as? FirebaseAuthException)?.errorCode
-                                when {
-                                    e is FirebaseAuthUserCollisionException || errorCode == "ERROR_EMAIL_ALREADY_IN_USE" ->
-                                        onFailure("Email này đã được sử dụng")
-                                    e.message?.contains("network", ignoreCase = true) == true ||
-                                    e.message?.contains("offline", ignoreCase = true) == true ||
-                                    e.message?.contains("timeout", ignoreCase = true) == true ||
-                                    e.message?.contains("unreachable", ignoreCase = true) == true ->
-                                        onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet và thử lại.")
-                                    else ->
-                                        onFailure("Đăng ký thất bại. Vui lòng thử lại.")
-                                }
+                            .addOnFailureListener {
+                                val batch = db.batch()
+                                batch.set(db.collection("users").document(uid), userData)
+                                batch.set(
+                                    db.collection("phone_registry").document(phone),
+                                    hashMapOf("uid" to uid, "phone" to phone)
+                                )
+                                batch.commit()
+                                    .addOnSuccessListener { onSuccess() }
+                                    .addOnFailureListener { e ->
+                                        onFailure("Đăng ký thất bại: ${e.message}")
+                                    }
                             }
                     }
                     .addOnFailureListener { e ->
-                        val msg = e.message ?: ""
-                        if (msg.contains("offline", ignoreCase = true) || msg.contains("network", ignoreCase = true) || msg.contains("timeout", ignoreCase = true)) {
-                            onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet và thử lại.")
-                        } else {
-                            onFailure("Lỗi kiểm tra email: $msg")
+                        val errorCode = (e as? FirebaseAuthException)?.errorCode
+                        when {
+                            e is FirebaseAuthUserCollisionException || errorCode == "ERROR_EMAIL_ALREADY_IN_USE" ->
+                                onFailure("Email này đã được sử dụng")
+                            e.message?.contains("network", ignoreCase = true) == true ||
+                            e.message?.contains("offline", ignoreCase = true) == true ||
+                            e.message?.contains("timeout", ignoreCase = true) == true ||
+                            e.message?.contains("unreachable", ignoreCase = true) == true ->
+                                onFailure("Không có kết nối mạng. Vui lòng kiểm tra lại Internet và thử lại.")
+                            else ->
+                                onFailure("Đăng ký thất bại. Vui lòng thử lại.")
                         }
                     }
             }
@@ -131,6 +135,7 @@ class AuthRepository {
     }
 
     private fun isValidGmailEmail(email: String): Boolean {
+        if (email.any { it.code > 127 }) return false  // Chặn ký tự Unicode (gõ tiếng Việt bị lẫn vào email)
         return Patterns.EMAIL_ADDRESS.matcher(email).matches() &&
                 email.endsWith("@gmail.com", ignoreCase = true)
     }
@@ -165,11 +170,11 @@ class AuthRepository {
     }
 
     fun login(email: String, password: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        auth.signInWithEmailAndPassword(email, password).addOnSuccessListener { 
+        auth.signInWithEmailAndPassword(email, password).addOnSuccessListener {
             // Cập nhật FCM Token ngay khi đăng nhập để đảm bảo nhận được thông báo kể cả khi bị khóa
             updateFcmToken()
-            onSuccess() 
-        }.addOnFailureListener { e -> 
+            onSuccess()
+        }.addOnFailureListener { e ->
             val errorCode = (e as? com.google.firebase.auth.FirebaseAuthException)?.errorCode
             val message = e.message ?: ""
             
@@ -397,18 +402,27 @@ class AuthRepository {
 
     fun uploadAvatar(uri: Uri, onSuccess: (String) -> Unit, onFailure: (String) -> Unit) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        // Đường dẫn cố định avatars/$uid sẽ ghi đè file cũ nếu cùng tên, 
-        // nhưng tốt nhất là xóa file cũ trước nếu tồn tại (để tránh lỗi cache hoặc metadata)
         val ref = storage.reference.child("avatars/$uid")
-        
-        ref.putFile(uri).addOnSuccessListener {
-            ref.downloadUrl.addOnSuccessListener { downloadUri ->
-                val url = downloadUri.toString()
-                db.collection("users").document(uid).update("avatarUrl", url)
-                    .addOnSuccessListener { onSuccess(url) }
-                    .addOnFailureListener { onFailure(it.message ?: "Lỗi cập nhật Firestore") }
+        ref.delete().addOnCompleteListener {
+            ref.putFile(uri).addOnSuccessListener {
+                ref.downloadUrl.addOnSuccessListener { downloadUri ->
+                    val url = downloadUri.toString()
+                    db.collection("users").document(uid).update("avatarUrl", url)
+                        .addOnSuccessListener { onSuccess(url) }
+                        .addOnFailureListener { onFailure(it.message ?: "Lỗi cập nhật Firestore") }
+                }
+            }.addOnFailureListener { onFailure(it.message ?: "Lỗi upload") }
+        }
+    }
+
+    fun deleteAvatar(onSuccess: () -> Unit, onFailure: (String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
+        db.collection("users").document(uid).update("avatarUrl", "")
+            .addOnSuccessListener {
+                storage.reference.child("avatars/$uid").delete()
+                    .addOnCompleteListener { onSuccess() }
             }
-        }.addOnFailureListener { onFailure(it.message ?: "Lỗi upload") }
+            .addOnFailureListener { onFailure(it.message ?: "Lỗi xóa ảnh đại diện") }
     }
 
     // Bổ sung hàm xóa toàn bộ dữ liệu Storage của user (dùng khi xóa tài khoản)
@@ -417,33 +431,7 @@ class AuthRepository {
         ref.delete().addOnCompleteListener { onComplete() }
     }
 
-    /**
-     * Kiểm tra xem cặp Email + Số điện thoại có tồn tại trong hệ thống không.
-     * Đây là bước xác minh danh tính trước khi gửi email reset mật khẩu.
-     */
-    fun verifyEmailAndPhone(
-        email: String,
-        phone: String,
-        onFound: () -> Unit,
-        onNotFound: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
-        db.collection("users")
-            .whereEqualTo("email", email)
-            .whereEqualTo("phone", phone)
-            .limit(1)
-            .get()
-            .addOnSuccessListener { snapshot ->
-                if (!snapshot.isEmpty) {
-                    onFound()
-                } else {
-                    onNotFound()
-                }
-            }
-            .addOnFailureListener { e ->
-                onFailure(e.message ?: "Lỗi kết nối, vui lòng thử lại")
-            }
-    }
+
 
     /**
      * Gửi email đặt lại mật khẩu qua Firebase Auth.
@@ -520,19 +508,6 @@ class AuthRepository {
                 }
             }
         }
-    }
-
-    fun reauthenticateAndUpdateEmail(pass: String, newEmail: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        val user = auth.currentUser ?: return onFailure("Chưa đăng nhập")
-        val email = user.email ?: return onFailure("Tài khoản này chưa có email hiện tại để xác thực.")
-        val cred = EmailAuthProvider.getCredential(email, pass)
-        user.reauthenticate(cred).addOnSuccessListener {
-            user.verifyBeforeUpdateEmail(newEmail).addOnSuccessListener {
-                // Không cập nhật Firestore ngay lập tức. 
-                // Email trong Firestore sẽ được đồng bộ sau khi người dùng xác nhận qua email và reload tài khoản.
-                onSuccess()
-            }.addOnFailureListener { onFailure(it.message ?: "Lỗi gửi email xác nhận") }
-        }.addOnFailureListener { onFailure("Mật khẩu không chính xác") }
     }
 
     fun requestAccountDeletion(

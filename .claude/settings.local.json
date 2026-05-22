@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "Bash(ConvertTo-Csv -NoTypeInformation)",
+      "Bash(Out-String)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\\\\\", \"\"\\) } | Sort-Object)",
+      "Bash(python -c ' *)",
+      "Bash(ls \"C:\\\\Users\\\\tiend\\\\\" | grep -i \"106\")",
+      "Read(//c/Users/**)",
+      "PowerShell(node -e \"const m = require\\('C:/Users/tiend/AppData/Roaming/npm/node_modules/pdf-parse/dist/node/cjs/index.cjs'\\); console.log\\(Object.keys\\(m\\)\\);\" 2>&1)",
+      "PowerShell(npm install -g pdf2json 2>&1)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" -Recurse -Depth 2)",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\tiend\\\\\\\\Admin_TimTro_New\" -maxdepth 3 -type f \\\\\\( -name \"*.json\" -o -name \"*.js\" \\\\\\))",
+      "Bash(ls -la \"C:\\\\\\\\Users\\\\\\\\tiend\\\\\\\\Admin_TimTro_New\")",
+      "Bash(grep -E \"\\\\.json$|\\\\.js$|public|functions|index\")",
+      "Bash(find \"C:\\\\\\\\Users\\\\\\\\tiend\\\\\\\\Admin_TimTro_New\" -maxdepth 2 -type d)",
+      "Bash(ls -la \"C:\\\\\\\\Users\\\\\\\\tiend\\\\\\\\Admin_TimTro_New\\\\\\\\public\\\\\\\\js\\\\\\\\\")",
+      "Bash(ls -la \"C:\\\\\\\\Users\\\\\\\\tiend\\\\\\\\Admin_TimTro_New\\\\\\\\phamtriendat_doantotnghiep\\\\\\\\\")",
+      "Bash(grep -E \"\\\\.kt$\")",
+      "Bash(dir \"c:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" /s /b)",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\" -Recurse -Filter \"index.js\")",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(node -e ' *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" -Depth 2 | Where-Object {$_.Name -ne \"node_modules\" -and $_.PSIsContainer} | Select-Object -ExpandProperty FullName)",
+      "PowerShell(Get-ChildItem \"c:\\\\Users\\\\tiend\" -Force -Depth 1 | Where-Object {$_.PSIsContainer} | Format-Table Name)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\" -Recurse -Filter \"*.kt\")",
+      "Bash(Sort-Object)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)"
+    ]
+  }
+}

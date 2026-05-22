@@ -59,7 +59,7 @@ class NotificationAdapter(
             unreadDot.visibility = if (item.isRead) View.GONE else View.VISIBLE
 
             // Đổi màu nền card khi chưa đọc
-            val cardBg = itemView.rootView.findViewById<View>(R.id.unreadDot)
+            // Bug #6: Đã xóa dòng rootView.findViewById (dead code, tìm kiếm toàn bộ layout)
             itemView.setBackgroundColor(
                 if (item.isRead) 0xFFFFFFFF.toInt() else 0xFFF0F4FF.toInt()
             )

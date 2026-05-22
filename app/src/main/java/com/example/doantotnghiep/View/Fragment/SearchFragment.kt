@@ -176,7 +176,9 @@ class SearchFragment : Fragment() {
         radiusKm = 2.0
 
         btnPickMapLocation.setOnClickListener {
-            val intent = Intent(requireContext(), LocationPickerActivity::class.java)
+            val intent = Intent(requireContext(), LocationPickerActivity::class.java).apply {
+                putExtra(LocationPickerActivity.EXTRA_IS_STRICT, false)
+            }
             locationPickerLauncher.launch(intent)
         }
 

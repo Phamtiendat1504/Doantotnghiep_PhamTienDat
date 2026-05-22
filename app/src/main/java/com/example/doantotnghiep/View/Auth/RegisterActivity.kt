@@ -104,6 +104,15 @@ class RegisterActivity : AppCompatActivity() {
             viewModel.register(fullName, email, phone, password, confirmPassword)
         }
 
+        edtConfirmPassword.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                btnRegister.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
         btnBack.setOnClickListener { finish() }
         tvGoToLogin.setOnClickListener { finish() }
     }

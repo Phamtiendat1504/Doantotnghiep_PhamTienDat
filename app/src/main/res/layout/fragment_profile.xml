@@ -709,14 +709,14 @@
                             android:layout_height="@dimen/image_size_40"
                             app:cardCornerRadius="@dimen/padding_medium"
                             app:cardElevation="0dp"
-                            app:cardBackgroundColor="@color/primary_surface">
+                            app:cardBackgroundColor="@color/success_surface">
 
                             <ImageView
                                 android:layout_width="@dimen/dimen_22dp"
                                 android:layout_height="@dimen/dimen_22dp"
                                 android:layout_gravity="center"
-                                android:src="@drawable/ic_info"
-                                app:tint="@color/primary_dark" />
+                                android:src="@drawable/ic_shield_check"
+                                app:tint="@color/success" />
 
                         </com.google.android.material.card.MaterialCardView>
 

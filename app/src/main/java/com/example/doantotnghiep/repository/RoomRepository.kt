@@ -16,6 +16,10 @@ import java.util.UUID
 
 class RoomRepository {
 
+    companion object {
+        private const val FREE_POSTS_PER_DAY = 3
+    }
+
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance("gs://doantotnghiep-b39ae.firebasestorage.app")
     private val auth = FirebaseAuth.getInstance()
@@ -54,40 +58,48 @@ class RoomRepository {
         onBlocked: (unlockAt: Long) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        val now = System.currentTimeMillis()
-        val windowStart = now - postQuotaWindowMs
-
-        db.collection("rooms")
-            .whereEqualTo("userId", uid)
+        db.collection("users").document(uid)
             .get(Source.SERVER)
-            .addOnSuccessListener { docs ->
-                val recentPosts = docs.documents
-                    .mapNotNull { it.getLong("createdAt") }
-                    .filter { it >= windowStart }
-                    .sorted()
-
-                // ƯU TIÊN 1: Sử dụng 3 lượt miễn phí mỗi ngày trước (Xài hàng Free trước)
-                if (recentPosts.size < limitPer24h) {
-                    onAllowed((limitPer24h - recentPosts.size).coerceAtLeast(0), false)
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    onAllowed(limitPer24h, false)
                     return@addOnSuccessListener
                 }
-
-                // ƯU TIÊN 2: Khi đã dùng hết lượt miễn phí trong ngày, mới bắt đầu trừ vào gói mua thêm (Paid)
-                if (purchasedSlots > 0) {
-                    onAllowed(purchasedSlots, true)
-                    return@addOnSuccessListener
-                }
-
-                val oldestPostInWindow = recentPosts.firstOrNull() ?: now
-                val unlockAt = oldestPostInWindow + postQuotaWindowMs
-                if (unlockAt <= now) {
-                    onAllowed(0, false)
+                
+                val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val storedDate = doc.getString("dailyPostCountDate") ?: ""
+                val storedCount = if (storedDate == today) {
+                    (doc.getLong("dailyPostCount") ?: 0L).toInt()
                 } else {
-                    onBlocked(unlockAt)
+                    0
                 }
+                val purchased = (doc.getLong("purchasedSlots") ?: 0L).toInt()
+
+                // ƯU TIÊN 1: Sử dụng 3 lượt miễn phí mỗi ngày trước
+                if (storedCount < limitPer24h) {
+                    onAllowed((limitPer24h - storedCount).coerceAtLeast(0), false)
+                    return@addOnSuccessListener
+                }
+
+                // ƯU TIÊN 2: Khi đã dùng hết lượt miễn phí trong ngày, mới bắt đầu trừ vào gói mua thêm
+                if (purchased > 0) {
+                    onAllowed(purchased, true)
+                    return@addOnSuccessListener
+                }
+
+                // Hết lượt: thời gian mở lại tính từ 00:00:00 ngày hôm sau
+                val calendar = java.util.Calendar.getInstance()
+                calendar.add(java.util.Calendar.DAY_OF_YEAR, 1)
+                calendar.set(java.util.Calendar.HOUR_OF_DAY, 0)
+                calendar.set(java.util.Calendar.MINUTE, 0)
+                calendar.set(java.util.Calendar.SECOND, 0)
+                calendar.set(java.util.Calendar.MILLISECOND, 0)
+                val unlockAt = calendar.timeInMillis
+                
+                onBlocked(unlockAt)
             }
             .addOnFailureListener { e ->
-                onFailure("Không thể kiểm tra số lượt đăng bài hôm nay: ${e.message ?: "Lỗi không xác định"}")
+                onFailure("Không thể kiểm tra số lượt đăng bài: ${e.message ?: "Lỗi không xác định"}")
             }
     }
 
@@ -121,7 +133,7 @@ class RoomRepository {
             saveRoomToFirestore(
                 docRef = docRef,
                 room = roomSeedData,
-                usedPurchasedSlot = false,
+                usedPurchasedSlot = usePurchasedSlot,
                 onSuccess = {
                     docRef.get(Source.SERVER)
                         .addOnSuccessListener {
@@ -242,21 +254,44 @@ class RoomRepository {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        // TTL: xóa khỏi Firestore sau 90 ngày kể từ ngày đăng
         val expireAtMs = room.createdAt + 90L * 24 * 60 * 60 * 1000
         val expireAtTimestamp = Timestamp(Date(expireAtMs))
+        val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val userRef = db.collection("users").document(room.userId)
 
-        docRef.set(room)
-            .addOnSuccessListener {
-                // Cập nhật thêm trường expireAt kiểu Firestore Timestamp (bắt buộc cho TTL)
-                docRef.update(mapOf("expireAt" to expireAtTimestamp, "usedPurchasedSlot" to usedPurchasedSlot))
-                    .addOnSuccessListener { onSuccess() }
-                    .addOnFailureListener { e ->
-                        android.util.Log.e("RoomRepository", "Cập nhật expireAt thất bại: ${e.message}")
-                        onFailure("Gia hạn bài đăng thất bại. Vui lòng thử lại.")
-                    }
+        db.runTransaction { tx ->
+            val userSnap = tx.get(userRef)
+            
+            if (usedPurchasedSlot) {
+                // BỎ QUA KIỂM TRA QUOTA: Nếu dùng lượt mua thêm, không check giới hạn miễn phí và không tăng dailyPostCount
+                tx.set(docRef, room)
+            } else {
+                val storedDate = userSnap.getString("dailyPostCountDate") ?: ""
+                val storedCount = if (storedDate == today) {
+                    (userSnap.getLong("dailyPostCount") ?: 0L).toInt()
+                } else {
+                    0
+                }
+                if (storedCount >= FREE_POSTS_PER_DAY) {
+                    throw FirebaseFirestoreException(
+                        "Bạn đã đăng đủ $FREE_POSTS_PER_DAY bài miễn phí hôm nay.",
+                        FirebaseFirestoreException.Code.ABORTED
+                    )
+                }
+                tx.set(docRef, room)
+                tx.update(userRef, mapOf(
+                    "dailyPostCountDate" to today,
+                    "dailyPostCount" to storedCount + 1
+                ))
             }
-            .addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
+        }.addOnSuccessListener {
+            docRef.update(mapOf("expireAt" to expireAtTimestamp, "usedPurchasedSlot" to usedPurchasedSlot))
+                .addOnSuccessListener { onSuccess() }
+                .addOnFailureListener { e ->
+                    android.util.Log.e("RoomRepository", "Cập nhật expireAt thất bại: ${e.message}")
+                    onFailure("Gia hạn bài đăng thất bại. Vui lòng thử lại.")
+                }
+        }.addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
     }
 
     // Lấy chi tiết một phòng theo ID
@@ -501,7 +536,14 @@ class RoomRepository {
             .addOnSuccessListener { docs -> 
                 onSuccess(docs.toList()) 
             }
-            .addOnFailureListener { e -> onFailure("Lỗi tìm kiếm quanh đây: ${e.message}") }
+            .addOnFailureListener { e ->
+                val msg = e.message ?: ""
+                if (msg.contains("index", ignoreCase = true) || msg.contains("FAILED_PRECONDITION", ignoreCase = true)) {
+                    onFailure("Chưa cấu hình Firestore Index. Vào Firebase Console → Firestore → Indexes → thêm Composite Index: collection 'rooms', fields: status (Ascending) + latitude (Ascending).")
+                } else {
+                    onFailure("Lỗi tìm kiếm quanh đây: $msg")
+                }
+            }
     }
 
     // --- RoomViewModel ---
@@ -782,10 +824,12 @@ class RoomRepository {
      * KHAI THÁC 1 whereEqualTo duy nhất — không cần Composite Index trên Firebase.
      */
     private fun cancelAllAppointmentsForRoom(roomId: String, roomTitle: String) {
+        val uid = auth.currentUser?.uid ?: return
         val activeStatuses = setOf("pending", "confirmed", "tenant_confirmed")
 
         db.collection("appointments")
             .whereEqualTo("roomId", roomId)
+            .whereEqualTo("landlordId", uid)
             .get()
             .addOnSuccessListener { snapshots ->
                 for (doc in snapshots) {
@@ -816,8 +860,15 @@ class RoomRepository {
                             )
                         )
 
-                    // Xóa slot đặt lịch — tránh rác dữ liệu
-                    db.collection("bookedSlots").document(doc.id).delete()
+                    // Xóa slot đặt lịch an toàn bằng truy vấn appointmentId
+                    db.collection("bookedSlots")
+                        .whereEqualTo("appointmentId", doc.id)
+                        .get()
+                        .addOnSuccessListener { slotDocs ->
+                            for (slotDoc in slotDocs) {
+                                slotDoc.reference.delete()
+                            }
+                        }
                 }
             }
             .addOnFailureListener { e ->

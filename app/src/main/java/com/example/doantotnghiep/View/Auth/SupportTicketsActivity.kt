@@ -88,12 +88,18 @@ class SupportTicketsActivity : AppCompatActivity() {
         }
         viewModel.createdTicketId.observe(this) { ticketId ->
             if (ticketId.isNotBlank()) {
-                startActivity(Intent(this, SupportTicketDetailActivity::class.java).apply {
-                    putExtra(SupportTicketDetailActivity.EXTRA_TICKET_ID, ticketId)
-                    putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, "Yêu cầu hỗ trợ")
-                    putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
-                })
+                MessageUtils.showSuccessDialog(
+                    this,
+                    "Gửi thành công",
+                    "Yêu cầu hỗ trợ đã được gửi. Admin sẽ phản hồi sớm nhất có thể. Bạn sẽ nhận được thông báo khi có phản hồi."
+                )
                 viewModel.clearCreatedTicketId()
+            }
+        }
+        // Bug #10: Quan sát errorMessage để hiển thị lỗi khi Firestore thất bại
+        viewModel.errorMessage.observe(this) { error ->
+            if (!error.isNullOrEmpty()) {
+                MessageUtils.showErrorDialog(this, "Lỗi", error)
             }
         }
     }

@@ -25,6 +25,10 @@ class UserProfileViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
+    fun resetErrorMessage() {
+        _errorMessage.value = ""
+    }
+
     fun loadProfile(userId: String) {
         _isLoading.value = true
 

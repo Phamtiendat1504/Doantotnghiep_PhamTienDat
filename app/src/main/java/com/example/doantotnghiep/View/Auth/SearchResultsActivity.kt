@@ -56,6 +56,10 @@ class SearchResultsActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this)[SearchViewModel::class.java]
 
+        savedInstanceState?.getInt("currentSortOrdinal", SortType.NONE.ordinal)?.let {
+            currentSort = SortType.values()[it]
+        }
+
         layoutResults = findViewById(R.id.layoutResults)
         layoutPagination = findViewById(R.id.layoutPagination)
         progressBar = findViewById(R.id.progressBar)
@@ -159,6 +163,7 @@ class SearchResultsActivity : AppCompatActivity() {
 
         viewModel.errorMessage.observe(this) { msg ->
             if (!msg.isNullOrEmpty()) {
+                viewModel.resetErrorMessage()
                 tvEmpty.visibility = View.VISIBLE
                 tvEmpty.text = msg
                 tvResultCount.text = "Kết quả tìm kiếm: 0 bài đăng"
@@ -482,6 +487,11 @@ class SearchResultsActivity : AppCompatActivity() {
             }
         }
         layoutPagination.addView(btnNext)
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt("currentSortOrdinal", currentSort.ordinal)
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

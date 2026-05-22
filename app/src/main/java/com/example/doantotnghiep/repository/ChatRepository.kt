@@ -24,7 +24,11 @@ class ChatRepository {
     private fun longMap(value: Any?): Map<String, Long> {
         return (value as? Map<*, *>)?.mapNotNull { (key, mapValue) ->
             val safeKey = key as? String ?: return@mapNotNull null
-            val safeValue = (mapValue as? Number)?.toLong() ?: return@mapNotNull null
+            val safeValue = when (mapValue) {
+                is com.google.firebase.Timestamp -> mapValue.toDate().time
+                is Number -> mapValue.toLong()
+                else -> null
+            } ?: return@mapNotNull null
             safeKey to safeValue
         }?.toMap() ?: emptyMap()
     }
@@ -70,7 +74,7 @@ class ChatRepository {
                     "lastSenderId"      to "",
                     "unreadCount"       to mapOf(myUid to 0L, otherUid to 0L),
                     "deletedFor"        to mapOf(myUid to 0L, otherUid to 0L),
-                    "createdAt"         to System.currentTimeMillis()
+                    "createdAt"         to com.google.firebase.firestore.FieldValue.serverTimestamp()
                 )
                 chatRef.set(chatData)
                     .addOnSuccessListener { onSuccess(chatId, 0L) }
@@ -108,7 +112,7 @@ class ChatRepository {
             "chatId"    to chatId,
             "senderId"  to senderId,
             "text"      to text,
-            "createdAt" to System.currentTimeMillis(),
+            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp(),
             "seen"      to false
         )
         if (!imageUrl.isNullOrEmpty()) {
@@ -121,7 +125,7 @@ class ChatRepository {
             db.collection("chats").document(chatId).update(
                 mapOf(
                     "lastMessage"     to displayMessage,
-                    "lastMessageAt"   to System.currentTimeMillis(),
+                    "lastMessageAt"   to com.google.firebase.firestore.FieldValue.serverTimestamp(),
                     "lastSenderId"    to senderId,
                     "unreadCount.$receiverId" to com.google.firebase.firestore.FieldValue.increment(1)
                 )
@@ -142,7 +146,7 @@ class ChatRepository {
                             "chatId"    to chatId,
                             "senderId"  to senderId,
                             "seen"      to false,
-                            "createdAt" to System.currentTimeMillis()
+                            "createdAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
                         )
                         db.collection("notifications").add(notif)
                             .addOnFailureListener { e ->
@@ -173,7 +177,11 @@ class ChatRepository {
                 if (snap == null) return@addSnapshotListener
                 val messages = snap.documents.mapNotNull { doc ->
                     try {
-                        val createdAt = doc.getLong("createdAt") ?: 0L
+                        val createdAt = when (val timeVal = doc.get("createdAt")) {
+                            is com.google.firebase.Timestamp -> timeVal.toDate().time
+                            is Number -> timeVal.toLong()
+                            else -> 0L
+                        }
                         // Nếu tin nhắn được tạo trước hoặc ngay tại lúc xóa -> Ẩn đi
                         if (myDeletedAt > 0L && createdAt <= myDeletedAt) {
                             return@mapNotNull null
@@ -233,6 +241,8 @@ class ChatRepository {
      * Lắng nghe real-time danh sách cuộc hội thoại của một user.
      * Không dùng orderBy để tránh lỗi thiếu Composite Index — sort ở client-side.
      * Lọc ra những cuộc trò chuyện đã bị người dùng "xóa phía mình" (soft delete).
+     * Lọc bỏ "conversation zombie": UID người kia không còn tồn tại trong users
+     * (xảy ra khi người dùng xóa tài khoản và tạo lại với cùng email → UID mới).
      */
     fun listenConversations(
         uid: String,
@@ -250,7 +260,11 @@ class ChatRepository {
                     try {
                         val deletedForMap = longMap(doc.get("deletedFor"))
                         val myDeletedAt   = deletedForMap[uid] ?: 0L
-                        val lastMsgAt     = doc.getLong("lastMessageAt") ?: 0L
+                        val lastMsgAt = when (val timeVal = doc.get("lastMessageAt")) {
+                            is com.google.firebase.Timestamp -> timeVal.toDate().time
+                            is Number -> timeVal.toLong()
+                            else -> 0L
+                        }
 
                         // Ẩn nếu cuộc chat đã bị xóa phía mình VÀ chưa có tin nhắn mới
                         if (myDeletedAt > 0L && lastMsgAt <= myDeletedAt) {
@@ -272,9 +286,54 @@ class ChatRepository {
                         null
                     }
                 }
-                // Sort mới nhất trên đầu ở phía client
-                val sorted = convs.sortedByDescending { it.lastMessageAt }
-                onUpdate(sorted)
+
+                // --- Lọc "Conversation Zombie" ---
+                // Khi một tài khoản bị xóa và tạo lại, UID cũ vẫn còn trong participants
+                // nhưng document users/{oldUid} không còn tồn tại.
+                // Batch-get kiểm tra UID người kia còn sống hay không.
+                val otherUids = convs.mapNotNull { conv ->
+                    conv.participants.firstOrNull { it != uid }
+                }.distinct()
+
+                if (otherUids.isEmpty()) {
+                    onUpdate(emptyList())
+                    return@addSnapshotListener
+                }
+
+                // Firestore whereIn giới hạn 30 phần tử — chunked để an toàn
+                val allExistingUids = mutableSetOf<String>()
+                val batches = otherUids.chunked(30)
+                var completedBatches = 0
+
+                batches.forEach { batch ->
+                    db.collection("users")
+                        .whereIn(com.google.firebase.firestore.FieldPath.documentId(), batch)
+                        .get()
+                        .addOnSuccessListener { userSnap ->
+                            userSnap.documents.forEach { userDoc ->
+                                if (userDoc.exists()) allExistingUids.add(userDoc.id)
+                            }
+                            completedBatches++
+                            if (completedBatches == batches.size) {
+                                // Chỉ giữ conversation mà UID người kia vẫn tồn tại trong users
+                                val filtered = convs.filter { conv ->
+                                    val otherId = conv.participants.firstOrNull { it != uid }
+                                    otherId != null && allExistingUids.contains(otherId)
+                                }
+                                val sorted = filtered.sortedByDescending { it.lastMessageAt }
+                                onUpdate(sorted)
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            android.util.Log.e("ChatRepo", "Lỗi check users tồn tại: ${e.message}")
+                            completedBatches++
+                            // Fallback an toàn: nếu network lỗi thì vẫn hiển thị toàn bộ
+                            if (completedBatches == batches.size) {
+                                val sorted = convs.sortedByDescending { it.lastMessageAt }
+                                onUpdate(sorted)
+                            }
+                        }
+                }
             }
     }
 
@@ -343,7 +402,9 @@ class ChatRepository {
             .addOnSuccessListener { 
                 onSuccess()
                 // Xóa ảnh nền trên Storage để tiết kiệm dung lượng
-                if (imageUrl.isNotEmpty()) {
+                if (imageUrl.isNotEmpty() &&
+                    (imageUrl.startsWith("https://firebasestorage.googleapis.com") ||
+                     imageUrl.startsWith("gs://"))) {
                     try {
                         FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl).delete()
                             .addOnFailureListener { e ->
@@ -370,7 +431,7 @@ class ChatRepository {
     ) {
         // Chỉ đặt timestamp "đã xóa phía mình" — không xóa document thật sự
         db.collection("chats").document(chatId)
-            .update("deletedFor.$myUid", System.currentTimeMillis())
+            .update("deletedFor.$myUid", com.google.firebase.firestore.FieldValue.serverTimestamp())
             .addOnSuccessListener { onSuccess() }
             .addOnFailureListener { onFailure(it.message ?: "Lỗi xóa cuộc trò chuyện") }
     }

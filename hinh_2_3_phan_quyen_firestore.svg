@@ -1,0 +1,143 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="Times New Roman, Times, serif">
+
+  <!-- Background (Pure White) -->
+  <rect width="960" height="600" fill="#ffffff" rx="12" stroke="#000000" stroke-width="1"/>
+
+  <!-- Title -->
+  <text x="480" y="38" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Hình 2.3: Sơ đồ phân quyền Firestore theo vai trò người dùng</text>
+  <text x="480" y="58" text-anchor="middle" font-size="12" fill="#000000">Cơ chế kiểm soát truy cập dựa trên vai trò (RBAC) kết hợp thuộc tính tài liệu (ABAC) trong firestore.rules</text>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- ROLES (VAI TRÒ NGƯỜI DÙNG - NỀN TRẮNG CHỮ ĐEN) -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <!-- Role: Người dùng -->
+  <rect x="60" y="95" width="250" height="90" rx="10" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="185" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#000000">Người dùng</text>
+  <text x="185" y="145" text-anchor="middle" font-size="10.5" fill="#000000" font-weight="bold">Đã xác thực (isSignedIn)</text>
+  <text x="185" y="162" text-anchor="middle" font-size="10" fill="#000000">Vai trò mặc định (role: "user")</text>
+
+  <!-- Role: Người đăng tin -->
+  <rect x="355" y="95" width="250" height="90" rx="10" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#000000">Người đăng tin</text>
+  <text x="480" y="145" text-anchor="middle" font-size="10.5" fill="#000000" font-weight="bold">Đã xác minh danh tính thành công</text>
+  <text x="480" y="162" text-anchor="middle" font-size="10" fill="#000000">Được cấp quyền đăng tin phòng trọ</text>
+
+  <!-- Role: Quản trị viên hệ thống -->
+  <rect x="650" y="95" width="250" height="90" rx="10" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <text x="775" y="125" text-anchor="middle" font-size="13" font-weight="bold" fill="#000000">Quản trị viên hệ thống</text>
+  <text x="775" y="145" text-anchor="middle" font-size="10.5" fill="#000000" font-weight="bold">Tài khoản Admin (role: "admin")</text>
+  <text x="775" y="162" text-anchor="middle" font-size="10" fill="#000000">Bypass toàn bộ kiểm tra quyền</text>
+
+  <!-- Kế thừa quyền Arrow -->
+  <line x1="355" y1="140" x2="318" y2="140" stroke="#000000" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrowBlack)"/>
+  <text x="336.5" y="133" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">Kế thừa</text>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- CLOUD FIRESTORE CONTAINER -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <rect x="40" y="215" width="880" height="350" rx="12" fill="#ffffff" stroke="#000000" stroke-width="1.5" stroke-dasharray="5,4"/>
+  <text x="55" y="233" font-size="11" font-weight="bold" fill="#000000">CƠ SỞ DỮ LIỆU CLOUD FIRESTORE</text>
+
+  <!-- 1. users (Hồ sơ người dùng) -->
+  <rect x="60" y="250" width="260" height="135" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="60" y="250" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="190" y="268" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Hồ sơ người dùng (users)</text>
+  
+  <text x="72" y="298" font-size="10" font-weight="bold" fill="#000000">Người dùng / Đăng tin:</text>
+  <text x="72" y="313" font-size="9.5" fill="#000000">• Đọc &amp; Cập nhật thông tin của chính mình</text>
+  <text x="72" y="326" font-size="9.5" fill="#000000">• Cấm tự thay đổi vai trò, khóa, xác minh</text>
+
+  <text x="72" y="347" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống:</text>
+  <text x="72" y="362" font-size="9.5" fill="#000000">• Toàn quyền Đọc/Ghi hồ sơ toàn hệ thống</text>
+
+  <!-- 2. rooms (Tin đăng phòng trọ) -->
+  <rect x="350" y="250" width="260" height="135" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="350" y="250" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="480" y="268" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Tin đăng phòng trọ (rooms)</text>
+  
+  <text x="362" y="298" font-size="10" font-weight="bold" fill="#000000">Người dùng:</text>
+  <text x="427" y="298" font-size="9.5" fill="#000000">Xem tin đăng đã duyệt &amp; hết hạn</text>
+  
+  <text x="362" y="318" font-size="10" font-weight="bold" fill="#000000">Người đăng tin:</text>
+  <text x="362" y="333" font-size="9.5" fill="#000000">• Tạo tin đăng mới &amp; Quản lý tin của mình</text>
+  <text x="362" y="346" font-size="9.5" fill="#000000">• Cấm tự kích hoạt nổi bật hay tự duyệt tin</text>
+
+  <text x="362" y="366" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống:</text>
+  <text x="477" y="366" font-size="9.5" fill="#000000">Kiểm duyệt, quản lý tin đăng</text>
+
+  <!-- 3. appointments, chats, support_tickets -->
+  <rect x="640" y="250" width="260" height="135" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="640" y="250" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="770" y="268" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Giao tiếp &amp; Hỗ trợ (Lịch hẹn, Chat)</text>
+  
+  <text x="652" y="298" font-size="10" font-weight="bold" fill="#000000">Người dùng / Đăng tin:</text>
+  <text x="652" y="313" font-size="9.5" fill="#000000">• Chỉ đọc/ghi cuộc trò chuyện chứa UID của mình</text>
+  <text x="652" y="326" font-size="9.5" fill="#000000">• Chỉ đọc/ghi lịch hẹn &amp; phiếu hỗ trợ của mình</text>
+  <text x="652" y="339" font-size="9.5" fill="#000000">• Chỉ nhắn tin gửi phản hồi dưới vai trò phù hợp</text>
+
+  <text x="652" y="360" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống:</text>
+  <text x="767" y="360" font-size="9.5" fill="#000000">Toàn quyền quản lý, hỗ trợ</text>
+
+  <!-- 4. verifications, cccd_registry (Xác minh) -->
+  <rect x="60" y="405" width="260" height="140" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="60" y="405" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="190" y="423" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Xác minh danh tính (verifications)</text>
+  
+  <text x="72" y="453" font-size="10" font-weight="bold" fill="#000000">Người dùng:</text>
+  <text x="72" y="468" font-size="9.5" fill="#000000">• Gửi yêu cầu xác minh danh tính và ảnh CCCD</text>
+  <text x="72" y="481" font-size="9.5" fill="#000000">• Chỉ xem hồ sơ xác minh của chính bản thân</text>
+  <text x="72" y="494" font-size="9.5" fill="#000000">• Tự tăng bộ đếm quét ảnh CCCD bằng OCR</text>
+
+  <text x="72" y="515" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống:</text>
+  <text x="72" y="530" font-size="9.5" fill="#000000">• Toàn quyền kiểm duyệt, từ chối hoặc xác minh</text>
+
+  <!-- 5. reviews, savedPosts, notifications -->
+  <rect x="350" y="405" width="260" height="140" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="350" y="405" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="480" y="423" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Tiện ích &amp; Tương tác (Review, Lưu)</text>
+  
+  <text x="362" y="453" font-size="10" font-weight="bold" fill="#000000">Người dùng / Đăng tin:</text>
+  <text x="362" y="468" font-size="9.5" fill="#000000">• reviews: Đọc công khai, Ghi của mình (cấm tự duyệt)</text>
+  <text x="362" y="481" font-size="9.5" fill="#000000">• savedPosts: Đọc &amp; Ghi liên kết lưu tin của chính mình</text>
+  <text x="362" y="494" font-size="9.5" fill="#000000">• notifications: Đọc &amp; Xóa thông báo gửi đến mình</text>
+
+  <text x="362" y="515" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống:</text>
+  <text x="477" y="515" font-size="9.5" fill="#000000">Toàn quyền quản lý, kiểm duyệt</text>
+
+  <!-- 6. upgrades, phone_registry, system_notifications -->
+  <rect x="640" y="405" width="260" height="140" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <rect x="640" y="405" width="260" height="28" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="770" y="423" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Giao dịch &amp; Hệ thống (Upgrades)</text>
+  
+  <text x="652" y="453" font-size="10" font-weight="bold" fill="#000000">Người dùng / Đăng tin:</text>
+  <text x="652" y="468" font-size="9.5" fill="#000000">• Tạo yêu cầu thanh toán nổi bật, nâng slot đăng</text>
+  <text x="652" y="481" font-size="9.5" fill="#000000">• Cấm tự kích hoạt nổi bật hay sửa trạng thái giao dịch</text>
+  <text x="652" y="494" font-size="9.5" fill="#000000">• phone_registry: Đọc công khai để kiểm tra trùng số</text>
+
+  <text x="652" y="515" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống:</text>
+  <text x="652" y="530" font-size="9.5" fill="#000000">• Xác nhận giao dịch nâng cấp, gửi thông báo HT</text>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- CONNECTIVE ARROWS FROM ROLES TO DB -->
+  <!-- ═══════════════════════════════════════════════ -->
+
+  <!-- User Role to DB -->
+  <line x1="185" y1="185" x2="185" y2="210" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowBlack)"/>
+
+  <!-- Poster Role to DB -->
+  <line x1="480" y1="185" x2="480" y2="210" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowBlack)"/>
+
+  <!-- Admin Role to DB -->
+  <line x1="775" y1="185" x2="775" y2="210" stroke="#000000" stroke-width="1.5" marker-end="url(#arrowBlack)"/>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- ARROW MARKERS DEFINITIONS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <defs>
+    <marker id="arrowBlack" markerWidth="8" markerHeight="8" refX="5" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#000000"/>
+    </marker>
+  </defs>
+
+</svg>

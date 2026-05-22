@@ -2,7 +2,9 @@ package com.example.doantotnghiep.View.Fragment
 
 import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,12 +16,15 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.View.Auth.*
 import com.example.doantotnghiep.ViewModel.ProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.yalantis.ucrop.UCrop
+import java.io.File
 import java.util.Locale
 
 class ProfileFragment : Fragment() {
@@ -56,7 +61,17 @@ class ProfileFragment : Fragment() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.data?.let { viewModel.uploadAvatar(it) }
+            result.data?.data?.let { sourceUri -> launchCrop(sourceUri) }
+        }
+    }
+
+    private val cropImageLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK && result.data != null) {
+            UCrop.getOutput(result.data!!)?.let { croppedUri ->
+                viewModel.uploadAvatar(croppedUri)
+            }
         }
     }
 
@@ -169,6 +184,19 @@ class ProfileFragment : Fragment() {
             } else {
                 dismissAvatarLoadingDialog()
             }
+        }
+
+        viewModel.avatarDeleted.observe(viewLifecycleOwner) { deleted ->
+            if (deleted != true || !isAdded) return@observe
+            dismissAvatarLoadingDialog()
+            currentAvatarUrl = ""
+            imgAvatar.setImageResource(R.drawable.ic_person)
+            MessageUtils.showSuccessDialog(
+                requireContext(),
+                "\u0110\u00e3 x\u00f3a \u1ea3nh \u0111\u1ea1i di\u1ec7n",
+                "\u1ea2nh \u0111\u1ea1i di\u1ec7n c\u1ee7a b\u1ea1n \u0111\u00e3 \u0111\u01b0\u1ee3c g\u1ee1 b\u1ecf"
+            )
+            viewModel.resetAvatarDeletedState()
         }
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
@@ -322,7 +350,20 @@ class ProfileFragment : Fragment() {
             }
         }
         btnChangeAvatar.setOnClickListener {
-            openLocalImagePicker()
+            if (currentAvatarUrl.isNotEmpty()) {
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Ảnh đại diện")
+                    .setItems(arrayOf("Thay ảnh đại diện", "Xóa ảnh đại diện")) { _, which ->
+                        when (which) {
+                            0 -> openLocalImagePicker()
+                            1 -> confirmDeleteAvatar()
+                        }
+                    }
+                    .setNegativeButton("Hủy", null)
+                    .show()
+            } else {
+                openLocalImagePicker()
+            }
         }
         btnPersonalInfo.setOnClickListener { startActivity(Intent(requireContext(), PersonalInfoActivity::class.java)) }
         btnChangePassword.setOnClickListener { startActivity(Intent(requireContext(), ChangePasswordActivity::class.java)) }
@@ -376,7 +417,6 @@ class ProfileFragment : Fragment() {
             cardMyPosts.visibility = View.VISIBLE
             btnSavedPosts.visibility = View.VISIBLE
             setupClickListeners()
-            setupObservers()
         }
         if (viewModel.isLoggedIn() && ::viewModel.isInitialized) {
             viewModel.loadUserInfo()
@@ -397,6 +437,36 @@ class ProfileFragment : Fragment() {
             putExtra(Intent.EXTRA_LOCAL_ONLY, true)
         }
         pickImageLauncher.launch(Intent.createChooser(intent, "Chọn ảnh từ thư viện"))
+    }
+
+    private fun launchCrop(sourceUri: Uri) {
+        val destFile = File(requireContext().cacheDir, "avatar_${System.currentTimeMillis()}.jpg")
+        val destUri = FileProvider.getUriForFile(
+            requireContext(),
+            "${requireContext().packageName}.fileprovider",
+            destFile
+        )
+        UCrop.of(sourceUri, destUri)
+            .withAspectRatio(1f, 1f)
+            .withMaxResultSize(512, 512)
+            .withOptions(UCrop.Options().apply {
+                setCompressionQuality(85)
+                setCompressionFormat(Bitmap.CompressFormat.JPEG)
+                setCircleDimmedLayer(true)
+                setShowCropGrid(false)
+                setToolbarTitle("Cắt ảnh đại diện")
+            })
+            .getIntent(requireContext())
+            .let { cropImageLauncher.launch(it) }
+    }
+
+    private fun confirmDeleteAvatar() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Xóa ảnh đại diện")
+            .setMessage("Bạn có chắc chắn muốn xóa ảnh đại diện? Hành động này không thể hoàn tác.")
+            .setPositiveButton("Xóa") { _, _ -> viewModel.deleteAvatar() }
+            .setNegativeButton("Hủy", null)
+            .show()
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

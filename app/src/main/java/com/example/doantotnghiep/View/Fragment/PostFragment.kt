@@ -61,6 +61,7 @@ class PostFragment : Fragment() {
     private var selectedLatitude: Double? = null
     private var selectedLongitude: Double? = null
     private var selectedLocationAddress: String = ""
+    private var isPostProcessing = false
 
     private val pickImageLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -105,15 +106,19 @@ class PostFragment : Fragment() {
         }
 
         // Cố gắng sync spinnerWard từ địa chỉ bản đồ trả về
+        // Sắp xếp ứng viên theo độ dài tên phường giảm dần để tránh "Phường 1" match nhầm trong "Phường 10"
         if (selectedLocationAddress.isNotBlank()) {
             val adapterCount = spinnerWard.adapter?.count ?: 0
-            for (i in 0 until adapterCount) {
-                val item = spinnerWard.adapter.getItem(i)?.toString() ?: continue
-                // Lấy tên phường/xã từ item spinner (bỏ phần quận trong ngoặc)
-                val wardInSpinner = if (item.contains("(")) item.substringBefore("(").trim() else item
-                if (wardInSpinner.isNotBlank() &&
-                    selectedLocationAddress.contains(wardInSpinner, ignoreCase = true)) {
-                    spinnerWard.setSelection(i)
+            data class WardCandidate(val index: Int, val wardName: String)
+            val candidates = (0 until adapterCount).mapNotNull { i ->
+                val item = spinnerWard.adapter.getItem(i)?.toString() ?: return@mapNotNull null
+                val wardName = if (item.contains("(")) item.substringBefore("(").trim() else item
+                if (wardName.isNotBlank()) WardCandidate(i, wardName) else null
+            }.sortedByDescending { it.wardName.length }
+
+            for (candidate in candidates) {
+                if (selectedLocationAddress.contains(candidate.wardName, ignoreCase = true)) {
+                    spinnerWard.setSelection(candidate.index)
                     break
                 }
             }
@@ -180,7 +185,9 @@ class PostFragment : Fragment() {
                     rulesDialogShown = true
                     showRulesDialog(isFirstTime = true)
                 }
-                viewModel.checkPrePostQuota()
+                if (!isPostProcessing) {
+                    viewModel.checkPrePostQuota()
+                }
             } else {
                 when (user.role) {
                     "pending" -> showPendingStatus()
@@ -366,7 +373,7 @@ class PostFragment : Fragment() {
         val btnQuotaClose = dialogView.findViewById<MaterialButton>(R.id.btnQuotaClose)
         val btnQuotaUpgrade = dialogView.findViewById<MaterialButton>(R.id.btnQuotaUpgrade)
 
-        tvQuotaMessage.text = "Số lần đăng bài trong ngày của bạn đã hết. Sau 24 giờ kể từ lúc này, bạn sẽ có thêm 3 lượt đăng bài mới."
+        tvQuotaMessage.text = "Số lần đăng bài miễn phí trong ngày của bạn đã hết. Bạn sẽ nhận được 3 lượt mới vào lúc 00:00 ngày mai."
         tvQuotaUnlockAt.text = "Mở lại lúc: ${formatter.format(Date(unlockAt))}"
         tvQuotaCountdown.text = "Thời gian còn lại: ${formatDetailedCountdown(remainMs)}"
 
@@ -544,6 +551,7 @@ class PostFragment : Fragment() {
                 putExtra(LocationPickerActivity.EXTRA_INITIAL_ADDRESS, edtAddress.text.toString().trim())
                 putExtra(LocationPickerActivity.EXTRA_INITIAL_WARD, wardName)
                 putExtra(LocationPickerActivity.EXTRA_INITIAL_DISTRICT, districtName)
+                putExtra(LocationPickerActivity.EXTRA_IS_STRICT, true)
             }
             pickLocationLauncher.launch(intent)
         }
@@ -593,6 +601,7 @@ class PostFragment : Fragment() {
                     "Đăng bài thành công",
                     remainMessage ?: "Bài đăng đã được duyệt thành công."
                 ) {
+                    isPostProcessing = false
                     val intent = Intent(requireContext(), com.example.doantotnghiep.View.Auth.PostSuccessActivity::class.java).apply {
                         putExtra("postId", postId)
                         putExtra("title", lastPostedTitle)
@@ -606,6 +615,7 @@ class PostFragment : Fragment() {
 
         viewModel.errorMessage.observe(viewLifecycleOwner) { error ->
             if (!error.isNullOrEmpty()) {
+                isPostProcessing = false
                 dismissPostLoadingDialog()
                 PostNotificationHelper.cancel(requireContext())
                 MessageUtils.showErrorDialog(requireContext(), "Lỗi đăng bài", error)
@@ -693,6 +703,7 @@ class PostFragment : Fragment() {
             lastPostedTitle = room.title
             lastPostedPrice = room.price
             lastPostedLocation = if (room.ward.isNotEmpty()) "${room.ward}, ${room.district}" else room.district
+            isPostProcessing = true
             viewModel.postRoom(requireContext(), room, imageUris)
         }
 
@@ -1013,6 +1024,8 @@ class PostFragment : Fragment() {
         btnConfirm.text = "Đang chờ xác nhận thanh toán..."
         btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
 
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
+
         var paymentCompleted = false
         var latestStatus = "waiting_for_payment"
         val statusPollHandler = Handler(Looper.getMainLooper())
@@ -1025,26 +1038,31 @@ class PostFragment : Fragment() {
                     btnConfirm.isEnabled = true
                     btnConfirm.text = "Hoàn tất giao dịch"
                     btnConfirm.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.primary))
+                    btnCancel.visibility = android.view.View.GONE
                 }
                 "waiting_for_payment" -> {
                     btnConfirm.isEnabled = false
                     btnConfirm.text = "Đang chờ xác nhận thanh toán..."
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.VISIBLE
                 }
                 "expired" -> {
                     btnConfirm.isEnabled = false
                     btnConfirm.text = "Giao dịch đã hết hạn"
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.GONE
                 }
                 "failed" -> {
                     btnConfirm.isEnabled = false
                     btnConfirm.text = "Giao dịch thất bại"
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.GONE
                 }
                 "cancelled" -> {
                     btnConfirm.isEnabled = false
                     btnConfirm.text = "Đã hủy giao dịch"
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.GONE
                 }
             }
         }
@@ -1081,21 +1099,22 @@ class PostFragment : Fragment() {
         }
         statusPollHandler.postDelayed(pollStatusRunnable, 3000L)
 
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
-            .setOnClickListener {
-                if (latestStatus == "paid") {
-                    dialog.dismiss()
-                    return@setOnClickListener
-                }
-                val cancelAt = System.currentTimeMillis()
-                docRef.update(
-                    mapOf(
-                        "status" to "cancelled",
-                        "cancelledAt" to cancelAt,
-                        "updatedAt" to cancelAt
-                    )
-                ).addOnCompleteListener { dialog.dismiss() }
+        btnCancel.setOnClickListener {
+            if (latestStatus == "paid") {
+                dialog.dismiss()
+                return@setOnClickListener
             }
+            btnCancel.isEnabled = false
+            btnCancel.text = "Đang hủy..."
+            val cancelAt = System.currentTimeMillis()
+            docRef.update(
+                mapOf(
+                    "status" to "cancelled",
+                    "cancelledAt" to cancelAt,
+                    "updatedAt" to cancelAt
+                )
+            ).addOnCompleteListener { dialog.dismiss() }
+        }
 
         btnConfirm.setOnClickListener {
             if (latestStatus != "paid") return@setOnClickListener

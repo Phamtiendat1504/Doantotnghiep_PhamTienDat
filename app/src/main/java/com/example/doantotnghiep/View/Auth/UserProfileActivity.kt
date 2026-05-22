@@ -258,6 +258,7 @@ class UserProfileActivity : AppCompatActivity() {
 
         viewModel.errorMessage.observe(this) { msg ->
             if (msg.isNotEmpty()) {
+                viewModel.resetErrorMessage()
                 android.widget.Toast.makeText(this, msg, android.widget.Toast.LENGTH_SHORT).show()
             }
         }

@@ -4,7 +4,8 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_light">
+    android:background="@color/bg_light"
+    android:fitsSystemWindows="true">
 
     <LinearLayout
         android:id="@+id/layoutHeader"
@@ -117,7 +118,9 @@
                             android:drawableTint="@color/gray_500"
                             android:hint="@string/hint_email"
                             android:importantForAutofill="no"
-                            android:inputType="textEmailAddress" />
+                            android:inputType="textEmailAddress"
+                            android:imeOptions="actionNext"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -148,7 +151,9 @@
                             android:drawableTint="@color/gray_500"
                             android:hint="@string/txt_nhap_mat_khau_cua_ban"
                             android:importantForAutofill="no"
-                            android:inputType="textPassword" />
+                            android:inputType="textPassword"
+                            android:imeOptions="actionDone"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 

@@ -10,6 +10,8 @@ import com.example.doantotnghiep.MainActivity
 import com.example.doantotnghiep.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
@@ -18,6 +20,7 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     companion object {
         private const val CHANNEL_ID = "fcm_notification_channel"
         private const val CHANNEL_NAME = "Thông báo hệ thống"
+        private val notificationCounter = java.util.concurrent.atomic.AtomicInteger(0)
     }
 
     /**
@@ -27,6 +30,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         saveFcmToken(token)
+        // BUG-FCM-03: Subscribe vào topic broadcast hệ thống
+        FirebaseMessaging.getInstance().subscribeToTopic("all_users")
     }
 
     /**
@@ -75,10 +80,11 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
      */
     private fun saveFcmToken(token: String) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        // BUG-FCM-02: Dùng set+merge thay vì update để tránh lỗi khi document chưa tồn tại
         FirebaseFirestore.getInstance()
             .collection("users")
             .document(uid)
-            .update("fcmToken", token)
+            .set(mapOf("fcmToken" to token), SetOptions.merge())
             .addOnSuccessListener {
                 android.util.Log.d("FCM", "Token đã được lưu thành công: $token")
             }
@@ -111,6 +117,8 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             intent = Intent(this, com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity::class.java).apply {
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_ID, ticketId)
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_TITLE, ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
+                // Bug #3: Thêm status mặc định từ FCM notification để tránh ticketStatus rỗng ban đầu
+                putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
             }
         } else {
             // Mặc định mở MainActivity kèm lệnh mở MyAppointmentsActivity
@@ -120,8 +128,9 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             }
         }
 
+        val uniqueId = notificationCounter.incrementAndGet()
         val pendingIntent = PendingIntent.getActivity(
-            this, System.currentTimeMillis().toInt(), intent,
+            this, uniqueId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -129,15 +138,15 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body)) // Hiện full text nếu dài
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setDefaults(NotificationCompat.DEFAULT_ALL) // Rung + Âm thanh mặc định
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(pendingIntent)
             .build()
 
         val manager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-        manager.notify(System.currentTimeMillis().toInt(), notification)
+        manager.notify(uniqueId, notification)
     }
 
 

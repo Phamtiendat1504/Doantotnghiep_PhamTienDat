@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.doantotnghiep.repository.AppointmentRepository
 import com.example.doantotnghiep.repository.RoomRepository
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 
 class MainViewModel : ViewModel() {
@@ -30,6 +31,16 @@ class MainViewModel : ViewModel() {
         appointmentBadgeListener = appointmentRepository.listenBadge(uid, role) { count ->
             _appointmentBadgeCount.postValue(count)
         }
+    }
+
+    fun loadAppointmentBadgeForCurrentUser(uid: String) {
+        FirebaseFirestore.getInstance().collection("users").document(uid).get()
+            .addOnSuccessListener { doc ->
+                val role = doc.getString("role") ?: ""
+                val isVerified = doc.getBoolean("isVerified") ?: false
+                val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
+                loadAppointmentBadge(uid, effectiveRole)
+            }
     }
 
     override fun onCleared() {

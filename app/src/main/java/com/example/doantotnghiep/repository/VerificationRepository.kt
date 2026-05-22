@@ -96,11 +96,11 @@ class VerificationRepository {
         onResult: (AutoCheckResult) -> Unit
     ) {
         val normalizedInput = normalizeDigits(enteredCccd)
-        if (normalizedInput.length != 12) {
+        if (!isValidVietnameseCccd(normalizedInput)) {
             onResult(
                 AutoCheckResult(
                     passed = false,
-                    reason = "Số CCCD nhập vào không hợp lệ.",
+                    reason = "Số CCCD nhập vào không đúng định dạng chuẩn Việt Nam.",
                     failCountToday = currentFailCount(context),
                     remainingAutoRetries = remainingAutoRetries(context),
                     escalatedToAdmin = false
@@ -173,7 +173,7 @@ class VerificationRepository {
                                     reason = reason,
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
@@ -308,8 +308,8 @@ class VerificationRepository {
         onFailure: (String) -> Unit
     ) {
         val normalizedCccd = normalizeDigits(cccdNumber)
-        if (normalizedCccd.length != 12) {
-            onFailure("Số CCCD không hợp lệ.")
+        if (!isValidVietnameseCccd(normalizedCccd)) {
+            onFailure("Số CCCD không đúng định dạng chuẩn Việt Nam.")
             return
         }
 
@@ -439,6 +439,15 @@ class VerificationRepository {
 
     private fun normalizeDigits(raw: String): String = raw.filter { it.isDigit() }
 
+    private fun isValidVietnameseCccd(cccd: String): Boolean {
+        if (cccd.length != 12 || !cccd.all { it.isDigit() }) return false
+        val provinceCode = cccd.substring(0, 3).toIntOrNull() ?: return false
+        if (provinceCode < 1 || provinceCode > 96) return false
+        val genderCentury = cccd[3] - '0'
+        if (genderCentury < 0 || genderCentury > 9) return false
+        return true
+    }
+
     private fun normalizeOcrDigits(raw: String): String {
         val upper = raw.uppercase(Locale.ROOT)
         val normalized = StringBuilder(upper.length)
@@ -564,15 +573,48 @@ class VerificationRepository {
             .putString(KEY_FAIL_DATE, today)
             .putInt(KEY_FAIL_COUNT, next)
             .apply()
+        // Persist counter to Firestore so clearing app data cannot reset it
+        auth.currentUser?.uid?.let { uid ->
+            db.collection("verification_counters").document(uid)
+                .set(mapOf("failDate" to today, "failCount" to next))
+        }
         return next
     }
 
-    private fun resetAutoFailureCounter(context: Context) {
+    fun resetAutoFailureCounter(context: Context) {
         val prefs = context.getSharedPreferences(PREF_VERIFICATION_ATTEMPTS, Context.MODE_PRIVATE)
+        val today = todayKey()
         prefs.edit()
-            .putString(KEY_FAIL_DATE, todayKey())
+            .putString(KEY_FAIL_DATE, today)
             .putInt(KEY_FAIL_COUNT, 0)
             .apply()
+        auth.currentUser?.uid?.let { uid ->
+            db.collection("verification_counters").document(uid)
+                .set(mapOf("failDate" to today, "failCount" to 0))
+        }
+    }
+
+    fun syncCounterFromServer(context: Context, uid: String, onDone: () -> Unit) {
+        db.collection("verification_counters").document(uid).get(com.google.firebase.firestore.Source.SERVER)
+            .addOnSuccessListener { snap ->
+                if (snap.exists()) {
+                    val serverDate = snap.getString("failDate") ?: ""
+                    val serverCount = (snap.getLong("failCount") ?: 0L).toInt()
+                    val today = todayKey()
+                    if (serverDate == today && serverCount > 0) {
+                        val prefs = context.getSharedPreferences(PREF_VERIFICATION_ATTEMPTS, Context.MODE_PRIVATE)
+                        val localCount = if (prefs.getString(KEY_FAIL_DATE, "") == today) prefs.getInt(KEY_FAIL_COUNT, 0) else 0
+                        if (serverCount > localCount) {
+                            prefs.edit()
+                                .putString(KEY_FAIL_DATE, today)
+                                .putInt(KEY_FAIL_COUNT, serverCount)
+                                .apply()
+                        }
+                    }
+                }
+                onDone()
+            }
+            .addOnFailureListener { onDone() }
     }
 }
 

@@ -1,4 +1,4 @@
-﻿package com.example.doantotnghiep.ViewModel
+package com.example.doantotnghiep.ViewModel
 
 import android.content.Context
 import android.net.Uri
@@ -49,6 +49,10 @@ class VerifyLandlordViewModel : ViewModel() {
         )
     }
 
+    fun resetFailureCounter(context: Context) {
+        repository.resetAutoFailureCounter(context)
+    }
+
     fun clearSubmitResult() {
         _submitResult.value = null
     }
@@ -79,6 +83,7 @@ class VerifyLandlordViewModel : ViewModel() {
                 _errorMessage.value = "Số CCCD này đã được đăng ký bởi tài khoản khác. Vui lòng nhập lại."
             },
             onNotExists = {
+                repository.syncCounterFromServer(context, currentUid) {
                 repository.runAutoCheckCccd(
                     context = context,
                     fullName = fullName,
@@ -143,6 +148,7 @@ class VerifyLandlordViewModel : ViewModel() {
                         }
                     }
                 )
+                } // end syncCounterFromServer
             },
             onFailure = { e ->
                 _isLoading.value = false
@@ -174,7 +180,18 @@ class VerifyLandlordViewModel : ViewModel() {
             onSuccess = {
                 _isLoading.value = false
                 val message = if (status == SubmitStatus.ESCALATED_TO_ADMIN) {
-                    "Thông tin của bạn đã được gửi đến admin, chờ duyệt trong 24 giờ do xác thực lỗi quá 3 lần."
+                    buildString {
+                        // Phần 1: Lý do cụ thể của lần thất bại này
+                        if (!meta.autoCheckReason.isNullOrBlank()) {
+                            append("⚠️ Lý do xác thực thất bại:\n")
+                            append(meta.autoCheckReason)
+                            append("\n\n")
+                        }
+                        // Phần 2: Thông báo hệ thống hành động
+                        append("📋 Hồ sơ của bạn đã được hệ thống tự động gửi đến admin để xét duyệt thủ công do xác thực sai quá 3 lần trong ngày.\n\n")
+                        // Phần 3: Hướng dẫn chờ đợi
+                        append("⏳ Vui lòng chờ phản hồi từ admin trong vòng 24 giờ. Bạn sẽ nhận được thông báo khi hồ sơ được duyệt.")
+                    }
                 } else {
                     "Thông tin trùng khớp chính xác! Tài khoản của bạn đã được xác minh thành công."
                 }

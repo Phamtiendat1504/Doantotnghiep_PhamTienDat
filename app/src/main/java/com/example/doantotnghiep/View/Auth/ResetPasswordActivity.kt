@@ -47,6 +47,15 @@ class ResetPasswordActivity : AppCompatActivity() {
             val confirmPassword = edtConfirmPassword.text.toString().trim()
             viewModel.resetPassword(email, newPassword, confirmPassword)
         }
+
+        edtConfirmPassword.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                btnResetPassword.performClick()
+                true
+            } else {
+                false
+            }
+        }
     }
 
     private fun observeViewModel() {

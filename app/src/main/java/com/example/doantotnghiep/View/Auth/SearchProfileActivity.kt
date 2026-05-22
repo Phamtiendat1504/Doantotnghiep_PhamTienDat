@@ -90,15 +90,16 @@ class SearchProfileActivity : AppCompatActivity() {
 
                 if (query.length >= 2) {
                     layoutEmpty.visibility = View.GONE
-                    
+
                     searchRunnable = Runnable {
                         viewModel.searchUsers(query)
                     }
                     searchHandler.postDelayed(searchRunnable!!, 400) // Debounce 400ms
-                } else if (query.isEmpty()) {
+                } else {
                     adapter.submitList(emptyList())
                     layoutEmpty.visibility = View.VISIBLE
                     (layoutEmpty.getChildAt(1) as? android.widget.TextView)?.text = "Nhập ít nhất 2 ký tự để tìm kiếm"
+                    viewModel.clearSearch()
                 }
             }
         })

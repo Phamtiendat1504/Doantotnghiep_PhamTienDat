@@ -14,6 +14,7 @@ import com.example.doantotnghiep.ViewModel.AuthViewModel
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.google.firebase.messaging.FirebaseMessaging
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -31,7 +32,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var viewModel: AuthViewModel
 
     private var loginLoadingDialog: AlertDialog? = null
-    private var pendingLockCheck = false
+    private var lockStatusListener: com.google.firebase.firestore.ListenerRegistration? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -58,25 +59,21 @@ class LoginActivity : AppCompatActivity() {
                     title = "\u0110ang \u0111\u0103ng nh\u1eadp",
                     message = "\u0110ang x\u00e1c th\u1ef1c t\u00e0i kho\u1ea3n, vui l\u00f2ng ch\u1edd."
                 )
-            } else if (!pendingLockCheck) {
+            } else {
                 dismissLoginLoadingDialog()
             }
         }
 
         viewModel.loginResult.observe(this) { success ->
             if (success) {
-                pendingLockCheck = true
-                showLoginLoadingDialog(
-                    title = "\u0110ang \u0111\u0103ng nh\u1eadp",
-                    message = "\u0110ang ki\u1ec3m tra tr\u1ea1ng th\u00e1i t\u00e0i kho\u1ea3n..."
-                )
                 viewModel.resetLoginResult()
-                viewModel.checkLockStatus()
+                // BUG-FCM-03: Subscribe topic broadcast sau khi đăng nhập thành công
+                FirebaseMessaging.getInstance().subscribeToTopic("all_users")
+                goToMainActivity()
             }
         }
 
         viewModel.lockInfo.observe(this) { pair ->
-            pendingLockCheck = false
             dismissLoginLoadingDialog()
             val isLocked = pair.first
             val (reason, until, lockDays) = pair.second
@@ -110,7 +107,7 @@ class LoginActivity : AppCompatActivity() {
                     // --- BẮT ĐẦU LẮNG NGHE REAL-TIME KHI ĐANG HIỆN DIALOG ---
                     val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
                     if (uid != null) {
-                        val listenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        lockStatusListener = com.google.firebase.firestore.FirebaseFirestore.getInstance()
                             .collection("users").document(uid)
                             .addSnapshotListener { snapshot, _ ->
                                 if (snapshot != null && snapshot.exists()) {
@@ -132,8 +129,6 @@ class LoginActivity : AppCompatActivity() {
                                     }
                                 }
                             }
-                        // Listener này sẽ tự động bị rò rỉ nếu không được quản lý, 
-                        // nhưng trong LoginActivity nó sẽ bị destroy cùng Activity.
                     }
                 } else {
                     goToMainActivity()
@@ -143,8 +138,33 @@ class LoginActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.emailNotVerified.observe(this) { notVerified ->
+            if (notVerified == true) {
+                dismissLoginLoadingDialog()
+                viewModel.resetEmailNotVerified()
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Email chưa được xác minh")
+                    .setMessage("Vui lòng kiểm tra hộp thư và nhấn vào link xác minh mà chúng tôi đã gửi khi bạn đăng ký.\n\nNếu chưa nhận được email, hãy nhấn \"Gửi lại\".")
+                    .setPositiveButton("Đã hiểu") { dialog, _ -> dialog.dismiss() }
+                    .setNegativeButton("Gửi lại") { dialog, _ ->
+                        dialog.dismiss()
+                        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                            ?.sendEmailVerification()
+                            ?.addOnSuccessListener {
+                                androidx.appcompat.app.AlertDialog.Builder(this)
+                                    .setTitle("Đã gửi lại")
+                                    .setMessage("Email xác minh đã được gửi lại. Vui lòng kiểm tra hộp thư.")
+                                    .setPositiveButton("OK") { d, _ -> d.dismiss() }
+                                    .show()
+                            }
+                        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+        }
+
         viewModel.errorMessage.observe(this) { message ->
-            pendingLockCheck = false
             dismissLoginLoadingDialog()
             clearErrors()
             when {
@@ -166,10 +186,18 @@ class LoginActivity : AppCompatActivity() {
 
         btnLogin.setOnClickListener {
             clearErrors()
-            pendingLockCheck = false
             val email = edtEmail.text.toString().trim()
             val password = edtPassword.text.toString().trim()
             viewModel.login(email, password)
+        }
+
+        edtPassword.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                btnLogin.performClick()
+                true
+            } else {
+                false
+            }
         }
 
         tvGoToRegister.setOnClickListener {
@@ -216,6 +244,8 @@ class LoginActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         dismissLoginLoadingDialog()
+        lockStatusListener?.remove()
+        lockStatusListener = null
         super.onDestroy()
     }
 }

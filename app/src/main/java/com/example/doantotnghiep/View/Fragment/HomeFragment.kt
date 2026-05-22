@@ -43,6 +43,12 @@ class HomeFragment : Fragment() {
     private lateinit var layoutRecentSearch: LinearLayout
     private lateinit var scrollRecentSearch: View
     private lateinit var swipeRefreshLayout: androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+    
+    // New Search History Dropdown Views
+    private lateinit var cardRecentSearch: View
+    private lateinit var layoutRecentSearchVertical: LinearLayout
+    private lateinit var btnClearAllSearch: TextView
+    private lateinit var homeNestedScrollView: androidx.core.widget.NestedScrollView
 
     private lateinit var viewModel: HomeViewModel
 
@@ -77,6 +83,12 @@ class HomeFragment : Fragment() {
         layoutRecentSearch = view.findViewById(R.id.layoutRecentSearch)
         scrollRecentSearch = view.findViewById(R.id.scrollRecentSearch)
         swipeRefreshLayout = view.findViewById(R.id.swipeRefreshLayout)
+        
+        // Bind new search history components
+        cardRecentSearch = view.findViewById(R.id.cardRecentSearch)
+        layoutRecentSearchVertical = view.findViewById(R.id.layoutRecentSearchVertical)
+        btnClearAllSearch = view.findViewById(R.id.btnClearAllSearch)
+        homeNestedScrollView = view.findViewById(R.id.homeNestedScrollView)
 
         setupSwipeRefresh()
         setupRecyclerViews()
@@ -236,6 +248,11 @@ class HomeFragment : Fragment() {
         }
     }
 
+    private fun hideKeyboard() {
+        val imm = requireContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE) as android.view.inputmethod.InputMethodManager
+        imm.hideSoftInputFromWindow(edtHomeSearch.windowToken, 0)
+    }
+
     private fun setupSearchHistory() {
         val sharedPref = requireContext().getSharedPreferences("SearchHistory", android.content.Context.MODE_PRIVATE)
         
@@ -243,39 +260,71 @@ class HomeFragment : Fragment() {
             val history = sharedPref.getString("queries", "") ?: ""
             val queries = if (history.isEmpty()) emptyList() else history.split("|").filter { it.isNotBlank() }
             
-            if (queries.isEmpty()) {
-                scrollRecentSearch.visibility = View.GONE
+            if (queries.isEmpty() || !edtHomeSearch.hasFocus()) {
+                cardRecentSearch.visibility = View.GONE
             } else {
-                scrollRecentSearch.visibility = View.VISIBLE
-                layoutRecentSearch.removeAllViews()
+                cardRecentSearch.visibility = View.VISIBLE
+                layoutRecentSearchVertical.removeAllViews()
                 queries.forEach { query ->
-                    val textView = TextView(requireContext()).apply {
-                        text = query
-                        textSize = 12f
-                        setPadding(24, 12, 24, 12)
-                        setTextColor(ContextCompat.getColor(requireContext(), R.color.white))
-                        background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_search_tag)
-                        val params = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.WRAP_CONTENT,
-                            LinearLayout.LayoutParams.WRAP_CONTENT
-                        ).apply { marginEnd = 16 }
-                        layoutParams = params
-                        setOnClickListener {
-                            edtHomeSearch.setText(query)
-                            performHomeSearch()
-                        }
+                    val itemView = LayoutInflater.from(requireContext()).inflate(R.layout.item_search_history, layoutRecentSearchVertical, false)
+                    
+                    val tvQuery = itemView.findViewById<TextView>(R.id.tvSearchQuery)
+                    val btnDelete = itemView.findViewById<View>(R.id.btnDeleteQuery)
+                    
+                    tvQuery.text = query
+                    
+                    // Click on search term executes search
+                    itemView.setOnClickListener {
+                        edtHomeSearch.setText(query)
+                        performHomeSearch()
+                        edtHomeSearch.clearFocus()
+                        hideKeyboard()
                     }
-                    layoutRecentSearch.addView(textView)
+                    
+                    // Click on X delete button deletes the item
+                    btnDelete.setOnClickListener {
+                        val currentHistory = sharedPref.getString("queries", "") ?: ""
+                        val updatedQueries = currentHistory.split("|").filter { it.isNotBlank() && it != query }
+                        val newHistory = updatedQueries.joinToString("|")
+                        sharedPref.edit().putString("queries", newHistory).apply()
+                        updateHistoryUI()
+                    }
+                    
+                    layoutRecentSearchVertical.addView(itemView)
                 }
             }
         }
 
-        updateHistoryUI()
+        // Click Xóa tất cả (Clear All)
+        btnClearAllSearch.setOnClickListener {
+            sharedPref.edit().putString("queries", "").apply()
+            updateHistoryUI()
+            edtHomeSearch.clearFocus()
+            hideKeyboard()
+        }
 
         // Lắng nghe sự kiện focus để hiện/ẩn lịch sử
         edtHomeSearch.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) updateHistoryUI()
+            if (hasFocus) {
+                updateHistoryUI()
+            } else {
+                // Post delayed to avoid consuming touch events inside dropdown before visibility changes to GONE
+                edtHomeSearch.postDelayed({
+                    if (!isAdded) return@postDelayed
+                    if (!edtHomeSearch.hasFocus()) {
+                        cardRecentSearch.visibility = View.GONE
+                    }
+                }, 200)
+            }
         }
+
+        // Tự động ẩn khi người dùng bắt đầu cuộn trang chủ
+        homeNestedScrollView.setOnScrollChangeListener(androidx.core.widget.NestedScrollView.OnScrollChangeListener { _, _, _, _, _ ->
+            if (edtHomeSearch.hasFocus()) {
+                edtHomeSearch.clearFocus()
+                hideKeyboard()
+            }
+        })
     }
 
     private fun saveSearchQuery(query: String) {
@@ -291,6 +340,9 @@ class HomeFragment : Fragment() {
         if (query.isEmpty()) { edtHomeSearch.error = "Vui lòng nhập từ khóa tìm kiếm"; return }
         
         saveSearchQuery(query) // Lưu lịch sử
+        
+        edtHomeSearch.clearFocus()
+        hideKeyboard()
 
         val intent = Intent(requireContext(), SearchResultsActivity::class.java)
         intent.putExtra("query", query)
@@ -305,26 +357,27 @@ class HomeFragment : Fragment() {
         rvNewRooms.isNestedScrollingEnabled = false
     }
 
+    private var lastRoomLoadTime = 0L
+    private val roomReloadIntervalMs = 60_000L // tải lại tối đa 1 lần/phút
+
     override fun onResume() {
         super.onResume()
         if (!::viewModel.isInitialized) return
         if (viewModel.popularAreas.value.isNullOrEmpty()) viewModel.loadPopularAreas()
         if (viewModel.featuredRooms.value.isNullOrEmpty()) viewModel.loadFeaturedRooms()
-        viewModel.loadNewRooms(isRefresh = true)
-        viewModel.loadNotificationBadge() // Tải lại số lượng thông báo khi quay lại
-        
-        // Cập nhật Badge Lịch hẹn (Shared ViewModel chuẩn MVVM)
+
+        val now = System.currentTimeMillis()
+        if (now - lastRoomLoadTime > roomReloadIntervalMs) {
+            viewModel.loadNewRooms(isRefresh = true)
+            lastRoomLoadTime = now
+        }
+
+        viewModel.loadNotificationBadge()
+
         val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
             val mainViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[com.example.doantotnghiep.ViewModel.MainViewModel::class.java]
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(currentUser.uid).get()
-                .addOnSuccessListener { doc ->
-                    val role = doc.getString("role") ?: ""
-                    val isVerified = doc.getBoolean("isVerified") ?: false
-                    val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
-                    mainViewModel.loadAppointmentBadge(currentUser.uid, effectiveRole)
-                }
+            mainViewModel.loadAppointmentBadgeForCurrentUser(currentUser.uid)
         }
     }
 }

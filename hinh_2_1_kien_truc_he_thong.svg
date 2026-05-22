@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="Times New Roman, Times, serif">
+
+  <!-- Background -->
+  <rect width="960" height="600" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="480" y="38" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Hình 2.1: Sơ đồ kiến trúc hệ thống tổng thể</text>
+  <text x="480" y="58" text-anchor="middle" font-size="12" font-style="italic" fill="#000000">Hệ thống Tìm Trọ 24/7 — Android App · Firebase Platform · Web Admin Panel</text>
+
+  <!-- LEFT: Android App (Client) -->
+  <rect x="30" y="110" width="180" height="310" rx="8" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <rect x="30" y="110" width="180" height="36" rx="8" fill="#000000"/>
+  <rect x="30" y="134" width="180" height="12" fill="#000000"/>
+  <text x="120" y="133" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Android App (Client)</text>
+  <text x="120" y="163" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Kotlin · MVVM</text>
+
+  <rect x="45" y="182" width="150" height="28" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.2"/>
+  <text x="120" y="200" text-anchor="middle" font-size="10" fill="#000000">View (Activity/Fragment)</text>
+
+  <rect x="45" y="220" width="150" height="28" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.2"/>
+  <text x="120" y="238" text-anchor="middle" font-size="10" fill="#000000">ViewModel + LiveData</text>
+
+  <rect x="45" y="258" width="150" height="28" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.2"/>
+  <text x="120" y="276" text-anchor="middle" font-size="10" fill="#000000">Repository Layer</text>
+
+  <rect x="45" y="296" width="150" height="28" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.2"/>
+  <text x="120" y="314" text-anchor="middle" font-size="10" fill="#000000">Firebase SDK</text>
+
+  <line x1="120" y1="334" x2="120" y2="340" stroke="#000000" stroke-width="1"/>
+  <text x="120" y="356" text-anchor="middle" font-size="10" font-weight="bold" fill="#000000">Người dùng · Người đăng tin</text>
+  <text x="120" y="372" text-anchor="middle" font-size="10" fill="#000000">Android 8.0+ (API 26)</text>
+  <text x="120" y="394" text-anchor="middle" font-size="10" font-style="italic" fill="#000000">[ Client di động ]</text>
+
+  <!-- CENTER: Firebase Platform (BaaS) -->
+  <rect x="278" y="76" width="404" height="444" rx="10" fill="#ffffff" stroke="#000000" stroke-width="2" stroke-dasharray="6,3"/>
+  <rect x="278" y="76" width="404" height="36" rx="10" fill="#000000"/>
+  <rect x="278" y="100" width="404" height="12" fill="#000000"/>
+  <text x="480" y="100" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Firebase Platform (BaaS)</text>
+
+  <!-- Firebase Auth -->
+  <rect x="296" y="126" width="168" height="54" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="380" y="148" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Firebase Auth</text>
+  <text x="380" y="165" text-anchor="middle" font-size="10" fill="#000000">Email · Google · Token JWT</text>
+
+  <!-- Firestore -->
+  <rect x="474" y="126" width="190" height="54" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="569" y="148" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Cloud Firestore</text>
+  <text x="569" y="165" text-anchor="middle" font-size="10" fill="#000000">NoSQL · Real-time · 8 collections</text>
+
+  <!-- Storage -->
+  <rect x="296" y="192" width="168" height="54" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="380" y="214" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Firebase Storage</text>
+  <text x="380" y="231" text-anchor="middle" font-size="10" fill="#000000">Ảnh phòng · CCCD · Avatar</text>
+
+  <!-- FCM -->
+  <rect x="474" y="192" width="190" height="54" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="569" y="214" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Firebase FCM</text>
+  <text x="569" y="231" text-anchor="middle" font-size="10" fill="#000000">Thông báo đẩy di động</text>
+
+  <!-- Cloud Functions box -->
+  <rect x="296" y="260" width="368" height="108" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="280" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Cloud Functions (Node.js 20)</text>
+
+  <rect x="310" y="290" width="104" height="28" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="362" y="309" text-anchor="middle" font-size="10" fill="#000000">AI Chat (Gemini)</text>
+
+  <rect x="424" y="290" width="110" height="28" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="479" y="309" text-anchor="middle" font-size="10" fill="#000000">OCR (Cloud Vision)</text>
+
+  <rect x="544" y="290" width="110" height="28" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="599" y="309" text-anchor="middle" font-size="10" fill="#000000">Thanh toán (SePay)</text>
+
+  <text x="480" y="354" text-anchor="middle" font-size="10" fill="#000000">FCM Notification · Dashboard Stats · CCCD Registry</text>
+
+  <!-- Firebase Hosting -->
+  <rect x="296" y="382" width="368" height="122" rx="8" fill="#ffffff" stroke="#000000" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="480" y="403" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Firebase Hosting</text>
+  <line x1="296" y1="410" x2="664" y2="410" stroke="#000000" stroke-width="1" stroke-dasharray="3,2"/>
+  <text x="480" y="428" text-anchor="middle" font-size="10" fill="#000000">Static SPA — Admin Web Panel</text>
+  <text x="480" y="446" text-anchor="middle" font-size="10" fill="#000000">JS ES6+ · Chart.js · Firebase JS SDK</text>
+  <text x="480" y="464" text-anchor="middle" font-size="10" fill="#000000">Xuất báo cáo Excel · Phân quyền Quản trị viên</text>
+  <text x="480" y="490" text-anchor="middle" font-size="10" font-style="italic" fill="#000000">[ Backend as a Service ]</text>
+
+  <!-- RIGHT: Web Admin (Client) -->
+  <rect x="760" y="110" width="170" height="310" rx="8" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <rect x="760" y="110" width="170" height="36" rx="8" fill="#000000"/>
+  <rect x="760" y="134" width="170" height="12" fill="#000000"/>
+  <text x="845" y="133" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">Web Admin Panel</text>
+  <text x="845" y="163" text-anchor="middle" font-size="11" fill="#000000">JS ES6 · Firebase SDK</text>
+
+  <rect x="778" y="182" width="132" height="26" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="844" y="200" text-anchor="middle" font-size="10" fill="#000000">Duyệt tin đăng phòng</text>
+
+  <rect x="778" y="216" width="132" height="26" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="844" y="234" text-anchor="middle" font-size="10" fill="#000000">Duyệt hồ sơ E-KYC</text>
+
+  <rect x="778" y="250" width="132" height="26" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="844" y="268" text-anchor="middle" font-size="10" fill="#000000">Quản lý tài khoản</text>
+
+  <rect x="778" y="284" width="132" height="26" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="844" y="302" text-anchor="middle" font-size="10" fill="#000000">Thống kê hoạt động</text>
+
+  <rect x="778" y="318" width="132" height="26" rx="5" fill="#ffffff" stroke="#000000" stroke-width="1"/>
+  <text x="844" y="336" text-anchor="middle" font-size="10" fill="#000000">Tiếp nhận hỗ trợ</text>
+
+  <text x="845" y="372" text-anchor="middle" font-size="10" font-weight="bold" fill="#000000">Quản trị viên hệ thống</text>
+  <text x="845" y="392" text-anchor="middle" font-size="10" font-style="italic" fill="#000000">[ Client Quản trị ]</text>
+
+  <!-- BOTTOM: External services -->
+  <rect x="278" y="538" width="120" height="48" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="338" y="558" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Gemini AI API</text>
+  <text x="338" y="574" text-anchor="middle" font-size="10" fill="#000000">Tư vấn phòng thông minh</text>
+
+  <rect x="410" y="538" width="140" height="48" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="558" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Google Vision API</text>
+  <text x="480" y="574" text-anchor="middle" font-size="10" fill="#000000">Nhận dạng văn bản OCR</text>
+
+  <rect x="562" y="538" width="120" height="48" rx="6" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="622" y="558" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">SePay Gateway</text>
+  <text x="622" y="574" text-anchor="middle" font-size="10" fill="#000000">Tự động quét sao kê ngân hàng</text>
+
+  <!-- ARROWS DEFINITIONS -->
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#000000"/>
+    </marker>
+    <marker id="arrR" markerWidth="8" markerHeight="8" refX="2" refY="3" orient="auto-start-reverse">
+      <path d="M0,0 L0,6 L8,3 z" fill="#000000"/>
+    </marker>
+  </defs>
+
+  <!-- Android App <-> Firebase Platform (BaaS) -->
+  <line x1="210" y1="260" x2="276" y2="260" stroke="#000000" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arrR)"/>
+  <text x="243" y="253" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">Firebase SDK</text>
+
+  <!-- Web Admin <-> Firebase Platform (BaaS) -->
+  <line x1="760" y1="260" x2="684" y2="260" stroke="#000000" stroke-width="2" marker-end="url(#arr)" marker-start="url(#arrR)"/>
+  <text x="722" y="253" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">JS SDK</text>
+
+  <!-- Cloud Functions -> External services (dashed) -->
+  <line x1="362" y1="368" x2="338" y2="536" stroke="#000000" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="5,3"/>
+  <line x1="480" y1="368" x2="480" y2="536" stroke="#000000" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="5,3"/>
+  <line x1="598" y1="368" x2="622" y2="536" stroke="#000000" stroke-width="1.5" marker-end="url(#arr)" stroke-dasharray="5,3"/>
+
+  <!-- External services label -->
+  <text x="480" y="526" text-anchor="middle" font-size="10" fill="#000000" font-style="italic">[ Dịch vụ API tích hợp máy chủ ]</text>
+
+</svg>

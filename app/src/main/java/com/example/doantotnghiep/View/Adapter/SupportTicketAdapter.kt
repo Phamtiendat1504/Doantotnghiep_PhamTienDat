@@ -19,6 +19,8 @@ class SupportTicketAdapter(
     private var selectedTicketId = ""
 
     fun submitList(tickets: List<SupportTicket>, selectedId: String) {
+        // Bug #5: Early-return nếu dữ liệu không thay đổi để tránh notifyDataSetChanged gây jank
+        if (items.toList() == tickets && selectedTicketId == selectedId) return
         items.clear()
         items.addAll(tickets)
         selectedTicketId = selectedId
@@ -69,6 +71,16 @@ class SupportTicketAdapter(
                 "resolved" -> tvStatus.setTextColor(0xFF43A047.toInt()) // Green
                 "closed" -> tvStatus.setTextColor(0xFF757575.toInt()) // Grey
             }
+
+            // Bug #7: Tô màu thanh dọc trái (view_status_bar) theo trạng thái ticket
+            val statusBar: View = itemView.findViewById(R.id.viewStatusBar)
+            statusBar.setBackgroundColor(when (ticket.status) {
+                "new" -> 0xFFE53935.toInt()        // Red
+                "in_progress" -> 0xFFFB8C00.toInt() // Orange
+                "resolved" -> 0xFF43A047.toInt()    // Green
+                "closed" -> 0xFF9E9E9E.toInt()      // Grey
+                else -> 0xFFBDBDBD.toInt()           // Default
+            })
 
             itemView.setOnClickListener { onClick(ticket) }
         }

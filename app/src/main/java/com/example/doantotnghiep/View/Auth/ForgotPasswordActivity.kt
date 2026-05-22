@@ -19,8 +19,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
 
     private lateinit var tilEmail: TextInputLayout
     private lateinit var edtEmail: TextInputEditText
-    private lateinit var tilPhone: TextInputLayout
-    private lateinit var edtPhone: TextInputEditText
     private lateinit var btnSendEmail: MaterialButton
     private lateinit var progressBar: ProgressBar
     private lateinit var btnBack: ImageView
@@ -40,8 +38,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
     private fun bindViews() {
         tilEmail      = findViewById(R.id.tilEmail)
         edtEmail      = findViewById(R.id.edtEmail)
-        tilPhone      = findViewById(R.id.tilPhone)
-        edtPhone      = findViewById(R.id.edtPhone)
         btnSendEmail  = findViewById(R.id.btnSendEmail)
         progressBar   = findViewById(R.id.progressBar)
         btnBack       = findViewById(R.id.btnBack)
@@ -50,17 +46,22 @@ class ForgotPasswordActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         btnSendEmail.setOnClickListener {
-            // Xóa lỗi cũ
             tilEmail.error = null
-            tilPhone.error = null
 
             val email = edtEmail.text.toString().trim()
-            val phone = edtPhone.text.toString().trim()
 
-            // Ẩn bàn phím
             hideKeyboard()
 
-            viewModel.requestPasswordReset(email, phone)
+            viewModel.requestPasswordReset(email)
+        }
+
+        edtEmail.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                btnSendEmail.performClick()
+                true
+            } else {
+                false
+            }
         }
 
         btnBack.setOnClickListener { finish() }
@@ -73,7 +74,6 @@ class ForgotPasswordActivity : AppCompatActivity() {
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnSendEmail.isEnabled = !isLoading
             edtEmail.isEnabled = !isLoading
-            edtPhone.isEnabled = !isLoading
         }
 
         // Lỗi ô Email
@@ -81,14 +81,10 @@ class ForgotPasswordActivity : AppCompatActivity() {
             tilEmail.error = if (msg.isNullOrEmpty()) null else msg
         }
 
-        // Lỗi ô Số điện thoại
-        viewModel.phoneError.observe(this) { msg ->
-            tilPhone.error = if (msg.isNullOrEmpty()) null else msg
-        }
-
         // Lỗi chung (thông tin không khớp, lỗi mạng...)
         viewModel.generalError.observe(this) { msg ->
             if (!msg.isNullOrEmpty()) {
+                viewModel.clearGeneralError()
                 MessageUtils.showErrorDialog(
                     this,
                     "Xác minh thất bại",
@@ -101,13 +97,20 @@ class ForgotPasswordActivity : AppCompatActivity() {
         viewModel.sendEmailSuccess.observe(this) { email ->
             if (email.isNullOrEmpty()) return@observe
             viewModel.clearSendEmailSuccess()
-            MessageUtils.showSuccessDialog(
-                this,
-                "Liên kết đã gửi",
-                "Liên kết đặt lại mật khẩu đã được gửi đến\n$email\nVui lòng kiểm tra hộp thư của bạn."
-            ) {
-                finish()
-            }
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Đã gửi liên kết đặt lại")
+                .setMessage(
+                    "Liên kết đặt lại mật khẩu đã được gửi đến:\n$email\n\n" +
+                    "Vui lòng kiểm tra hộp thư và nhấn vào liên kết trong vòng 1 giờ.\n\n" +
+                    "Lưu ý bảo mật: Nếu bạn không yêu cầu đặt lại mật khẩu, " +
+                    "hãy bỏ qua email này — tài khoản của bạn vẫn an toàn."
+                )
+                .setPositiveButton("Đã hiểu") { dialog, _ ->
+                    dialog.dismiss()
+                    finish()
+                }
+                .setCancelable(false)
+                .show()
         }
     }
 

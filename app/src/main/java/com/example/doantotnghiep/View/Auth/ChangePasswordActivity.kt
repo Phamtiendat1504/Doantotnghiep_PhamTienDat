@@ -53,6 +53,15 @@ class ChangePasswordActivity : AppCompatActivity() {
             authViewModel.changePassword(oldPassword, newPassword, confirmPassword)
         }
 
+        edtConfirmPassword.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_DONE) {
+                btnChangePassword.performClick()
+                true
+            } else {
+                false
+            }
+        }
+
         btnBack.setOnClickListener { finish() }
     }
 
@@ -64,6 +73,7 @@ class ChangePasswordActivity : AppCompatActivity() {
 
         authViewModel.changePasswordResult.observe(this) { success ->
             if (success) {
+                authViewModel.resetChangePasswordResult()
                 MessageUtils.showSuccessDialog(this, "Thành công", "Mật khẩu đã được thay đổi. Vui lòng đăng nhập lại.") {
                     authViewModel.logOut()
                     val intent = Intent(this, LoginActivity::class.java)
@@ -74,18 +84,21 @@ class ChangePasswordActivity : AppCompatActivity() {
         }
 
         authViewModel.wrongOldPassword.observe(this) { wrong ->
-            if (wrong) tilOldPassword.error = "Mật khẩu cũ không đúng"
+            if (wrong) {
+                tilOldPassword.error = "Mật khẩu cũ không đúng"
+                authViewModel.resetWrongOldPassword()
+            }
         }
 
         authViewModel.errorMessage.observe(this) { msg ->
             when (msg) {
-                "old_empty" -> tilOldPassword.error = "Vui lòng nhập mật khẩu cũ"
-                "new_empty" -> tilNewPassword.error = "Vui lòng nhập mật khẩu mới"
-                "new_weak" -> tilNewPassword.error = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
-                "confirm_empty" -> tilConfirmPassword.error = "Vui lòng nhập lại mật khẩu mới"
-                "confirm_mismatch" -> tilConfirmPassword.error = "Mật khẩu xác nhận không khớp"
-                "same_password" -> tilNewPassword.error = "Mật khẩu mới phải khác mật khẩu cũ"
-                else -> if (!msg.isNullOrEmpty()) MessageUtils.showErrorDialog(this, "Lỗi", msg)
+                "old_empty" -> { tilOldPassword.error = "Vui lòng nhập mật khẩu cũ"; authViewModel.resetErrorMessage() }
+                "new_empty" -> { tilNewPassword.error = "Vui lòng nhập mật khẩu mới"; authViewModel.resetErrorMessage() }
+                "new_weak" -> { tilNewPassword.error = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"; authViewModel.resetErrorMessage() }
+                "confirm_empty" -> { tilConfirmPassword.error = "Vui lòng nhập lại mật khẩu mới"; authViewModel.resetErrorMessage() }
+                "confirm_mismatch" -> { tilConfirmPassword.error = "Mật khẩu xác nhận không khớp"; authViewModel.resetErrorMessage() }
+                "same_password" -> { tilNewPassword.error = "Mật khẩu mới phải khác mật khẩu cũ"; authViewModel.resetErrorMessage() }
+                else -> if (!msg.isNullOrEmpty()) { MessageUtils.showErrorDialog(this, "Lỗi", msg); authViewModel.resetErrorMessage() }
             }
         }
     }

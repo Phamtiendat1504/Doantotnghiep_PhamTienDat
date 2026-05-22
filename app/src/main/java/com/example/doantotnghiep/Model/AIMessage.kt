@@ -14,5 +14,6 @@ data class AIMessage(
     val role: String = "", // "user" hoặc "model" hoặc "typing"
     val content: String = "",
     val timestamp: Long = System.currentTimeMillis(),
-    val suggestedRooms: List<AIRoom> = emptyList()
+    val suggestedRooms: List<AIRoom> = emptyList(),
+    val quickReplies: List<String> = emptyList()
 )

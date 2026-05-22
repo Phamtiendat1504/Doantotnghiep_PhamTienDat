@@ -295,15 +295,15 @@ class MyPostsActivity : AppCompatActivity() {
 
         if (status == "approved") {
             val canBuyFeatured = !(isFeatured && featuredUntil > System.currentTimeMillis()) &&
-                featuredRequestStatus != "waiting_for_payment" &&
                 featuredRequestStatus != "paid" &&
                 featuredRequestStatus != "paid_waiting_admin"
             if (canBuyFeatured) {
                 val btnFeatured = TextView(this).apply {
-                    text = "Đẩy nổi bật"; textSize = 13f; setTextColor(0xFFE65100.toInt())
+                    text = if (featuredRequestStatus == "waiting_for_payment") "Xem giao dịch" else "Đẩy nổi bật"
+                    textSize = 13f; setTextColor(0xFFE65100.toInt())
                     setTypeface(typeface, android.graphics.Typeface.BOLD)
                     setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
-                    setOnClickListener { showFeaturedPackagesDialog(docId, title) }
+                    setOnClickListener { startFeaturedUpgradeFlow(docId, title) }
                 }
                 bottomLayout.addView(btnFeatured)
             }
@@ -383,6 +383,72 @@ class MyPostsActivity : AppCompatActivity() {
             4 -> viewModel.loadPosts("expired")
             else -> viewModel.loadPosts("all")
         }
+    }
+
+    private fun startFeaturedUpgradeFlow(roomId: String, roomTitle: String) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+        val loadingDialog = MessageUtils.showLoadingDialog(this, "Đang kiểm tra giao dịch...")
+        
+        val activeStatuses = listOf("waiting_for_payment", "paid", "paid_waiting_admin")
+        db.collection("featured_upgrade_requests")
+            .whereEqualTo("uid", uid)
+            .whereEqualTo("roomId", roomId)
+            .get(Source.SERVER)
+            .addOnSuccessListener { snap ->
+                val activeDoc = snap.documents.firstOrNull { activeStatuses.contains(it.getString("status")) }
+                loadingDialog.dismiss()
+                if (activeDoc != null) {
+                    val status = activeDoc.getString("status") ?: "waiting_for_payment"
+                    if (status == "waiting_for_payment") {
+                        val pkg = FeaturedPackage(
+                            label = activeDoc.getString("label") ?: "Nổi bật",
+                            code = activeDoc.getString("code") ?: "FT",
+                            days = activeDoc.getLong("days")?.toInt() ?: 0,
+                            price = activeDoc.getLong("amount")?.toInt() ?: 0
+                        )
+                        val addInfo = activeDoc.getString("transferNote") ?: ""
+                        showFeaturedPaymentQrDialogContent(db, activeDoc.reference, roomId, pkg, addInfo)
+                    } else {
+                        syncRoomFeaturedRequestStatus(db, roomId, status, activeDoc.id)
+                        MessageUtils.showInfoDialog(
+                            this,
+                            "Đã có yêu cầu nổi bật",
+                            "Bài đăng này đã thanh toán và đang chờ admin duyệt nổi bật."
+                        ) { refreshList() }
+                    }
+                } else {
+                    val roomRef = db.collection("rooms").document(roomId)
+                    roomRef.get(Source.SERVER).addOnSuccessListener { roomSnap ->
+                        val currentRoomStatus = roomSnap.getString("featuredRequestStatus") ?: ""
+                        if (currentRoomStatus == "waiting_for_payment" || currentRoomStatus == "paid" || currentRoomStatus == "paid_waiting_admin") {
+                            db.collection("rooms").document(roomId).update(
+                                mapOf(
+                                    "featuredRequestStatus" to "cancelled",
+                                    "featuredRequestUpdatedAt" to System.currentTimeMillis()
+                                )
+                            ).addOnSuccessListener {
+                                refreshList()
+                                showFeaturedPackagesDialog(roomId, roomTitle)
+                            }.addOnFailureListener {
+                                showFeaturedPackagesDialog(roomId, roomTitle)
+                            }
+                        } else {
+                            showFeaturedPackagesDialog(roomId, roomTitle)
+                        }
+                    }.addOnFailureListener {
+                        showFeaturedPackagesDialog(roomId, roomTitle)
+                    }
+                }
+            }
+            .addOnFailureListener { e ->
+                loadingDialog.dismiss()
+                MessageUtils.showErrorDialog(
+                    this,
+                    "Không thể kết nối máy chủ",
+                    e.message ?: "Vui lòng kiểm tra kết nối mạng."
+                )
+            }
     }
 
     private fun showFeaturedPackagesDialog(roomId: String, roomTitle: String) {
@@ -569,6 +635,8 @@ class MyPostsActivity : AppCompatActivity() {
         btnConfirm.text = "Đang chờ xác nhận thanh toán..."
         btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
 
+        val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
+
         var paymentCompleted = false
         var latestStatus = "waiting_for_payment"
         var latestSyncedStatus = ""
@@ -586,21 +654,37 @@ class MyPostsActivity : AppCompatActivity() {
                     btnConfirm.isEnabled = true
                     btnConfirm.text = "Đã thanh toán - chờ admin duyệt"
                     btnConfirm.setBackgroundColor(0xFF1976D2.toInt())
+                    btnCancel.visibility = android.view.View.GONE
                 }
                 "approved" -> {
                     btnConfirm.isEnabled = true
                     btnConfirm.text = "Đã duyệt nổi bật"
                     btnConfirm.setBackgroundColor(0xFF2E7D32.toInt())
+                    btnCancel.visibility = android.view.View.GONE
+                }
+                "waiting_for_payment" -> {
+                    btnConfirm.isEnabled = false
+                    btnConfirm.text = "Đang chờ xác nhận thanh toán..."
+                    btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.VISIBLE
                 }
                 "expired" -> {
                     btnConfirm.isEnabled = false
                     btnConfirm.text = "Giao dịch đã hết hạn"
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.GONE
                 }
                 "rejected" -> {
                     btnConfirm.isEnabled = false
                     btnConfirm.text = "Admin đã từ chối"
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.GONE
+                }
+                "cancelled" -> {
+                    btnConfirm.isEnabled = false
+                    btnConfirm.text = "Đã hủy giao dịch"
+                    btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
+                    btnCancel.visibility = android.view.View.GONE
                 }
             }
         }
@@ -628,32 +712,58 @@ class MyPostsActivity : AppCompatActivity() {
 
         startWatchingPayment()
 
-        dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
-            .setOnClickListener {
-                if (latestStatus == "paid" || latestStatus == "paid_waiting_admin" || latestStatus == "approved") {
-                    dialog.dismiss()
-                    return@setOnClickListener
-                }
-                val cancelAt = System.currentTimeMillis()
-                val batch = db.batch()
-                batch.update(
-                    docRef,
-                    mapOf(
-                        "status" to "cancelled",
-                        "approvalStatus" to "cancelled",
-                        "updatedAt" to cancelAt
-                    )
-                )
-                batch.update(
-                    db.collection("rooms").document(roomId),
-                    mapOf(
-                        "featuredRequestStatus" to "cancelled",
-                        "featuredRequestUpdatedAt" to cancelAt
-                    )
-                )
-                batch.commit()
-                    .addOnCompleteListener { dialog.dismiss() }
+        btnCancel.setOnClickListener {
+            if (latestStatus == "paid" || latestStatus == "paid_waiting_admin" || latestStatus == "approved") {
+                dialog.dismiss()
+                return@setOnClickListener
             }
+            if (latestStatus == "cancelled" || latestStatus == "expired" || latestStatus == "rejected") {
+                dialog.dismiss()
+                MessageUtils.showInfoDialog(this, "Thông báo", "Yêu cầu thanh toán này đã dừng hoạt động.") {
+                    refreshList()
+                }
+                return@setOnClickListener
+            }
+            btnCancel.isEnabled = false
+            btnCancel.text = "Đang hủy..."
+            val cancelAt = System.currentTimeMillis()
+            val batch = db.batch()
+            batch.update(
+                docRef,
+                mapOf(
+                    "status" to "cancelled",
+                    "approvalStatus" to "cancelled",
+                    "updatedAt" to cancelAt
+                )
+            )
+            batch.update(
+                db.collection("rooms").document(roomId),
+                mapOf(
+                    "featuredRequestStatus" to "cancelled",
+                    "featuredRequestUpdatedAt" to cancelAt
+                )
+            )
+            batch.commit()
+                .addOnSuccessListener {
+                    dialog.dismiss()
+                    MessageUtils.showSuccessDialog(
+                        this,
+                        "Hủy giao dịch thành công",
+                        "Yêu cầu đẩy nổi bật đã được hủy bỏ thành công."
+                    ) {
+                        refreshList()
+                    }
+                }
+                .addOnFailureListener { e ->
+                    btnCancel.isEnabled = true
+                    btnCancel.text = "Hủy thanh toán"
+                    MessageUtils.showErrorDialog(
+                        this,
+                        "Hủy giao dịch thất bại",
+                        e.message ?: "Đã xảy ra lỗi không xác định khi hủy giao dịch. Vui lòng kiểm tra lại kết nối mạng hoặc thử lại sau."
+                    )
+                }
+        }
 
         btnConfirm.setOnClickListener {
             if (latestStatus != "paid" && latestStatus != "paid_waiting_admin" && latestStatus != "approved") return@setOnClickListener

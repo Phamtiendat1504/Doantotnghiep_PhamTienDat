@@ -160,7 +160,7 @@ class CccdCameraActivity : AppCompatActivity() {
         tvGuideSub = findViewById(R.id.tvGuideSub)
         btnCapture = findViewById(R.id.btnCaptureCccd)
         btnClose = findViewById(R.id.btnCloseCamera)
-        previewView.scaleType = PreviewView.ScaleType.FIT_CENTER
+        previewView.scaleType = PreviewView.ScaleType.FILL_CENTER
         previewView.implementationMode = PreviewView.ImplementationMode.COMPATIBLE
     }
 
@@ -874,17 +874,58 @@ class CccdCameraActivity : AppCompatActivity() {
             else -> Unit
         }
 
-        if (matrix.isIdentity) return raw
+        var bitmapToCrop = if (matrix.isIdentity) {
+            raw
+        } else {
+            val rotated = Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, matrix, true)
+            raw.recycle()
+            rotated
+        }
 
-        val rotated = Bitmap.createBitmap(raw, 0, 0, raw.width, raw.height, matrix, true)
-        raw.recycle()
-        return rotated
+        // Tự động xoay thêm 90 độ nếu ảnh chụp ra vẫn ở chiều ngang (Landscape) trong khi màn hình khóa Portrait.
+        // Điều này đảm bảo ảnh đưa vào crop luôn là Portrait và thẻ CCCD luôn nằm ngang chính xác.
+        if (bitmapToCrop.width > bitmapToCrop.height) {
+            val rotateMatrix = Matrix().apply { postRotate(90f) }
+            val rotated = Bitmap.createBitmap(bitmapToCrop, 0, 0, bitmapToCrop.width, bitmapToCrop.height, rotateMatrix, true)
+            bitmapToCrop.recycle()
+            bitmapToCrop = rotated
+        }
+
+        return bitmapToCrop
     }
 
     private fun saveBitmapToFile(bitmap: Bitmap, file: File) {
         FileOutputStream(file).use { output ->
             bitmap.compress(Bitmap.CompressFormat.JPEG, 92, output)
             output.flush()
+        }
+        stripExifMetadata(file.absolutePath)
+    }
+
+    private fun stripExifMetadata(filePath: String) {
+        try {
+            val exifInterface = ExifInterface(filePath)
+            val sensitiveTags = listOf(
+                ExifInterface.TAG_GPS_LATITUDE,
+                ExifInterface.TAG_GPS_LONGITUDE,
+                ExifInterface.TAG_GPS_LATITUDE_REF,
+                ExifInterface.TAG_GPS_LONGITUDE_REF,
+                ExifInterface.TAG_GPS_ALTITUDE,
+                ExifInterface.TAG_GPS_ALTITUDE_REF,
+                ExifInterface.TAG_GPS_TIMESTAMP,
+                ExifInterface.TAG_GPS_DATESTAMP,
+                ExifInterface.TAG_MAKE,
+                ExifInterface.TAG_MODEL,
+                ExifInterface.TAG_SOFTWARE,
+                ExifInterface.TAG_ARTIST,
+                ExifInterface.TAG_USER_COMMENT
+            )
+            for (tag in sensitiveTags) {
+                exifInterface.setAttribute(tag, null)
+            }
+            exifInterface.saveAttributes()
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

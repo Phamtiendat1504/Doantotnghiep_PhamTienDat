@@ -239,12 +239,14 @@ class SettingsActivity : AppCompatActivity() {
             clearDirectory(cacheDir)
             clearDirectory(externalCacheDir)
             runOnUiThread {
-                updateCacheSize()
-                MessageUtils.showSuccessDialog(
-                    context = this,
-                    title = "Đã xóa bộ nhớ tạm",
-                    message = "Dữ liệu cache ảnh đã được dọn dẹp thành công."
-                )
+                if (!isFinishing && !isDestroyed) {
+                    updateCacheSize()
+                    MessageUtils.showSuccessDialog(
+                        context = this,
+                        title = "Đã xóa bộ nhớ tạm",
+                        message = "Dữ liệu cache ảnh đã được dọn dẹp thành công."
+                    )
+                }
             }
         }
     }
@@ -260,11 +262,15 @@ class SettingsActivity : AppCompatActivity() {
     }
 
     private fun clearDirectory(dir: File?) {
-        if (dir == null || !dir.exists()) return
-        val files = dir.listFiles() ?: return
-        for (file in files) {
-            if (file.isDirectory) clearDirectory(file)
-            file.delete()
+        try {
+            if (dir == null || !dir.exists()) return
+            val files = dir.listFiles() ?: return
+            for (file in files) {
+                if (file.isDirectory) clearDirectory(file)
+                file.delete()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 

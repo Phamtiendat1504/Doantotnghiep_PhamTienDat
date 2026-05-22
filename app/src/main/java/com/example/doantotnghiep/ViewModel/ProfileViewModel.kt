@@ -45,6 +45,9 @@ class ProfileViewModel : ViewModel() {
     private val _isUploadingAvatar = MutableLiveData<Boolean>()
     val isUploadingAvatar: LiveData<Boolean> = _isUploadingAvatar
 
+    private val _avatarDeleted = MutableLiveData<Boolean>()
+    val avatarDeleted: LiveData<Boolean> = _avatarDeleted
+
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
@@ -94,6 +97,24 @@ class ProfileViewModel : ViewModel() {
     fun resetAvatarUploadState() {
         _isUploadingAvatar.value = false
         _newAvatarUrl.value = ""
+    }
+
+    fun resetAvatarDeletedState() {
+        _avatarDeleted.value = false
+    }
+
+    fun deleteAvatar() {
+        _isUploadingAvatar.value = true
+        authRepository.deleteAvatar(
+            onSuccess = {
+                _isUploadingAvatar.value = false
+                _avatarDeleted.value = true
+            },
+            onFailure = { e ->
+                _isUploadingAvatar.value = false
+                _errorMessage.value = e
+            }
+        )
     }
 
     fun uploadAvatar(imageUri: Uri) {
@@ -159,20 +180,31 @@ class ProfileViewModel : ViewModel() {
                 var numPeople = 0
                 var numMessages = 0
                 for (doc in snap.documents) {
-                    val deletedMap = (doc.get("deletedFor") as? Map<*, *>)
-                        ?.mapNotNull { (key, value) ->
-                            val safeKey = key as? String ?: return@mapNotNull null
-                            val safeValue = (value as? Number)?.toLong() ?: return@mapNotNull null
-                            safeKey to safeValue
-                        }
-                        ?.toMap() ?: emptyMap()
+                    val deletedForObj = doc.get("deletedFor")
+                    val deletedMap = (deletedForObj as? Map<*, *>)?.mapNotNull { (key, value) ->
+                        val safeKey = key as? String ?: return@mapNotNull null
+                        val safeValue = when (value) {
+                            is com.google.firebase.Timestamp -> value.toDate().time
+                            is Number -> value.toLong()
+                            else -> null
+                        } ?: return@mapNotNull null
+                        safeKey to safeValue
+                    }?.toMap() ?: emptyMap()
+
                     val myDeletedAt = deletedMap[uid] ?: 0L
-                    val lastMsgAt = doc.getLong("lastMessageAt") ?: 0L
+
+                    val lastMsgAt = when (val timeVal = doc.get("lastMessageAt")) {
+                        is com.google.firebase.Timestamp -> timeVal.toDate().time
+                        is Number -> timeVal.toLong()
+                        else -> 0L
+                    }
+
                     if (myDeletedAt > 0L && lastMsgAt <= myDeletedAt) {
                         continue // Chat đã bị xóa
                     }
 
-                    val unreadCount = (doc.get("unreadCount.$uid") as? Number)?.toLong() ?: 0L
+                    val unreadMap = doc.get("unreadCount") as? Map<*, *>
+                    val unreadCount = (unreadMap?.get(uid) as? Number)?.toLong() ?: 0L
                     if (unreadCount > 0) {
                         numPeople++
                         numMessages += unreadCount.toInt()

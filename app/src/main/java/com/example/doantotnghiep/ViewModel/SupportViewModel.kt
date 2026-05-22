@@ -44,7 +44,8 @@ class SupportViewModel : ViewModel() {
             onUpdate = { _messages.postValue(it) },
             onError = { _errorMessage.postValue(it) }
         )
-        repository.markUserRead(ticketId)
+        // Bug #9: Đã xóa markUserRead() khỏi đây để tránh gọi trùng lặp
+        // markUserRead chỉ được gọi từ Activity khi số tin nhắn thực sự thay đổi
     }
 
     fun listenTicket(

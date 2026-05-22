@@ -21,5 +21,7 @@ data class User(
     var postingUnlockAt: Long = 0,
     var verifiedAt: Long = 0,
     var createdAt: Long = 0,
-    var purchasedSlots: Int = 0
+    var purchasedSlots: Int = 0,
+    var dailyPostCount: Int = 0,
+    var dailyPostCountDate: String = ""
 )

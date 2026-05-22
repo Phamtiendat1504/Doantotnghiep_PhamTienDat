@@ -1,0 +1,103 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="600" viewBox="0 0 960 600" font-family="Times New Roman, Times, serif">
+  <!-- Background -->
+  <rect width="960" height="600" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+
+  <!-- Title -->
+  <text x="480" y="38" text-anchor="middle" font-size="16" font-weight="bold" fill="#000000">Hình 2.2: Sơ đồ kiến trúc MVVM của ứng dụng Android</text>
+  <text x="480" y="58" text-anchor="middle" font-size="12" font-style="italic" fill="#000000">Luồng dữ liệu và phân tách trách nhiệm trong Client di động</text>
+
+  <!-- View Layer Box -->
+  <rect x="80" y="110" width="220" height="360" rx="8" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <rect x="80" y="110" width="220" height="40" rx="8" fill="#000000"/>
+  <rect x="80" y="138" width="220" height="12" fill="#000000"/>
+  <text x="190" y="135" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">VIEW LAYER</text>
+  <text x="190" y="175" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Activity / Fragment</text>
+  
+  <rect x="100" y="200" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="190" y="222" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Giao diện người dùng</text>
+  <text x="190" y="238" text-anchor="middle" font-size="10" fill="#000000">XML Layouts &amp; Widgets</text>
+
+  <rect x="100" y="270" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="190" y="292" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Đăng ký Quan sát (Observe)</text>
+  <text x="190" y="308" text-anchor="middle" font-size="10" fill="#000000">Lắng nghe thay đổi LiveData</text>
+
+  <rect x="100" y="340" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="190" y="362" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Sự kiện Người dùng</text>
+  <text x="190" y="378" text-anchor="middle" font-size="10" fill="#000000">Click, Chụp ảnh, Gõ phím</text>
+
+  <text x="190" y="440" text-anchor="middle" font-size="11" font-style="italic" fill="#000000">[ Tầng Hiển thị / UI ]</text>
+
+  <!-- ViewModel Layer Box -->
+  <rect x="370" y="110" width="220" height="360" rx="8" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <rect x="370" y="110" width="220" height="40" rx="8" fill="#000000"/>
+  <rect x="370" y="138" width="220" height="12" fill="#000000"/>
+  <text x="480" y="135" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">VIEWMODEL LAYER</text>
+  <text x="480" y="175" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Jetpack ViewModel</text>
+
+  <rect x="390" y="200" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="222" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">LiveData &amp; State</text>
+  <text x="480" y="238" text-anchor="middle" font-size="10" fill="#000000">Lưu giữ trạng thái UI tạm thời</text>
+
+  <rect x="390" y="270" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="292" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Logic Nghiệp vụ UI</text>
+  <text x="480" y="308" text-anchor="middle" font-size="10" fill="#000000">Xử lý dữ liệu thô sang hiển thị</text>
+
+  <rect x="390" y="340" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="480" y="362" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Coroutines &amp; Flows</text>
+  <text x="480" y="378" text-anchor="middle" font-size="10" fill="#000000">Gọi bất đồng bộ an toàn</text>
+
+  <text x="480" y="440" text-anchor="middle" font-size="11" font-style="italic" fill="#000000">[ Tầng Quản lý Trạng thái ]</text>
+
+  <!-- Repository Layer Box -->
+  <rect x="660" y="110" width="220" height="360" rx="8" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <rect x="660" y="110" width="220" height="40" rx="8" fill="#000000"/>
+  <rect x="660" y="138" width="220" height="12" fill="#000000"/>
+  <text x="770" y="135" text-anchor="middle" font-size="14" font-weight="bold" fill="#ffffff">DATA LAYER</text>
+  <text x="770" y="175" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Repository Pattern</text>
+
+  <rect x="680" y="200" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="770" y="222" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Firebase SDK APIs</text>
+  <text x="770" y="238" text-anchor="middle" font-size="10" fill="#000000">Giao tiếp Firestore, Storage</text>
+
+  <rect x="680" y="270" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="770" y="292" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Local SQLite / Cache</text>
+  <text x="770" y="308" text-anchor="middle" font-size="10" fill="#000000">Lưu đệm ngoại tuyến (Offline)</text>
+
+  <rect x="680" y="340" width="180" height="50" rx="4" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+  <text x="770" y="362" text-anchor="middle" font-size="11" font-weight="bold" fill="#000000">Trừu tượng hóa dữ liệu</text>
+  <text x="770" y="378" text-anchor="middle" font-size="10" fill="#000000">Ẩn giấu nguồn phát sinh dữ liệu</text>
+
+  <text x="770" y="440" text-anchor="middle" font-size="11" font-style="italic" fill="#000000">[ Tầng Truy cập Dữ liệu ]</text>
+
+  <!-- External Backend Systems -->
+  <rect x="370" y="520" width="220" height="60" rx="6" fill="#ffffff" stroke="#000000" stroke-width="2"/>
+  <text x="480" y="542" text-anchor="middle" font-size="12" font-weight="bold" fill="#000000">Firebase Platform Backend</text>
+  <text x="480" y="560" text-anchor="middle" font-size="10" fill="#000000">Firestore NoSQL · Cloud Storage · FCM</text>
+
+  <!-- Arrows Definitions -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#000000"/>
+    </marker>
+  </defs>
+
+  <!-- View -> ViewModel (User Action Call) -->
+  <path d="M300,225 L360,225" stroke="#000000" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="330" y="215" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">User Events</text>
+
+  <!-- ViewModel -> View (LiveData Observe Data flow) -->
+  <path d="M370,300 L310,300" stroke="#000000" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="340" y="292" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">Observe Data</text>
+
+  <!-- ViewModel -> Repository (Request Data Call) -->
+  <path d="M590,225 L650,225" stroke="#000000" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="620" y="215" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">Fetch Data</text>
+
+  <!-- Repository -> ViewModel (Return Data Stream) -->
+  <path d="M660,300 L600,300" stroke="#000000" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="630" y="292" text-anchor="middle" font-size="9" font-weight="bold" fill="#000000">Return Data</text>
+
+  <!-- Repository <-> Backend -->
+  <path d="M770,470 L770,550 L590,550" fill="none" stroke="#000000" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arrow)"/>
+  <text x="700" y="542" text-anchor="middle" font-size="9" fill="#000000">Firebase SDK Sync</text>
+</svg>

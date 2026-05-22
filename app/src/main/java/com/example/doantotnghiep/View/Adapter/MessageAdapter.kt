@@ -93,11 +93,13 @@ class MessageAdapter(
                 holder.tvReactions.visibility = View.GONE
             }
 
-            // Gắn event onLongClick
-            val anchorView = if (msg.text.isNotEmpty()) holder.tvMessage else holder.cardImage
-            anchorView.setOnLongClickListener {
-                showOptionsPopup(anchorView, msg, isMine = true)
-                true
+            // Guắc event onLongClick - chỉ khi có handler (Bug #1: tránh popup lộ khi dùng trong Support)
+            if (onLongClickMessage != null || onReaction != null) {
+                val anchorView = if (msg.text.isNotEmpty()) holder.tvMessage else holder.cardImage
+                anchorView.setOnLongClickListener {
+                    showOptionsPopup(anchorView, msg, isMine = true)
+                    true
+                }
             }
         } else if (holder is ReceivedViewHolder) {
             // Hiển thị ảnh nếu có
@@ -126,10 +128,13 @@ class MessageAdapter(
                 holder.tvReactions.visibility = View.GONE
             }
 
-            val anchorView = if (msg.text.isNotEmpty()) holder.tvMessage else holder.cardImage
-            anchorView.setOnLongClickListener {
-                showOptionsPopup(anchorView, msg, isMine = false)
-                true
+            // Guắc event onLongClick - chỉ khi có handler (Bug #1: tránh popup lộ khi dùng trong Support)
+            if (onLongClickMessage != null || onReaction != null) {
+                val anchorView = if (msg.text.isNotEmpty()) holder.tvMessage else holder.cardImage
+                anchorView.setOnLongClickListener {
+                    showOptionsPopup(anchorView, msg, isMine = false)
+                    true
+                }
             }
         }
     }

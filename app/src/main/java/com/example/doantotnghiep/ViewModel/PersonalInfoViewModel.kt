@@ -18,12 +18,6 @@ class PersonalInfoViewModel : ViewModel() {
     private val _updateResult = MutableLiveData<Boolean>()
     val updateResult: LiveData<Boolean> = _updateResult
 
-    private val _emailUpdateResult = MutableLiveData<Boolean>()
-    val emailUpdateResult: LiveData<Boolean> = _emailUpdateResult
-
-    private val _wrongPassword = MutableLiveData<Boolean>()
-    val wrongPassword: LiveData<Boolean> = _wrongPassword
-
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
@@ -51,13 +45,14 @@ class PersonalInfoViewModel : ViewModel() {
         )
     }
 
-    fun updateUserInfo(fullName: String, phone: String, address: String, birthday: String, gender: String, occupation: String) {
+    fun updateUserInfo(fullName: String, email: String, phone: String, address: String, birthday: String, gender: String, occupation: String) {
         if (fullName.isBlank() || phone.isBlank()) {
             _errorMessage.value = "Họ tên và Số điện thoại không được để trống"
             return
         }
         val updates = mapOf(
             "fullName" to fullName,
+            "email" to email,
             "phone" to phone,
             "address" to address,
             "birthday" to birthday,
@@ -77,22 +72,5 @@ class PersonalInfoViewModel : ViewModel() {
         )
     }
 
-    fun reauthenticateAndUpdateEmail(currentPass: String, newEmail: String) {
-        if (currentPass.isEmpty() || newEmail.isEmpty()) {
-            _errorMessage.value = "Vui lòng nhập đầy đủ thông tin"
-            return
-        }
-        _isLoading.value = true
-        repository.reauthenticateAndUpdateEmail(currentPass, newEmail,
-            onSuccess = {
-                _isLoading.value = false
-                _emailUpdateResult.value = true
-            },
-            onFailure = { error ->
-                _isLoading.value = false
-                if (error == "Mật khẩu không chính xác") _wrongPassword.value = true
-                else _errorMessage.value = error
-            }
-        )
-    }
+    fun resetUpdateResult() { _updateResult.value = false }
 }

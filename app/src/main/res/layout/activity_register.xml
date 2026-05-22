@@ -100,7 +100,9 @@
                             android:drawableStart="@drawable/ic_person"
                             android:drawablePadding="@dimen/padding_medium"
                             android:drawableTint="@color/color_888888"
-                            android:inputType="textPersonName" />
+                            android:inputType="textPersonName"
+                            android:imeOptions="actionNext"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -122,7 +124,9 @@
                             android:drawableStart="@drawable/ic_email"
                             android:drawablePadding="@dimen/padding_medium"
                             android:drawableTint="@color/color_888888"
-                            android:inputType="textEmailAddress" />
+                            android:inputType="textEmailAddress|textNoSuggestions"
+                            android:imeOptions="actionNext"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -144,7 +148,9 @@
                             android:drawableStart="@drawable/ic_phone"
                             android:drawablePadding="@dimen/padding_medium"
                             android:drawableTint="@color/color_888888"
-                            android:inputType="phone" />
+                            android:inputType="phone"
+                            android:imeOptions="actionNext"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -168,7 +174,9 @@
                             android:drawableStart="@drawable/ic_lock"
                             android:drawablePadding="@dimen/padding_medium"
                             android:drawableTint="@color/color_888888"
-                            android:inputType="textPassword" />
+                            android:inputType="textPassword"
+                            android:imeOptions="actionNext"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -189,7 +197,9 @@
                             android:drawableStart="@drawable/ic_lock"
                             android:drawablePadding="@dimen/padding_medium"
                             android:drawableTint="@color/color_888888"
-                            android:inputType="textPassword" />
+                            android:inputType="textPassword"
+                            android:imeOptions="actionDone"
+                            android:singleLine="true" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 

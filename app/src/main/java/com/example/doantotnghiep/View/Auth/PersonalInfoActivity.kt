@@ -3,13 +3,11 @@ package com.example.doantotnghiep.View.Auth
 import android.app.DatePickerDialog
 import android.os.Bundle
 import android.view.View
-import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
@@ -55,7 +53,7 @@ class PersonalInfoActivity : AppCompatActivity() {
     private val viewModel: PersonalInfoViewModel by viewModels()
 
     companion object {
-        private const val BIRTHDAY_PLACEHOLDER = "\u0043\u0068\u01b0\u0061 \u0063\u1ead\u0070 \u006e\u0068\u1ead\u0074"
+        private const val BIRTHDAY_PLACEHOLDER = "Chưa cập nhật"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,32 +109,28 @@ class PersonalInfoActivity : AppCompatActivity() {
             val birthday = if (tvBirthday.text.toString() == BIRTHDAY_PLACEHOLDER) "" else tvBirthday.text.toString()
             val gender = when (rgGender.checkedRadioButtonId) {
                 R.id.rbMale -> "Nam"
-                R.id.rbFemale -> "N\u1eef"
+                R.id.rbFemale -> "Nữ"
                 else -> ""
             }
 
             if (fullName.isEmpty()) {
-                tilFullName.error = "\u0056\u0075\u0069 \u006c\u00f2\u006e\u0067 \u006e\u0068\u1ead\u0070 \u0068\u1ecd \u0076\u00e0 \u0074\u00ea\u006e"
+                tilFullName.error = "Vui lòng nhập họ và tên"
                 return@setOnClickListener
             }
             if (email.isEmpty()) {
-                tilEmail.error = "\u0056\u0075\u0069 \u006c\u00f2\u006e\u0067 \u006e\u0068\u1ead\u0070 \u0065\u006d\u0061\u0069\u006c"
+                tilEmail.error = "Vui lòng nhập email"
                 return@setOnClickListener
             }
             if (!email.endsWith("@gmail.com") || email.length <= 10) {
-                tilEmail.error = "\u0045\u006d\u0061\u0069\u006c \u0070\u0068\u1ea3\u0069 \u0063\u00f3 \u0111\u0075\u00f4\u0069 @gmail.com"
+                tilEmail.error = "Email phải có đuôi @gmail.com"
                 return@setOnClickListener
             }
             if (phone.isEmpty() || phone.length != 10 || !phone.startsWith("0")) {
-                tilPhone.error = "\u0053\u1ed1 \u0111\u0069\u1ec7\u006e \u0074\u0068\u006f\u1ea1\u0069 \u0070\u0068\u1ea3\u0069 \u0063\u00f3 10 \u0073\u1ed1 \u0076\u00e0 \u0062\u1eaft \u0111\u1ea7\u0075 \u0062\u1eb1\u006e\u0067 0"
+                tilPhone.error = "Số điện thoại phải có 10 số và bắt đầu bằng 0"
                 return@setOnClickListener
             }
 
-            if (email != originalEmail) {
-                showPasswordDialogToUpdateEmail(email)
-            } else {
-                viewModel.updateUserInfo(fullName, phone, address, birthday, gender, occupation)
-            }
+            viewModel.updateUserInfo(fullName, email, phone, address, birthday, gender, occupation)
         }
 
         btnBack.setOnClickListener { finish() }
@@ -177,78 +171,30 @@ class PersonalInfoActivity : AppCompatActivity() {
         viewModel.updateResult.observe(this) { success ->
             if (success) {
                 originalFullName = edtFullName.text.toString().trim()
+                originalEmail = edtEmail.text.toString().trim()
                 originalPhone = edtPhone.text.toString().trim()
                 originalAddress = edtAddress.text.toString().trim()
                 originalOccupation = edtOccupation.text.toString().trim()
                 originalBirthday = if (tvBirthday.text.toString() == BIRTHDAY_PLACEHOLDER) "" else tvBirthday.text.toString()
                 originalGender = when (rgGender.checkedRadioButtonId) {
                     R.id.rbMale -> "Nam"
-                    R.id.rbFemale -> "N\u1eef"
+                    R.id.rbFemale -> "Nữ"
                     else -> ""
                 }
                 isEditing = false
                 enableEditing(false)
                 MessageUtils.showSuccessDialog(
                     this,
-                    "\u0043\u1ead\u0070 \u006e\u0068\u1ead\u0074 \u0074\u0068\u00e0\u006e\u0068 \u0063\u00f4\u006e\u0067",
-                    "\u0054\u0068\u00f4\u006e\u0067 \u0074\u0069\u006e \u0063\u00e1 \u006e\u0068\u00e2\u006e \u0111\u00e3 \u0111\u01b0\u1ee3\u0063 \u0063\u1ead\u0070 \u006e\u0068\u1ead\u0074."
+                    "Cập nhật thành công",
+                    "Thông tin cá nhân đã được cập nhật."
                 )
-            }
-        }
-
-        viewModel.emailUpdateResult.observe(this) { success ->
-            if (success) {
-                val newEmail = edtEmail.text.toString().trim()
-                viewModel.updateUserInfo(
-                    edtFullName.text.toString().trim(),
-                    edtPhone.text.toString().trim(),
-                    edtAddress.text.toString().trim(),
-                    if (tvBirthday.text.toString() == BIRTHDAY_PLACEHOLDER) "" else tvBirthday.text.toString(),
-                    when (rgGender.checkedRadioButtonId) {
-                        R.id.rbMale -> "Nam"
-                        R.id.rbFemale -> "N\u1eef"
-                        else -> ""
-                    },
-                    edtOccupation.text.toString().trim()
-                )
-                MessageUtils.showSuccessDialog(
-                    this,
-                    "\u0058\u00e1\u0063 \u006e\u0068\u1ead\u006e \u0065\u006d\u0061\u0069\u006c \u006d\u1edb\u0069",
-                    "\u0045\u006d\u0061\u0069\u006c \u0078\u00e1\u0063 \u006e\u0068\u1ead\u006e \u0111\u00e3 \u0111\u01b0\u1ee3\u0063 \u0067\u1eedi \u0111\u1ebf\u006e $newEmail."
-                )
-            }
-        }
-
-        viewModel.wrongPassword.observe(this) { wrong ->
-            if (wrong) {
-                MessageUtils.showErrorDialog(
-                    this,
-                    "\u0058\u00e1\u0063 \u0074\u0068\u1ef1\u0063 \u0074\u0068\u1ea5\u0074 \u0062\u1ea1\u0069",
-                    "\u004d\u1ead\u0074 \u006b\u0068\u1ea9\u0075 \u006b\u0068\u00f4\u006e\u0067 \u0063\u0068\u00ed\u006e\u0068 \u0078\u00e1\u0063."
-                )
+                viewModel.resetUpdateResult()
             }
         }
 
         viewModel.errorMessage.observe(this) { msg ->
-            if (!msg.isNullOrEmpty()) MessageUtils.showErrorDialog(this, "\u004c\u1ed7\u0069", msg)
+            if (!msg.isNullOrEmpty()) MessageUtils.showErrorDialog(this, "Lỗi", msg)
         }
-    }
-
-    private fun showPasswordDialogToUpdateEmail(newEmail: String) {
-        val input = EditText(this)
-        input.inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        input.hint = "\u004e\u0068\u1ead\u0070 \u006d\u1ead\u0074 \u006b\u0068\u1ea9\u0075"
-        input.setPadding(50, 30, 50, 30)
-
-        AlertDialog.Builder(this)
-            .setTitle("\u0058\u00e1\u0063 \u006e\u0068\u1ead\u006e \u0111\u1ed5\u0069 \u0065\u006d\u0061\u0069\u006c")
-            .setView(input)
-            .setPositiveButton("\u0058\u00e1\u0063 \u006e\u0068\u1ead\u006e") { _, _ ->
-                val password = input.text.toString().trim()
-                if (password.isNotEmpty()) viewModel.reauthenticateAndUpdateEmail(password, newEmail)
-            }
-            .setNegativeButton("\u0048\u1ee7\u0079", null)
-            .show()
     }
 
     private fun restoreOriginalValues() {
@@ -264,6 +210,7 @@ class PersonalInfoActivity : AppCompatActivity() {
 
     private fun enableEditing(enabled: Boolean) {
         edtFullName.isEnabled = enabled
+        edtEmail.isEnabled = enabled
         edtPhone.isEnabled = enabled
         edtAddress.isEnabled = enabled
         edtOccupation.isEnabled = enabled
@@ -294,7 +241,7 @@ class PersonalInfoActivity : AppCompatActivity() {
     private fun setGenderRadio(gender: String) {
         when (gender) {
             "Nam" -> rbMale.isChecked = true
-            "N\u1eef" -> rbFemale.isChecked = true
+            "Nữ" -> rbFemale.isChecked = true
             else -> rgGender.clearCheck()
         }
     }

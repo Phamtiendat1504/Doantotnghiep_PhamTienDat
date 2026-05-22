@@ -85,7 +85,9 @@ class PostViewModel : ViewModel() {
                     postingUnlockAt = snapshot.getLong("postingUnlockAt") ?: 0L,
                     verifiedAt    = snapshot.getLong("verifiedAt") ?: 0L,
                     createdAt     = snapshot.getLong("createdAt") ?: 0L,
-                    purchasedSlots = (snapshot.getLong("purchasedSlots") ?: 0L).toInt()
+                    purchasedSlots = (snapshot.getLong("purchasedSlots") ?: 0L).toInt(),
+                    dailyPostCount = (snapshot.getLong("dailyPostCount") ?: 0L).toInt(),
+                    dailyPostCountDate = snapshot.getString("dailyPostCountDate") ?: ""
                 )
 
                 if (!user.isVerified && user.role != "admin") {

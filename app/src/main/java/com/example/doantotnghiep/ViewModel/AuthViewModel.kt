@@ -39,6 +39,9 @@ class AuthViewModel : ViewModel() {
     private val _lockInfo = MutableLiveData<Pair<Boolean, Triple<String, Long, Int>>>()
     val lockInfo: LiveData<Pair<Boolean, Triple<String, Long, Int>>> = _lockInfo
 
+    private val _emailNotVerified = MutableLiveData<Boolean>()
+    val emailNotVerified: LiveData<Boolean> = _emailNotVerified
+
     private fun isValidEmail(email: String): Boolean {
         return email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
     }
@@ -56,22 +59,54 @@ class AuthViewModel : ViewModel() {
         return phone.length == 10 && phone.startsWith("0") && phone.all { it.isDigit() }
     }
 
+    private val loginAttemptTimestamps = ArrayDeque<Long>()
+    private val MAX_LOGIN_ATTEMPTS = 5
+    private val LOGIN_WINDOW_MS = 60_000L
+
     fun login(email: String, password: String) {
         if (email.isEmpty()) { _errorMessage.value = "Vui lòng nhập email"; return }
         if (password.isEmpty()) { _errorMessage.value = "Vui lòng nhập mật khẩu"; return }
 
+        val now = System.currentTimeMillis()
+        loginAttemptTimestamps.removeAll { now - it > LOGIN_WINDOW_MS }
+        if (loginAttemptTimestamps.size >= MAX_LOGIN_ATTEMPTS) {
+            val waitSeconds = ((LOGIN_WINDOW_MS - (now - loginAttemptTimestamps.first())) / 1000).coerceAtLeast(1)
+            _errorMessage.value = "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng đợi $waitSeconds giây rồi thử lại."
+            return
+        }
+        loginAttemptTimestamps.addLast(now)
+
         _isLoading.value = true
         repository.login(email, password,
             onSuccess = {
-                _isLoading.value = false
-                _loginResult.value = true
+                loginAttemptTimestamps.clear()
+                repository.checkUserLockStatus(
+                    onResult = { isLocked, reason, until, lockDays ->
+                        _isLoading.value = false
+                        if (isLocked) {
+                            _lockInfo.value = Pair(isLocked, Triple(reason, until, lockDays))
+                        } else {
+                            _loginResult.value = true
+                        }
+                    },
+                    onFailure = { error ->
+                        _isLoading.value = false
+                        _errorMessage.value = error
+                    }
+                )
             },
             onFailure = { error ->
                 _isLoading.value = false
-                _errorMessage.value = error
+                if (error == "EMAIL_NOT_VERIFIED") {
+                    _emailNotVerified.value = true
+                } else {
+                    _errorMessage.value = error
+                }
             }
         )
     }
+
+    fun resetEmailNotVerified() { _emailNotVerified.value = false }
 
     fun changePassword(oldPassword: String, newPassword: String, confirmPassword: String) {
         if (oldPassword.isEmpty()) { _errorMessage.value = "old_empty"; return }
@@ -103,7 +138,20 @@ class AuthViewModel : ViewModel() {
         )
     }
 
+    private val registerAttemptTimestamps = ArrayDeque<Long>()
+    private val MAX_REGISTER_ATTEMPTS = 3
+    private val REGISTER_WINDOW_MS = 60_000L
+
     fun register(fullName: String, email: String, phone: String, password: String, confirmPassword: String) {
+        val now = System.currentTimeMillis()
+        registerAttemptTimestamps.removeAll { now - it > REGISTER_WINDOW_MS }
+        if (registerAttemptTimestamps.size >= MAX_REGISTER_ATTEMPTS) {
+            val waitSeconds = ((REGISTER_WINDOW_MS - (now - registerAttemptTimestamps.first())) / 1000).coerceAtLeast(1)
+            _errorMessage.value = "Bạn đã thử quá nhiều lần. Vui lòng đợi $waitSeconds giây rồi thử lại."
+            return
+        }
+        registerAttemptTimestamps.addLast(now)
+
         if (fullName.isBlank()) { _errorMessage.value = "Vui lòng nhập họ và tên"; return }
         if (email.isBlank()) { _errorMessage.value = "Vui lòng nhập email"; return }
         if (!isValidEmail(email)) { _errorMessage.value = "Định dạng email không hợp lệ"; return }

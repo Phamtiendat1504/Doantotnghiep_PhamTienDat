@@ -18,6 +18,11 @@ class SearchProfileViewModel : ViewModel() {
 
     private var currentSearchQuery = ""
 
+    fun clearSearch() {
+        currentSearchQuery = ""
+        _users.value = emptyList()
+    }
+
     fun searchUsers(query: String) {
         if (query.isBlank()) {
             _users.value = emptyList()

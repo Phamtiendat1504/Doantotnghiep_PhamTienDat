@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" | ForEach-Object { \"$\\($_.Name\\) $\\(if\\($_.PSIsContainer\\) {'[DIR]'} else {''}\\)\" })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\" -Recurse -Directory | Where-Object { $_.Name -match 'web|admin' } | Select-Object -First 20)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\\\\app\\\\src\\\\main\\\\java\\\\com\\\\example\\\\doantotnghiep\\\\Model\" -Filter \"*.kt\")",
+      "Bash(Select-Object Name)",
+      "Bash(Sort-Object Name)",
+      "Bash(xargs grep -l \"Appointment\\\\|BookedSlot\\\\|Verification\\\\|Notification\\\\|Schedule\")",
+      "Bash(Get-ChildItem -Path \"c:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\\\\app\\\\src\\\\main\\\\java\" -Recurse -Filter \"*.kt\")",
+      "Bash(Select-Object -ExpandProperty Name)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\" -Directory)",
+      "PowerShell(Head -20)",
+      "Bash(dir \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\" /b)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" -Name \"package.json\" -ErrorAction SilentlyContinue)",
+      "Read(//c/Users/tiend/AndroidStudioProjects/Doantotnghiep/**)"
+    ]
+  }
+}
