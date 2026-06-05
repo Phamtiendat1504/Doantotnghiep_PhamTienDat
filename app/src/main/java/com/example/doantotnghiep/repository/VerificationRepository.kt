@@ -119,7 +119,7 @@ class VerificationRepository {
                     reason = "Không mở được ảnh CCCD mặt trước. Vui lòng chụp lại rõ hơn.",
                     failCountToday = fail,
                     remainingAutoRetries = remainingAutoRetriesFromCount(fail),
-                    escalatedToAdmin = fail > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                    escalatedToAdmin = fail >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                 )
             )
             return
@@ -135,7 +135,7 @@ class VerificationRepository {
                     reason = "Không mở được ảnh CCCD mặt sau. Vui lòng chụp lại rõ hơn.",
                     failCountToday = fail,
                     remainingAutoRetries = remainingAutoRetriesFromCount(fail),
-                    escalatedToAdmin = fail > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                    escalatedToAdmin = fail >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                 )
             )
             return
@@ -173,7 +173,7 @@ class VerificationRepository {
                                     reason = reason,
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
@@ -181,6 +181,60 @@ class VerificationRepository {
 
                         val frontCandidates = extractCccdCandidates(frontText)
                         val backCandidates = extractBackCccdCandidates(backText)
+
+                        // 1. Kiểm duyệt biên giới hạn (Boundary Integrity Check) cho mặt trước
+                        val normalizedFront = normalizeNoAccentUpper(frontText)
+                        val hasTopMotto = normalizedFront.contains("CONG HOA") || 
+                                          normalizedFront.contains("XA HOI") || 
+                                          normalizedFront.contains("DOC LAP") || 
+                                          normalizedFront.contains("TU DO") || 
+                                          normalizedFront.contains("SOCIALIST") || 
+                                          normalizedFront.contains("REPUBLIC")
+                        val hasBottomResidence = normalizedFront.contains("THUONG TRU") || 
+                                                 normalizedFront.contains("CU TRU") || 
+                                                 normalizedFront.contains("RESIDENCE") || 
+                                                 normalizedFront.contains("GIA TRI") || 
+                                                 normalizedFront.contains("EXPIRY")
+                        if (!hasTopMotto || !hasBottomResidence) {
+                            val failCount = recordAutoFailure(context)
+                            onResult(
+                                AutoCheckResult(
+                                    passed = false,
+                                    reason = "Ảnh mặt trước Căn cước công dân bị cắt xén hoặc không hiển thị đầy đủ tiêu đề quốc hiệu ở phía trên hoặc phần thường trú/hạn dùng ở phía dưới.",
+                                    recognizedCccd = frontCandidates.firstOrNull(),
+                                    failCountToday = failCount,
+                                    remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                )
+                            )
+                            return@addOnSuccessListener
+                        }
+                        // 2. Kiểm duyệt biên giới hạn (Boundary Integrity Check) cho mặt sau
+                        val normalizedBack = normalizeNoAccentUpper(backText)
+                        val hasBackTop = normalizedBack.contains("NHAN DANG") || 
+                                         normalizedBack.contains("IDENTIFICATION") ||
+                                         normalizedBack.contains("NGAY CAP") ||
+                                         normalizedBack.contains("NOI CAP") ||
+                                         normalizedBack.contains("CAP NGAY")
+                        val hasBackBottom = backSignals.hasMrz || 
+                                            normalizedBack.contains("CUC TRUONG") || 
+                                            normalizedBack.contains("DIRECTOR") || 
+                                            normalizedBack.contains("CONG AN") ||
+                                            normalizedBack.contains("POLICE")
+                        if (!hasBackTop || !hasBackBottom) {
+                            val failCount = recordAutoFailure(context)
+                            onResult(
+                                AutoCheckResult(
+                                    passed = false,
+                                    reason = "Ảnh mặt sau Căn cước công dân bị cắt xén hoặc không hiển thị đầy đủ thông tin đặc điểm nhận dạng ở phía trên hoặc chữ ký/vùng mã máy đọc MRZ ở phía dưới.",
+                                    recognizedCccd = backCandidates.firstOrNull(),
+                                    failCountToday = failCount,
+                                    remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                )
+                            )
+                            return@addOnSuccessListener
+                        }
                         val frontMatched = frontCandidates.any { it == normalizedInput }
                         val backMatched = backCandidates.any { it == normalizedInput }
 
@@ -193,7 +247,7 @@ class VerificationRepository {
                                     recognizedCccd = frontCandidates.firstOrNull(),
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
@@ -207,7 +261,7 @@ class VerificationRepository {
                                     reason = "Hệ thống chưa đọc được số CCCD ở MẶT SAU (vùng MRZ). Vui lòng chụp lại rõ nét hơn.",
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
@@ -222,15 +276,15 @@ class VerificationRepository {
                                     recognizedCccd = backCandidates.firstOrNull(),
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
                         }
 
                         val matched = normalizedInput
-                        val expectedName = normalizeNoAccentUpper(fullName)
-                        val frontFullText = normalizeNoAccentUpper(frontText).replace("\n", " ")
+                        val expectedName = normalizeNoAccentUpper(fullName).replace(Regex("\\s+"), " ").trim()
+                        val frontFullText = normalizeNoAccentUpper(frontText).replace("\n", " ").replace(Regex("\\s+"), " ").trim()
                         val nameMatched = frontFullText.contains(expectedName)
 
                         if (!nameMatched) {
@@ -242,11 +296,13 @@ class VerificationRepository {
                                     recognizedCccd = frontCandidates.firstOrNull(),
                                     failCountToday = failCount,
                                     remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                    escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                    escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                                 )
                             )
                             return@addOnSuccessListener
                         }
+
+
 
                         if (frontMatched && backMatched && nameMatched) {
                             resetAutoFailureCounter(context)
@@ -269,7 +325,7 @@ class VerificationRepository {
                                 reason = "Không xác định được CCCD hợp lệ từ cả 2 mặt ảnh.",
                                 failCountToday = failCount,
                                 remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                             )
                         )
                     }
@@ -281,7 +337,7 @@ class VerificationRepository {
                                 reason = "OCR gặp lỗi kỹ thuật khi xử lý ảnh CCCD mặt sau.",
                                 failCountToday = failCount,
                                 remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                                escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                                escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                             )
                         )
                     }
@@ -294,7 +350,7 @@ class VerificationRepository {
                         reason = "OCR gặp lỗi kỹ thuật khi xử lý ảnh CCCD.",
                         failCountToday = failCount,
                         remainingAutoRetries = remainingAutoRetriesFromCount(failCount),
-                        escalatedToAdmin = failCount > MAX_AUTO_FAIL_BEFORE_ESCALATE
+                        escalatedToAdmin = failCount >= MAX_AUTO_FAIL_BEFORE_ESCALATE
                     )
                 )
             }
@@ -351,6 +407,40 @@ class VerificationRepository {
         }
     }
 
+    private fun deleteOldVerificationImages(uid: String, onComplete: () -> Unit) {
+        db.collection("verifications").document(uid).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    val oldFront = doc.getString("cccdFrontUrl")
+                    val oldBack = doc.getString("cccdBackUrl")
+                    val tasks = mutableListOf<com.google.android.gms.tasks.Task<Void>>()
+                    
+                    if (!oldFront.isNullOrBlank()) {
+                        try {
+                            val frontRef = storage.getReferenceFromUrl(oldFront)
+                            tasks.add(frontRef.delete())
+                        } catch (_: Exception) {}
+                    }
+                    if (!oldBack.isNullOrBlank()) {
+                        try {
+                            val backRef = storage.getReferenceFromUrl(oldBack)
+                            tasks.add(backRef.delete())
+                        } catch (_: Exception) {}
+                    }
+                    
+                    if (tasks.isNotEmpty()) {
+                        com.google.android.gms.tasks.Tasks.whenAllComplete(tasks)
+                            .addOnCompleteListener { onComplete() }
+                    } else {
+                        onComplete()
+                    }
+                } else {
+                    onComplete()
+                }
+            }
+            .addOnFailureListener { onComplete() }
+    }
+
     fun submitVerification(
         fullName: String,
         email: String,
@@ -364,77 +454,80 @@ class VerificationRepository {
         onFailure: (String) -> Unit
     ) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
-        val storageRef = storage.reference
-        val now = System.currentTimeMillis()
-        val escalationDeadlineAt = now + (24L * 60L * 60L * 1000L)
-        val imageMetadata = StorageMetadata.Builder()
-            .setContentType("image/jpeg")
-            .build()
+        
+        deleteOldVerificationImages(uid) {
+            val storageRef = storage.reference
+            val now = System.currentTimeMillis()
+            val escalationDeadlineAt = now + (24L * 60L * 60L * 1000L)
+            val imageMetadata = StorageMetadata.Builder()
+                .setContentType("image/jpeg")
+                .build()
 
-        val frontRef = storageRef.child("verifications/$uid/cccd_front_${System.currentTimeMillis()}.jpg")
-        frontRef.putFile(frontUri, imageMetadata).continueWithTask { task ->
-            if (!task.isSuccessful) task.exception?.let { throw it }
-            frontRef.downloadUrl
-        }.continueWithTask { task ->
-            val frontUrl = task.result.toString()
-            val backRef = storageRef.child("verifications/$uid/cccd_back_${System.currentTimeMillis()}.jpg")
-            backRef.putFile(backUri, imageMetadata).continueWithTask { backTask ->
-                if (!backTask.isSuccessful) backTask.exception?.let { throw it }
-                backRef.downloadUrl
-            }.continueWithTask { backUrlTask ->
-                val backUrl = backUrlTask.result.toString()
-                val data = hashMapOf(
-                    "userId" to uid,
-                    "fullName" to fullName,
-                    "email" to email,
-                    "cccdNumber" to cccd,
-                    "phone" to phone,
-                    "address" to address,
-                    "cccdFrontUrl" to frontUrl,
-                    "cccdBackUrl" to backUrl,
-                    "status" to "pending",
-                    "createdAt" to now,
-                    "updatedAt" to now,
-                    "imageSource" to "camera_only",
-                    "autoCheckStatus" to meta.autoCheckStatus,
-                    "autoCheckReason" to (meta.autoCheckReason ?: ""),
-                    "autoCheckRecognizedCccd" to (meta.autoCheckRecognizedCccd ?: ""),
-                    "autoFailCountToday" to meta.autoFailCountToday,
-                    "escalatedToAdmin" to meta.escalatedToAdmin,
-                    "escalationDeadlineAt" to if (meta.escalatedToAdmin) escalationDeadlineAt else 0L
-                )
+            val frontRef = storageRef.child("verifications/$uid/cccd_front_${System.currentTimeMillis()}.jpg")
+            frontRef.putFile(frontUri, imageMetadata).continueWithTask { task ->
+                if (!task.isSuccessful) task.exception?.let { throw it }
+                frontRef.downloadUrl
+            }.continueWithTask { task ->
+                val frontUrl = task.result.toString()
+                val backRef = storageRef.child("verifications/$uid/cccd_back_${System.currentTimeMillis()}.jpg")
+                backRef.putFile(backUri, imageMetadata).continueWithTask { backTask ->
+                    if (!backTask.isSuccessful) backTask.exception?.let { throw it }
+                    backRef.downloadUrl
+                }.continueWithTask { backUrlTask ->
+                    val backUrl = backUrlTask.result.toString()
+                    val data = hashMapOf(
+                        "userId" to uid,
+                        "fullName" to fullName,
+                        "email" to email,
+                        "cccdNumber" to cccd,
+                        "phone" to phone,
+                        "address" to address,
+                        "cccdFrontUrl" to frontUrl,
+                        "cccdBackUrl" to backUrl,
+                        "status" to "pending",
+                        "createdAt" to now,
+                        "updatedAt" to now,
+                        "imageSource" to "camera_only",
+                        "autoCheckStatus" to meta.autoCheckStatus,
+                        "autoCheckReason" to (meta.autoCheckReason ?: ""),
+                        "autoCheckRecognizedCccd" to (meta.autoCheckRecognizedCccd ?: ""),
+                        "autoFailCountToday" to meta.autoFailCountToday,
+                        "escalatedToAdmin" to meta.escalatedToAdmin,
+                        "escalationDeadlineAt" to if (meta.escalatedToAdmin) escalationDeadlineAt else 0L
+                    )
 
-                db.collection("verifications").document(uid).set(data).addOnSuccessListener {
-                    if (meta.escalatedToAdmin) {
-                        val notif = hashMapOf(
-                            "userId" to "admin_system",
-                            "title" to "Yêu cầu xác minh mới",
-                            "message" to "Người dùng $fullName đã thất bại OCR quá 3 lần trong ngày. Hệ thống đã chuyển admin xử lý trong 24h.",
-                            "type" to "new_verification",
-                            "seen" to false,
-                            "isRead" to false,
-                            "createdAt" to now,
-                            "targetId" to uid,
-                            "escalatedToAdmin" to true
-                        )
-                        db.collection("notifications").add(notif)
+                    db.collection("verifications").document(uid).set(data).addOnSuccessListener {
+                        if (meta.escalatedToAdmin) {
+                            val notif = hashMapOf(
+                                "userId" to "admin_system",
+                                "title" to "Yêu cầu xác minh mới",
+                                "message" to "Người dùng $fullName đã thất bại OCR quá 3 lần trong ngày. Hệ thống đã chuyển admin xử lý trong 24h.",
+                                "type" to "new_verification",
+                                "seen" to false,
+                                "isRead" to false,
+                                "createdAt" to now,
+                                "targetId" to uid,
+                                "escalatedToAdmin" to true
+                            )
+                            db.collection("notifications").add(notif)
+                        }
                     }
                 }
-            }
-        }.addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e ->
-                val msg = when {
-                    e.message?.contains("Permission denied", ignoreCase = true) == true ||
-                        e.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true ->
-                        "Không đủ quyền truy cập dữ liệu (Firestore/Storage). Vui lòng kiểm tra Rules và đăng nhập lại."
-                    e.message?.contains("Object does not exist", ignoreCase = true) == true ->
-                        "Tệp ảnh tạm không tồn tại. Vui lòng chụp lại ảnh CCCD."
-                    e.message?.contains("The operation retry limit has been exceeded", ignoreCase = true) == true ->
-                        "Kết nối mạng không ổn định khi tải ảnh. Vui lòng thử lại."
-                    else -> e.message ?: "Đã có lỗi xảy ra, vui lòng thử lại sau."
+            }.addOnSuccessListener { onSuccess() }
+                .addOnFailureListener { e ->
+                    val msg = when {
+                        e.message?.contains("Permission denied", ignoreCase = true) == true ||
+                            e.message?.contains("PERMISSION_DENIED", ignoreCase = true) == true ->
+                            "Không đủ quyền truy cập dữ liệu (Firestore/Storage). Vui lòng kiểm tra Rules và đăng nhập lại."
+                        e.message?.contains("Object does not exist", ignoreCase = true) == true ->
+                            "Tệp ảnh tạm không tồn tại. Vui lòng chụp lại ảnh CCCD."
+                        e.message?.contains("The operation retry limit has been exceeded", ignoreCase = true) == true ->
+                            "Kết nối mạng không ổn định khi tải ảnh. Vui lòng thử lại."
+                        else -> e.message ?: "Đã có lỗi xảy ra, vui lòng thử lại sau."
+                    }
+                    onFailure(msg)
                 }
-                onFailure(msg)
-            }
+        }
     }
 
     private fun normalizeDigits(raw: String): String = raw.filter { it.isDigit() }
@@ -443,8 +536,6 @@ class VerificationRepository {
         if (cccd.length != 12 || !cccd.all { it.isDigit() }) return false
         val provinceCode = cccd.substring(0, 3).toIntOrNull() ?: return false
         if (provinceCode < 1 || provinceCode > 96) return false
-        val genderCentury = cccd[3] - '0'
-        if (genderCentury < 0 || genderCentury > 9) return false
         return true
     }
 

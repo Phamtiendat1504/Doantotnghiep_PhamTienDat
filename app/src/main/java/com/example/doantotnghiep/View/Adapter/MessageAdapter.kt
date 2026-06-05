@@ -35,9 +35,28 @@ class MessageAdapter(
     }
 
     fun submitList(newMessages: List<Message>) {
+        val diffCallback = object : androidx.recyclerview.widget.DiffUtil.Callback() {
+            override fun getOldListSize(): Int = messages.size
+            override fun getNewListSize(): Int = newMessages.size
+
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return messages[oldItemPosition].id == newMessages[newItemPosition].id
+            }
+
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                val oldMsg = messages[oldItemPosition]
+                val newMsg = newMessages[newItemPosition]
+                return oldMsg.text == newMsg.text &&
+                        oldMsg.imageUrl == newMsg.imageUrl &&
+                        oldMsg.seen == newMsg.seen &&
+                        oldMsg.isPending == newMsg.isPending &&
+                        oldMsg.reactions == newMsg.reactions
+            }
+        }
+        val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(diffCallback)
         messages.clear()
         messages.addAll(newMessages)
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 
     override fun getItemViewType(position: Int): Int =
@@ -69,6 +88,15 @@ class MessageAdapter(
             if (msg.imageUrl.isNotEmpty()) {
                 holder.cardImage.visibility = View.VISIBLE
                 Glide.with(holder.itemView.context).load(msg.imageUrl).into(holder.ivImage)
+                
+                // Bấm vào ảnh để xem chi tiết toàn màn hình
+                holder.cardImage.setOnClickListener {
+                    val context = holder.itemView.context
+                    val intent = android.content.Intent(context, com.example.doantotnghiep.View.Auth.ImageViewerActivity::class.java).apply {
+                        putExtra("imageUrl", msg.imageUrl)
+                    }
+                    context.startActivity(intent)
+                }
             } else {
                 holder.cardImage.visibility = View.GONE
             }
@@ -83,8 +111,25 @@ class MessageAdapter(
 
             holder.tvTime.text = timeStr
             holder.tvTime.visibility = if (showTime) View.VISIBLE else View.GONE
-            holder.tvSeen.visibility =
-                if (position == messages.size - 1 && msg.seen) View.VISIBLE else View.GONE
+            if (position == messages.size - 1) {
+                holder.tvSeen.visibility = View.VISIBLE
+                when {
+                    msg.isPending -> {
+                        holder.tvSeen.text = "Đang gửi..."
+                        holder.tvSeen.setTextColor(android.graphics.Color.parseColor("#9CA3AF"))
+                    }
+                    !msg.isPending && !msg.seen -> {
+                        holder.tvSeen.text = "Đã gửi"
+                        holder.tvSeen.setTextColor(android.graphics.Color.parseColor("#9CA3AF"))
+                    }
+                    !msg.isPending && msg.seen -> {
+                        holder.tvSeen.text = "Đã xem"
+                        holder.tvSeen.setTextColor(android.graphics.Color.parseColor("#3B82F6"))
+                    }
+                }
+            } else {
+                holder.tvSeen.visibility = View.GONE
+            }
 
             if (reactionText.isNotEmpty()) {
                 holder.tvReactions.text = reactionText
@@ -97,6 +142,7 @@ class MessageAdapter(
             if (onLongClickMessage != null || onReaction != null) {
                 val anchorView = if (msg.text.isNotEmpty()) holder.tvMessage else holder.cardImage
                 anchorView.setOnLongClickListener {
+                    anchorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
                     showOptionsPopup(anchorView, msg, isMine = true)
                     true
                 }
@@ -106,6 +152,15 @@ class MessageAdapter(
             if (msg.imageUrl.isNotEmpty()) {
                 holder.cardImage.visibility = View.VISIBLE
                 Glide.with(holder.itemView.context).load(msg.imageUrl).into(holder.ivImage)
+                
+                // Bấm vào ảnh để xem chi tiết toàn màn hình
+                holder.cardImage.setOnClickListener {
+                    val context = holder.itemView.context
+                    val intent = android.content.Intent(context, com.example.doantotnghiep.View.Auth.ImageViewerActivity::class.java).apply {
+                        putExtra("imageUrl", msg.imageUrl)
+                    }
+                    context.startActivity(intent)
+                }
             } else {
                 holder.cardImage.visibility = View.GONE
             }
@@ -132,6 +187,7 @@ class MessageAdapter(
             if (onLongClickMessage != null || onReaction != null) {
                 val anchorView = if (msg.text.isNotEmpty()) holder.tvMessage else holder.cardImage
                 anchorView.setOnLongClickListener {
+                    anchorView.performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
                     showOptionsPopup(anchorView, msg, isMine = false)
                     true
                 }
@@ -227,6 +283,7 @@ class MessageAdapter(
                     setMargins(2, 2, 2, 2)
                 }
                 setOnClickListener {
+                    performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
                     onReaction?.invoke(msg.id, emoji)
                     popupWindow.dismiss()
                 }
@@ -259,11 +316,29 @@ class MessageAdapter(
     private fun formatTime(ts: Long): String {
         if (ts == 0L) return ""
         val today = Calendar.getInstance()
-        return if (isSameDay(ts, today.timeInMillis)) {
-            SimpleDateFormat("HH:mm", Locale("vi", "VN")).format(Date(ts))
-        } else {
-            SimpleDateFormat("dd/MM HH:mm", Locale("vi", "VN")).format(Date(ts))
+        val msgCal = Calendar.getInstance().apply { timeInMillis = ts }
+        
+        return when {
+            isSameDay(ts, today.timeInMillis) -> {
+                SimpleDateFormat("HH:mm", Locale("vi", "VN")).format(Date(ts))
+            }
+            isYesterday(ts) -> {
+                "Hôm qua, " + SimpleDateFormat("HH:mm", Locale("vi", "VN")).format(Date(ts))
+            }
+            msgCal.get(Calendar.YEAR) == today.get(Calendar.YEAR) -> {
+                SimpleDateFormat("dd/MM, HH:mm", Locale("vi", "VN")).format(Date(ts))
+            }
+            else -> {
+                SimpleDateFormat("dd/MM/yyyy, HH:mm", Locale("vi", "VN")).format(Date(ts))
+            }
         }
+    }
+
+    private fun isYesterday(ts: Long): Boolean {
+        val cal = Calendar.getInstance().apply { timeInMillis = ts }
+        val yesterday = Calendar.getInstance().apply { add(Calendar.DAY_OF_YEAR, -1) }
+        return cal.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) &&
+               cal.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
     }
 
     private fun isSameDay(ts1: Long, ts2: Long): Boolean {

@@ -259,6 +259,115 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Thông tin lịch hẹn -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardAppointmentInfo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/padding_small"
+                android:visibility="gone"
+                app:cardCornerRadius="@dimen/padding_large"
+                app:cardElevation="@dimen/elevation_3"
+                app:cardBackgroundColor="@color/bg_white">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_large">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Thông tin lịch hẹn"
+                        android:textSize="@dimen/text_size_15"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="@dimen/padding_medium" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutExpiryRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginBottom="@dimen/padding_small"
+                        android:visibility="gone">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="@dimen/elevation_4">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Ngày đăng bài:"
+                                android:textSize="@dimen/text_size_13"
+                                android:textColor="@color/text_secondary" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvPostCreatedAtDisplay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="@dimen/text_size_13"
+                                android:textStyle="bold"
+                                android:textColor="@color/text_primary" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Hết hạn hiển thị:"
+                                android:textSize="@dimen/text_size_13"
+                                android:textColor="@color/text_secondary" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/tvPostExpiryDisplay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textSize="@dimen/text_size_13"
+                                android:textStyle="bold"
+                                android:textColor="@color/color_C2410C" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layoutTimeSlotsRow"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:visibility="gone">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Khung giờ nhận lịch hẹn:"
+                            android:textSize="@dimen/text_size_13"
+                            android:textColor="@color/text_secondary"
+                            android:layout_marginBottom="@dimen/elevation_6" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/tvAvailableTimeSlotsDisplay"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textSize="@dimen/text_size_13"
+                            android:textColor="@color/text_primary"
+                            android:lineSpacingExtra="@dimen/stroke_2" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
         </LinearLayout>
 
     </ScrollView>

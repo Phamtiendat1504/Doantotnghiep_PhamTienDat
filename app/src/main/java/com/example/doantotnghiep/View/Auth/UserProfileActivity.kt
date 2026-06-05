@@ -36,6 +36,8 @@ class UserProfileActivity : AppCompatActivity() {
     private lateinit var tvEmail: TextView
     private lateinit var tvRole: TextView
     private lateinit var tvJoinDate: TextView
+    private lateinit var cardProfileBio: com.google.android.material.card.MaterialCardView
+    private lateinit var tvProfileBio: TextView
     private lateinit var btnCall: TextView
     private lateinit var btnChat: com.google.android.material.button.MaterialButton
     private lateinit var rvRooms: RecyclerView
@@ -92,6 +94,8 @@ class UserProfileActivity : AppCompatActivity() {
         tvEmail = findViewById(R.id.tvProfileEmail)
         tvRole = findViewById(R.id.tvProfileRole)
         tvJoinDate = findViewById(R.id.tvProfileJoinDate)
+        cardProfileBio = findViewById(R.id.cardProfileBio)
+        tvProfileBio = findViewById(R.id.tvProfileBio)
         btnCall = findViewById(R.id.btnCallProfile)
         btnChat = findViewById(R.id.btnChatWithUser)
         rvRooms = findViewById(R.id.rvProfileRooms)
@@ -286,7 +290,7 @@ class UserProfileActivity : AppCompatActivity() {
             btnCall.visibility = View.GONE
         }
 
-        // Email
+        // Email - hiển thị công khai thông tin liên hệ của chủ trọ/người dùng
         tvEmail.text = if (user.email.isNotEmpty()) user.email else "Chưa cập nhật email"
 
         // Trạng thái tài khoản
@@ -304,6 +308,14 @@ class UserProfileActivity : AppCompatActivity() {
             tvJoinDate.text = "Tham gia: ${sdf.format(java.util.Date(user.createdAt))}"
         } else {
             tvJoinDate.text = "Tham gia: Không rõ"
+        }
+
+        // Lời giới thiệu
+        if (user.bio.isNotEmpty()) {
+            tvProfileBio.text = user.bio
+            cardProfileBio.visibility = View.VISIBLE
+        } else {
+            cardProfileBio.visibility = View.GONE
         }
 
         // Nút Nhắn tin — ẩn khi xem hồ sơ chính mình

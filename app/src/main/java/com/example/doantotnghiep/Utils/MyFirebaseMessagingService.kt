@@ -117,8 +117,12 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
             intent = Intent(this, com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity::class.java).apply {
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_ID, ticketId)
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_TITLE, ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
-                // Bug #3: Thêm status mặc định từ FCM notification để tránh ticketStatus rỗng ban đầu
                 putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
+            }
+        } else if (type == "post_expiry_warning" || type == "post_expired_deleted") {
+            // Thông báo bài đăng sắp/đã hết hạn → mở trang Bài đăng của tôi
+            intent = Intent(this, com.example.doantotnghiep.View.Auth.MyPostsActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
         } else {
             // Mặc định mở MainActivity kèm lệnh mở MyAppointmentsActivity

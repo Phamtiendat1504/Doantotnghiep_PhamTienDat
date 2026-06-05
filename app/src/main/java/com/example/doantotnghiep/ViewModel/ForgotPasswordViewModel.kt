@@ -1,11 +1,17 @@
-﻿package com.example.doantotnghiep.ViewModel
+package com.example.doantotnghiep.ViewModel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.Utils.RateLimiter
 import com.example.doantotnghiep.repository.AuthRepository
 
-class ForgotPasswordViewModel : ViewModel() {
+/**
+ * Đã chuyển sang AndroidViewModel để sử dụng RateLimiter lưu SharedPreferences,
+ * ngăn người dùng bypass giới hạn gửi email bằng cách khởi động lại app.
+ */
+class ForgotPasswordViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = AuthRepository()
 
@@ -21,9 +27,13 @@ class ForgotPasswordViewModel : ViewModel() {
     private val _sendEmailSuccess = MutableLiveData<String?>()
     val sendEmailSuccess: LiveData<String?> = _sendEmailSuccess
 
-    private val resetAttemptTimestamps = ArrayDeque<Long>()
-    private val MAX_RESET_ATTEMPTS = 3
-    private val RESET_WINDOW_MS = 120_000L
+    // Rate limiting lưu vào SharedPreferences — bền vững qua các lần restart app
+    private val resetRateLimiter = RateLimiter(
+        context     = application,
+        key         = "rate_forgot_password",
+        maxAttempts = 3,
+        windowMs    = 120_000L
+    )
 
     fun clearSendEmailSuccess() {
         _sendEmailSuccess.value = null
@@ -37,14 +47,12 @@ class ForgotPasswordViewModel : ViewModel() {
         _emailError.value = null
         _generalError.value = null
 
-        val now = System.currentTimeMillis()
-        resetAttemptTimestamps.removeAll { now - it > RESET_WINDOW_MS }
-        if (resetAttemptTimestamps.size >= MAX_RESET_ATTEMPTS) {
-            val waitSeconds = ((RESET_WINDOW_MS - (now - resetAttemptTimestamps.first())) / 1000).coerceAtLeast(1)
-            _generalError.value = "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi $waitSeconds giây rồi thử lại."
+        // Rate limiting lưu vào SharedPreferences — bền vững qua các lần restart app
+        if (!resetRateLimiter.tryConsume()) {
+            val wait = resetRateLimiter.secondsUntilNextAllowed()
+            _generalError.value = "Bạn đã gửi quá nhiều yêu cầu. Vui lòng đợi $wait giây rồi thử lại."
             return
         }
-        resetAttemptTimestamps.addLast(now)
 
         if (email.isBlank()) {
             _emailError.value = "Vui lòng nhập email"
@@ -52,6 +60,10 @@ class ForgotPasswordViewModel : ViewModel() {
         }
         if (!android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
             _emailError.value = "Email không hợp lệ"
+            return
+        }
+        if (!email.endsWith("@gmail.com", ignoreCase = true)) {
+            _emailError.value = "Email phải có đuôi @gmail.com"
             return
         }
         _isLoading.value = true

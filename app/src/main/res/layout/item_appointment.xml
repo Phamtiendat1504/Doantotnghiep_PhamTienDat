@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="@dimen/padding_large"
+    android:layout_marginEnd="@dimen/padding_large"
+    android:layout_marginTop="@dimen/padding_small"
+    android:layout_marginBottom="@dimen/padding_small"
+    app:cardCornerRadius="@dimen/corner_radius_12"
+    app:cardElevation="@dimen/elevation_4"
+    app:cardBackgroundColor="@color/bg_white">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- Hàng trên: ảnh + nội dung -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="@dimen/padding_medium">
+
+            <ImageView
+                android:id="@+id/imgRoom"
+                android:layout_width="@dimen/image_size_80"
+                android:layout_height="@dimen/image_size_80"
+                android:scaleType="centerCrop"
+                android:background="@color/gray_200" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:layout_marginStart="@dimen/padding_medium">
+
+                <TextView
+                    android:id="@+id/tvStatus"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/text_size_11"
+                    android:textStyle="bold"
+                    android:paddingStart="@dimen/padding_small"
+                    android:paddingEnd="@dimen/padding_small"
+                    android:paddingTop="@dimen/elevation_3"
+                    android:paddingBottom="@dimen/elevation_3" />
+
+                <TextView
+                    android:id="@+id/tvRoomTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/text_size_14"
+                    android:textStyle="bold"
+                    android:textColor="@color/text_primary"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:paddingTop="@dimen/elevation_5" />
+
+                <TextView
+                    android:id="@+id/tvRoomAddress"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/text_size_11"
+                    android:textColor="@color/text_secondary"
+                    android:maxLines="1"
+                    android:ellipsize="end" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingTop="@dimen/elevation_4">
+
+                    <TextView
+                        android:id="@+id/tvDateTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="@dimen/text_size_12"
+                        android:textColor="@color/primary"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvConflict"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text=" (Trùng lịch)"
+                        android:textSize="@dimen/text_size_10"
+                        android:textColor="@color/error"
+                        android:textStyle="italic"
+                        android:visibility="gone" />
+
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvPerson"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/text_size_11"
+                    android:textColor="@color/text_primary" />
+
+                <TextView
+                    android:id="@+id/tvNote"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="@dimen/text_size_11"
+                    android:textColor="@color/text_secondary"
+                    android:visibility="gone" />
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+        <!-- Nhóm nút: Chủ trọ + trạng thái pending -->
+        <LinearLayout
+            android:id="@+id/layoutLandlordPending"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:paddingStart="@dimen/padding_medium"
+            android:paddingEnd="@dimen/padding_medium"
+            android:paddingBottom="@dimen/padding_medium"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnReject"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Từ chối"
+                android:textSize="@dimen/text_size_12"
+                app:strokeColor="@color/error"
+                android:textColor="@color/error" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnConfirmLandlord"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_small"
+                android:text="Xác nhận"
+                android:textSize="@dimen/text_size_12"
+                app:backgroundTint="@color/success" />
+
+        </LinearLayout>
+
+        <!-- Nhóm nút: Chủ trọ + trạng thái tenant_confirmed -->
+        <LinearLayout
+            android:id="@+id/layoutLandlordRented"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="@dimen/padding_medium"
+            android:paddingEnd="@dimen/padding_medium"
+            android:paddingBottom="@dimen/padding_medium"
+            android:visibility="gone">
+
+            <TextView
+                android:id="@+id/tvRentedTip"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Khách đã xác nhận đến. Nếu đã chốt thuê, hãy bấm:"
+                android:textSize="@dimen/text_size_10"
+                android:textColor="@color/primary"
+                android:paddingBottom="@dimen/elevation_4" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnMarkRented"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:text="Xác nhận đã cho thuê"
+                android:textSize="@dimen/text_size_12"
+                app:backgroundTint="@color/primary" />
+
+        </LinearLayout>
+
+        <!-- Nhóm nút: Người thuê + trạng thái pending -->
+        <LinearLayout
+            android:id="@+id/layoutTenantPending"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:paddingStart="@dimen/padding_medium"
+            android:paddingEnd="@dimen/padding_medium"
+            android:paddingBottom="@dimen/padding_medium"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnCancelPending"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hủy đặt lịch"
+                android:textSize="@dimen/text_size_12"
+                app:strokeColor="@color/error"
+                android:textColor="@color/error" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnEdit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_small"
+                android:text="Đổi lịch"
+                android:textSize="@dimen/text_size_12"
+                app:backgroundTint="@color/primary" />
+
+        </LinearLayout>
+
+        <!-- Nhóm nút: Người thuê + trạng thái confirmed -->
+        <LinearLayout
+            android:id="@+id/layoutTenantConfirmed"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:paddingStart="@dimen/padding_medium"
+            android:paddingEnd="@dimen/padding_medium"
+            android:paddingBottom="@dimen/padding_medium"
+            android:visibility="gone">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnNotComing"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Không đến nữa"
+                android:textSize="@dimen/text_size_12"
+                app:strokeColor="@color/error"
+                android:textColor="@color/error" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnTenantConfirm"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/padding_small"
+                android:text="Xác nhận đi xem"
+                android:textSize="@dimen/text_size_12"
+                app:backgroundTint="@color/success" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

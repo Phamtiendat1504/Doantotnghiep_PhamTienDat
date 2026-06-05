@@ -43,6 +43,7 @@
     <dimen name="image_size_32">32dp</dimen>
     <dimen name="image_size_40">40dp</dimen>
     <dimen name="image_size_56">56dp</dimen>
+    <dimen name="image_size_80">80dp</dimen>
     <dimen name="image_size_85">85dp</dimen>
     <dimen name="image_size_90">90dp</dimen>
     <dimen name="image_size_100">100dp</dimen>
@@ -54,6 +55,7 @@
     <dimen name="elevation_2">2dp</dimen>
     <dimen name="elevation_3">3dp</dimen>
     <dimen name="elevation_4">4dp</dimen>
+    <dimen name="elevation_5">5dp</dimen>
     <dimen name="elevation_6">6dp</dimen>
     <dimen name="elevation_8">8dp</dimen>
 
@@ -101,6 +103,7 @@
     <dimen name="dimen_30dp">30dp</dimen>
     <dimen name="dimen_110dp">110dp</dimen>
     <dimen name="dimen_84dp">84dp</dimen>
+    <dimen name="dimen_38dp">38dp</dimen>
     <dimen name="dimen_38sp">38sp</dimen>
     <dimen name="dimen_300dp">300dp</dimen>
     <dimen name="dimen_104dp">104dp</dimen>

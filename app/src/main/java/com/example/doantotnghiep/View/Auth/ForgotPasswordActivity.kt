@@ -100,8 +100,8 @@ class ForgotPasswordActivity : AppCompatActivity() {
             androidx.appcompat.app.AlertDialog.Builder(this)
                 .setTitle("Đã gửi liên kết đặt lại")
                 .setMessage(
-                    "Liên kết đặt lại mật khẩu đã được gửi đến:\n$email\n\n" +
-                    "Vui lòng kiểm tra hộp thư và nhấn vào liên kết trong vòng 1 giờ.\n\n" +
+                    "Nếu địa chỉ $email đã được đăng ký trong hệ thống, một liên kết đặt lại mật khẩu sẽ được gửi đến hộp thư của bạn.\n\n" +
+                    "Vui lòng kiểm tra hộp thư (kể cả thư mục Spam) và nhấn vào liên kết trong vòng 1 giờ.\n\n" +
                     "Lưu ý bảo mật: Nếu bạn không yêu cầu đặt lại mật khẩu, " +
                     "hãy bỏ qua email này — tài khoản của bạn vẫn an toàn."
                 )

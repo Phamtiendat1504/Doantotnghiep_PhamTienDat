@@ -1,15 +1,38 @@
 package com.example.doantotnghiep.ViewModel
 
+import android.app.Application
 import android.util.Patterns
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.Utils.RateLimiter
 import com.example.doantotnghiep.repository.AuthRepository
 
-class AuthViewModel : ViewModel() {
+data class RegisterFieldError(val field: String, val message: String)
+
+/**
+ * Đã chuyển từ ViewModel → AndroidViewModel để có Application Context,
+ * phục vụ RateLimiter lưu trạng thái vào SharedPreferences (thay vì RAM).
+ * Điều này ngăn người dùng bypass giới hạn đăng nhập/đăng ký bằng cách tắt rồi mở lại app.
+ */
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = AuthRepository()
-    
+
+    // Rate limiter lưu vào SharedPreferences — không bị reset khi khởi động lại app
+    private val loginRateLimiter = RateLimiter(
+        context    = application,
+        key        = "rate_login",
+        maxAttempts = 5,
+        windowMs   = 60_000L
+    )
+    private val registerRateLimiter = RateLimiter(
+        context    = application,
+        key        = "rate_register",
+        maxAttempts = 3,
+        windowMs   = 60_000L
+    )
+
     fun isLoggedIn(): Boolean = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null
     fun getCurrentUserEmail(): String = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.email ?: ""
     fun logOut() {
@@ -36,11 +59,16 @@ class AuthViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
+    private val _registerFieldError = MutableLiveData<RegisterFieldError?>()
+    val registerFieldError: LiveData<RegisterFieldError?> = _registerFieldError
+
     private val _lockInfo = MutableLiveData<Pair<Boolean, Triple<String, Long, Int>>>()
     val lockInfo: LiveData<Pair<Boolean, Triple<String, Long, Int>>> = _lockInfo
 
     private val _emailNotVerified = MutableLiveData<Boolean>()
     val emailNotVerified: LiveData<Boolean> = _emailNotVerified
+
+    // ─── Validation helpers ───────────────────────────────────────────────────
 
     private fun isValidEmail(email: String): Boolean {
         return email.isNotEmpty() && Patterns.EMAIL_ADDRESS.matcher(email).matches()
@@ -55,31 +83,42 @@ class AuthViewModel : ViewModel() {
     }
 
     private fun isValidPhone(phone: String): Boolean {
-        // Phải đúng 10 số, bắt đầu bằng 0 và toàn là chữ số
-        return phone.length == 10 && phone.startsWith("0") && phone.all { it.isDigit() }
+        // Regex kiểm tra số điện thoại bắt đầu bằng 03, 05, 07, 08, 09 và theo sau là đúng 8 chữ số di động Việt Nam
+        val phoneRegex = "^(03|05|07|08|09)\\d{8}$".toRegex()
+        return phone.matches(phoneRegex)
     }
 
-    private val loginAttemptTimestamps = ArrayDeque<Long>()
-    private val MAX_LOGIN_ATTEMPTS = 5
-    private val LOGIN_WINDOW_MS = 60_000L
+    /**
+     * Kiểm tra họ tên hợp lệ:
+     * - Tối thiểu 2 ký tự, tối đa 50 ký tự.
+     * - Chỉ chấp nhận chữ cái (bao gồm Unicode tiếng Việt), dấu cách và dấu gạch ngang.
+     * - Không được bắt đầu hoặc kết thúc bằng dấu cách.
+     */
+    private fun isValidFullName(name: String): Boolean {
+        if (name.length < 2 || name.length > 50) return false
+        if (name.startsWith(" ") || name.endsWith(" ")) return false
+        // Cho phép chữ cái Unicode (tiếng Việt), dấu cách và dấu gạch ngang
+        val nameRegex = "^[\\p{L} -]+$".toRegex()
+        return name.matches(nameRegex)
+    }
+
+    // ─── Login ───────────────────────────────────────────────────────────────
 
     fun login(email: String, password: String) {
         if (email.isEmpty()) { _errorMessage.value = "Vui lòng nhập email"; return }
         if (password.isEmpty()) { _errorMessage.value = "Vui lòng nhập mật khẩu"; return }
 
-        val now = System.currentTimeMillis()
-        loginAttemptTimestamps.removeAll { now - it > LOGIN_WINDOW_MS }
-        if (loginAttemptTimestamps.size >= MAX_LOGIN_ATTEMPTS) {
-            val waitSeconds = ((LOGIN_WINDOW_MS - (now - loginAttemptTimestamps.first())) / 1000).coerceAtLeast(1)
-            _errorMessage.value = "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng đợi $waitSeconds giây rồi thử lại."
+        // Rate limiting lưu vào SharedPreferences — bền vững qua các lần restart app
+        if (!loginRateLimiter.tryConsume()) {
+            val wait = loginRateLimiter.secondsUntilNextAllowed()
+            _errorMessage.value = "Bạn đã thử đăng nhập quá nhiều lần. Vui lòng đợi $wait giây rồi thử lại."
             return
         }
-        loginAttemptTimestamps.addLast(now)
 
         _isLoading.value = true
         repository.login(email, password,
             onSuccess = {
-                loginAttemptTimestamps.clear()
+                loginRateLimiter.reset() // Xóa lịch sử khi đăng nhập thành công
                 repository.checkUserLockStatus(
                     onResult = { isLocked, reason, until, lockDays ->
                         _isLoading.value = false
@@ -107,6 +146,8 @@ class AuthViewModel : ViewModel() {
     }
 
     fun resetEmailNotVerified() { _emailNotVerified.value = false }
+
+    // ─── Change Password ──────────────────────────────────────────────────────
 
     fun changePassword(oldPassword: String, newPassword: String, confirmPassword: String) {
         if (oldPassword.isEmpty()) { _errorMessage.value = "old_empty"; return }
@@ -138,36 +179,36 @@ class AuthViewModel : ViewModel() {
         )
     }
 
-    private val registerAttemptTimestamps = ArrayDeque<Long>()
-    private val MAX_REGISTER_ATTEMPTS = 3
-    private val REGISTER_WINDOW_MS = 60_000L
+    // ─── Register ─────────────────────────────────────────────────────────────
 
     fun register(fullName: String, email: String, phone: String, password: String, confirmPassword: String) {
-        val now = System.currentTimeMillis()
-        registerAttemptTimestamps.removeAll { now - it > REGISTER_WINDOW_MS }
-        if (registerAttemptTimestamps.size >= MAX_REGISTER_ATTEMPTS) {
-            val waitSeconds = ((REGISTER_WINDOW_MS - (now - registerAttemptTimestamps.first())) / 1000).coerceAtLeast(1)
-            _errorMessage.value = "Bạn đã thử quá nhiều lần. Vui lòng đợi $waitSeconds giây rồi thử lại."
+        // Rate limiting lưu vào SharedPreferences — bền vững qua các lần restart app
+        if (!registerRateLimiter.tryConsume()) {
+            val wait = registerRateLimiter.secondsUntilNextAllowed()
+            _errorMessage.value = "Bạn đã thử quá nhiều lần. Vui lòng đợi $wait giây rồi thử lại."
             return
         }
-        registerAttemptTimestamps.addLast(now)
 
-        if (fullName.isBlank()) { _errorMessage.value = "Vui lòng nhập họ và tên"; return }
-        if (email.isBlank()) { _errorMessage.value = "Vui lòng nhập email"; return }
-        if (!isValidEmail(email)) { _errorMessage.value = "Định dạng email không hợp lệ"; return }
+        if (fullName.isBlank()) { _registerFieldError.value = RegisterFieldError("fullName", "Vui lòng nhập họ và tên"); return }
+        if (!isValidFullName(fullName)) {
+            _registerFieldError.value = RegisterFieldError("fullName", "Họ tên không hợp lệ (2–50 ký tự, chỉ chứa chữ cái và dấu cách)")
+            return
+        }
+        if (email.isBlank()) { _registerFieldError.value = RegisterFieldError("email", "Vui lòng nhập email"); return }
+        if (!isValidEmail(email)) { _registerFieldError.value = RegisterFieldError("email", "Định dạng email không hợp lệ"); return }
 
-        if (phone.isBlank()) { _errorMessage.value = "Vui lòng nhập số điện thoại"; return }
+        if (phone.isBlank()) { _registerFieldError.value = RegisterFieldError("phone", "Vui lòng nhập số điện thoại"); return }
         if (!isValidPhone(phone)) {
-            _errorMessage.value = "Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng 0)"
+            _registerFieldError.value = RegisterFieldError("phone", "Số điện thoại không hợp lệ (phải có 10 số và bắt đầu bằng 0)")
             return
         }
 
-        if (password.isEmpty()) { _errorMessage.value = "Vui lòng nhập mật khẩu"; return }
+        if (password.isEmpty()) { _registerFieldError.value = RegisterFieldError("password", "Vui lòng nhập mật khẩu"); return }
         if (!isValidPassword(password)) {
-            _errorMessage.value = "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt"
+            _registerFieldError.value = RegisterFieldError("password", "Mật khẩu phải có ít nhất 12 ký tự, gồm chữ hoa, số và ký tự đặc biệt")
             return
         }
-        if (password != confirmPassword) { _errorMessage.value = "Mật khẩu xác nhận không khớp"; return }
+        if (password != confirmPassword) { _registerFieldError.value = RegisterFieldError("confirmPassword", "Mật khẩu xác nhận không khớp"); return }
 
         _isLoading.value = true
         repository.register(fullName, email, phone, password,
@@ -182,12 +223,14 @@ class AuthViewModel : ViewModel() {
         )
     }
 
-    // Reset helpers — dùng trong View thay vì set .value trực tiếp
+    // ─── Reset helpers ────────────────────────────────────────────────────────
+
     fun resetLoginResult() { _loginResult.value = false }
     fun resetRegisterResult() { _registerResult.value = false }
     fun resetChangePasswordResult() { _changePasswordResult.value = false }
     fun resetWrongOldPassword() { _wrongOldPassword.value = false }
     fun resetErrorMessage() { _errorMessage.value = "" }
+    fun resetRegisterFieldError() { _registerFieldError.value = null }
 
     fun checkLockStatus() {
         _isLoading.value = true

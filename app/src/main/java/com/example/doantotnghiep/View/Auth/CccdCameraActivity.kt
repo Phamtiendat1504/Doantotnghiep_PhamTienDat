@@ -82,15 +82,15 @@ class CccdCameraActivity : AppCompatActivity() {
         private const val MAX_DARK_RATIO = 0.70
         private const val MAX_BRIGHT_RATIO = 0.45
         private const val MIN_CONTRAST_STD = 15.0
-        private const val MIN_SHARPNESS = 10.0
-        private const val MIN_TEXT_BLOCKS_FRONT = 2
-        private const val MIN_TEXT_BLOCKS_BACK = 1
-        private const val MIN_TEXT_CHARS_FRONT = 20
-        private const val MIN_TEXT_CHARS_BACK = 15
-        private const val MIN_TEXT_SPREAD_X_FRONT = 0.40
-        private const val MIN_TEXT_SPREAD_X_BACK = 0.40
-        private const val MIN_TEXT_SPREAD_Y = 0.20
-        private const val MIN_TEXT_COVERAGE = 0.10
+        private const val MIN_SHARPNESS = 7.0
+        private const val MIN_TEXT_BLOCKS_FRONT = 4
+        private const val MIN_TEXT_BLOCKS_BACK = 2
+        private const val MIN_TEXT_CHARS_FRONT = 60
+        private const val MIN_TEXT_CHARS_BACK = 35
+        private const val MIN_TEXT_SPREAD_X_FRONT = 0.55
+        private const val MIN_TEXT_SPREAD_X_BACK = 0.55
+        private const val MIN_TEXT_SPREAD_Y = 0.38
+        private const val MIN_TEXT_COVERAGE = 0.20
         private const val AUTO_CAPTURE_MIN_STABLE_FRAMES = 3
         private const val AUTO_CAPTURE_ANALYZE_INTERVAL_MS = 700L
         private const val AUTO_CAPTURE_REARM_DELAY_MS = 1200L
@@ -299,9 +299,21 @@ class CccdCameraActivity : AppCompatActivity() {
                 return@launch
             }
 
-            // Đã vô hiệu hóa kiểm tra chất lượng pixel thủ công để ưu tiên ML Kit OCR
-            // val qualityError = validateImageQuality(cropped)
-            // if (qualityError != null) { ... }
+            val qualityError = validateImageQuality(cropped)
+            if (qualityError != null) {
+                withContext(Dispatchers.Main) {
+                    resetCaptureState()
+                    if (cropped != bitmap) cropped.recycle()
+                    bitmap.recycle()
+                    file.delete()
+                    MessageUtils.showInfoDialog(
+                        this@CccdCameraActivity,
+                        "Chất lượng ảnh chưa đạt",
+                        qualityError
+                    )
+                }
+                return@launch
+            }
 
             withContext(Dispatchers.Main) {
                 validateCccdFromFrame(cropped) { valid, errorMessage ->
@@ -448,6 +460,26 @@ class CccdCameraActivity : AppCompatActivity() {
                 }
 
                 if (isValid) {
+                    val integrityOk = checkBoundaryIntegrity(visionText.text, captureSide == SIDE_FRONT, signals.hasMrz)
+                    if (!integrityOk) {
+                        val sideName = if (captureSide == SIDE_FRONT) "mặt trước" else "mặt sau"
+                        onDone(false, "Ảnh $sideName Căn cước công dân bị cắt xén hoặc không hiển thị đầy đủ tiêu đề ở phía trên hoặc phần thông tin ở phía dưới. Vui lòng căn trọn vẹn thẻ vào khung.")
+                        return@addOnSuccessListener
+                    }
+
+                    if (captureSide == SIDE_FRONT && isLikelyUpsideDownFront(signals)) {
+                        onDone(false, "Ảnh mặt trước CCCD đang bị lộn ngược đầu. Vui lòng xoay đúng chiều thẻ và chụp lại.")
+                        return@addOnSuccessListener
+                    }
+                    if (captureSide == SIDE_BACK && isLikelyUpsideDownBack(signals)) {
+                        onDone(false, "Ảnh mặt sau CCCD đang bị lộn ngược đầu. Vui lòng xoay đúng chiều thẻ và chụp lại.")
+                        return@addOnSuccessListener
+                    }
+                    if (isLikelySideRotated(signals)) {
+                        onDone(false, "Ảnh CCCD đang bị chụp xoay dọc. Vui lòng cầm máy dọc và đặt thẻ nằm ngang trong khung chụp.")
+                        return@addOnSuccessListener
+                    }
+
                     val completenessError = validateCardCompleteness(frameMetrics)
                     if (completenessError != null) {
                         onDone(false, completenessError)
@@ -472,6 +504,36 @@ class CccdCameraActivity : AppCompatActivity() {
             .addOnFailureListener {
                 onDone(false, "Không đọc được thông tin CCCD trong ảnh. Vui lòng chụp lại rõ nét hơn.")
             }
+    }
+
+    private fun checkBoundaryIntegrity(text: String, isFront: Boolean, hasMrz: Boolean): Boolean {
+        val normalized = normalizeNoAccentUpper(text)
+        return if (isFront) {
+            val hasTop = normalized.contains("CONG HOA") || 
+                         normalized.contains("XA HOI") || 
+                         normalized.contains("DOC LAP") || 
+                         normalized.contains("TU DO") || 
+                         normalized.contains("SOCIALIST") || 
+                         normalized.contains("REPUBLIC")
+            val hasBottom = normalized.contains("THUONG TRU") || 
+                            normalized.contains("CU TRU") || 
+                            normalized.contains("RESIDENCE") || 
+                            normalized.contains("GIA TRI") || 
+                            normalized.contains("EXPIRY")
+            hasTop && hasBottom
+        } else {
+            val hasTop = normalized.contains("NHAN DANG") || 
+                         normalized.contains("IDENTIFICATION") ||
+                         normalized.contains("NGAY CAP") ||
+                         normalized.contains("NOI CAP") ||
+                         normalized.contains("CAP NGAY")
+            val hasBottom = hasMrz || 
+                            normalized.contains("CUC TRUONG") || 
+                            normalized.contains("DIRECTOR") || 
+                            normalized.contains("CONG AN") ||
+                            normalized.contains("POLICE")
+            hasTop && hasBottom
+        }
     }
 
     private data class ImageQualityMetrics(
@@ -751,7 +813,7 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     private fun isFrontSide(signals: SideSignals): Boolean {
-        return signals.frontScore >= 1
+        return signals.frontScore >= 2
     }
 
     private fun isBackSide(signals: SideSignals): Boolean {
@@ -759,15 +821,17 @@ class CccdCameraActivity : AppCompatActivity() {
     }
 
     private fun isLikelySideRotated(signals: SideSignals): Boolean {
-        return false // Removed strict rotation checks to avoid false negatives
+        return signals.verticalTextBlockRatio > 0.40f
     }
 
     private fun isLikelyUpsideDownFront(signals: SideSignals): Boolean {
-        return false // Removed strict upside down checks
+        val headerY = signals.frontHeaderYRatio ?: return false
+        return headerY > 0.65f
     }
 
     private fun isLikelyUpsideDownBack(signals: SideSignals): Boolean {
-        return false // Removed strict upside down checks
+        val mrzY = signals.mrzYRatio ?: return false
+        return mrzY < 0.40f
     }
 
     private fun normalizeNoAccentUpper(text: String): String {
@@ -845,8 +909,31 @@ class CccdCameraActivity : AppCompatActivity() {
         return Bitmap.createBitmap(bitmap, left, top, cropWidth, cropHeight)
     }
 
+    private fun calculateInSampleSize(options: BitmapFactory.Options, reqWidth: Int, reqHeight: Int): Int {
+        val height = options.outHeight
+        val width = options.outWidth
+        var inSampleSize = 1
+        if (height > reqHeight || width > reqWidth) {
+            val halfHeight = height / 2
+            val halfWidth = width / 2
+            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
+                inSampleSize *= 2
+            }
+        }
+        return inSampleSize
+    }
+
     private fun decodeBitmapWithExif(file: File): Bitmap? {
-        val raw = BitmapFactory.decodeFile(file.absolutePath) ?: return null
+        val options = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        BitmapFactory.decodeFile(file.absolutePath, options)
+        
+        // Giới hạn giải mã ảnh tối đa 1920x1080 để tránh lỗi OOM trên thiết bị RAM yếu
+        options.inSampleSize = calculateInSampleSize(options, 1920, 1080)
+        options.inJustDecodeBounds = false
+        
+        val raw = BitmapFactory.decodeFile(file.absolutePath, options) ?: return null
         val orientation = try {
             ExifInterface(file.absolutePath).getAttributeInt(
                 ExifInterface.TAG_ORIENTATION,

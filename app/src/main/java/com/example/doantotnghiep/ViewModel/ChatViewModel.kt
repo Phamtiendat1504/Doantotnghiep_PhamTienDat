@@ -159,6 +159,7 @@ class ChatViewModel : ViewModel() {
     fun sendImageMessage(
         imageUri: android.net.Uri,
         text: String = "",
+        onProgress: (Int) -> Unit = {},
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
@@ -169,6 +170,7 @@ class ChatViewModel : ViewModel() {
         repository.uploadChatImage(
             chatId = currentChatId,
             imageUri = imageUri,
+            onProgress = onProgress,
             onSuccess = { imageUrl ->
                 repository.sendMessage(
                     chatId = currentChatId,

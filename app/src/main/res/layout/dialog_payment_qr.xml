@@ -170,6 +170,17 @@
 
         </LinearLayout>
 
+        <!-- Countdown -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tvQrCountdown"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginBottom="@dimen/padding_small"
+            android:textSize="@dimen/text_size_13"
+            android:textColor="@color/warning"
+            android:textStyle="bold" />
+
         <!-- Lưu ý -->
         <com.google.android.material.textview.MaterialTextView
             android:layout_width="match_parent"

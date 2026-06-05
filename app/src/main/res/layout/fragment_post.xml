@@ -143,7 +143,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="@color/primary_surface"
+                    android:background="@color/primary"
                     android:paddingStart="@dimen/padding_large"
                     android:paddingEnd="@dimen/padding_large"
                     android:paddingTop="@dimen/padding_medium"
@@ -152,11 +152,11 @@
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="@dimen/image_size_28"
                         android:layout_height="@dimen/image_size_28"
-                        android:background="@drawable/bg_section_number"
+                        android:background="@drawable/bg_section_number_white"
                         android:text="@string/txt_1"
                         android:textSize="@dimen/text_size_13"
                         android:textStyle="bold"
-                        android:textColor="@color/on_primary"
+                        android:textColor="@color/primary"
                         android:gravity="center"
                         android:layout_marginEnd="@dimen/corner_radius_10" />
 
@@ -167,7 +167,7 @@
                         android:text="@string/txt_thong_tin_nguoi_ang"
                         android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
-                        android:textColor="@color/primary" />
+                        android:textColor="@color/on_primary" />
 
                     <ImageView
                         android:id="@+id/ivArrowCard1"
@@ -175,7 +175,7 @@
                         android:layout_height="@dimen/spacing_24"
                         android:rotation="90"
                         android:src="@drawable/ic_arrow_right"
-                        app:tint="@color/primary" />
+                        app:tint="@color/on_primary" />
 
                 </LinearLayout>
 
@@ -325,7 +325,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="@color/purple_surface"
+                    android:background="@color/primary"
                     android:paddingStart="@dimen/padding_large"
                     android:paddingEnd="@dimen/padding_large"
                     android:paddingTop="@dimen/padding_medium"
@@ -334,11 +334,11 @@
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="@dimen/image_size_28"
                         android:layout_height="@dimen/image_size_28"
-                        android:background="@drawable/bg_section_number"
+                        android:background="@drawable/bg_section_number_white"
                         android:text="@string/txt_2"
                         android:textSize="@dimen/text_size_13"
                         android:textStyle="bold"
-                        android:textColor="@color/on_primary"
+                        android:textColor="@color/primary"
                         android:gravity="center"
                         android:layout_marginEnd="@dimen/corner_radius_10" />
 
@@ -349,7 +349,7 @@
                         android:text="@string/post_info_title"
                         android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
-                        android:textColor="@color/purple_accent" />
+                        android:textColor="@color/on_primary" />
 
                     <ImageView
                         android:id="@+id/ivArrowCard2"
@@ -357,7 +357,7 @@
                         android:layout_height="@dimen/spacing_24"
                         android:rotation="0"
                         android:src="@drawable/ic_arrow_right"
-                        app:tint="@color/purple_accent" />
+                        app:tint="@color/on_primary" />
 
                 </LinearLayout>
 
@@ -437,7 +437,33 @@
                                 android:textSize="@dimen/text_size_13"
                                 android:textStyle="bold"
                                 android:textColor="@color/text_primary"
-                                android:layout_marginBottom="@dimen/elevation_6" />
+                                android:layout_marginBottom="@dimen/elevation_4" />
+
+                            <com.google.android.material.chip.ChipGroup
+                                android:id="@+id/chipGroupAreaTypePost"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginBottom="@dimen/elevation_4"
+                                app:selectionRequired="true"
+                                app:singleSelection="true">
+
+                                <com.google.android.material.chip.Chip
+                                    android:id="@+id/chipPostPhuong"
+                                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:checked="true"
+                                    android:text="Phường"
+                                    app:chipBackgroundColor="@color/chip_bg_color" />
+
+                                <com.google.android.material.chip.Chip
+                                    android:id="@+id/chipPostXa"
+                                    style="@style/Widget.MaterialComponents.Chip.Choice"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Xã"
+                                    app:chipBackgroundColor="@color/chip_bg_color" />
+                            </com.google.android.material.chip.ChipGroup>
 
                             <Spinner
                                 android:id="@+id/spinnerWard"
@@ -609,7 +635,7 @@
                         android:layout_gravity="end"
                         android:text="@string/txt_tiep_tuc"
                         android:layout_marginTop="@dimen/padding_large"
-                        app:backgroundTint="@color/purple_accent"
+                        app:backgroundTint="@color/primary"
                         app:cornerRadius="@dimen/padding_small" />
 
                 </LinearLayout>
@@ -639,7 +665,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="@color/bg_error"
+                    android:background="@color/primary"
                     android:paddingStart="@dimen/padding_large"
                     android:paddingEnd="@dimen/padding_large"
                     android:paddingTop="@dimen/padding_medium"
@@ -648,11 +674,11 @@
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="@dimen/image_size_28"
                         android:layout_height="@dimen/image_size_28"
-                        android:background="@drawable/bg_section_number"
+                        android:background="@drawable/bg_section_number_white"
                         android:text="@string/txt_3"
                         android:textSize="@dimen/text_size_13"
                         android:textStyle="bold"
-                        android:textColor="@color/on_primary"
+                        android:textColor="@color/primary"
                         android:gravity="center"
                         android:layout_marginEnd="@dimen/corner_radius_10" />
 
@@ -663,7 +689,7 @@
                         android:text="@string/txt_chi_tiet_bai_ang"
                         android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
-                        android:textColor="@color/secondary" />
+                        android:textColor="@color/on_primary" />
 
                     <ImageView
                         android:id="@+id/ivArrowCard3"
@@ -671,7 +697,7 @@
                         android:layout_height="@dimen/spacing_24"
                         android:rotation="0"
                         android:src="@drawable/ic_arrow_right"
-                        app:tint="@color/secondary" />
+                        app:tint="@color/on_primary" />
 
                 </LinearLayout>
 
@@ -814,7 +840,7 @@
                                     android:text="@string/txt_chung_chu"
                                     android:textSize="@dimen/text_size_13"
                                     android:gravity="center_vertical"
-                                    android:buttonTint="@color/secondary" 
+                                    android:buttonTint="@color/primary"
                                       android:maxLines="1"/>
 
                                 <RadioButton
@@ -824,7 +850,7 @@
                                     android:text="@string/txt_rieng_chu"
                                     android:textSize="@dimen/text_size_13"
                                     android:gravity="center_vertical"
-                                    android:buttonTint="@color/secondary" 
+                                    android:buttonTint="@color/primary"
                                       android:maxLines="1"/>
 
                             </RadioGroup>
@@ -910,7 +936,7 @@
                         android:layout_gravity="end"
                         android:text="@string/txt_tiep_tuc"
                         android:layout_marginTop="@dimen/padding_large"
-                        app:backgroundTint="@color/secondary"
+                        app:backgroundTint="@color/primary"
                         app:cornerRadius="@dimen/padding_small" />
 
                 </LinearLayout>
@@ -940,7 +966,7 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal"
                     android:gravity="center_vertical"
-                    android:background="@color/teal_surface"
+                    android:background="@color/primary"
                     android:paddingStart="@dimen/padding_large"
                     android:paddingEnd="@dimen/padding_large"
                     android:paddingTop="@dimen/padding_medium"
@@ -949,11 +975,11 @@
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="@dimen/image_size_28"
                         android:layout_height="@dimen/image_size_28"
-                        android:background="@drawable/bg_section_number"
+                        android:background="@drawable/bg_section_number_white"
                         android:text="@string/txt_4"
                         android:textSize="@dimen/text_size_13"
                         android:textStyle="bold"
-                        android:textColor="@color/on_primary"
+                        android:textColor="@color/primary"
                         android:gravity="center"
                         android:layout_marginEnd="@dimen/corner_radius_10" />
 
@@ -964,7 +990,7 @@
                         android:text="@string/txt_tien_ich_amp_chi_phi"
                         android:textSize="@dimen/text_size_15"
                         android:textStyle="bold"
-                        android:textColor="@color/teal" />
+                        android:textColor="@color/on_primary" />
 
                     <ImageView
                         android:id="@+id/ivArrowCard4"
@@ -972,7 +998,7 @@
                         android:layout_height="@dimen/spacing_24"
                         android:rotation="0"
                         android:src="@drawable/ic_arrow_right"
-                        app:tint="@color/teal" />
+                        app:tint="@color/on_primary" />
 
                 </LinearLayout>
 
@@ -1003,25 +1029,27 @@
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="@dimen/dimen_48dp"
                             android:orientation="horizontal"
                             android:gravity="center_vertical"
                             android:layout_marginBottom="@dimen/padding_small">
 
                             <CheckBox
                                 android:id="@+id/cbWifi"
-                                android:layout_width="@dimen/dimen_80dp"
-                                android:layout_height="wrap_content"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
                                 android:text="@string/txt_wifi"
                                 android:textSize="@dimen/text_size_14"
                                 android:textStyle="bold"
-                                android:buttonTint="@color/teal" />
+                                android:gravity="center_vertical"
+                                android:buttonTint="@color/primary" />
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edtWifiPrice"
                                 android:layout_width="0dp"
                                 android:layout_height="@dimen/dimen_42dp"
-                                android:layout_weight="1"
+                                android:layout_weight="2"
                                 android:hint="@string/txt_vd_100_000_thang"
                                 android:textSize="@dimen/text_size_13"
                                 android:inputType="number"
@@ -1033,25 +1061,27 @@
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="@dimen/dimen_48dp"
                             android:orientation="horizontal"
                             android:gravity="center_vertical"
                             android:layout_marginBottom="@dimen/padding_small">
 
                             <CheckBox
                                 android:id="@+id/cbElectric"
-                                android:layout_width="@dimen/dimen_80dp"
-                                android:layout_height="wrap_content"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
                                 android:text="@string/txt_ien"
                                 android:textSize="@dimen/text_size_14"
                                 android:textStyle="bold"
-                                android:buttonTint="@color/teal" />
+                                android:gravity="center_vertical"
+                                android:buttonTint="@color/primary" />
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edtElectricPrice"
                                 android:layout_width="0dp"
                                 android:layout_height="@dimen/dimen_42dp"
-                                android:layout_weight="1"
+                                android:layout_weight="2"
                                 android:hint="@string/txt_vd_3_000_kwh"
                                 android:textSize="@dimen/text_size_13"
                                 android:inputType="number"
@@ -1063,24 +1093,26 @@
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="@dimen/dimen_48dp"
                             android:orientation="horizontal"
                             android:gravity="center_vertical">
 
                             <CheckBox
                                 android:id="@+id/cbWater"
-                                android:layout_width="@dimen/dimen_80dp"
-                                android:layout_height="wrap_content"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
                                 android:text="@string/txt_nuoc"
                                 android:textSize="@dimen/text_size_14"
                                 android:textStyle="bold"
-                                android:buttonTint="@color/teal" />
+                                android:gravity="center_vertical"
+                                android:buttonTint="@color/primary" />
 
                             <com.google.android.material.textfield.TextInputEditText
                                 android:id="@+id/edtWaterPrice"
                                 android:layout_width="0dp"
                                 android:layout_height="@dimen/dimen_42dp"
-                                android:layout_weight="1"
+                                android:layout_weight="2"
                                 android:hint="@string/txt_vd_100_000_m"
                                 android:textSize="@dimen/text_size_13"
                                 android:inputType="number"
@@ -1089,6 +1121,35 @@
                                 android:enabled="false" />
 
                         </LinearLayout>
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Phí khác (tuỳ chọn)"
+                            android:textSize="@dimen/text_size_12"
+                            android:textColor="@color/text_hint"
+                            android:layout_marginTop="@dimen/spacing_14"
+                            android:layout_marginBottom="@dimen/elevation_6" />
+
+                        <LinearLayout
+                            android:id="@+id/layoutOtherFees"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddOtherFee"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/elevation_6"
+                            android:text="+ Thêm khoản phí"
+                            android:textAllCaps="false"
+                            android:textSize="@dimen/text_size_13"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="@dimen/corner_radius_10"
+                            app:strokeColor="@color/primary"
+                            app:strokeWidth="@dimen/dimen_1_2dp" />
 
                     </LinearLayout>
 
@@ -1127,78 +1188,180 @@
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="@dimen/dimen_48dp"
                             android:orientation="horizontal"
+                            android:gravity="center_vertical"
                             android:layout_marginBottom="@dimen/stroke_2">
 
                             <CheckBox
                                 android:id="@+id/cbAirCon"
                                 android:layout_width="0dp"
-                                android:layout_height="@dimen/image_size_40"
+                                android:layout_height="match_parent"
                                 android:layout_weight="1"
+                                android:gravity="center_vertical"
                                 android:text="@string/txt_ieu_hoa"
                                 android:textSize="@dimen/text_size_13"
-                                android:buttonTint="@color/teal" />
+                                android:buttonTint="@color/primary" />
 
-                            <CheckBox
-                                android:id="@+id/cbWaterHeater"
-                                android:layout_width="0dp"
-                                android:layout_height="@dimen/image_size_40"
-                                android:layout_weight="1"
-                                android:text="@string/txt_nong_lanh"
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edtAirConQty"
+                                android:layout_width="64dp"
+                                android:layout_height="@dimen/dimen_38dp"
+                                android:hint="SL"
                                 android:textSize="@dimen/text_size_13"
-                                android:buttonTint="@color/teal" />
+                                android:inputType="number"
+                                android:gravity="center"
+                                android:background="@drawable/bg_edit_post"
+                                android:enabled="false" />
 
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
+                            android:layout_height="@dimen/dimen_48dp"
                             android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="@dimen/stroke_2">
+
+                            <CheckBox
+                                android:id="@+id/cbWaterHeater"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:gravity="center_vertical"
+                                android:text="@string/txt_nong_lanh"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary" />
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edtWaterHeaterQty"
+                                android:layout_width="64dp"
+                                android:layout_height="@dimen/dimen_38dp"
+                                android:hint="SL"
+                                android:textSize="@dimen/text_size_13"
+                                android:inputType="number"
+                                android:gravity="center"
+                                android:background="@drawable/bg_edit_post"
+                                android:enabled="false" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
                             android:layout_marginBottom="@dimen/stroke_2">
 
                             <CheckBox
                                 android:id="@+id/cbWasher"
                                 android:layout_width="0dp"
-                                android:layout_height="@dimen/image_size_40"
+                                android:layout_height="match_parent"
                                 android:layout_weight="1"
+                                android:gravity="center_vertical"
                                 android:text="@string/txt_may_giat"
                                 android:textSize="@dimen/text_size_13"
-                                android:buttonTint="@color/teal" />
+                                android:buttonTint="@color/primary" />
 
-                            <CheckBox
-                                android:id="@+id/cbDryingArea"
-                                android:layout_width="0dp"
-                                android:layout_height="@dimen/image_size_40"
-                                android:layout_weight="1"
-                                android:text="@string/txt_san_phoi"
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edtWasherQty"
+                                android:layout_width="64dp"
+                                android:layout_height="@dimen/dimen_38dp"
+                                android:hint="SL"
                                 android:textSize="@dimen/text_size_13"
-                                android:buttonTint="@color/teal" />
+                                android:inputType="number"
+                                android:gravity="center"
+                                android:background="@drawable/bg_edit_post"
+                                android:enabled="false" />
 
                         </LinearLayout>
 
                         <LinearLayout
                             android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="horizontal">
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="@dimen/stroke_2">
+
+                            <CheckBox
+                                android:id="@+id/cbDryingArea"
+                                android:layout_width="0dp"
+                                android:layout_height="match_parent"
+                                android:layout_weight="1"
+                                android:gravity="center_vertical"
+                                android:text="@string/txt_san_phoi"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary" />
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edtDryingAreaQty"
+                                android:layout_width="64dp"
+                                android:layout_height="@dimen/dimen_38dp"
+                                android:hint="SL"
+                                android:textSize="@dimen/text_size_13"
+                                android:inputType="number"
+                                android:gravity="center"
+                                android:background="@drawable/bg_edit_post"
+                                android:enabled="false" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="@dimen/stroke_2">
 
                             <CheckBox
                                 android:id="@+id/cbWardrobe"
                                 android:layout_width="0dp"
-                                android:layout_height="@dimen/image_size_40"
+                                android:layout_height="match_parent"
                                 android:layout_weight="1"
+                                android:gravity="center_vertical"
                                 android:text="@string/txt_tu_quan_ao"
                                 android:textSize="@dimen/text_size_13"
-                                android:buttonTint="@color/teal" />
+                                android:buttonTint="@color/primary" />
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edtWardrobeQty"
+                                android:layout_width="64dp"
+                                android:layout_height="@dimen/dimen_38dp"
+                                android:hint="SL"
+                                android:textSize="@dimen/text_size_13"
+                                android:inputType="number"
+                                android:gravity="center"
+                                android:background="@drawable/bg_edit_post"
+                                android:enabled="false" />
+
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical">
 
                             <CheckBox
                                 android:id="@+id/cbBed"
                                 android:layout_width="0dp"
-                                android:layout_height="@dimen/image_size_40"
+                                android:layout_height="match_parent"
                                 android:layout_weight="1"
+                                android:gravity="center_vertical"
                                 android:text="@string/txt_giuong_nem"
                                 android:textSize="@dimen/text_size_13"
-                                android:buttonTint="@color/teal" />
+                                android:buttonTint="@color/primary" />
+
+                            <com.google.android.material.textfield.TextInputEditText
+                                android:id="@+id/edtBedQty"
+                                android:layout_width="64dp"
+                                android:layout_height="@dimen/dimen_38dp"
+                                android:hint="SL"
+                                android:textSize="@dimen/text_size_13"
+                                android:inputType="number"
+                                android:gravity="center"
+                                android:background="@drawable/bg_edit_post"
+                                android:enabled="false" />
 
                         </LinearLayout>
 
@@ -1207,151 +1370,265 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="@dimen/corner_radius_10">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Đồ dùng thêm"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nhập tên và số lượng"
+                            android:textSize="@dimen/text_size_11"
+                            android:textColor="@color/text_hint" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:background="@drawable/bg_amenity_row"
-                        android:padding="@dimen/padding_medium"
+                        android:padding="@dimen/corner_radius_10"
                         android:layout_marginBottom="@dimen/spacing_14">
 
                         <LinearLayout
+                            android:id="@+id/layoutFurnitureItems"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddFurnitureItem"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/elevation_4"
+                            android:text="+ Thêm đồ dùng"
+                            android:textAllCaps="false"
+                            android:textSize="@dimen/text_size_13"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="@dimen/corner_radius_10"
+                            app:strokeColor="@color/primary"
+                            app:strokeWidth="@dimen/dimen_1_2dp" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="@dimen/corner_radius_10">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Dịch vụ thêm"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Nhập tên dịch vụ"
+                            android:textSize="@dimen/text_size_11"
+                            android:textColor="@color/text_hint" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_amenity_row"
+                        android:padding="@dimen/corner_radius_10"
+                        android:layout_marginBottom="@dimen/spacing_14">
+
+                        <LinearLayout
+                            android:id="@+id/layoutServiceItems"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAddServiceItem"
+                            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="@dimen/elevation_4"
+                            android:text="+ Thêm dịch vụ"
+                            android:textAllCaps="false"
+                            android:textSize="@dimen/text_size_13"
+                            android:textColor="@color/primary"
+                            app:cornerRadius="@dimen/corner_radius_10"
+                            app:strokeColor="@color/primary"
+                            app:strokeWidth="@dimen/dimen_1_2dp" />
+
+                    </LinearLayout>
+
+
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_amenity_row"
+                        android:paddingStart="@dimen/padding_medium"
+                        android:paddingEnd="@dimen/padding_medium"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:layout_marginBottom="@dimen/spacing_14">
+
+                        <!-- === Khu vực nấu ăn === -->
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/txt_khu_vuc_nau_an"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="2dp" />
+
+                        <RadioGroup
+                            android:id="@+id/rgKitchen"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="@dimen/elevation_6">
+                            android:gravity="start|center_vertical"
+                            android:layout_marginBottom="12dp">
 
-                            <com.google.android.material.textview.MaterialTextView
-                                android:layout_width="@dimen/image_size_90"
-                                android:layout_height="wrap_content"
-                                android:text="@string/txt_khu_vuc_nau_an"
-                                android:textSize="@dimen/text_size_12"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
-
-                            <RadioGroup
-                                android:id="@+id/rgKitchen"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="vertical"
-                                android:gravity="center_vertical">
-
-                                <RadioButton
-                                    android:id="@+id/rbKitchenShared"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/txt_chung"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal" 
-                                      android:maxLines="1"/>
-
-                                <RadioButton
-                                    android:id="@+id/rbKitchenPrivate"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/txt_rieng"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal"
-                                    android:maxLines="1"/>
-
-                                <RadioButton
-                                    android:id="@+id/rbKitchenNone"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/action_no"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal"
-                                    android:maxLines="1"/>
-
-                            </RadioGroup>
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/dimen_44dp"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical"
-                            android:layout_marginBottom="@dimen/stroke_2">
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:layout_width="@dimen/image_size_90"
-                                android:layout_height="wrap_content"
-                                android:text="@string/txt_ve_sinh"
-                                android:textSize="@dimen/text_size_13"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
-
-                            <RadioGroup
-                                android:id="@+id/rgBathroom"
+                            <RadioButton
+                                android:id="@+id/rbKitchenShared"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal">
-
-                                <RadioButton
-                                    android:id="@+id/rbBathroomShared"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="@dimen/dimen_34dp"
-                                    android:text="@string/txt_chung"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal" 
-                                      android:maxLines="1"/>
-
-                                <RadioButton
-                                    android:id="@+id/rbBathroomPrivate"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="@dimen/dimen_34dp"
-                                    android:text="@string/txt_rieng"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal"
-                                    android:layout_marginStart="@dimen/padding_small" 
-                                      android:maxLines="1"/>
-
-                            </RadioGroup>
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/dimen_44dp"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:layout_width="@dimen/image_size_90"
-                                android:layout_height="wrap_content"
-                                android:text="@string/txt_thu_cung"
+                                android:text="@string/txt_chung"
                                 android:textSize="@dimen/text_size_13"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
+                                android:buttonTint="@color/primary"
+                                android:maxLines="1" />
 
-                            <RadioGroup
-                                android:id="@+id/rgPet"
+                            <RadioButton
+                                android:id="@+id/rbKitchenPrivate"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal">
+                                android:text="@string/txt_rieng"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
 
-                                <RadioButton
-                                    android:id="@+id/rbPetYes"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="@dimen/dimen_34dp"
-                                    android:text="@string/txt_cho_nuoi"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal" 
-                                      android:maxLines="1"/>
+                            <RadioButton
+                                android:id="@+id/rbKitchenNone"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/action_no"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
 
-                                <RadioButton
-                                    android:id="@+id/rbPetNo"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="@dimen/dimen_34dp"
-                                    android:text="@string/action_no"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal"
-                                    android:layout_marginStart="@dimen/padding_small" 
-                                      android:maxLines="1"/>
+                        </RadioGroup>
 
-                            </RadioGroup>
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#E5E7EB" />
 
-                        </LinearLayout>
+                        <!-- === Vệ sinh === -->
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/txt_ve_sinh"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="2dp" />
+
+                        <RadioGroup
+                            android:id="@+id/rgBathroom"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="start|center_vertical"
+                            android:layout_marginBottom="12dp">
+
+                            <RadioButton
+                                android:id="@+id/rbBathroomShared"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_chung"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:maxLines="1" />
+
+                            <RadioButton
+                                android:id="@+id/rbBathroomPrivate"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_rieng"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
+
+                        </RadioGroup>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#E5E7EB" />
+
+                        <!-- === Thú cưng === -->
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/txt_thu_cung"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="2dp" />
+
+                        <RadioGroup
+                            android:id="@+id/rgPet"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="start|center_vertical"
+                            android:layout_marginBottom="12dp">
+
+                            <RadioButton
+                                android:id="@+id/rbPetYes"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_cho_nuoi"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:maxLines="1" />
+
+                            <RadioButton
+                                android:id="@+id/rbPetNo"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/action_no"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
+
+                        </RadioGroup>
 
                     </LinearLayout>
 
@@ -1395,106 +1672,106 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
                         android:background="@drawable/bg_amenity_row"
-                        android:padding="@dimen/padding_medium"
+                        android:paddingStart="@dimen/padding_medium"
+                        android:paddingEnd="@dimen/padding_medium"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
                         android:layout_marginBottom="@dimen/spacing_14">
 
-                        <LinearLayout
+                        <!-- === Ưu tiên === -->
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/txt_uu_tien"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="2dp" />
+
+                        <RadioGroup
+                            android:id="@+id/rgGenderPrefer"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
-                            android:gravity="center_vertical">
+                            android:gravity="start|center_vertical"
+                            android:layout_marginBottom="12dp">
 
-                            <com.google.android.material.textview.MaterialTextView
-                                android:layout_width="@dimen/image_size_90"
-                                android:layout_height="wrap_content"
-                                android:text="@string/txt_uu_tien"
-                                android:textSize="@dimen/text_size_13"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
-
-                            <RadioGroup
-                                android:id="@+id/rgGenderPrefer"
-                                android:layout_width="0dp"
-                                android:layout_height="wrap_content"
-                                android:layout_weight="1"
-                                android:orientation="horizontal"
-                                android:gravity="center_vertical">
-
-                                <RadioButton
-                                    android:id="@+id/rbGenderMale"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/txt_nam"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal" 
-                                      android:maxLines="1"/>
-
-                                <RadioButton
-                                    android:id="@+id/rbGenderFemale"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/txt_nu"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal"
-                                    android:layout_marginStart="@dimen/padding_small" 
-                                      android:maxLines="1"/>
-
-                                <RadioButton
-                                    android:id="@+id/rbGenderAll"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:text="@string/txt_ca_2"
-                                    android:textSize="@dimen/text_size_13"
-                                    android:buttonTint="@color/teal"
-                                    android:layout_marginStart="@dimen/padding_small" 
-                                    android:maxLines="1"/>
-
-                            </RadioGroup>
-
-                        </LinearLayout>
-
-                        <LinearLayout
-                            android:layout_width="match_parent"
-                            android:layout_height="@dimen/dimen_44dp"
-                            android:orientation="horizontal"
-                            android:gravity="center_vertical">
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:layout_width="@dimen/image_size_90"
-                                android:layout_height="wrap_content"
-                                android:text="@string/txt_gio_ra_vao"
-                                android:textSize="@dimen/text_size_13"
-                                android:textStyle="bold"
-                                android:textColor="@color/text_primary" />
-
-                            <RadioGroup
-                                android:id="@+id/rgCurfew"
+                            <RadioButton
+                                android:id="@+id/rbGenderMale"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:orientation="horizontal">
+                                android:text="@string/txt_nam"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:maxLines="1" />
 
-                                <RadioButton
-                                    android:id="@+id/rbCurfewFree"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="@dimen/dimen_34dp"
-                                    android:text="@string/txt_tu_do"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal" 
-                                      android:maxLines="1"/>
+                            <RadioButton
+                                android:id="@+id/rbGenderFemale"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_nu"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
 
-                                <RadioButton
-                                    android:id="@+id/rbCurfewCustom"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="@dimen/dimen_34dp"
-                                    android:text="@string/txt_tuy_chon"
-                                    android:textSize="@dimen/text_size_12"
-                                    android:buttonTint="@color/teal"
-                                    android:layout_marginStart="@dimen/padding_small" 
-                                      android:maxLines="1"/>
+                            <RadioButton
+                                android:id="@+id/rbGenderAll"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_ca_2"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
 
-                            </RadioGroup>
+                        </RadioGroup>
 
-                        </LinearLayout>
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="1dp"
+                            android:background="#E5E7EB" />
+
+                        <!-- === Giờ ra vào === -->
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/txt_gio_ra_vao"
+                            android:textSize="@dimen/text_size_13"
+                            android:textStyle="bold"
+                            android:textColor="@color/text_primary"
+                            android:layout_marginTop="12dp"
+                            android:layout_marginBottom="2dp" />
+
+                        <RadioGroup
+                            android:id="@+id/rgCurfew"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="start|center_vertical"
+                            android:layout_marginBottom="12dp">
+
+                            <RadioButton
+                                android:id="@+id/rbCurfewFree"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_tu_do"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:maxLines="1" />
+
+                            <RadioButton
+                                android:id="@+id/rbCurfewCustom"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_tuy_chon"
+                                android:textSize="@dimen/text_size_13"
+                                android:buttonTint="@color/primary"
+                                android:layout_marginStart="16dp"
+                                android:maxLines="1" />
+
+                        </RadioGroup>
 
                     </LinearLayout>
 
@@ -1577,12 +1854,13 @@
 
                         <CheckBox
                             android:id="@+id/cbMotorbike"
-                            android:layout_width="wrap_content"
-                            android:layout_height="@dimen/image_size_40"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:gravity="center_vertical"
                             android:text="@string/txt_xe_may"
                             android:textSize="@dimen/text_size_13"
                             android:textStyle="bold"
-                            android:buttonTint="@color/teal" />
+                            android:buttonTint="@color/primary" />
 
                         <RadioGroup
                             android:id="@+id/rgMotorbikeFee"
@@ -1600,7 +1878,7 @@
                                 android:layout_height="@dimen/dimen_34dp"
                                 android:text="@string/txt_mien_phi"
                                 android:textSize="@dimen/text_size_12"
-                                android:buttonTint="@color/teal"
+                                android:buttonTint="@color/primary"
                                 android:checked="true" 
                                       android:maxLines="1"/>
 
@@ -1610,7 +1888,7 @@
                                 android:layout_height="@dimen/dimen_34dp"
                                 android:text="@string/txt_tinh_phi"
                                 android:textSize="@dimen/text_size_12"
-                                android:buttonTint="@color/teal"
+                                android:buttonTint="@color/primary"
                                 android:layout_marginStart="@dimen/padding_medium" 
                                       android:maxLines="1"/>
 
@@ -1631,12 +1909,13 @@
 
                         <CheckBox
                             android:id="@+id/cbEBike"
-                            android:layout_width="wrap_content"
-                            android:layout_height="@dimen/image_size_40"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:gravity="center_vertical"
                             android:text="@string/txt_xe_ap_ien"
                             android:textSize="@dimen/text_size_13"
                             android:textStyle="bold"
-                            android:buttonTint="@color/teal" />
+                            android:buttonTint="@color/primary" />
 
                         <RadioGroup
                             android:id="@+id/rgEBikeFee"
@@ -1654,7 +1933,7 @@
                                 android:layout_height="@dimen/dimen_34dp"
                                 android:text="@string/txt_mien_phi"
                                 android:textSize="@dimen/text_size_12"
-                                android:buttonTint="@color/teal"
+                                android:buttonTint="@color/primary"
                                 android:checked="true" 
                                       android:maxLines="1"/>
 
@@ -1664,7 +1943,7 @@
                                 android:layout_height="@dimen/dimen_34dp"
                                 android:text="@string/txt_tinh_phi"
                                 android:textSize="@dimen/text_size_12"
-                                android:buttonTint="@color/teal"
+                                android:buttonTint="@color/primary"
                                 android:layout_marginStart="@dimen/padding_medium" 
                                       android:maxLines="1"/>
 
@@ -1685,12 +1964,13 @@
 
                         <CheckBox
                             android:id="@+id/cbBicycle"
-                            android:layout_width="wrap_content"
-                            android:layout_height="@dimen/image_size_40"
+                            android:layout_width="match_parent"
+                            android:layout_height="@dimen/dimen_48dp"
+                            android:gravity="center_vertical"
                             android:text="@string/txt_xe_ap"
                             android:textSize="@dimen/text_size_13"
                             android:textStyle="bold"
-                            android:buttonTint="@color/teal" />
+                            android:buttonTint="@color/primary" />
 
                         <RadioGroup
                             android:id="@+id/rgBicycleFee"
@@ -1708,7 +1988,7 @@
                                 android:layout_height="@dimen/dimen_34dp"
                                 android:text="@string/txt_mien_phi"
                                 android:textSize="@dimen/text_size_12"
-                                android:buttonTint="@color/teal"
+                                android:buttonTint="@color/primary"
                                 android:checked="true" 
                                       android:maxLines="1"/>
 
@@ -1718,7 +1998,7 @@
                                 android:layout_height="@dimen/dimen_34dp"
                                 android:text="@string/txt_tinh_phi"
                                 android:textSize="@dimen/text_size_12"
-                                android:buttonTint="@color/teal"
+                                android:buttonTint="@color/primary"
                                 android:layout_marginStart="@dimen/padding_medium" 
                                       android:maxLines="1"/>
 
@@ -1737,6 +2017,168 @@
                             android:layout_marginStart="@dimen/image_size_28" />
 
                     </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnNextCard4"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="end"
+                        android:text="@string/txt_tiep_tuc"
+                        android:layout_marginTop="@dimen/padding_large"
+                        app:backgroundTint="@color/primary"
+                        app:cornerRadius="@dimen/padding_small" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <!-- MỤC 5: Thông tin lịch hẹn                                     -->
+        <!-- ═══════════════════════════════════════════════════════════════ -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/corner_radius_10"
+            app:cardCornerRadius="@dimen/padding_large"
+            app:cardElevation="@dimen/elevation_3"
+            app:cardBackgroundColor="@color/bg_white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <LinearLayout
+                    android:id="@+id/llHeaderCard5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:background="@color/primary"
+                    android:paddingStart="@dimen/padding_large"
+                    android:paddingEnd="@dimen/padding_large"
+                    android:paddingTop="@dimen/padding_medium"
+                    android:paddingBottom="@dimen/padding_medium">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="@dimen/image_size_28"
+                        android:layout_height="@dimen/image_size_28"
+                        android:background="@drawable/bg_section_number_white"
+                        android:text="5"
+                        android:textSize="@dimen/text_size_13"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary"
+                        android:gravity="center"
+                        android:layout_marginEnd="@dimen/corner_radius_10" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_weight="1"
+                        android:layout_height="wrap_content"
+                        android:text="Thông tin lịch hẹn"
+                        android:textSize="@dimen/text_size_15"
+                        android:textStyle="bold"
+                        android:textColor="@color/on_primary" />
+
+                    <ImageView
+                        android:id="@+id/ivArrowCard5"
+                        android:layout_width="@dimen/spacing_24"
+                        android:layout_height="@dimen/spacing_24"
+                        android:rotation="0"
+                        android:src="@drawable/ic_arrow_right"
+                        app:tint="@color/on_primary" />
+
+                </LinearLayout>
+
+                <LinearLayout
+                    android:id="@+id/llContentCard5"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:visibility="gone"
+                    android:padding="@dimen/padding_large">
+
+                    <!-- Hạn hiển thị bài đăng (bắt buộc) -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hạn hiển thị bài đăng *"
+                        android:textSize="@dimen/text_size_13"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="@dimen/elevation_4" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Tối đa 6 tháng kể từ ngày đăng — nhấn để chọn ngày và giờ cụ thể"
+                        android:textSize="@dimen/text_size_12"
+                        android:textColor="@color/text_hint"
+                        android:layout_marginBottom="@dimen/elevation_6" />
+
+                    <LinearLayout
+                        android:id="@+id/containerExpiryPicker"
+                        android:layout_width="match_parent"
+                        android:layout_height="@dimen/dimen_48dp"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:background="@drawable/bg_edit_post"
+                        android:paddingStart="@dimen/padding_medium"
+                        android:paddingEnd="@dimen/padding_medium"
+                        android:layout_marginBottom="@dimen/spacing_14"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <TextView
+                            android:id="@+id/tvExpiryDisplay"
+                            android:layout_width="0dp"
+                            android:layout_weight="1"
+                            android:layout_height="wrap_content"
+                            android:text="Nhấn để chọn ngày và giờ hết hạn"
+                            android:textSize="@dimen/text_size_13"
+                            android:textColor="@color/text_hint"
+                            android:singleLine="true"
+                            android:ellipsize="end" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="📅"
+                            android:textSize="16sp"
+                            android:layout_marginStart="@dimen/elevation_6" />
+
+                    </LinearLayout>
+
+                    <!-- Khung giờ nhận lịch hẹn (bắt buộc) -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Khung giờ có thể nhận lịch hẹn *"
+                        android:textSize="@dimen/text_size_13"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginBottom="@dimen/elevation_4" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Bật ngày muốn nhận lịch, sau đó chọn giờ bắt đầu và kết thúc"
+                        android:textSize="@dimen/text_size_12"
+                        android:textColor="@color/text_hint"
+                        android:layout_marginBottom="@dimen/elevation_6" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutTimeSlotRows"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:background="@drawable/bg_amenity_row"
+                        android:padding="@dimen/corner_radius_10"
+                        android:layout_marginBottom="@dimen/padding_large" />
 
                 </LinearLayout>
 

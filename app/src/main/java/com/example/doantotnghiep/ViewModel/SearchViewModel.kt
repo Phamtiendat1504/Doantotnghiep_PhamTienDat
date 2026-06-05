@@ -3,16 +3,18 @@ package com.example.doantotnghiep.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.Utils.GeoUtils
 import com.example.doantotnghiep.Utils.LocationNormalizer
 import com.example.doantotnghiep.repository.RoomRepository
 import kotlin.math.abs
-import kotlin.math.asin
-import kotlin.math.cos
 import kotlin.math.max
-import kotlin.math.sin
-import kotlin.math.sqrt
 
 class SearchViewModel : ViewModel() {
+
+    companion object {
+        private val REGEX_24H = "^(\\d{1,2})[:H](\\d{2})?$".toRegex()
+        private val REGEX_12H = "^(\\d{1,2})[:H](\\d{2})?\\s*(AM|PM)$".toRegex()
+    }
 
     private val repository = RoomRepository()
 
@@ -45,11 +47,23 @@ class SearchViewModel : ViewModel() {
         val createdAt: Long,
         val lat: Double = 0.0,
         val lng: Double = 0.0,
-        val distanceKm: Double = -1.0  // -1 = chưa tính khoảng cách
+        val distanceKm: Double = -1.0,
+        val isFeatured: Boolean = false,
+        val curfew: String = "",
+        val curfewTime: String = "",
+        val wifiCost: Long = 0L,
+        val electricCost: Long = 0L,
+        val waterCost: Long = 0L
     )
 
     fun resetErrorMessage() {
         _errorMessage.value = null
+    }
+
+    // Trả về true nếu bài đăng đã quá hạn hiển thị do chủ trọ thiết lập
+    private fun isPostExpiredByDate(data: Map<String, Any>): Boolean {
+        val expiry = (data["postExpiryDate"] as? Number)?.toLong() ?: 0L
+        return expiry > 0L && expiry < System.currentTimeMillis()
     }
 
     fun searchByQuery(query: String) {
@@ -60,6 +74,7 @@ class SearchViewModel : ViewModel() {
                 _isLoading.value = false
                 val normalizedQuery = LocationNormalizer.normalizeRaw(query)
                 val matched = docs.mapNotNull { doc ->
+                    if (isPostExpiredByDate(doc.data)) return@mapNotNull null
                     val item = mapToRoomItem(doc.id, doc.data)
                     if (!hasAvailableRoom(item)) return@mapNotNull null
 
@@ -101,7 +116,11 @@ class SearchViewModel : ViewModel() {
         roomType: String,
         hasWifi: Boolean,
         hasElectric: Boolean,
-        hasWater: Boolean
+        hasWater: Boolean,
+        curfew: String = "",
+        maxWifiPrice: Long = 0L,
+        maxElectricPrice: Long = 0L,
+        maxWaterPrice: Long = 0L
     ) {
         _isLoading.value = true
         _errorMessage.value = null
@@ -129,21 +148,20 @@ class SearchViewModel : ViewModel() {
             else -> 0.0
         }
 
-        // Tối ưu hóa: Dùng câu truy vấn Server-side từ repository thay vì lấy hết
-        val queryDistrict = if (searchMode == "district" || searchMode == "ward" || district.isNotBlank()) district else ""
-        val queryWard = if (searchMode == "ward" || ward.isNotBlank()) ward else ""
-
+        // Tối ưu hóa: Gọi searchRoomsWithBasicFilters để lọc theo quận/huyện trên server trước,
+        // giúp giảm thiểu số lượng tài liệu tải về client-side.
         repository.searchRoomsWithBasicFilters(
-            district = queryDistrict,
-            ward = queryWard,
+            district = district,
+            ward = ward,
             onSuccess = { docs ->
                 _isLoading.value = false
 
                 val ranked = docs.mapNotNull { doc ->
+                    if (isPostExpiredByDate(doc.data)) return@mapNotNull null
                     val item = mapToRoomItem(doc.id, doc.data)
 
                     if (!hasAvailableRoom(item)) return@mapNotNull null
-                    
+
                     // Vẫn giữ check location client-side đề phòng trường hợp lỗi chuẩn hóa chuỗi
                     if (!matchesLocation(item, mode, wardFilter, districtFilter)) return@mapNotNull null
                     if (!matchesPrice(item.price, minPrice, maxPrice)) return@mapNotNull null
@@ -154,6 +172,11 @@ class SearchViewModel : ViewModel() {
                     if (hasWifi && !item.hasWifi) return@mapNotNull null
                     if (hasElectric && !item.hasElectric) return@mapNotNull null
                     if (hasWater && !item.hasWater) return@mapNotNull null
+                    if (!matchesCurfew(item.curfew, item.curfewTime, curfew)) return@mapNotNull null
+                    // Lọc giá tiện ích chỉ áp dụng khi người dùng tích checkbox tiện ích tương ứng
+                    if (hasWifi && maxWifiPrice > 0L && item.hasWifi && item.wifiCost > maxWifiPrice) return@mapNotNull null
+                    if (hasElectric && maxElectricPrice > 0L && item.hasElectric && item.electricCost > maxElectricPrice) return@mapNotNull null
+                    if (hasWater && maxWaterPrice > 0L && item.hasWater && item.waterCost > maxWaterPrice) return@mapNotNull null
 
                     val score = calculateRankingScore(
                         item = item,
@@ -191,9 +214,28 @@ class SearchViewModel : ViewModel() {
     // ────────────────────────────────────────────────
     // Tìm kiếm theo vị trí bản đồ (Haversine)
     // ────────────────────────────────────────────────
-    fun searchNearby(lat: Double, lng: Double, radiusKm: Double) {
+    fun searchNearby(
+        lat: Double,
+        lng: Double,
+        radiusKm: Double,
+        minPrice: Long = 0L,
+        maxPrice: Long = 0L,
+        minArea: Int = 0,
+        maxArea: Int = 0,
+        desiredPeople: Int = 0,
+        roomType: String = "",
+        hasWifi: Boolean = false,
+        hasElectric: Boolean = false,
+        hasWater: Boolean = false,
+        curfew: String = "",
+        maxWifiPrice: Long = 0L,
+        maxElectricPrice: Long = 0L,
+        maxWaterPrice: Long = 0L
+    ) {
         _isLoading.value = true
         _errorMessage.value = null
+
+        val roomTypeFilter = LocationNormalizer.normalizeRaw(roomType)
 
         repository.searchNearbyRooms(
             lat = lat,
@@ -202,15 +244,27 @@ class SearchViewModel : ViewModel() {
                 _isLoading.value = false
 
                 val results = docs.mapNotNull { doc ->
+                    if (isPostExpiredByDate(doc.data)) return@mapNotNull null
                     val item = mapToRoomItem(doc.id, doc.data)
 
-                    // Bỏ qua phòng không có tọa độ
                     if (item.lat == 0.0 && item.lng == 0.0) return@mapNotNull null
-                    // Bỏ qua phòng hết chỗ
                     if (!hasAvailableRoom(item)) return@mapNotNull null
 
-                    val distKm = haversineKm(lat, lng, item.lat, item.lng)
+                    val distKm = GeoUtils.haversineKm(lat, lng, item.lat, item.lng)
                     if (distKm > radiusKm) return@mapNotNull null
+
+                    if (!matchesPrice(item.price, minPrice, maxPrice)) return@mapNotNull null
+                    if (!matchesArea(item.area, minArea, maxArea)) return@mapNotNull null
+                    if (!matchesRoomType(item.roomType, roomTypeFilter)) return@mapNotNull null
+                    if (!matchesPeople(item.peopleCount, desiredPeople)) return@mapNotNull null
+                    if (hasWifi && !item.hasWifi) return@mapNotNull null
+                    if (hasElectric && !item.hasElectric) return@mapNotNull null
+                    if (hasWater && !item.hasWater) return@mapNotNull null
+                    if (!matchesCurfew(item.curfew, item.curfewTime, curfew)) return@mapNotNull null
+                    // Lọc giá tiện ích chỉ áp dụng khi người dùng tích checkbox tiện ích tương ứng
+                    if (hasWifi && maxWifiPrice > 0L && item.hasWifi && item.wifiCost > maxWifiPrice) return@mapNotNull null
+                    if (hasElectric && maxElectricPrice > 0L && item.hasElectric && item.electricCost > maxElectricPrice) return@mapNotNull null
+                    if (hasWater && maxWaterPrice > 0L && item.hasWater && item.waterCost > maxWaterPrice) return@mapNotNull null
 
                     item.copy(distanceKm = distKm)
                 }.sortedBy { it.distanceKm }
@@ -225,21 +279,53 @@ class SearchViewModel : ViewModel() {
         )
     }
 
-    /**
-     * Công thức Haversine – tính khoảng cách (km) giữa 2 tọa độ GPS.
-     * Độ chính xác ~0.5% – đủ tốt cho bán kính vài km.
-     */
-    private fun haversineKm(
-        lat1: Double, lng1: Double,
-        lat2: Double, lng2: Double
-    ): Double {
-        val r = 6371.0  // Bán kính Trái Đất (km)
-        val dLat = Math.toRadians(lat2 - lat1)
-        val dLng = Math.toRadians(lng2 - lng1)
-        val a = sin(dLat / 2).let { it * it } +
-                cos(Math.toRadians(lat1)) * cos(Math.toRadians(lat2)) *
-                sin(dLng / 2).let { it * it }
-        return r * 2 * asin(sqrt(a))
+    // Tìm kiếm nhiều phòng theo danh sách document ID (khi user chọn nhiều địa chỉ từ panel)
+    fun searchByPostIds(postIds: List<String>) {
+        _isLoading.value    = true
+        _errorMessage.value = null
+        repository.getApprovedRoomsByIds(
+            roomIds   = postIds,
+            onSuccess = { docs ->
+                _isLoading.value = false
+                // Giữ nguyên thứ tự user chọn
+                val orderMap = postIds.withIndex().associate { (i, id) -> id to i }
+                val results  = docs.mapNotNull { doc ->
+                    if (isPostExpiredByDate(doc.data ?: emptyMap())) return@mapNotNull null
+                    val item = mapToRoomItem(doc.id, doc.data ?: emptyMap())
+                    if (hasAvailableRoom(item)) item else null
+                }.sortedBy { orderMap[it.roomId] ?: Int.MAX_VALUE }
+                _searchResults.value = results
+            },
+            onFailure = { e ->
+                _isLoading.value    = false
+                _errorMessage.value = e
+                _searchResults.value = emptyList()
+            }
+        )
+    }
+
+    // Tìm kiếm chính xác theo document ID (khi user chọn 1 phòng cụ thể từ bản đồ)
+    fun searchByPostId(postId: String) {
+        _isLoading.value = true
+        _errorMessage.value = null
+        repository.getApprovedRoomById(
+            roomId = postId,
+            onSuccess = { doc ->
+                _isLoading.value = false
+                val data = doc.data ?: emptyMap()
+                if (isPostExpiredByDate(data)) {
+                    _searchResults.value = emptyList()
+                    return@getApprovedRoomById
+                }
+                val item = mapToRoomItem(doc.id, data)
+                _searchResults.value = if (hasAvailableRoom(item)) listOf(item) else emptyList()
+            },
+            onFailure = { e ->
+                _isLoading.value = false
+                _errorMessage.value = e
+                _searchResults.value = emptyList()
+            }
+        )
     }
 
     private fun matchesLocation(item: RoomItem, mode: String, wardFilter: String, districtFilter: String): Boolean {
@@ -263,7 +349,7 @@ class SearchViewModel : ViewModel() {
 
     private fun matchesArea(area: Int, minArea: Int, maxArea: Int): Boolean {
         if (minArea <= 0 && maxArea <= 0) return true
-        if (area <= 0) return false
+        if (area <= 0) return true  // bài đăng chưa khai báo diện tích thì bỏ qua filter
 
         val minOk = minArea <= 0 || area >= minArea
         val maxOk = maxArea <= 0 || area <= maxArea
@@ -272,18 +358,91 @@ class SearchViewModel : ViewModel() {
 
     private fun matchesAddress(item: RoomItem, addressFilter: String): Boolean {
         if (addressFilter.isEmpty()) return true
-        val full = LocationNormalizer.normalizeRaw("${item.address} ${item.ward} ${item.district}")
-        return full.contains(addressFilter)
+        // Chuẩn hóa và loại bỏ dấu câu để so sánh linh hoạt hơn
+        val stripPunct = Regex("[^\\p{L}\\p{N}\\s]") // giữ chữ cái, số, khoảng trắng
+        val full = stripPunct.replace(
+            LocationNormalizer.normalizeRaw("${item.address} ${item.ward} ${item.district}"), " "
+        ).replace(Regex("\\s+"), " ").trim()
+        val normalizedFilter = stripPunct.replace(addressFilter, " ")
+            .replace(Regex("\\s+"), " ").trim()
+        
+        // Loại bỏ các stop words phổ biến trong địa chỉ để tránh bị lọc oan khi gõ thêm "đường", "phố"...
+        val stopWords = setOf("duong", "pho", "ngo", "ngach", "hem", "so", "nha", "quan", "huyen", "phuong", "xa")
+        val tokens = normalizedFilter.split(" ")
+            .map { it.trim() }
+            .filter { it.length >= 2 && !stopWords.contains(it) }
+
+        if (tokens.isEmpty()) return true
+        return tokens.all { token -> full.contains(token) }
+    }
+
+    private fun canonicalizeRoomType(rawType: String): String {
+        val norm = LocationNormalizer.normalizeRaw(rawType)
+        return when (norm) {
+            "o ghep", "chung chu" -> "chung chu"
+            "rieng tu", "rieng chu" -> "rieng chu"
+            else -> norm
+        }
     }
 
     private fun matchesRoomType(roomType: String, roomTypeFilter: String): Boolean {
         if (roomTypeFilter.isEmpty()) return true
-        return LocationNormalizer.normalizeRaw(roomType) == roomTypeFilter
+        return canonicalizeRoomType(roomType) == canonicalizeRoomType(roomTypeFilter)
+    }
+
+    private fun parseTimeToMinutes(timeStr: String): Int {
+        val clean = timeStr.trim().uppercase()
+
+        val match12 = REGEX_12H.find(clean)
+        if (match12 != null) {
+            var hour = match12.groupValues[1].toInt()
+            val minute = if (match12.groupValues[2].isEmpty()) 0 else match12.groupValues[2].toInt()
+            val amPm = match12.groupValues[3]
+            if (amPm == "PM" && hour < 12) hour += 12
+            if (amPm == "AM" && hour == 12) hour = 0
+            return hour * 60 + minute
+        }
+
+        val match24 = REGEX_24H.find(clean)
+        if (match24 != null) {
+            val hour = match24.groupValues[1].toInt()
+            val minute = if (match24.groupValues[2].isEmpty()) 0 else match24.groupValues[2].toInt()
+            return hour * 60 + minute
+        }
+
+        val hourOnly = clean.toIntOrNull()
+        if (hourOnly != null && hourOnly in 0..24) {
+            return hourOnly * 60
+        }
+
+        return -1
+    }
+
+    private fun matchesCurfew(roomCurfew: String, roomCurfewTime: String, filterCurfew: String): Boolean {
+        if (filterCurfew.isEmpty()) return true
+        val normalizedFilter = LocationNormalizer.normalizeRaw(filterCurfew)
+        if (normalizedFilter == "tu do") {
+            return roomCurfew.isBlank() ||
+                LocationNormalizer.normalizeRaw(roomCurfew) == "tu do"
+        }
+        
+        val filterMinutes = parseTimeToMinutes(filterCurfew)
+        if (filterMinutes >= 0) {
+            // Nếu phòng không có giới nghiêm (tự do) -> Thỏa mãn
+            if (roomCurfew.isBlank() || LocationNormalizer.normalizeRaw(roomCurfew) == "tu do") return true
+            
+            // So sánh phút: giờ đóng cửa của phòng phải >= giờ giới nghiêm người dùng mong muốn
+            val roomMinutes = parseTimeToMinutes(roomCurfewTime)
+            if (roomMinutes >= 0) {
+                return roomMinutes >= filterMinutes
+            }
+        }
+        return true
     }
 
     private fun matchesPeople(peopleCount: Int, desiredPeople: Int): Boolean {
         if (desiredPeople <= 0) return true
-        if (peopleCount <= 0) return false
+        if (peopleCount <= 0) return true // FIX: Mặc định chấp nhận nếu bài đăng cũ không khai báo sức chứa để tránh bị ẩn oan
         return peopleCount >= desiredPeople
     }
 
@@ -308,6 +467,8 @@ class SearchViewModel : ViewModel() {
         hasWater: Boolean
     ): Double {
         var score = 0.0
+
+        if (item.isFeatured) score += 500.0
 
         val roomWard = LocationNormalizer.normalizeWard(item.ward)
         val roomDistrict = LocationNormalizer.normalizeDistrict(item.district)
@@ -369,13 +530,21 @@ class SearchViewModel : ViewModel() {
             peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0,
             roomType = data["roomType"] as? String ?: "",
             hasWifi = data["hasWifi"] as? Boolean ?: false,
-            hasElectric = data["hasElectric"] as? Boolean ?: false,
-            hasWater = data["hasWater"] as? Boolean ?: false,
+            hasElectric = (data["hasElectric"] as? Boolean)
+                ?: (((data["electricPrice"] as? Number)?.toLong() ?: 0L) > 0L),
+            hasWater = (data["hasWater"] as? Boolean)
+                ?: (((data["waterPrice"] as? Number)?.toLong() ?: 0L) > 0L),
             roomCount = (data["roomCount"] as? Number)?.toInt() ?: 0,
             rentedCount = (data["rentedCount"] as? Number)?.toInt() ?: 0,
             createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
             lat = (data["latitude"] as? Number)?.toDouble() ?: 0.0,
-            lng = (data["longitude"] as? Number)?.toDouble() ?: 0.0
+            lng = (data["longitude"] as? Number)?.toDouble() ?: 0.0,
+            isFeatured = data["isFeatured"] as? Boolean ?: false,
+            curfew = data["curfew"] as? String ?: "",
+            curfewTime = data["curfewTime"] as? String ?: "",
+            wifiCost = (data["wifiPrice"] as? Number)?.toLong() ?: 0L,
+            electricCost = (data["electricPrice"] as? Number)?.toLong() ?: 0L,
+            waterCost = (data["waterPrice"] as? Number)?.toLong() ?: 0L
         )
     }
 

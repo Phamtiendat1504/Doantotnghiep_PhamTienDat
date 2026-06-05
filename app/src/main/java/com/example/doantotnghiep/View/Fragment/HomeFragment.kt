@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.TextView
 import android.widget.LinearLayout
 import androidx.core.content.ContextCompat
@@ -37,7 +36,6 @@ class HomeFragment : Fragment() {
     private lateinit var skeletonFeatured: View
     private lateinit var skeletonNewRooms: View
     private lateinit var edtHomeSearch: EditText
-    private lateinit var btnHomeSearch: ImageView
     private lateinit var chipGroupPopularAreas: ChipGroup
     private lateinit var btnLoadMore: TextView
     private lateinit var layoutRecentSearch: LinearLayout
@@ -218,10 +216,20 @@ class HomeFragment : Fragment() {
 
         // Nút thẻ (Banner) tìm kiếm trang cá nhân người dùng
         view.findViewById<View>(R.id.btnSearchProfileView)?.setOnClickListener {
-            startActivity(Intent(requireContext(), SearchProfileActivity::class.java))
+            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (currentUser == null) {
+                promptLogin()
+            } else {
+                startActivity(Intent(requireContext(), SearchProfileActivity::class.java))
+            }
         }
         view.findViewById<View>(R.id.btnSearchProfile)?.setOnClickListener {
-            startActivity(Intent(requireContext(), SearchProfileActivity::class.java))
+            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (currentUser == null) {
+                promptLogin()
+            } else {
+                startActivity(Intent(requireContext(), SearchProfileActivity::class.java))
+            }
         }
     }
 
@@ -357,12 +365,25 @@ class HomeFragment : Fragment() {
         rvNewRooms.isNestedScrollingEnabled = false
     }
 
+    private fun promptLogin() {
+        com.example.doantotnghiep.Utils.MessageUtils.showInfoDialog(
+            requireContext(),
+            "Yêu cầu đăng nhập",
+            "Bạn cần đăng nhập để sử dụng tính năng tra cứu thông tin người dùng.",
+            onConfirm = { startActivity(Intent(requireContext(), com.example.doantotnghiep.View.Auth.LoginActivity::class.java)) }
+        )
+    }
+
     private var lastRoomLoadTime = 0L
     private val roomReloadIntervalMs = 60_000L // tải lại tối đa 1 lần/phút
 
     override fun onResume() {
         super.onResume()
         if (!::viewModel.isInitialized) return
+        
+        // Tự động cập nhật tên chào khi người dùng đăng nhập/đăng xuất hoặc quay lại trang chủ
+        viewModel.loadUserName()
+        
         if (viewModel.popularAreas.value.isNullOrEmpty()) viewModel.loadPopularAreas()
         if (viewModel.featuredRooms.value.isNullOrEmpty()) viewModel.loadFeaturedRooms()
 

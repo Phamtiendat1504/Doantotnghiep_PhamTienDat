@@ -126,39 +126,40 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <ScrollView
+        <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:overScrollMode="never">
+            android:layout_height="match_parent">
 
-            <LinearLayout
-                android:id="@+id/layoutAppointments"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvAppointments"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:overScrollMode="never"
+                android:paddingTop="@dimen/padding_small"
+                android:paddingBottom="@dimen/padding_small"
+                android:clipToPadding="false" />
+
+            <ProgressBar
+                android:id="@+id/progressBar"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tvEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="@dimen/spacing_14">
+                android:layout_gravity="center"
+                android:text="@string/txt_chua_co_lich_hen_nao"
+                android:textSize="@dimen/text_size_14"
+                android:textColor="@color/text_hint"
+                android:gravity="center"
+                android:padding="@dimen/image_size_40"
+                android:visibility="gone" />
 
-                <ProgressBar
-                    android:id="@+id/progressBar"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center"
-                    android:layout_marginTop="@dimen/image_size_40" />
+        </FrameLayout>
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/tvEmpty"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="@string/txt_chua_co_lich_hen_nao"
-                    android:textSize="@dimen/text_size_14"
-                    android:textColor="@color/text_hint"
-                    android:gravity="center"
-                    android:padding="@dimen/image_size_40"
-                    android:visibility="gone" />
-
-            </LinearLayout>
-
-        </ScrollView>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
 
 </LinearLayout>

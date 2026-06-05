@@ -20,6 +20,7 @@ import androidx.core.content.FileProvider
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
 import com.example.doantotnghiep.Utils.MessageUtils
+import com.example.doantotnghiep.MainActivity
 import com.example.doantotnghiep.View.Auth.*
 import com.example.doantotnghiep.ViewModel.ProfileViewModel
 import com.google.firebase.auth.FirebaseAuth
@@ -207,6 +208,7 @@ class ProfileFragment : Fragment() {
                     "L\u1ed7i",
                     error
                 )
+                viewModel.resetErrorMessage()
             }
         }
 
@@ -398,11 +400,10 @@ class ProfileFragment : Fragment() {
                 .setPositiveButton("\u0110\u0103ng xu\u1ea5t") { _, _ ->
                     viewModel.logOut {
                         if (!isAdded) return@logOut
-                        val intent = Intent(requireContext(), LoginActivity::class.java).apply {
+                        val intent = Intent(requireContext(), MainActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                         }
                         startActivity(intent)
-                        requireActivity().finish()
                     }
                 }
                 .setNegativeButton("H\u1ee7y", null).show()
@@ -417,6 +418,7 @@ class ProfileFragment : Fragment() {
             cardMyPosts.visibility = View.VISIBLE
             btnSavedPosts.visibility = View.VISIBLE
             setupClickListeners()
+            setupObservers()
         }
         if (viewModel.isLoggedIn() && ::viewModel.isInitialized) {
             viewModel.loadUserInfo()

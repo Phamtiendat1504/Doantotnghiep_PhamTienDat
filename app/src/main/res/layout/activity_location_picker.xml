@@ -7,6 +7,7 @@
     android:orientation="vertical"
     android:padding="@dimen/spacing_14">
 
+    <!-- Thanh tiêu đề -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -33,6 +34,7 @@
             android:textStyle="bold" />
     </LinearLayout>
 
+    <!-- Nút tìm địa chỉ -->
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnSearchPlace"
         style="@style/Widget.MaterialComponents.Button.OutlinedButton"
@@ -41,8 +43,25 @@
         android:layout_marginTop="@dimen/padding_medium"
         android:text="@string/txt_tim_ia_chi_voi_google_map"
         android:textAllCaps="false"
-        app:cornerRadius="@dimen/padding_medium" />
+        app:cornerRadius="@dimen/padding_medium"
+        app:icon="@drawable/ic_search_location"
+        app:iconGravity="textStart"
+        app:iconPadding="@dimen/padding_small" />
 
+    <!-- Mô tả gợi ý bên dưới nút tìm -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvSearchHint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/elevation_4"
+        android:drawablePadding="@dimen/elevation_4"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/elevation_4"
+        android:text="Nhập tên trường, địa điểm hoặc khu vực để xem phòng trọ gần đó"
+        android:textColor="@color/text_hint"
+        android:textSize="@dimen/text_size_12" />
+
+    <!-- Địa chỉ đã chọn -->
     <com.google.android.material.textview.MaterialTextView
         android:id="@+id/tvPickedAddress"
         android:layout_width="match_parent"
@@ -54,22 +73,58 @@
         android:textColor="@color/text_secondary"
         android:textSize="@dimen/text_size_13" />
 
-    <com.google.android.material.card.MaterialCardView
+    <!-- Badge trạng thái tìm kiếm (loading / không tìm thấy) -->
+    <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvNearbyCount"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/elevation_6"
+        android:background="@drawable/bg_badge_blue"
+        android:paddingStart="@dimen/spacing_12"
+        android:paddingTop="@dimen/spacing_4"
+        android:paddingEnd="@dimen/spacing_12"
+        android:paddingBottom="@dimen/spacing_4"
+        android:textColor="@color/white"
+        android:textSize="@dimen/text_size_12"
+        android:textStyle="bold"
+        android:visibility="gone" />
+
+    <!-- FrameLayout: Bản đồ + Panel phòng trọ (overlay) -->
+    <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_marginTop="@dimen/padding_medium"
-        android:layout_weight="1"
-        app:cardCornerRadius="@dimen/spacing_14"
-        app:cardElevation="0dp">
+        android:layout_weight="1">
 
-        <androidx.fragment.app.FragmentContainerView
-            android:id="@+id/mapPickerContainer"
-            android:name="com.google.android.gms.maps.SupportMapFragment"
+        <!-- Bản đồ -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-    </com.google.android.material.card.MaterialCardView>
+            android:layout_height="match_parent"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="0dp">
 
+            <androidx.fragment.app.FragmentContainerView
+                android:id="@+id/mapPickerContainer"
+                android:name="com.google.android.gms.maps.SupportMapFragment"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Panel danh sách phòng trọ (overlay ở dưới cùng) -->
+        <include
+            android:id="@+id/panelNearbyPosts"
+            layout="@layout/layout_nearby_posts_panel"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom"
+            android:layout_marginStart="@dimen/elevation_6"
+            android:layout_marginEnd="@dimen/elevation_6"
+            android:layout_marginBottom="@dimen/elevation_6" />
+    </FrameLayout>
+
+    <!-- Gợi ý nhấn bản đồ (ẩn khi panel hiện) -->
     <com.google.android.material.textview.MaterialTextView
+        android:id="@+id/tvMapHint"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="@dimen/padding_small"
@@ -77,6 +132,7 @@
         android:textColor="@color/text_secondary"
         android:textSize="@dimen/text_size_12" />
 
+    <!-- Nút Hủy + Xác nhận -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

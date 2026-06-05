@@ -8,6 +8,8 @@ import com.example.doantotnghiep.Model.Room
 import com.example.doantotnghiep.Model.User
 import com.example.doantotnghiep.repository.AuthRepository
 import com.example.doantotnghiep.repository.RoomRepository
+import com.example.doantotnghiep.repository.UserRepository
+import com.example.doantotnghiep.usecase.CheckPostQuotaUseCase
 import com.google.firebase.auth.FirebaseAuth
 
 class PostViewModel : ViewModel() {
@@ -16,8 +18,12 @@ class PostViewModel : ViewModel() {
         val unlockAt: Long
     )
 
+    data class OwnerInfo(val name: String, val phone: String, val avatarUrl: String, val gender: String)
+
     private val repository = RoomRepository()
+    private val checkPostQuotaUseCase = CheckPostQuotaUseCase(repository)
     private val authRepository = AuthRepository()
+    private val userRepository = UserRepository()
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -40,8 +46,8 @@ class PostViewModel : ViewModel() {
     private val _verifyRejectReason = MutableLiveData<String>()
     val verifyRejectReason: LiveData<String> = _verifyRejectReason
 
-    private val _ownerInfo = MutableLiveData<Triple<String, String, String>>()
-    val ownerInfo: LiveData<Triple<String, String, String>> = _ownerInfo
+    private val _ownerInfo = MutableLiveData<OwnerInfo>()
+    val ownerInfo: LiveData<OwnerInfo> = _ownerInfo
 
     private val _userObject = MutableLiveData<User?>()
     val userObject: LiveData<User?> = _userObject
@@ -49,83 +55,80 @@ class PostViewModel : ViewModel() {
     private val _postQuotaBlocked = MutableLiveData<PostQuotaBlockInfo?>()
     val postQuotaBlocked: LiveData<PostQuotaBlockInfo?> = _postQuotaBlocked
 
+    private val _showLastPurchasedSlotWarning = MutableLiveData<Boolean>()
+    val showLastPurchasedSlotWarning: LiveData<Boolean> = _showLastPurchasedSlotWarning
+    
+    private var cachedPendingRoom: Room? = null
+    private var cachedPendingUris: List<Uri>? = null
+
+    fun proceedWithPendingPost(context: android.content.Context) {
+        val room = cachedPendingRoom
+        val uris = cachedPendingUris
+        if (room != null && uris != null) {
+            submitPostWithUpload(context, room, uris, usePurchasedSlot = true)
+        }
+        clearCachedPendingPost()
+    }
+
+    fun cancelPendingPost() {
+        clearCachedPendingPost()
+    }
+
+    private fun clearCachedPendingPost() {
+        cachedPendingRoom = null
+        cachedPendingUris = null
+    }
+
+    fun resetLastPurchasedSlotWarning() {
+        _showLastPurchasedSlotWarning.value = false
+    }
+
     private var userListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
     private var verificationListenerRegistration: com.google.firebase.firestore.ListenerRegistration? = null
 
-    fun loadUserObject() {
+    fun loadUserObject(forceFromServer: Boolean = false) {
         val uid = getCurrentUserId() ?: run {
             _userObject.value = null
             return
         }
 
+        if (forceFromServer) {
+            userRepository.getUserFromServer(
+                uid,
+                onSuccess = { user ->
+                    user?.let { _userObject.value = it }
+                },
+                onFailure = { /* ignore */ }
+            )
+        }
+
         userListenerRegistration?.remove()
-        userListenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            .collection("users").document(uid)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null || !snapshot.exists()) {
-                    return@addSnapshotListener
-                }
-
-                val user = User(
-                    uid           = snapshot.getString("uid") ?: uid,
-                    fullName      = snapshot.getString("fullName") ?: "",
-                    email         = snapshot.getString("email") ?: "",
-                    phone         = snapshot.getString("phone") ?: "",
-                    address       = snapshot.getString("address") ?: "",
-                    birthday      = snapshot.getString("birthday") ?: "",
-                    gender        = snapshot.getString("gender") ?: "",
-                    occupation    = snapshot.getString("occupation") ?: "",
-                    avatarUrl     = snapshot.getString("avatarUrl") ?: "",
-                    role          = snapshot.getString("role") ?: "user",
-                    isVerified    = snapshot.getBoolean("isVerified") ?: false,
-                    hasAcceptedRules = snapshot.getBoolean("hasAcceptedRules") ?: false,
-                    isLocked      = snapshot.getBoolean("isLocked") ?: false,
-                    lockReason    = snapshot.getString("lockReason") ?: "",
-                    lockUntil     = snapshot.getLong("lockUntil") ?: 0L,
-                    postingUnlockAt = snapshot.getLong("postingUnlockAt") ?: 0L,
-                    verifiedAt    = snapshot.getLong("verifiedAt") ?: 0L,
-                    createdAt     = snapshot.getLong("createdAt") ?: 0L,
-                    purchasedSlots = (snapshot.getLong("purchasedSlots") ?: 0L).toInt(),
-                    dailyPostCount = (snapshot.getLong("dailyPostCount") ?: 0L).toInt(),
-                    dailyPostCountDate = snapshot.getString("dailyPostCountDate") ?: ""
-                )
-
-                if (!user.isVerified && user.role != "admin") {
-                    listenVerificationStatus(user, uid)
-                } else {
-                    verificationListenerRegistration?.remove()
-                    verificationListenerRegistration = null
-                    _userObject.value = user
-                }
+        userListenerRegistration = userRepository.listenUser(uid) { user ->
+            if (user == null) return@listenUser
+            if (!user.isVerified && user.role != "admin") {
+                listenVerificationStatus(user, uid)
+            } else {
+                verificationListenerRegistration?.remove()
+                verificationListenerRegistration = null
+                _userObject.value = user
             }
+        }
     }
 
     private fun listenVerificationStatus(baseUser: User, uid: String) {
         verificationListenerRegistration?.remove()
-        verificationListenerRegistration = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-            .collection("verifications").document(uid)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null || !snapshot.exists()) {
-                    _userObject.value = baseUser
-                    return@addSnapshotListener
-                }
-                
-                val status = snapshot.getString("status")
-                val reason = snapshot.getString("rejectReason")
-                val autoCheckStatus = snapshot.getString("autoCheckStatus")
-                val waitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
-                
-                // Xử lý tự động chuyển form nếu autoCheck là pass (chờ cloud function update users)
-                if (autoCheckStatus == "pass" || status == "approved") {
-                    _userObject.value = baseUser.copy(isVerified = true)
-                } else if (status in waitingStatuses) {
-                    _userObject.value = baseUser.copy(role = "pending")
-                } else if (status == "rejected") {
-                    _userObject.value = baseUser.copy(role = "rejected", occupation = reason ?: "")
-                } else {
-                    _userObject.value = baseUser
-                }
+        verificationListenerRegistration = userRepository.listenVerificationStatus(uid) { status, reason, autoCheckStatus ->
+            val waitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
+            if (autoCheckStatus == "pass" || status == "approved") {
+                _userObject.value = baseUser.copy(isVerified = true)
+            } else if (status in waitingStatuses) {
+                _userObject.value = baseUser.copy(role = "pending")
+            } else if (status == "rejected") {
+                _userObject.value = baseUser.copy(role = "rejected", verificationRejectReason = reason ?: "")
+            } else {
+                _userObject.value = baseUser
             }
+        }
     }
 
     override fun onCleared() {
@@ -183,7 +186,7 @@ class PostViewModel : ViewModel() {
             uid,
             onSuccess = { user: User? ->
                 user?.let {
-                    _ownerInfo.value = Triple(it.fullName, it.phone, it.avatarUrl)
+                    _ownerInfo.value = OwnerInfo(it.fullName, it.phone, it.avatarUrl, it.gender)
                 }
             },
             onFailure = { _: String -> /* ignore */ }
@@ -252,26 +255,46 @@ class PostViewModel : ViewModel() {
             return
         }
 
-        if (room.ownerName.isBlank()) { _errorMessage.value = "Vui lòng nhập họ tên chủ trọ"; return }
-        if (room.ownerPhone.isBlank()) { _errorMessage.value = "Vui lòng nhập số điện thoại"; return }
-        if (room.ownerPhone.length < 10) { _errorMessage.value = "Số điện thoại không hợp lệ"; return }
-        if (room.title.isBlank()) { _errorMessage.value = "Vui lòng nhập tiêu đề bài đăng"; return }
-        if (room.ward.isBlank() || room.ward.contains("Chọn phường/xã")) {
-            _errorMessage.value = "Vui lòng chọn khu vực (Phường/Xã)"; return
+        // Ép buộc thông tin Họ tên, Số điện thoại và Giới tính đối với tài khoản KYC (đã xác minh) và không phải Admin
+        val finalRoom = if (currentUser.isVerified && currentUser.role != "admin") {
+            room.copy(
+                ownerName = currentUser.fullName,
+                ownerPhone = currentUser.phone,
+                ownerGender = currentUser.gender
+            )
+        } else {
+            room
         }
-        if (room.address.isBlank()) { _errorMessage.value = "Vui lòng nhập địa chỉ cụ thể"; return }
-        val lat = room.latitude
-        val lng = room.longitude
-        if (lat == null || lng == null) {
-            _errorMessage.value = "Vui lòng chọn vị trí trên bản đồ trước khi đăng bài."
+
+        if (finalRoom.ownerName.isBlank()) { _errorMessage.value = "Vui lòng nhập họ tên chủ trọ"; return }
+        if (finalRoom.ownerPhone.isBlank()) { _errorMessage.value = "Vui lòng nhập số điện thoại"; return }
+        
+        // Đồng bộ validation số điện thoại Việt Nam chuẩn
+        val phoneRegex = "^(03|05|07|08|09)\\d{8}$".toRegex()
+        if (!finalRoom.ownerPhone.matches(phoneRegex)) {
+            _errorMessage.value = "Số điện thoại chủ trọ không hợp lệ (phải gồm 10 chữ số chuẩn Việt Nam)"
             return
         }
-        if (lat !in -90.0..90.0 || lng !in -180.0..180.0) {
+
+        if (finalRoom.title.isBlank()) { _errorMessage.value = "Vui lòng nhập tiêu đề bài đăng"; return }
+        if (finalRoom.ward.isBlank() || finalRoom.ward.contains("Chọn phường/xã")) {
+            _errorMessage.value = "Vui lòng chọn khu vực (Phường/Xã)"; return
+        }
+        // Phải có ít nhất một trong hai: địa chỉ cụ thể HOẶC vị trí trên bản đồ
+        val lat = finalRoom.latitude
+        val lng = finalRoom.longitude
+        val hasAddress = finalRoom.address.isNotBlank()
+        val hasMapLocation = lat != null && lng != null
+        if (!hasAddress && !hasMapLocation) {
+            _errorMessage.value = "Vui lòng nhập địa chỉ cụ thể hoặc chọn vị trí trên bản đồ"
+            return
+        }
+        if (hasMapLocation && (lat!! !in -90.0..90.0 || lng!! !in -180.0..180.0)) {
             _errorMessage.value = "Tọa độ vị trí không hợp lệ. Vui lòng chọn lại."
             return
         }
-        if (room.price <= 0) { _errorMessage.value = "Vui lòng nhập giá thuê hợp lệ"; return }
-        if (room.area <= 0) { _errorMessage.value = "Vui lòng nhập diện tích hợp lệ"; return }
+        if (finalRoom.price <= 0) { _errorMessage.value = "Vui lòng nhập giá thuê hợp lệ"; return }
+        if (finalRoom.area <= 0) { _errorMessage.value = "Vui lòng nhập diện tích hợp lệ"; return }
         if (imageUris.isEmpty()) { _errorMessage.value = "Vui lòng thêm ít nhất 1 ảnh phòng trọ"; return }
         val uid = currentUser.uid.ifBlank { getCurrentUserId().orEmpty() }
         if (uid.isBlank()) {
@@ -279,12 +302,16 @@ class PostViewModel : ViewModel() {
             return
         }
 
-        repository.checkDailyPostQuota(
+        checkPostQuotaUseCase(
             uid = uid,
-            limitPer24h = 3,
-            purchasedSlots = currentUser.purchasedSlots,
-            onAllowed = { _, usePurchasedSlot ->
-                submitPostWithUpload(context, room, imageUris, usePurchasedSlot)
+            onAllowed = { remaining, usePurchasedSlot ->
+                if (usePurchasedSlot && remaining == 1) {
+                    cachedPendingRoom = finalRoom
+                    cachedPendingUris = imageUris
+                    _showLastPurchasedSlotWarning.value = true
+                } else {
+                    submitPostWithUpload(context, finalRoom, imageUris, usePurchasedSlot)
+                }
             },
             onBlocked = { unlockAt ->
                 _postQuotaBlocked.value = PostQuotaBlockInfo(unlockAt = unlockAt)
@@ -303,10 +330,8 @@ class PostViewModel : ViewModel() {
         // Admin không bị giới hạn
         if (currentUser.role == "admin") return
 
-        repository.checkDailyPostQuota(
+        checkPostQuotaUseCase(
             uid = uid,
-            limitPer24h = 3,
-            purchasedSlots = currentUser.purchasedSlots,
             onAllowed = { _, _ -> /* Do nothing, they can post */ },
             onBlocked = { unlockAt ->
                 _postQuotaBlocked.value = PostQuotaBlockInfo(unlockAt = unlockAt)

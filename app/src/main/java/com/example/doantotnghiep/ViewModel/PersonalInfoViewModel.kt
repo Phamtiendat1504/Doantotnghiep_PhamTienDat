@@ -3,6 +3,7 @@ package com.example.doantotnghiep.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.Model.User
 import com.example.doantotnghiep.repository.AuthRepository
 
 class PersonalInfoViewModel : ViewModel() {
@@ -12,8 +13,8 @@ class PersonalInfoViewModel : ViewModel() {
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
 
-    private val _userInfo = MutableLiveData<Map<String, Any>>()
-    val userInfo: LiveData<Map<String, Any>> = _userInfo
+    private val _userInfo = MutableLiveData<User>()
+    val userInfo: LiveData<User> = _userInfo
 
     private val _updateResult = MutableLiveData<Boolean>()
     val updateResult: LiveData<Boolean> = _updateResult
@@ -27,15 +28,7 @@ class PersonalInfoViewModel : ViewModel() {
             onSuccess = { user ->
                 _isLoading.value = false
                 if (user != null) {
-                    val map = mutableMapOf<String, Any>()
-                    map["fullName"] = user.fullName
-                    map["email"] = user.email
-                    map["phone"] = user.phone
-                    map["address"] = user.address
-                    map["birthday"] = user.birthday
-                    map["gender"] = user.gender
-                    map["occupation"] = user.occupation
-                    _userInfo.value = map
+                    _userInfo.value = user
                 }
             },
             onFailure = { error ->
@@ -45,7 +38,7 @@ class PersonalInfoViewModel : ViewModel() {
         )
     }
 
-    fun updateUserInfo(fullName: String, email: String, phone: String, address: String, birthday: String, gender: String, occupation: String) {
+    fun updateUserInfo(fullName: String, email: String, phone: String, address: String, birthday: String, gender: String, bio: String) {
         if (fullName.isBlank() || phone.isBlank()) {
             _errorMessage.value = "Họ tên và Số điện thoại không được để trống"
             return
@@ -57,13 +50,15 @@ class PersonalInfoViewModel : ViewModel() {
             "address" to address,
             "birthday" to birthday,
             "gender" to gender,
-            "occupation" to occupation
+            "bio" to bio
         )
         _isLoading.value = true
-        repository.updateUserInfo(updates, 
+        val oldPhone = _userInfo.value?.phone ?: ""
+        repository.updateUserInfo(updates, oldPhone, phone,
             onSuccess = {
                 _isLoading.value = false
                 _updateResult.value = true
+                loadUserInfo() // Reload để oldPhone luôn đúng cho lần update tiếp theo
             },
             onFailure = { error ->
                 _isLoading.value = false
@@ -73,4 +68,5 @@ class PersonalInfoViewModel : ViewModel() {
     }
 
     fun resetUpdateResult() { _updateResult.value = false }
+    fun resetErrorMessage() { _errorMessage.value = "" }
 }

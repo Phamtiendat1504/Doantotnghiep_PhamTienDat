@@ -30,14 +30,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.firestore.ListenerRegistration
-
-
 class MainActivity : AppCompatActivity() {
 
     private lateinit var mainViewModel: MainViewModel
     private var userStatusListener: ListenerRegistration? = null
     private var networkCallback: ConnectivityManager.NetworkCallback? = null
     private val authRepository = com.example.doantotnghiep.repository.AuthRepository()
+    private var activeFragment: Fragment? = null
 
     // Launcher xin quyền thông báo (Android 13+)
     private val requestNotificationPermission =
@@ -80,25 +79,8 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        mainViewModel.expiredPostsCount.observe(this) { count ->
-            if (count > 0) {
-                MessageUtils.showInfoDialog(
-                    this,
-                    "Bài đăng hết hạn",
-                    "Bạn có $count bài đăng đã hết hạn 2 tháng và đã bị ẩn khỏi kết quả tìm kiếm.\n\nVào \"Bài đăng của tôi\" để gia hạn thêm 2 tháng hoặc đánh dấu đã cho thuê."
-                )
-            }
-        }
-
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
-            val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
-            val lastCheck = prefs.getLong("last_expire_check_${currentUser.uid}", 0L)
-            val oneDayMs = 24 * 60 * 60 * 1000L
-            if (System.currentTimeMillis() - lastCheck > oneDayMs) {
-                prefs.edit().putLong("last_expire_check_${currentUser.uid}", System.currentTimeMillis()).apply()
-                mainViewModel.checkAndExpirePosts(currentUser.uid)
-            }
             startListeningUserStatus(currentUser.uid)
             loadBadgeWithRole(currentUser.uid)
         }
@@ -107,27 +89,43 @@ class MainActivity : AppCompatActivity() {
         val action = intent.getStringExtra("action")
 
         if (openTab == "post") {
-            loadFragment(PostFragment())
             bottomNav.selectedItemId = R.id.nav_post
+            showTabFragment(R.id.nav_post)
         } else if (action == "open_appointments") {
-            loadFragment(ProfileFragment())
             bottomNav.selectedItemId = R.id.nav_profile
+            showTabFragment(R.id.nav_profile)
             // Delay một chút để Fragment kịp load rồi mới mở Activity
             window.decorView.postDelayed({
                 startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyAppointmentsActivity::class.java))
             }, 500)
         } else {
             bottomNav.selectedItemId = R.id.nav_home
-            loadFragment(HomeFragment())
+            showTabFragment(R.id.nav_home)
+        }
+
+        // Xử lý FCM notification khi app đang tắt (background/killed)
+        if (savedInstanceState == null) {
+            handleFcmNotificationIntent(intent)
         }
 
         bottomNav.setOnItemSelectedListener { item ->
+            if (item.itemId != R.id.nav_post) {
+                val postFragment = supportFragmentManager.findFragmentByTag("PostFragment") as? PostFragment
+                if (postFragment != null && !postFragment.isHidden && postFragment.isDirty) {
+                    postFragment.showDiscardDialog {
+                        postFragment.isDirty = false
+                        bottomNav.selectedItemId = item.itemId
+                        showTabFragment(item.itemId)
+                    }
+                    return@setOnItemSelectedListener false
+                }
+            }
             when (item.itemId) {
-                R.id.nav_home -> loadFragment(HomeFragment())
-                R.id.nav_search -> loadFragment(SearchFragment())
+                R.id.nav_home -> showTabFragment(R.id.nav_home)
+                R.id.nav_search -> showTabFragment(R.id.nav_search)
                 R.id.nav_ai -> return@setOnItemSelectedListener false
-                R.id.nav_post -> loadFragment(PostFragment())
-                R.id.nav_profile -> loadFragment(ProfileFragment())
+                R.id.nav_post -> showTabFragment(R.id.nav_post)
+                R.id.nav_profile -> showTabFragment(R.id.nav_profile)
             }
             true
         }
@@ -142,19 +140,26 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent) // Cập nhật intent mới cho Activity
 
+        val openTab = intent.getStringExtra("openTab")
         val action = intent.getStringExtra("action")
 
-        if (action == "open_appointments") {
-            loadFragment(ProfileFragment())
+        if (openTab == "post") {
+            bottomNav.selectedItemId = R.id.nav_post
+            showTabFragment(R.id.nav_post)
+        } else if (action == "open_appointments") {
             bottomNav.selectedItemId = R.id.nav_profile
+            showTabFragment(R.id.nav_profile)
             window.decorView.postDelayed({
                 startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyAppointmentsActivity::class.java))
             }, 300)
         } else {
             bottomNav.selectedItemId = R.id.nav_home
-            loadFragment(HomeFragment())
+            showTabFragment(R.id.nav_home)
         }
-        
+
+        // Xử lý FCM notification khi app đang chạy nền
+        handleFcmNotificationIntent(intent)
+
         // Gọi lại để lấy và gán Token cho User mới đăng nhập
         val currentUser = FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
@@ -257,10 +262,86 @@ class MainActivity : AppCompatActivity() {
         connectivityManager.registerNetworkCallback(networkRequest, callback)
     }
 
-    private fun loadFragment(fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.fragmentContainer, fragment)
-            .commit()
+    private fun showTabFragment(itemId: Int) {
+        val fm = supportFragmentManager
+        val transaction = fm.beginTransaction()
+        
+        val tag = when (itemId) {
+            R.id.nav_home -> "HomeFragment"
+            R.id.nav_search -> "SearchFragment"
+            R.id.nav_post -> "PostFragment"
+            R.id.nav_profile -> "ProfileFragment"
+            else -> return
+        }
+        
+        // Ẩn tất cả các Fragment khác để tránh bị đè hoặc hiển thị chồng chéo
+        val allTags = listOf("HomeFragment", "SearchFragment", "PostFragment", "ProfileFragment")
+        for (t in allTags) {
+            if (t != tag) {
+                val f = fm.findFragmentByTag(t)
+                if (f != null && !f.isHidden) {
+                    transaction.hide(f)
+                }
+            }
+        }
+
+        var targetFragment = fm.findFragmentByTag(tag)
+        if (targetFragment == null) {
+            targetFragment = when (itemId) {
+                R.id.nav_home -> HomeFragment()
+                R.id.nav_search -> SearchFragment()
+                R.id.nav_post -> PostFragment()
+                R.id.nav_profile -> ProfileFragment()
+                else -> return
+            }
+            transaction.add(R.id.fragmentContainer, targetFragment, tag)
+        } else {
+            transaction.show(targetFragment)
+        }
+        
+        transaction.commit()
+        activeFragment = targetFragment
+    }
+
+    /**
+     * Xử lý điều hướng khi người dùng bấm vào FCM notification lúc app đang tắt hoặc nền.
+     * Khi app foreground: onMessageReceived đã tạo PendingIntent đúng màn hình.
+     * Khi app background/killed: FCM SDK tự hiển thị notification, bấm vào → MainActivity
+     * nhận data payload qua intent extras, cần đọc "type" để điều hướng đúng.
+     */
+    private fun handleFcmNotificationIntent(intent: Intent?) {
+        val type = intent?.getStringExtra("type")?.takeIf { it.isNotEmpty() } ?: return
+        val senderId = intent.getStringExtra("senderId") ?: ""
+        val ticketId = intent.getStringExtra("ticketId") ?: ""
+        val ticketTitle = intent.getStringExtra("ticketTitle") ?: "Yêu cầu hỗ trợ"
+        when {
+            type == "new_message" && senderId.isNotEmpty() -> {
+                startActivity(
+                    Intent(this, com.example.doantotnghiep.View.Auth.ChatActivity::class.java).apply {
+                        putExtra(com.example.doantotnghiep.View.Auth.ChatActivity.EXTRA_OTHER_UID, senderId)
+                    }
+                )
+            }
+            (type == "support_reply" || type == "support_status") && ticketId.isNotEmpty() -> {
+                startActivity(
+                    Intent(this, com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity::class.java).apply {
+                        putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_ID, ticketId)
+                        putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_TITLE, ticketTitle)
+                        putExtra(com.example.doantotnghiep.View.Auth.SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
+                    }
+                )
+            }
+            type == "post_expiry_warning" || type == "post_expired_deleted" -> {
+                startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyPostsActivity::class.java))
+            }
+            type != "BROADCAST" -> {
+                window.decorView.postDelayed({
+                    if (!isDestroyed) {
+                        startActivity(Intent(this, com.example.doantotnghiep.View.Auth.MyAppointmentsActivity::class.java))
+                    }
+                }, 500)
+            }
+        }
     }
 
     private fun promptLogin() {
@@ -293,10 +374,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Lấy FCM Token từ Firebase và lưu vào Firestore
-     * (Kết hợp với MyFirebaseMessagingService.onNewToken để luôn cập nhật Token mới nhất)
-     */
     private fun fetchAndSaveFcmToken() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
         FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->

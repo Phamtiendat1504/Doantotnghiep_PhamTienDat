@@ -96,6 +96,10 @@ class SupportViewModel : ViewModel() {
         _createdTicketId.postValue("")
     }
 
+    fun resetErrorMessage() {
+        _errorMessage.postValue("")
+    }
+
     fun sendMessage(
         ticketId: String,
         text: String,

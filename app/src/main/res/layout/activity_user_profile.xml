@@ -200,6 +200,44 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- THẺ LỜI GIỚI THIỆU -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardProfileBio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="@dimen/padding_large"
+                android:layout_marginTop="@dimen/padding_xlarge"
+                app:cardCornerRadius="@dimen/padding_large"
+                app:cardElevation="@dimen/stroke_2"
+                app:cardBackgroundColor="@android:color/white"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_xlarge">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Lời giới thiệu"
+                        android:textSize="@dimen/text_size_18"
+                        android:textStyle="bold"
+                        android:textColor="@color/color_111827"
+                        android:layout_marginBottom="@dimen/padding_medium"/>
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/tvProfileBio"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Chưa có lời giới thiệu."
+                        android:textSize="@dimen/text_size_14"
+                        android:lineSpacingMultiplier="1.2"
+                        android:textColor="@color/color_4B5563"/>
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- THẺ THÔNG TIN LIÊN HỆ (Giữ nguyên phần bạn đã ưng ý) -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"

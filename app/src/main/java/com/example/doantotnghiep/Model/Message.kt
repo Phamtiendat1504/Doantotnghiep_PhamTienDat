@@ -9,5 +9,6 @@ data class Message(
     val createdAt: Long = 0L,
     val seen: Boolean = false,
     // Map<userId, emoji> — mỗi người chỉ thả 1 reaction
-    val reactions: Map<String, String> = mapOf()
+    val reactions: Map<String, String> = mapOf(),
+    val isPending: Boolean = false
 )

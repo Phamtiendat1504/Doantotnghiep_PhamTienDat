@@ -131,4 +131,9 @@ class SearchProfileActivity : AppCompatActivity() {
 
         edtSearch.requestFocus()
     }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        searchRunnable?.let { searchHandler.removeCallbacks(it) }
+    }
 }

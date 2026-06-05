@@ -245,20 +245,26 @@
                     </RadioGroup>
 
                     <com.google.android.material.textfield.TextInputLayout
-                        android:id="@+id/tilOccupation"
+                        android:id="@+id/tilBio"
                         style="@style/OutlinedBoxRounded"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="@dimen/corner_radius_10"
-                        android:hint="@string/txt_nghe_nghiep"
+                        android:hint="Lời giới thiệu / Tiểu sử"
+                        app:counterEnabled="true"
+                        app:counterMaxLength="150"
                         app:errorEnabled="true">
 
                         <com.google.android.material.textfield.TextInputEditText
-                            android:id="@+id/edtOccupation"
+                            android:id="@+id/edtBio"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:enabled="false"
-                            android:inputType="text" />
+                            android:gravity="top|start"
+                            android:inputType="textMultiLine"
+                            android:maxLines="5"
+                            android:minLines="3"
+                            android:maxLength="150" />
 
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -283,6 +289,8 @@
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEdit"

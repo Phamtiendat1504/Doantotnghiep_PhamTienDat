@@ -38,6 +38,7 @@
 
             <!-- Badge "Nổi bật" góc trên trái - Gold Gradient -->
             <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/tvFeaturedBadge"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="top|start"

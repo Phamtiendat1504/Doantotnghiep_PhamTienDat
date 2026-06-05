@@ -56,8 +56,8 @@ class LoginActivity : AppCompatActivity() {
             btnLogin.isEnabled = !isLoading
             if (isLoading) {
                 showLoginLoadingDialog(
-                    title = "\u0110ang \u0111\u0103ng nh\u1eadp",
-                    message = "\u0110ang x\u00e1c th\u1ef1c t\u00e0i kho\u1ea3n, vui l\u00f2ng ch\u1edd."
+                    title = "Đang đăng nhập",
+                    message = "Đang xác thực tài khoản, vui lòng chờ."
                 )
             } else {
                 dismissLoginLoadingDialog()
@@ -148,8 +148,8 @@ class LoginActivity : AppCompatActivity() {
                     .setPositiveButton("Đã hiểu") { dialog, _ -> dialog.dismiss() }
                     .setNegativeButton("Gửi lại") { dialog, _ ->
                         dialog.dismiss()
-                        com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
-                            ?.sendEmailVerification()
+                        val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+                        currentUser?.sendEmailVerification()
                             ?.addOnSuccessListener {
                                 androidx.appcompat.app.AlertDialog.Builder(this)
                                     .setTitle("Đã gửi lại")
@@ -157,7 +157,9 @@ class LoginActivity : AppCompatActivity() {
                                     .setPositiveButton("OK") { d, _ -> d.dismiss() }
                                     .show()
                             }
-                        com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                            ?.addOnCompleteListener {
+                                com.google.firebase.auth.FirebaseAuth.getInstance().signOut()
+                            }
                     }
                     .setCancelable(false)
                     .show()
@@ -187,7 +189,7 @@ class LoginActivity : AppCompatActivity() {
         btnLogin.setOnClickListener {
             clearErrors()
             val email = edtEmail.text.toString().trim()
-            val password = edtPassword.text.toString().trim()
+            val password = edtPassword.text.toString()
             viewModel.login(email, password)
         }
 

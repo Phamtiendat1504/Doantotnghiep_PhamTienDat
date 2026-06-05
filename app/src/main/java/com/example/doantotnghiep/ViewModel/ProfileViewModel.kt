@@ -103,6 +103,8 @@ class ProfileViewModel : ViewModel() {
         _avatarDeleted.value = false
     }
 
+    fun resetErrorMessage() { _errorMessage.value = "" }
+
     fun deleteAvatar() {
         _isUploadingAvatar.value = true
         authRepository.deleteAvatar(

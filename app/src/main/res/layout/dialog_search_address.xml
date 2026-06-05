@@ -33,7 +33,7 @@
         <com.google.android.material.textview.MaterialTextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/txt_nhap_ia_chi_hoac_ten_khu_"
+            android:text="Nhập tên trường, địa điểm, khu vực hoặc địa chỉ cụ thể"
             android:textSize="@dimen/text_size_12"
             android:textColor="@color/color_CCFFFFFF"
             android:layout_marginTop="@dimen/stroke_2" />
@@ -89,6 +89,51 @@
             android:textColor="@color/color_888888"
             android:layout_marginTop="@dimen/padding_small"
             android:layout_marginStart="@dimen/elevation_4" />
+
+        <!-- Nhóm 1: Địa điểm phổ biến (cuộn ngang) -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Địa điểm phổ biến:"
+            android:textSize="@dimen/text_size_12"
+            android:textColor="@color/text_secondary"
+            android:textStyle="bold"
+            android:layout_marginTop="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/elevation_6" />
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:scrollbars="none"
+            android:overScrollMode="never">
+
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupSuggestions"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                app:singleLine="true"
+                app:chipSpacingHorizontal="@dimen/elevation_6" />
+
+        </HorizontalScrollView>
+
+        <!-- Nhóm 2: Gợi ý dạng câu (wrap nhiều dòng) -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hoặc gõ theo dạng câu:"
+            android:textSize="@dimen/text_size_12"
+            android:textColor="@color/text_secondary"
+            android:textStyle="bold"
+            android:layout_marginTop="@dimen/spacing_12"
+            android:layout_marginBottom="@dimen/elevation_6" />
+
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/chipGroupSentences"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:singleLine="false"
+            app:chipSpacingHorizontal="@dimen/elevation_6"
+            app:chipSpacingVertical="@dimen/elevation_4" />
 
         <!-- Buttons -->
         <LinearLayout

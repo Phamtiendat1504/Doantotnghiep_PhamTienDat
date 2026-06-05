@@ -17,6 +17,9 @@ import com.google.firebase.auth.FirebaseAuth
 import java.io.File
 import java.util.Locale
 import kotlin.concurrent.thread
+import android.view.ViewGroup
+import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.textfield.TextInputEditText
 
 class SettingsActivity : AppCompatActivity() {
 
@@ -47,11 +50,13 @@ class SettingsActivity : AppCompatActivity() {
         setupListeners()
         updateVersion()
         updateCacheSize()
+
     }
 
     override fun onDestroy() {
         deleteLoadingDialog?.dismiss()
         deleteLoadingDialog = null
+
         super.onDestroy()
     }
 
@@ -68,6 +73,7 @@ class SettingsActivity : AppCompatActivity() {
         btnDeleteAccount = findViewById(R.id.btnDeleteAccount)
         tvCacheSize = findViewById(R.id.tvCacheSize)
         tvAppVersion = findViewById(R.id.tvAppVersion)
+
     }
 
     private fun setupToolbar() {
@@ -91,16 +97,16 @@ class SettingsActivity : AppCompatActivity() {
         switchPushAll.setOnCheckedChangeListener { _, isChecked ->
             if (bindingState) return@setOnCheckedChangeListener
             AppSettings.setPushEnabled(this, isChecked)
-            if (!isChecked) {
-                AppSettings.setChatPushEnabled(this, false)
-                AppSettings.setAppointmentPushEnabled(this, false)
-                AppSettings.setSystemPushEnabled(this, false)
-                bindingState = true
-                switchPushChat.isChecked = false
-                switchPushAppointment.isChecked = false
-                switchPushSystem.isChecked = false
-                bindingState = false
-            }
+            AppSettings.setChatPushEnabled(this, isChecked)
+            AppSettings.setAppointmentPushEnabled(this, isChecked)
+            AppSettings.setSystemPushEnabled(this, isChecked)
+            
+            bindingState = true
+            switchPushChat.isChecked = isChecked
+            switchPushAppointment.isChecked = isChecked
+            switchPushSystem.isChecked = isChecked
+            bindingState = false
+            
             updateChildSwitchEnabled()
         }
 
@@ -151,10 +157,59 @@ class SettingsActivity : AppCompatActivity() {
                 context = this,
                 title = "Yêu cầu hủy tài khoản",
                 message = "Hệ thống sẽ xóa dữ liệu tài khoản của bạn trên backend. Thao tác này không thể khôi phục. Bạn có chắc muốn tiếp tục?",
-                positiveText = "Xác nhận hủy"
+                positiveText = "Tiếp tục"
             ) {
-                requestDeleteAccount()
+                showPasswordConfirmDialog()
             }
+        }
+    }
+
+    private fun showPasswordConfirmDialog() {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_confirm_delete_account, null)
+        val tilConfirmPassword = dialogView.findViewById<TextInputLayout>(R.id.tilConfirmPassword)
+        val etConfirmPassword = dialogView.findViewById<TextInputEditText>(R.id.etConfirmPassword)
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(false)
+            .setNegativeButton("Hủy", null)
+            .setPositiveButton("Xác nhận xóa", null)
+            .create()
+
+        dialog.show()
+
+        dialog.window?.apply {
+            setBackgroundDrawableResource(R.drawable.bg_dialog_surface)
+            val width = (resources.displayMetrics.widthPixels * 0.88f).toInt()
+            setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+        }
+
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val password = etConfirmPassword.text.toString().trim()
+            if (password.isEmpty()) {
+                tilConfirmPassword.error = "Vui lòng nhập mật khẩu để xác nhận"
+                return@setOnClickListener
+            }
+            tilConfirmPassword.error = null
+
+            val authLoading = MessageUtils.showLoadingDialog(
+                context = this,
+                title = "Đang xác thực",
+                message = "Hệ thống đang kiểm tra mật khẩu của bạn..."
+            )
+
+            authRepository.reauthenticate(
+                password = password,
+                onSuccess = {
+                    authLoading.dismiss()
+                    dialog.dismiss()
+                    requestDeleteAccount()
+                },
+                onFailure = { error ->
+                    authLoading.dismiss()
+                    tilConfirmPassword.error = error
+                }
+            )
         }
     }
 
@@ -285,4 +340,6 @@ class SettingsActivity : AppCompatActivity() {
         }
         return String.format(Locale.getDefault(), "%.1f %s", value, units[unitIndex])
     }
+
+
 }

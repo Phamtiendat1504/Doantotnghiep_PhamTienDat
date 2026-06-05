@@ -34,8 +34,7 @@ class SupportRepository {
                     return@addSnapshotListener
                 }
                 val tickets = snap?.documents?.map { doc ->
-                    doc.toObject(SupportTicket::class.java)?.copy(id = doc.id)
-                        ?: SupportTicket(id = doc.id)
+                    parseSupportTicket(doc)
                 }?.sortedByDescending { it.updatedAt } ?: emptyList()
                 onUpdate(tickets)
             }
@@ -85,8 +84,7 @@ class SupportRepository {
                     return@addSnapshotListener
                 }
                 if (snap != null && snap.exists()) {
-                    val ticket = snap.toObject(SupportTicket::class.java)?.copy(id = snap.id)
-                        ?: SupportTicket(id = snap.id)
+                    val ticket = parseSupportTicket(snap)
                     onUpdate(ticket)
                 }
             }
@@ -251,6 +249,7 @@ class SupportRepository {
         ticketRef.collection("messages")
             .whereEqualTo("senderRole", "admin")
             .whereEqualTo("seenByUser", false)
+            .limit(490)
             .get()
             .addOnSuccessListener { snap ->
                 if (snap.isEmpty) return@addOnSuccessListener
@@ -277,5 +276,30 @@ class SupportRepository {
                     .addOnFailureListener { onFailure("Không lấy được URL ảnh: ${it.message}") }
             }
             .addOnFailureListener { onFailure("Tải ảnh hỗ trợ thất bại: ${it.message}") }
+    }
+
+    private fun parseSupportTicket(doc: com.google.firebase.firestore.DocumentSnapshot): SupportTicket {
+        return try {
+            SupportTicket(
+                id = doc.id,
+                userId = doc.getString("userId") ?: "",
+                userName = doc.getString("userName") ?: "",
+                userEmail = doc.getString("userEmail") ?: "",
+                category = doc.getString("category") ?: "",
+                title = doc.getString("title") ?: "",
+                status = doc.getString("status") ?: "new",
+                priority = doc.getString("priority") ?: "normal",
+                createdAt = doc.getLong("createdAt") ?: 0L,
+                updatedAt = doc.getLong("updatedAt") ?: 0L,
+                lastMessage = doc.getString("lastMessage") ?: "",
+                lastSenderRole = doc.getString("lastSenderRole") ?: "",
+                adminId = doc.getString("adminId") ?: "",
+                adminName = doc.getString("adminName") ?: "",
+                unreadForUser = doc.getBoolean("unreadForUser") ?: false,
+                unreadForAdmin = doc.getBoolean("unreadForAdmin") ?: false
+            )
+        } catch (e: Exception) {
+            SupportTicket(id = doc.id)
+        }
     }
 }

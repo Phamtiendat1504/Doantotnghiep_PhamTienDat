@@ -5,6 +5,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-feature
         android:name="android.hardware.camera"
         android:required="false" />
@@ -56,10 +58,7 @@
             android:exported="false" />
 
 
-        <activity
-            android:name=".View.Auth.ResetPasswordActivity"
-            android:exported="false"
-            android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".View.Auth.PersonalInfoActivity"
             android:exported="false"
@@ -71,7 +70,7 @@
         <activity
             android:name=".View.Auth.VerifyLandlordActivity"
             android:exported="false"
-            android:windowSoftInputMode="adjustPan" />
+            android:windowSoftInputMode="adjustResize" />
         <activity
             android:name=".View.Auth.CccdCameraActivity"
             android:exported="false"

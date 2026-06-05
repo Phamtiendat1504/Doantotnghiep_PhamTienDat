@@ -112,6 +112,10 @@ class BookingViewModel : ViewModel() {
         repository.checkExistingAppointment(tenantId, roomId, onResult)
     }
 
+    fun checkDailyBookingLimit(tenantId: String, onAllowed: (remaining: Int) -> Unit, onBlocked: (usedToday: Int) -> Unit) {
+        repository.checkDailyBookingLimit(tenantId, onAllowed, onBlocked)
+    }
+
     fun listenTimeConflicts(roomId: String) {
         repository.checkTimeConflicts(roomId) { conflicts ->
             _timeConflicts.value = conflicts
@@ -248,10 +252,13 @@ class BookingViewModel : ViewModel() {
         )
     }
 
-    fun tenantConfirmAppointment(appointmentId: String, landlordId: String, roomTitle: String) {
+    fun tenantConfirmAppointment(
+        appointmentId: String, landlordId: String, roomTitle: String,
+        roomId: String, date: String, time: String
+    ) {
         _isLoading.value = true
         repository.tenantConfirmAppointment(
-            appointmentId, landlordId, roomTitle,
+            appointmentId, landlordId, roomTitle, roomId, date, time,
             onSuccess = {
                 _isLoading.value = false
                 _bookingResult.value = true
@@ -278,10 +285,13 @@ class BookingViewModel : ViewModel() {
         )
     }
 
-    fun rejectAppointment(appointmentId: String, tenantId: String, roomTitle: String, reason: String) {
+    fun rejectAppointment(
+        appointmentId: String, tenantId: String, roomTitle: String, reason: String,
+        roomId: String, date: String, time: String
+    ) {
         _isLoading.value = true
         repository.rejectAppointment(
-            appointmentId, tenantId, roomTitle, reason,
+            appointmentId, tenantId, roomTitle, reason, roomId, date, time,
             onSuccess = {
                 _isLoading.value = false
                 _bookingResult.value = true
@@ -297,11 +307,13 @@ class BookingViewModel : ViewModel() {
         appointmentId: String,
         roomId: String,
         tenantId: String,
-        roomTitle: String
+        roomTitle: String,
+        date: String,
+        time: String
     ) {
         _isLoading.value = true
         repository.markAsRented(
-            appointmentId, roomId, tenantId, roomTitle,
+            appointmentId, roomId, tenantId, roomTitle, date, time,
             onSuccess = {
                 _isLoading.value = false
                 _bookingResult.value = true
@@ -315,11 +327,12 @@ class BookingViewModel : ViewModel() {
 
     fun cancelPendingAppointment(
         appointmentId: String, landlordId: String, roomTitle: String,
+        roomId: String, date: String, time: String,
         onSuccess: () -> Unit, onFailure: (String) -> Unit
     ) {
         _isLoading.value = true
         repository.cancelPendingAppointment(
-            appointmentId, landlordId, roomTitle,
+            appointmentId, landlordId, roomTitle, roomId, date, time,
             onSuccess = {
                 _isLoading.value = false
                 onSuccess()
@@ -350,10 +363,13 @@ class BookingViewModel : ViewModel() {
         )
     }
 
-    fun tenantRejectAppointment(appointmentId: String, landlordId: String, roomTitle: String) {
+    fun tenantRejectAppointment(
+        appointmentId: String, landlordId: String, roomTitle: String,
+        roomId: String, date: String, time: String
+    ) {
         _isLoading.value = true
         repository.tenantRejectAppointment(
-            appointmentId, landlordId, roomTitle,
+            appointmentId, landlordId, roomTitle, roomId, date, time,
             onSuccess = {
                 _isLoading.value = false
                 _bookingResult.value = true

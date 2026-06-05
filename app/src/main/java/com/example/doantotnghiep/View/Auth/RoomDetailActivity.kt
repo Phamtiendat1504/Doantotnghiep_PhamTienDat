@@ -8,11 +8,9 @@ import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.HorizontalScrollView
 import android.widget.ImageView
 import android.widget.LinearLayout
-import android.widget.RatingBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -35,8 +33,6 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.button.MaterialButton
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.Query
-import com.google.firebase.firestore.Source
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
@@ -56,7 +52,10 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var tvDescription: TextView
     private lateinit var tvRoomNumber: TextView
     private lateinit var layoutRoomInfo: LinearLayout
+    private lateinit var layoutFacilitiesInfo: LinearLayout
+    private lateinit var layoutRulesInfo: LinearLayout
     private lateinit var layoutAmenities: LinearLayout
+    private lateinit var layoutServiceItems: LinearLayout
     private lateinit var layoutOwnerInfo: LinearLayout
     private lateinit var gridAmenities: GridLayout
     private lateinit var btnBack: ImageView
@@ -64,14 +63,6 @@ class RoomDetailActivity : AppCompatActivity() {
     private lateinit var btnBooking: MaterialButton
     private lateinit var btnOpenMaps: MaterialButton
     private lateinit var tvMapAddress: TextView
-    private lateinit var tvBookedCount: TextView
-    private lateinit var btnViewAllSlots: TextView
-    private lateinit var layoutBookedSummary: LinearLayout
-    private lateinit var cardBookedSlots: CardView
-    private lateinit var layoutReviews: LinearLayout
-    private lateinit var btnAddReview: MaterialButton
-    private lateinit var tvReviewsTitle: TextView
-
     private lateinit var tvSpecArea: TextView
     private lateinit var tvSpecPeople: TextView
     private lateinit var tvSpecType: TextView
@@ -95,17 +86,6 @@ class RoomDetailActivity : AppCompatActivity() {
     private val mapFallbackLatLng = LatLng(21.0285, 105.8542)
     private val geocodeExecutor = Executors.newSingleThreadExecutor()
     private val db = FirebaseFirestore.getInstance()
-    // Cache toàn bộ review để dùng khi mở BottomSheet "Xem tất cả"
-    private var allReviewsCache: List<ReviewRow> = emptyList()
-    private var totalReviewsCount = 0
-    private var avgRating = 0.0
-    private var countStar5 = 0
-    private var countStar4 = 0
-    private var countStar3 = 0
-    private var countStar2 = 0
-    private var countStar1 = 0
-    private var current3Reviews: List<ReviewRow> = emptyList()
-
     private lateinit var btnBackContainer: android.view.View
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -156,7 +136,10 @@ class RoomDetailActivity : AppCompatActivity() {
         tvDescription = findViewById(R.id.tvDescription)
         tvRoomNumber = findViewById(R.id.tvRoomNumber)
         layoutRoomInfo = findViewById(R.id.layoutRoomInfo)
+        layoutFacilitiesInfo = findViewById(R.id.layoutFacilitiesInfo)
+        layoutRulesInfo = findViewById(R.id.layoutRulesInfo)
         layoutAmenities = findViewById(R.id.layoutAmenities)
+        layoutServiceItems = findViewById(R.id.layoutServiceItems)
         layoutOwnerInfo = findViewById(R.id.layoutOwnerInfo)
         gridAmenities = findViewById(R.id.gridAmenities)
         btnBack = findViewById(R.id.btnBack)
@@ -164,13 +147,6 @@ class RoomDetailActivity : AppCompatActivity() {
         btnBooking = findViewById(R.id.btnBooking)
         btnOpenMaps = findViewById(R.id.btnOpenMaps)
         tvMapAddress = findViewById(R.id.tvMapAddress)
-        tvBookedCount = findViewById(R.id.tvBookedCount)
-        btnViewAllSlots = findViewById(R.id.btnViewAllSlots)
-        layoutBookedSummary = findViewById(R.id.layoutBookedSummary)
-        cardBookedSlots = findViewById(R.id.cardBookedSlots)
-        layoutReviews = findViewById(R.id.layoutReviews)
-        btnAddReview = findViewById(R.id.btnAddReview)
-        tvReviewsTitle = findViewById(R.id.tvReviewsTitle)
         tvSpecArea = findViewById(R.id.tvSpecArea)
         tvSpecPeople = findViewById(R.id.tvSpecPeople)
         tvSpecType = findViewById(R.id.tvSpecType)
@@ -245,11 +221,6 @@ class RoomDetailActivity : AppCompatActivity() {
             // Không còn dùng role để ẩn nút — xử lý trong displayRoomDetail
         }
 
-        // Slot đã đặt
-        viewModel.bookedSlots.observe(this) { slots ->
-            renderBookedSlots(slots)
-        }
-
         // Lỗi
         viewModel.errorMessage.observe(this) { msg ->
             if (!msg.isNullOrEmpty()) {
@@ -270,7 +241,6 @@ class RoomDetailActivity : AppCompatActivity() {
         // Reset các nút để tránh trạng thái còn sót từ phòng xem trước
         btnSave.visibility = View.VISIBLE
         btnBooking.visibility = View.VISIBLE
-        btnAddReview.visibility = View.VISIBLE
         btnBooking.isEnabled = true
         btnBooking.text = "Đặt lịch"
         btnBooking.setBackgroundColor(ContextCompat.getColor(this, R.color.primary))
@@ -287,7 +257,7 @@ class RoomDetailActivity : AppCompatActivity() {
         val address = data["address"] as? String ?: ""
         val ward = data["ward"] as? String ?: ""
         val district = data["district"] as? String ?: ""
-        tvAddress.text = listOf(address, ward, district).filter { it.isNotBlank() }.joinToString(", ").ifBlank { "Chưa cập nhật địa chỉ" }
+        tvAddress.text = listOf(address, ward, district).filter { it.isNotBlank() }.distinct().joinToString(", ").ifBlank { "Chưa cập nhật địa chỉ" }
 
         val desc = (data["description"] as? String)?.takeIf { it.isNotEmpty() } ?: "Không có mô tả"
         tvDescription.text = desc
@@ -321,468 +291,37 @@ class RoomDetailActivity : AppCompatActivity() {
         val imageUrls = (data["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
         setupImageSlider(imageUrls)
         setupRoomInfo(data)
+        setupFacilitiesInfo(data)
+        setupRulesInfo(data)
         setupAmenities(data)
+        setupServiceItems(data)
         setupOwnerInfo(data)
-        loadReviews(currentRoomId)
         val latitude = (data["latitude"] as? Number)?.toDouble()
         val longitude = (data["longitude"] as? Number)?.toDouble()
         setupMapSection(address, ward, district, latitude, longitude)
+        setupAppointmentInfo(data)
 
         val status = data["status"] as? String ?: "pending"
         val roomOwnerId = data["userId"] as? String ?: ""
         val isOwner = currentUid != null && currentUid == roomOwnerId
-
-        // Load lịch đã đặt cho mọi trường hợp — cả chủ phòng lẫn người xem
-        // đều cần thấy để biết khung giờ nào đã bị đặt
-        if (currentRoomId.isNotBlank()) {
-            viewModel.loadBookedSlots(currentRoomId)
-        }
 
         if (status == "rented") {
             btnBooking.isEnabled = false
             btnBooking.text = "Phòng đã cho thuê"
             btnBooking.setBackgroundColor(0xFF9E9E9E.toInt())
             btnSave.visibility = View.GONE
-            btnAddReview.visibility = View.GONE
             tvPrice.text = "ĐÃ CHO THUÊ"
             tvPrice.setTextColor(0xFFE53935.toInt())
         } else if (isOwner) {
             // Chủ phòng xem phòng của chính mình → ẩn Lưu và Đặt lịch
             btnSave.visibility = View.GONE
             btnBooking.visibility = View.GONE
-            btnAddReview.visibility = View.GONE
         } else {
             // Người dùng khác → hiện nút và load thêm dữ liệu
             btnSave.visibility = View.VISIBLE
             btnBooking.visibility = View.VISIBLE
-            btnAddReview.visibility = View.VISIBLE
-            btnAddReview.setOnClickListener { showAddReviewDialog(roomOwnerId) }
             setupActionButtons()
         }
-    }
-
-    private fun loadReviews(roomId: String) {
-        layoutReviews.removeAllViews()
-        if (roomId.isBlank()) {
-            renderEmptyReviews()
-            return
-        }
-        db.collection("reviews")
-            .whereEqualTo("roomId", roomId)
-            .get()
-            .addOnSuccessListener { snap ->
-                val reviews = snap.documents.mapNotNull { doc ->
-                    val d = doc.data ?: return@mapNotNull null
-                    ReviewRow(
-                        userName  = d["userName"] as? String ?: "Người dùng",
-                        rating    = (d["rating"] as? Number)?.toFloat() ?: 0f,
-                        comment   = d["comment"] as? String ?: "",
-                        createdAt = (d["createdAt"] as? Number)?.toLong() ?: 0L,
-                        roomTitle = d["roomTitle"] as? String ?: ""
-                    )
-                }
-                // Sắp xếp giảm dần theo thời gian tạo trên client
-                allReviewsCache = reviews.sortedByDescending { it.createdAt }
-                
-                val top3 = allReviewsCache.take(3)
-                current3Reviews = top3
-                renderReviews(top3, totalReviewsCount)
-            }
-            .addOnFailureListener { renderEmptyReviews("Không thể tải đánh giá") }
-
-        loadReviewStats(roomId)
-    }
-
-    private fun loadReviewStats(roomId: String) {
-        if (roomId.isBlank()) return
-
-        val baseQuery = db.collection("reviews").whereEqualTo("roomId", roomId)
-        
-        val totalTask = baseQuery.count().get(com.google.firebase.firestore.AggregateSource.SERVER)
-        val star5Task = baseQuery.whereEqualTo("rating", 5).count().get(com.google.firebase.firestore.AggregateSource.SERVER)
-        val star4Task = baseQuery.whereEqualTo("rating", 4).count().get(com.google.firebase.firestore.AggregateSource.SERVER)
-        val star3Task = baseQuery.whereEqualTo("rating", 3).count().get(com.google.firebase.firestore.AggregateSource.SERVER)
-        val star2Task = baseQuery.whereEqualTo("rating", 2).count().get(com.google.firebase.firestore.AggregateSource.SERVER)
-        val star1Task = baseQuery.whereEqualTo("rating", 1).count().get(com.google.firebase.firestore.AggregateSource.SERVER)
-
-        com.google.android.gms.tasks.Tasks.whenAllComplete(totalTask, star5Task, star4Task, star3Task, star2Task, star1Task)
-            .addOnSuccessListener {
-                if (totalTask.isSuccessful && star5Task.isSuccessful && star4Task.isSuccessful &&
-                    star3Task.isSuccessful && star2Task.isSuccessful && star1Task.isSuccessful) {
-                    
-                    val total = totalTask.result.count
-                    val c5 = star5Task.result.count
-                    val c4 = star4Task.result.count
-                    val c3 = star3Task.result.count
-                    val c2 = star2Task.result.count
-                    val c1 = star1Task.result.count
-
-                    val sum = (5 * c5 + 4 * c4 + 3 * c3 + 2 * c2 + 1 * c1).toDouble()
-                    val avg = if (total > 0) sum / total else 0.0
-
-                    totalReviewsCount = total.toInt()
-                    avgRating = avg
-                    countStar5 = c5.toInt()
-                    countStar4 = c4.toInt()
-                    countStar3 = c3.toInt()
-                    countStar2 = c2.toInt()
-                    countStar1 = c1.toInt()
-
-                    if (total > 0) {
-                        tvReviewsTitle.text = "Đánh giá phòng trọ (${String.format(java.util.Locale("vi", "VN"), "%.1f", avg)}★)"
-                    } else {
-                        tvReviewsTitle.text = "Đánh giá phòng trọ"
-                    }
-                    
-                    if (current3Reviews.isNotEmpty()) {
-                        renderReviews(current3Reviews, totalReviewsCount)
-                    }
-                }
-            }
-    }
-
-    private data class ReviewRow(
-        val userName: String,
-        val rating: Float,
-        val comment: String,
-        val createdAt: Long,
-        val roomTitle: String
-    )
-
-    private fun renderReviews(reviews: List<ReviewRow>, totalCount: Int = reviews.size) {
-        layoutReviews.removeAllViews()
-        if (reviews.isEmpty()) {
-            renderEmptyReviews()
-            return
-        }
-        val avgAll = if (totalReviewsCount > 0) avgRating else reviews.map { it.rating }.average().let {
-            if (it.isNaN()) 0.0 else it
-        }
-        tvReviewsTitle.text = "Đánh giá phòng trọ (${String.format(Locale("vi", "VN"), "%.1f", avgAll)}★)"
-
-        reviews.forEachIndexed { idx, review ->
-            if (idx > 0) {
-                layoutReviews.addView(android.view.View(this).apply {
-                    layoutParams = LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)
-                    ).apply { setMargins(0, dpToPx(4), 0, dpToPx(4)) }
-                    setBackgroundColor(0xFFE5E7EB.toInt())
-                })
-            }
-
-            layoutReviews.addView(LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                setPadding(0, dpToPx(8), 0, dpToPx(8))
-
-                addView(TextView(this@RoomDetailActivity).apply {
-                    text = review.userName
-                    textSize = 13f
-                    setTextColor(0xFF111827.toInt())
-                    setTypeface(typeface, android.graphics.Typeface.BOLD)
-                })
-
-                val dateText = if (review.createdAt > 0) {
-                    SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")).format(Date(review.createdAt))
-                } else ""
-                val stars = "★".repeat(review.rating.toInt().coerceIn(1, 5)) +
-                    "☆".repeat((5 - review.rating.toInt()).coerceAtLeast(0))
-                addView(TextView(this@RoomDetailActivity).apply {
-                    text = if (dateText.isNotEmpty()) "$stars  •  $dateText" else stars
-                    textSize = 13f
-                    setTextColor(0xFFF59E0B.toInt())
-                    setPadding(0, dpToPx(2), 0, 0)
-                })
-
-                if (review.comment.isNotBlank()) {
-                    addView(TextView(this@RoomDetailActivity).apply {
-                        text = review.comment
-                        textSize = 13f
-                        setTextColor(0xFF374151.toInt())
-                        setPadding(0, dpToPx(4), 0, 0)
-                    })
-                }
-            })
-        }
-
-        if (totalCount > 3) {
-            layoutReviews.addView(android.view.View(this).apply {
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)
-                ).apply { setMargins(0, dpToPx(4), 0, dpToPx(4)) }
-                setBackgroundColor(0xFFE5E7EB.toInt())
-            })
-            layoutReviews.addView(TextView(this).apply {
-                text = "Xem tất cả $totalCount đánh giá →"
-                textSize = 13f
-                setTextColor(0xFF2563EB.toInt())
-                setPadding(0, dpToPx(8), 0, dpToPx(4))
-                setTypeface(typeface, android.graphics.Typeface.BOLD)
-                setOnClickListener { showAllReviewsSheet() }
-            })
-        }
-    }
-
-    private fun showAllReviewsSheet() {
-        val landlordId = currentRoomData["userId"] as? String ?: ""
-        if (landlordId.isBlank()) return
-
-        val sheet = com.google.android.material.bottomsheet.BottomSheetDialog(this)
-        val sheetView = layoutInflater.inflate(R.layout.layout_bottom_sheet_reviews, null)
-
-        val tvSheetTitle = sheetView.findViewById<TextView>(R.id.tvSheetTitle)
-        val tvAvgRatingLarge = sheetView.findViewById<TextView>(R.id.tvAvgRatingLarge)
-        val ratingBarIndicator = sheetView.findViewById<RatingBar>(R.id.ratingBarIndicator)
-        val tvTotalReviewsCount = sheetView.findViewById<TextView>(R.id.tvTotalReviewsCount)
-
-        val progressStar5 = sheetView.findViewById<android.widget.ProgressBar>(R.id.progressStar5)
-        val progressStar4 = sheetView.findViewById<android.widget.ProgressBar>(R.id.progressStar4)
-        val progressStar3 = sheetView.findViewById<android.widget.ProgressBar>(R.id.progressStar3)
-        val progressStar2 = sheetView.findViewById<android.widget.ProgressBar>(R.id.progressStar2)
-        val progressStar1 = sheetView.findViewById<android.widget.ProgressBar>(R.id.progressStar1)
-
-        val tvCountStar5 = sheetView.findViewById<TextView>(R.id.tvCountStar5)
-        val tvCountStar4 = sheetView.findViewById<TextView>(R.id.tvCountStar4)
-        val tvCountStar3 = sheetView.findViewById<TextView>(R.id.tvCountStar3)
-        val tvCountStar2 = sheetView.findViewById<TextView>(R.id.tvCountStar2)
-        val tvCountStar1 = sheetView.findViewById<TextView>(R.id.tvCountStar1)
-
-        val chipGroupFilters = sheetView.findViewById<com.google.android.material.chip.ChipGroup>(R.id.chipGroupFilters)
-        val sheetLayout = sheetView.findViewById<LinearLayout>(R.id.layoutSheetList)
-        val progressLoadingMore = sheetView.findViewById<android.widget.ProgressBar>(R.id.progressLoadingMore)
-        val btnLoadMore = sheetView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnLoadMore)
-
-        tvSheetTitle.text = "Tất cả đánh giá ($totalReviewsCount)"
-        tvAvgRatingLarge.text = String.format(Locale("vi", "VN"), "%.1f", avgRating)
-        ratingBarIndicator.rating = avgRating.toFloat()
-        tvTotalReviewsCount.text = "$totalReviewsCount đánh giá"
-
-        val pct5 = if (totalReviewsCount > 0) (countStar5 * 100) / totalReviewsCount else 0
-        val pct4 = if (totalReviewsCount > 0) (countStar4 * 100) / totalReviewsCount else 0
-        val pct3 = if (totalReviewsCount > 0) (countStar3 * 100) / totalReviewsCount else 0
-        val pct2 = if (totalReviewsCount > 0) (countStar2 * 100) / totalReviewsCount else 0
-        val pct1 = if (totalReviewsCount > 0) (countStar1 * 100) / totalReviewsCount else 0
-
-        progressStar5.progress = pct5
-        progressStar4.progress = pct4
-        progressStar3.progress = pct3
-        progressStar2.progress = pct2
-        progressStar1.progress = pct1
-
-        tvCountStar5.text = countStar5.toString()
-        tvCountStar4.text = countStar4.toString()
-        tvCountStar3.text = countStar3.toString()
-        tvCountStar2.text = countStar2.toString()
-        tvCountStar1.text = countStar1.toString()
-
-        var filteredList = allReviewsCache
-        var currentIndex = 0
-        val pageSize = 10
-
-        fun loadNextLocalPage(isNewFilter: Boolean) {
-            if (isNewFilter) {
-                currentIndex = 0
-                sheetLayout.removeAllViews()
-                btnLoadMore.visibility = View.GONE
-            }
-
-            val nextIndex = (currentIndex + pageSize).coerceAtMost(filteredList.size)
-            if (currentIndex >= filteredList.size) {
-                if (isNewFilter && filteredList.isEmpty()) {
-                    sheetLayout.addView(TextView(this@RoomDetailActivity).apply {
-                        text = "Chưa có đánh giá nào cho bộ lọc này."
-                        textSize = 13f
-                        setTextColor(0xFF6B7280.toInt())
-                        setPadding(dpToPx(16), dpToPx(16), dpToPx(16), dpToPx(16))
-                        gravity = android.view.Gravity.CENTER
-                    })
-                }
-                btnLoadMore.visibility = View.GONE
-                progressLoadingMore.visibility = View.GONE
-                return
-            }
-
-            progressLoadingMore.visibility = View.VISIBLE
-            sheetLayout.postDelayed({
-                progressLoadingMore.visibility = View.GONE
-                val subList = filteredList.subList(currentIndex, nextIndex)
-                subList.forEach { review ->
-                    if (sheetLayout.childCount > 0) {
-                        sheetLayout.addView(android.view.View(this@RoomDetailActivity).apply {
-                            layoutParams = LinearLayout.LayoutParams(
-                                LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1)
-                            ).apply { setMargins(0, dpToPx(4), 0, dpToPx(4)) }
-                            setBackgroundColor(0xFFE5E7EB.toInt())
-                        })
-                    }
-
-                    sheetLayout.addView(LinearLayout(this@RoomDetailActivity).apply {
-                        orientation = LinearLayout.VERTICAL
-                        setPadding(0, dpToPx(10), 0, dpToPx(10))
-
-                        addView(TextView(this@RoomDetailActivity).apply {
-                            text = review.userName
-                            textSize = 13f
-                            setTextColor(0xFF111827.toInt())
-                            setTypeface(typeface, android.graphics.Typeface.BOLD)
-                        })
-
-                        val dateText = if (review.createdAt > 0) {
-                            SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN")).format(Date(review.createdAt))
-                        } else ""
-                        val stars = "★".repeat(review.rating.toInt().coerceIn(1, 5)) +
-                                "☆".repeat((5 - review.rating.toInt()).coerceAtLeast(0))
-                        addView(TextView(this@RoomDetailActivity).apply {
-                            text = if (dateText.isNotEmpty()) "$stars  •  $dateText" else stars
-                            textSize = 13f
-                            setTextColor(0xFFF59E0B.toInt())
-                            setPadding(0, dpToPx(2), 0, 0)
-                        })
-
-                        if (review.comment.isNotBlank()) {
-                            addView(TextView(this@RoomDetailActivity).apply {
-                                text = review.comment
-                                textSize = 13f
-                                setTextColor(0xFF374151.toInt())
-                                setPadding(0, dpToPx(4), 0, 0)
-                            })
-                        }
-                    })
-                }
-
-                currentIndex = nextIndex
-                if (currentIndex < filteredList.size) {
-                    btnLoadMore.visibility = View.VISIBLE
-                } else {
-                    btnLoadMore.visibility = View.GONE
-                }
-            }, 150)
-        }
-
-        loadNextLocalPage(isNewFilter = true)
-
-        chipGroupFilters.setOnCheckedChangeListener { group, checkedId ->
-            val selectedStar = when (checkedId) {
-                R.id.chipStar5 -> 5
-                R.id.chipStar4 -> 4
-                R.id.chipStar3 -> 3
-                R.id.chipStar2 -> 2
-                R.id.chipStar1 -> 1
-                else -> null
-            }
-            filteredList = if (selectedStar != null) {
-                allReviewsCache.filter { it.rating.toInt() == selectedStar }
-            } else {
-                allReviewsCache
-            }
-            loadNextLocalPage(isNewFilter = true)
-        }
-
-        btnLoadMore.setOnClickListener {
-            loadNextLocalPage(isNewFilter = false)
-        }
-
-        sheet.setContentView(sheetView)
-        sheet.show()
-    }
-
-    private fun renderEmptyReviews(message: String = "Chưa có đánh giá nào cho phòng trọ này.") {
-        tvReviewsTitle.text = "Đánh giá phòng trọ"
-        layoutReviews.removeAllViews()
-        layoutReviews.addView(TextView(this).apply {
-            text = message
-            textSize = 13f
-            setTextColor(0xFF6B7280.toInt())
-            setPadding(0, dpToPx(4), 0, 0)
-        })
-    }
-
-    private fun showAddReviewDialog(landlordId: String) {
-        val currentUid = FirebaseAuth.getInstance().currentUser?.uid
-        if (currentUid == null) {
-            promptLogin()
-            return
-        }
-        if (landlordId.isBlank() || landlordId == currentUid) return
-        
-        val dialog = android.app.Dialog(this)
-        dialog.setContentView(R.layout.dialog_review)
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-        dialog.window?.setLayout(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-
-        val ratingBar = dialog.findViewById<RatingBar>(R.id.ratingBar)
-        val edtComment = dialog.findViewById<EditText>(R.id.edtComment)
-        val btnCancel = dialog.findViewById<View>(R.id.btnCancel)
-        val btnSubmit = dialog.findViewById<View>(R.id.btnSubmit)
-
-        btnCancel.setOnClickListener { dialog.dismiss() }
-
-        btnSubmit.setOnClickListener {
-            val comment = edtComment.text.toString().trim()
-            if (comment.length < 5) {
-                edtComment.error = "Nhận xét cần ít nhất 5 ký tự"
-                return@setOnClickListener
-            }
-            val rating = ratingBar.rating.toInt().coerceIn(1, 5)
-            if (rating < 1) {
-                Toast.makeText(this@RoomDetailActivity, "Vui lòng chọn số sao", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-            submitReview(landlordId, rating, comment) {
-                dialog.dismiss()
-            }
-        }
-        dialog.show()
-    }
-
-    private fun submitReview(landlordId: String, rating: Int, comment: String, onDone: () -> Unit) {
-        val currentUid = FirebaseAuth.getInstance().currentUser?.uid ?: return
-        val userName = FirebaseAuth.getInstance().currentUser?.displayName
-            ?: FirebaseAuth.getInstance().currentUser?.email
-            ?: "Người dùng"
-        val now = System.currentTimeMillis()
-        val data = hashMapOf(
-            "userId" to currentUid,
-            "userName" to userName,
-            "landlordId" to landlordId,
-            "roomId" to currentRoomId,
-            "roomTitle" to (currentRoomData["title"] as? String ?: ""),
-            "rating" to rating,
-            "comment" to comment,
-            "status" to "approved",   // Hiển thị ngay không qua duyệt admin
-            "createdAt" to now,
-            "updatedAt" to now
-        )
-        db.collection("reviews")
-            .whereEqualTo("userId", currentUid)
-            .whereEqualTo("roomId", currentRoomId)
-            .limit(1)
-            .get(Source.SERVER)
-            .addOnSuccessListener {
-                if (!it.isEmpty) {
-                    MessageUtils.showInfoDialog(
-                        this,
-                        "Bạn đã đánh giá",
-                        "Bạn đã gửi đánh giá cho phòng trọ này rồi."
-                    )
-                    onDone()
-                    return@addOnSuccessListener
-                }
-                db.collection("reviews").add(data)
-                    .addOnSuccessListener {
-                        MessageUtils.showSuccessDialog(this, "Đã gửi đánh giá", "Cảm ơn bạn đã đánh giá phòng trọ.")
-                        loadReviews(currentRoomId)
-                        onDone()
-                    }
-                    .addOnFailureListener { e ->
-                        MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể gửi đánh giá")
-                    }
-            }
-            .addOnFailureListener { e ->
-                MessageUtils.showErrorDialog(this, "Lỗi", e.message ?: "Không thể kiểm tra đánh giá hiện tại")
-            }
     }
 
     private fun setupActionButtons() {
@@ -818,8 +357,8 @@ class RoomDetailActivity : AppCompatActivity() {
     ) {
         val fullAddress = buildString {
             if (address.isNotEmpty()) append("$address, ")
-            if (ward.isNotEmpty()) append("$ward, ")
-            if (district.isNotEmpty()) append("$district, ")
+            val locationParts = listOf(ward, district).filter { it.isNotBlank() }.distinct()
+            if (locationParts.isNotEmpty()) append("${locationParts.joinToString(", ")}, ")
             append("Ha Noi")
         }
 
@@ -938,80 +477,44 @@ class RoomDetailActivity : AppCompatActivity() {
             .show()
     }
 
-    private fun renderBookedSlots(slots: List<Map<String, Any>>) {
-        if (slots.isEmpty()) {
-            cardBookedSlots.visibility = View.GONE
-            return
-        }
-
-        cardBookedSlots.visibility = View.VISIBLE
-        tvBookedCount.text = "Lịch bận (${slots.size})"
-        layoutBookedSummary.removeAllViews()
-
-        // Hiển thị tối đa 3 slot đầu tiên dạng chip ngang
-        val displayLimit = 3
-        slots.take(displayLimit).forEach { slot ->
-            val date = slot["dateDisplay"] as? String ?: slot["date"] as? String ?: ""
-            val time = slot["time"] as? String ?: ""
-            
-            val chipView = TextView(this).apply {
-                text = "$time $date"
-                textSize = 12f
-                setTextColor(0xFFE65100.toInt())
-                setBackgroundResource(R.drawable.bg_slot_chip)
-                setPadding(dpToPx(12), dpToPx(6), dpToPx(12), dpToPx(6))
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.WRAP_CONTENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply {
-                    marginEnd = dpToPx(8)
-                }
-            }
-            layoutBookedSummary.addView(chipView)
-        }
-
-        if (slots.size > displayLimit) {
-            val moreView = TextView(this).apply {
-                text = "+${slots.size - displayLimit}"
-                textSize = 12f
-                setTextColor(0xFF999999.toInt())
-                setPadding(dpToPx(4), dpToPx(6), dpToPx(4), dpToPx(6))
-            }
-            layoutBookedSummary.addView(moreView)
-        }
-
-        btnViewAllSlots.setOnClickListener {
-            showAllBookedSlots(slots)
-        }
-    }
-
-    private fun showAllBookedSlots(slots: List<Map<String, Any>>) {
-        val dialog = BottomSheetDialog(this)
-        val view = layoutInflater.inflate(R.layout.layout_bottom_sheet_list, null)
-        
-        val tvTitle = view.findViewById<TextView>(R.id.tvSheetTitle)
-        val layoutList = view.findViewById<LinearLayout>(R.id.layoutSheetList)
-        
-        tvTitle.text = "Danh sách lịch đã hẹn"
-        
-        slots.forEach { slot ->
-            val date = slot["dateDisplay"] as? String ?: slot["date"] as? String ?: ""
-            val time = slot["time"] as? String ?: ""
-            
-            val itemView = layoutInflater.inflate(R.layout.item_booked_slot_row, layoutList, false)
-            itemView.findViewById<TextView>(R.id.tvSlotTime).text = time
-            itemView.findViewById<TextView>(R.id.tvSlotDate).text = date
-            
-            layoutList.addView(itemView)
-        }
-        
-        dialog.setContentView(view)
-        dialog.show()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         geocodeExecutor.shutdownNow()
+    }
+
+    private fun setupAppointmentInfo(data: Map<String, Any>) {
+        val cardAppointmentInfo = findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardAppointmentInfo)
+        val layoutExpiryRow = findViewById<LinearLayout>(R.id.layoutExpiryRow)
+        val tvPostCreatedAtDisplay = findViewById<TextView>(R.id.tvPostCreatedAtDisplay)
+        val tvPostExpiryDisplay = findViewById<TextView>(R.id.tvPostExpiryDisplay)
+        val layoutTimeSlotsRow = findViewById<LinearLayout>(R.id.layoutTimeSlotsRow)
+        val tvAvailableTimeSlotsDisplay = findViewById<TextView>(R.id.tvAvailableTimeSlotsDisplay)
+
+        val createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L
+        val expiryDate = (data["postExpiryDate"] as? Number)?.toLong() ?: 0L
+        val timeSlots = data["availableTimeSlots"] as? String ?: ""
+
+        val hasExpiry = expiryDate > 0
+        val hasTimeSlots = timeSlots.isNotBlank()
+
+        if (!hasExpiry && !hasTimeSlots) { cardAppointmentInfo.visibility = View.GONE; return }
+        cardAppointmentInfo.visibility = View.VISIBLE
+
+        if (hasExpiry) {
+            layoutExpiryRow.visibility = View.VISIBLE
+            val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+            tvPostCreatedAtDisplay.text = if (createdAt > 0) sdf.format(java.util.Date(createdAt)) else "--"
+            tvPostExpiryDisplay.text = sdf.format(java.util.Date(expiryDate))
+        } else {
+            layoutExpiryRow.visibility = View.GONE
+        }
+
+        if (hasTimeSlots) {
+            layoutTimeSlotsRow.visibility = View.VISIBLE
+            tvAvailableTimeSlotsDisplay.text = timeSlots
+        } else {
+            layoutTimeSlotsRow.visibility = View.GONE
+        }
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -1058,9 +561,11 @@ class RoomDetailActivity : AppCompatActivity() {
         val electricPrice = (data["electricPrice"] as? Number)?.toLong() ?: 0L
         val waterPrice = (data["waterPrice"] as? Number)?.toLong() ?: 0L
         val wifiPrice = (data["wifiPrice"] as? Number)?.toLong() ?: 0L
+        val hasWifi = data["hasWifi"] == true
+        val otherFees = data["otherFees"] as? List<Map<String, Any>> ?: emptyList()
 
         // Nhóm Chi phí (đặc biệt quan trọng nên làm nổi bật)
-        if (deposit > 0 || electricPrice > 0 || waterPrice > 0) {
+        if (deposit > 0 || electricPrice > 0 || waterPrice > 0 || hasWifi || otherFees.isNotEmpty()) {
             val tvHeader = TextView(this).apply {
                 text = "Chi phí dự kiến"
                 textSize = 15f
@@ -1069,56 +574,96 @@ class RoomDetailActivity : AppCompatActivity() {
                 setPadding(0, dpToPx(16), 0, dpToPx(8))
             }
             layoutRoomInfo.addView(tvHeader)
-            
+
             if (deposit > 0) addInfoRow("Tiền đặt cọc", "${formatter.format(deposit)} đ")
             if (depositMonths > 0) addInfoRow("Đặt cọc trước", "$depositMonths tháng")
             if (electricPrice > 0) addInfoRow("Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
             if (waterPrice > 0) addInfoRow("Tiền nước", "${formatter.format(waterPrice)} đ/m³")
-            if (wifiPrice > 0) addInfoRow("Tiền wifi", "${formatter.format(wifiPrice)} đ/tháng")
+            if (hasWifi) {
+                addInfoRow("Tiền wifi", if (wifiPrice > 0) "${formatter.format(wifiPrice)} đ/tháng" else "Miễn phí")
+            }
+            otherFees.forEach { fee ->
+                val label = fee["label"] as? String ?: ""; val price = (fee["price"] as? Number)?.toLong() ?: 0L
+                if (label.isNotEmpty()) addInfoRow(label, "${formatter.format(price)} đ/tháng")
+            }
         }
 
-        // Nhóm Quy định & Khác
+    }
+
+    private fun setupFacilitiesInfo(data: Map<String, Any>) {
+        layoutFacilitiesInfo.removeAllViews()
         val kitchen = data["kitchen"] as? String ?: ""
         val bathroom = data["bathroom"] as? String ?: ""
+        if (kitchen.isNotEmpty() && kitchen != "Không") addFacilityRow("Phòng bếp", kitchen)
+        if (bathroom.isNotEmpty()) addFacilityRow("Phòng vệ sinh", bathroom)
+        if (layoutFacilitiesInfo.childCount == 0) addFacilityRow("Thông tin", "Chưa cập nhật")
+    }
+
+    private fun addFacilityRow(label: String, value: String) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dpToPx(8), 0, dpToPx(8))
+        }
+        row.addView(TextView(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(0xFF666666.toInt())
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        row.addView(TextView(this).apply {
+            text = value
+            textSize = 14f
+            setTextColor(0xFF1A1A1A.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.END
+        })
+        layoutFacilitiesInfo.addView(row)
+    }
+
+    private fun setupRulesInfo(data: Map<String, Any>) {
+        layoutRulesInfo.removeAllViews()
         val genderPrefer = data["genderPrefer"] as? String ?: ""
         val curfew = data["curfew"] as? String ?: ""
         val curfewTime = data["curfewTime"] as? String ?: ""
         val pet = data["pet"] as? String ?: ""
-
-        // Kiểm tra xem có bất kỳ thông tin quy định nào không
-        if (kitchen.isNotEmpty() || bathroom.isNotEmpty() || genderPrefer.isNotEmpty() || curfew.isNotEmpty() || pet.isNotEmpty()) {
-            val tvHeader = TextView(this).apply {
-                text = "Quy định & Cơ sở vật chất"
-                textSize = 15f
-                setTypeface(null, android.graphics.Typeface.BOLD)
-                setTextColor(0xFF1A1A1A.toInt())
-                setPadding(0, dpToPx(16), 0, dpToPx(8))
-            }
-            layoutRoomInfo.addView(tvHeader)
-
-            if (genderPrefer.isNotEmpty()) addInfoRow("Ưu tiên giới tính", genderPrefer)
-            if (kitchen.isNotEmpty()) addInfoRow("Phòng bếp", kitchen)
-            if (bathroom.isNotEmpty()) addInfoRow("Phòng vệ sinh", bathroom)
-            
-            if (curfew.isNotEmpty()) {
-                val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Đóng cửa lúc $curfewTime" else curfew
-                addInfoRow("Giờ giấc", text)
-            }
-
-            if (pet.isNotEmpty()) {
-                val petName = data["petName"] as? String ?: ""
-                val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
-                val text = if (pet == "Cho nuôi") {
-                    val details = mutableListOf<String>()
-                    if (petName.isNotEmpty()) details.add(petName)
-                    if (petCount > 0) details.add("Số lượng: $petCount")
-                    if (details.isNotEmpty()) "Cho nuôi (${details.joinToString(" - ")})" else "Cho nuôi"
-                } else {
-                    pet
-                }
-                addInfoRow("Thú cưng", text)
-            }
+        if (genderPrefer.isNotEmpty()) addRuleRow("Ưu tiên giới tính", genderPrefer)
+        if (curfew.isNotEmpty()) {
+            val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Đóng cửa lúc $curfewTime" else curfew
+            addRuleRow("Giờ giấc", text)
         }
+        if (pet.isNotEmpty()) {
+            val petName = data["petName"] as? String ?: ""
+            val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
+            val text = if (pet == "Cho nuôi") {
+                val details = mutableListOf<String>()
+                if (petName.isNotEmpty()) details.add(petName)
+                if (petCount > 0) details.add("Số lượng: $petCount")
+                if (details.isNotEmpty()) "Cho nuôi (${details.joinToString(" - ")})" else "Cho nuôi"
+            } else pet
+            addRuleRow("Thú cưng", text)
+        }
+        if (layoutRulesInfo.childCount == 0) addRuleRow("Quy định", "Chưa cập nhật")
+    }
+
+    private fun addRuleRow(label: String, value: String) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dpToPx(8), 0, dpToPx(8))
+        }
+        row.addView(TextView(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(0xFF666666.toInt())
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        row.addView(TextView(this).apply {
+            text = value
+            textSize = 14f
+            setTextColor(0xFF1A1A1A.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.END
+        })
+        layoutRulesInfo.addView(row)
     }
 
     private fun addInfoRow(label: String, value: String) {
@@ -1146,15 +691,20 @@ class RoomDetailActivity : AppCompatActivity() {
         gridAmenities.removeAllViews()
         layoutAmenities.removeAllViews()
 
+        fun aqty(key: String) = (data[key] as? Number)?.toInt() ?: 0
+        fun alabel(name: String, qty: Int) = "$name : Số lượng ${qty.coerceAtLeast(1)}"
         val amenitiesNames = mutableListOf<String>()
-        if (data["hasWifi"] == true) amenitiesNames.add("Wifi miễn phí")
-        if (data["hasAirCon"] == true) amenitiesNames.add("Điều hòa")
-        if (data["hasWaterHeater"] == true) amenitiesNames.add("Bình nóng lạnh")
-        if (data["hasWasher"] == true) amenitiesNames.add("Máy giặt")
-        if (data["hasDryingArea"] == true) amenitiesNames.add("Sân phơi đồ")
-        if (data["hasWardrobe"] == true) amenitiesNames.add("Tủ quần áo")
-        if (data["hasBed"] == true) amenitiesNames.add("Giường ngủ")
-
+        if (data["hasAirCon"] == true) amenitiesNames.add(alabel("Điều hòa", aqty("airConQty")))
+        if (data["hasWaterHeater"] == true) amenitiesNames.add(alabel("Bình nóng lạnh", aqty("waterHeaterQty")))
+        if (data["hasWasher"] == true) amenitiesNames.add(alabel("Máy giặt", aqty("washerQty")))
+        if (data["hasDryingArea"] == true) amenitiesNames.add(alabel("Sân phơi đồ", aqty("dryingAreaQty")))
+        if (data["hasWardrobe"] == true) amenitiesNames.add(alabel("Tủ quần áo", aqty("wardrobeQty")))
+        if (data["hasBed"] == true) amenitiesNames.add(alabel("Giường ngủ", aqty("bedQty")))
+        (data["furnitureItems"] as? List<Map<String, Any>> ?: emptyList()).forEach { item ->
+            val name = item["name"] as? String ?: ""
+            val qty = (item["qty"] as? Number)?.toInt() ?: 1
+            if (name.isNotEmpty()) amenitiesNames.add("$name : Số lượng $qty")
+        }
         if (amenitiesNames.isEmpty() && data["hasMotorbike"] != true && data["hasEBike"] != true && data["hasBicycle"] != true) {
             val tvEmpty = TextView(this).apply {
                 text = "Không có thông tin tiện ích"
@@ -1187,7 +737,7 @@ class RoomDetailActivity : AppCompatActivity() {
 
         // Các thông tin phí gửi xe
         val motorbikeFee = (data["motorbikeFee"] as? Number)?.toLong() ?: 0L
-        val eBikeFee = (data["eBikeFee"] as? Number)?.toLong() ?: 0L
+        val eBikeFee = (data["eBikeFee"] as? Number ?: data["ebikeFee"] as? Number)?.toLong() ?: 0L
         val bicycleFee = (data["bicycleFee"] as? Number)?.toLong() ?: 0L
 
         if (data["hasMotorbike"] == true) {
@@ -1202,6 +752,50 @@ class RoomDetailActivity : AppCompatActivity() {
             val feeText = if (bicycleFee > 0) "${formatter.format(bicycleFee)} đ/xe" else "Miễn phí"
             addAmenityFeeRow("Gửi xe đạp", feeText)
         }
+    }
+
+    private fun setupServiceItems(data: Map<String, Any>) {
+        val cardServiceItems = findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardServiceItems)
+        layoutServiceItems.removeAllViews()
+        val services = data["serviceItems"] as? List<Map<String, Any>> ?: emptyList()
+        if (services.isEmpty()) {
+            cardServiceItems.visibility = android.view.View.GONE
+            return
+        }
+        cardServiceItems.visibility = android.view.View.VISIBLE
+        services.forEach { item ->
+            val name = item["name"] as? String ?: ""
+            val price = (item["price"] as? Number)?.toLong() ?: 0L
+            if (name.isNotEmpty()) {
+                val priceText = if (price > 0) "${formatter.format(price)} đ/tháng" else "Miễn phí"
+                addServiceRow(name, priceText)
+            }
+        }
+    }
+
+    private fun addServiceRow(label: String, value: String) {
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setPadding(0, dpToPx(8), 0, dpToPx(8))
+        }
+        row.addView(TextView(this).apply {
+            text = label
+            textSize = 14f
+            setTextColor(0xFF666666.toInt())
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+        })
+        row.addView(TextView(this).apply {
+            text = value
+            textSize = 14f
+            setTextColor(0xFF1A1A1A.toInt())
+            setTypeface(null, android.graphics.Typeface.BOLD)
+            gravity = android.view.Gravity.END
+        })
+        layoutServiceItems.addView(row)
+        layoutServiceItems.addView(android.view.View(this).apply {
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dpToPx(1))
+            setBackgroundColor(0xFFF5F5F5.toInt())
+        })
     }
 
     private fun addAmenityFeeRow(label: String, fee: String) {
@@ -1275,7 +869,7 @@ class RoomDetailActivity : AppCompatActivity() {
             val userId = FirebaseAuth.getInstance().currentUser?.uid
             currentUid = userId
             if (userId.isNullOrBlank()) {
-                startActivity(Intent(this, LoginActivity::class.java))
+                promptLogin()
                 return@setOnClickListener
             }
             if (userId == landlordId) return@setOnClickListener  // không tự nhắn mình
@@ -1329,7 +923,7 @@ class RoomDetailActivity : AppCompatActivity() {
             Glide.with(this).load(savedSheetAvatarUrl).circleCrop().into(ivSheetAvatar)
         }
 
-        // Gọi Firebase lấy dữ liệu chi tiết còn thiếu (email, ngày tham gia)
+        // Gọi Firebase lấy dữ liệu chi tiết còn thiếu (email, ngày tham gia, sdt mới nhất)
         com.google.firebase.firestore.FirebaseFirestore.getInstance()
             .collection("users").document(landlordId).get()
             .addOnSuccessListener { doc ->
@@ -1344,15 +938,15 @@ class RoomDetailActivity : AppCompatActivity() {
                             Glide.with(this).load(avatarUrl).circleCrop().into(ivSheetAvatar)
                         }
                     }
-                    
-                    val email = doc.getString("email") ?: "Đang cập nhật"
 
+                    // SĐT hiển thị giữ nguyên ownerPhone từ room document (đã set ở trên)
+                    val email = doc.getString("email") ?: "Đang cập nhật"
                     tvSheetEmail.text = email
-                    
+
                     val isVerified = doc.getBoolean("isVerified") ?: false
                     tvSheetVerified.text = if (isVerified) "Đã xác nhận" else "Chưa xác minh"
                     if (!isVerified) tvSheetVerified.setTextColor(0xFF9E9E9E.toInt())
-                    
+
                     val joinedAt = doc.getLong("createdAt") ?: 0L
                     if (joinedAt > 0) {
                         val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
@@ -1360,9 +954,12 @@ class RoomDetailActivity : AppCompatActivity() {
                     }
                 }
             }
-            
+
         btnSheetCall.setOnClickListener {
-            if (phone.isNotEmpty()) startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
+            val callPhone = tvSheetPhone.text.toString().trim()
+            if (callPhone.isNotEmpty() && callPhone != "Đang cập nhật") {
+                startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$callPhone")))
+            }
         }
         
         btnSheetChat.setOnClickListener {
@@ -1370,7 +967,8 @@ class RoomDetailActivity : AppCompatActivity() {
             val userId = FirebaseAuth.getInstance().currentUser?.uid
             currentUid = userId
             if (userId.isNullOrBlank()) {
-                startActivity(Intent(this, LoginActivity::class.java))
+                dialog.dismiss()
+                promptLogin()
                 return@setOnClickListener
             }
             if (userId == landlordId) return@setOnClickListener
@@ -1428,7 +1026,7 @@ class RoomDetailActivity : AppCompatActivity() {
             putExtra("roomId", roomId)
             putExtra("landlordId", roomData["userId"] as? String ?: "")
             putExtra("roomTitle", roomData["title"] as? String ?: "")
-            putExtra("roomAddress", if (addr.isNotEmpty()) "$addr, $ward, $district" else "$ward, $district")
+            putExtra("roomAddress", listOf(addr, ward, district).filter { it.isNotBlank() }.distinct().joinToString(", "))
             putExtra("roomPrice", roomPrice)
             putExtra("roomImageUrl", imageUrls.firstOrNull() ?: "")
             putExtra("landlordName", roomData["ownerName"] as? String ?: "")

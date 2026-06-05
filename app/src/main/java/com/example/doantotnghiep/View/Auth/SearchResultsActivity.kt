@@ -2,7 +2,6 @@ package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -10,21 +9,19 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.cardview.widget.CardView
 import androidx.lifecycle.ViewModelProvider
-import com.bumptech.glide.Glide
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.View.Adapter.RoomAdapter
 import com.example.doantotnghiep.ViewModel.SearchViewModel
-import java.text.DecimalFormat
-import java.text.DecimalFormatSymbols
 import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import kotlin.math.ceil
 
 class SearchResultsActivity : AppCompatActivity() {
 
-    private lateinit var layoutResults: LinearLayout
+    private lateinit var recyclerViewResults: RecyclerView
     private lateinit var layoutPagination: LinearLayout
     private lateinit var progressBar: ProgressBar
     private lateinit var tvEmpty: TextView
@@ -33,12 +30,7 @@ class SearchResultsActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageView
 
     private lateinit var viewModel: SearchViewModel
-
-    private val formatter: DecimalFormat by lazy {
-        val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
-        symbols.groupingSeparator = '.'
-        DecimalFormat("#,###", symbols)
-    }
+    private lateinit var roomAdapter: RoomAdapter
 
     private var currentPage = 1
     private val itemsPerPage = 10
@@ -60,7 +52,7 @@ class SearchResultsActivity : AppCompatActivity() {
             currentSort = SortType.values()[it]
         }
 
-        layoutResults = findViewById(R.id.layoutResults)
+        recyclerViewResults = findViewById(R.id.recyclerViewResults)
         layoutPagination = findViewById(R.id.layoutPagination)
         progressBar = findViewById(R.id.progressBar)
         tvEmpty = findViewById(R.id.tvEmpty)
@@ -71,6 +63,14 @@ class SearchResultsActivity : AppCompatActivity() {
         tvCurrentSort = findViewById(R.id.tvCurrentSort)
         btnSortDropdown = findViewById(R.id.btnSortDropdown)
         ivSortArrow = findViewById(R.id.ivSortArrow)
+
+        // Setup RecyclerView & Adapter
+        roomAdapter = RoomAdapter(
+            viewType = RoomAdapter.VIEW_TYPE_VERTICAL,
+            showAvailabilityBadge = true
+        )
+        recyclerViewResults.layoutManager = LinearLayoutManager(this)
+        recyclerViewResults.adapter = roomAdapter
 
         btnBack.setOnClickListener { finish() }
 
@@ -96,8 +96,30 @@ class SearchResultsActivity : AppCompatActivity() {
         val hasWifi = intent.getBooleanExtra("hasWifi", false)
         val hasElectric = intent.getBooleanExtra("hasElectric", false)
         val hasWater = intent.getBooleanExtra("hasWater", false)
+        val curfew = intent.getStringExtra("curfew") ?: ""
+        val maxWifiPrice = intent.getLongExtra("maxWifiPrice", 0L)
+        val maxElectricPrice = intent.getLongExtra("maxElectricPrice", 0L)
+        val maxWaterPrice = intent.getLongExtra("maxWaterPrice", 0L)
 
-        // ── Tìm theo bản đồ ──
+        // ── Tìm theo bài đăng cụ thể (user chọn 1 phòng từ panel) ──
+        if (searchMode == "exact_post") {
+            val postId     = intent.getStringExtra("postId").orEmpty()
+            val mapAddress = intent.getStringExtra("mapAddress").orEmpty()
+            tvSearchArea.text = mapAddress.ifEmpty { "Bài đăng đã chọn" }
+            viewModel.searchByPostId(postId)
+            return
+        }
+
+        // ── Tìm theo nhiều bài đăng (user chọn nhiều địa chỉ từ panel) ──
+        if (searchMode == "selected_posts") {
+            val postIds    = intent.getStringArrayListExtra("postIds") ?: arrayListOf()
+            val mapAddress = intent.getStringExtra("mapAddress").orEmpty()
+            tvSearchArea.text = mapAddress.ifEmpty { "${postIds.size} địa chỉ đã chọn" }
+            viewModel.searchByPostIds(postIds)
+            return
+        }
+
+        // ── Tìm theo bán kính bản đồ ──
         if (searchMode == "nearby") {
             val lat = intent.getDoubleExtra("lat", 0.0)
             val lng = intent.getDoubleExtra("lng", 0.0)
@@ -106,9 +128,21 @@ class SearchResultsActivity : AppCompatActivity() {
 
             val radiusLabel = if (radiusKm == radiusKm.toLong().toDouble())
                 "${radiusKm.toInt()}km" else "${radiusKm}km"
-            tvSearchArea.text = "Trong vòng $radiusLabel từ vị trí chọn"
+            tvSearchArea.text = if (mapAddress.isNotEmpty())
+                "$mapAddress — trong ${radiusLabel}"
+            else
+                "Trong vòng $radiusLabel từ vị trí chọn"
 
-            viewModel.searchNearby(lat, lng, radiusKm)
+            viewModel.searchNearby(
+                lat = lat, lng = lng, radiusKm = radiusKm,
+                minPrice = minPrice, maxPrice = maxPrice,
+                minArea = minArea, maxArea = maxArea,
+                desiredPeople = desiredPeople,
+                roomType = roomType,
+                hasWifi = hasWifi, hasElectric = hasElectric, hasWater = hasWater,
+                curfew = curfew,
+                maxWifiPrice = maxWifiPrice, maxElectricPrice = maxElectricPrice, maxWaterPrice = maxWaterPrice
+            )
             return
         }
 
@@ -137,7 +171,11 @@ class SearchResultsActivity : AppCompatActivity() {
                 roomType = roomType,
                 hasWifi = hasWifi,
                 hasElectric = hasElectric,
-                hasWater = hasWater
+                hasWater = hasWater,
+                curfew = curfew,
+                maxWifiPrice = maxWifiPrice,
+                maxElectricPrice = maxElectricPrice,
+                maxWaterPrice = maxWaterPrice
             )
         }
     }
@@ -152,7 +190,7 @@ class SearchResultsActivity : AppCompatActivity() {
             tvResultCount.text = "Kết quả tìm kiếm: ${results.size} bài đăng"
             if (results.isEmpty()) {
                 tvEmpty.visibility = View.VISIBLE
-                layoutResults.removeAllViews()
+                roomAdapter.submitList(emptyList())
                 layoutPagination.removeAllViews()
             } else {
                 tvEmpty.visibility = View.GONE
@@ -167,6 +205,8 @@ class SearchResultsActivity : AppCompatActivity() {
                 tvEmpty.visibility = View.VISIBLE
                 tvEmpty.text = msg
                 tvResultCount.text = "Kết quả tìm kiếm: 0 bài đăng"
+                roomAdapter.submitList(emptyList())
+                layoutPagination.removeAllViews()
             }
         }
     }
@@ -227,218 +267,32 @@ class SearchResultsActivity : AppCompatActivity() {
         val end = minOf(start + itemsPerPage, sorted.size)
         val pageItems = sorted.subList(start, end)
 
-        layoutResults.removeAllViews()
-        var i = 0
-        while (i < pageItems.size) {
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = dpToPx(10) }
-            }
-
-            row.addView(createRoomCard(pageItems[i]).apply {
-                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                    .apply { marginEnd = dpToPx(5) }
-            })
-
-            if (i + 1 < pageItems.size) {
-                row.addView(createRoomCard(pageItems[i + 1]).apply {
-                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-                        .apply { marginStart = dpToPx(5) }
-                })
-            } else {
-                row.addView(View(this).apply { layoutParams = LinearLayout.LayoutParams(0, 0, 1f) })
-            }
-
-            layoutResults.addView(row)
-            i += 2
+        // Map data class SearchViewModel.RoomItem -> Adapter's RoomItem
+        val adapterItems = pageItems.map { searchItem ->
+            com.example.doantotnghiep.View.Adapter.RoomItem(
+                id = searchItem.roomId,
+                title = searchItem.title,
+                price = searchItem.price,
+                ward = searchItem.ward,
+                district = searchItem.district,
+                area = searchItem.area,
+                imageUrl = searchItem.firstImage,
+                isAvailable = (searchItem.roomCount - searchItem.rentedCount) > 0,
+                createdAt = searchItem.createdAt,
+                isFeatured = searchItem.isFeatured
+            )
         }
+
+        roomAdapter.submitList(adapterItems)
 
         displayPagination(page, totalPages, sorted)
-    }
-
-    private fun createRoomCard(item: SearchViewModel.RoomItem): CardView {
-        val card = CardView(this).apply {
-            radius = dpToPx(12).toFloat()
-            cardElevation = dpToPx(3).toFloat()
-        }
-
-        val mainLayout = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-
-        val imageContainer = FrameLayout(this)
-        val imgView = ImageView(this).apply {
-            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, dpToPx(130))
-            scaleType = ImageView.ScaleType.CENTER_CROP
-        }
-        Glide.with(this).load(item.firstImage).placeholder(R.color.gray_200).into(imgView)
-        imageContainer.addView(imgView)
-
-        val verifiedBadge = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            setPadding(dpToPx(6), dpToPx(2), dpToPx(8), dpToPx(2))
-            background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFFE8F5E9.toInt())
-                cornerRadius = dpToPx(4).toFloat()
-            }
-            layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
-                .apply {
-                    gravity = Gravity.TOP or Gravity.START
-                    topMargin = dpToPx(8)
-                    leftMargin = dpToPx(8)
-                }
-        }
-
-        verifiedBadge.addView(TextView(this).apply {
-            text = "✓"
-            textSize = 13f
-            setTextColor(0xFF2E7D32.toInt())
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            layoutParams = LinearLayout.LayoutParams(dpToPx(14), dpToPx(14))
-        })
-
-        verifiedBadge.addView(TextView(this).apply {
-            text = "Đã kiểm duyệt"
-            textSize = 10f
-            setTextColor(0xFF2E7D32.toInt())
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setPadding(dpToPx(4), 0, 0, 0)
-        })
-
-        imageContainer.addView(verifiedBadge)
-
-        // ── Badge khoảng cách (chỉ hiển thị khi tìm theo bản đồ) ──
-        if (item.distanceKm >= 0) {
-            val distStr = if (item.distanceKm < 1.0)
-                "${(item.distanceKm * 1000).toInt()}m"
-            else
-                "${"%,.1f".format(item.distanceKm)}km"
-
-            val distBadge = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
-                setPadding(dpToPx(6), dpToPx(2), dpToPx(8), dpToPx(2))
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(0xFF1565C0.toInt())
-                    cornerRadius = dpToPx(4).toFloat()
-                }
-                layoutParams = FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT)
-                    .apply {
-                        gravity = Gravity.TOP or Gravity.END
-                        topMargin = dpToPx(8)
-                        rightMargin = dpToPx(8)
-                    }
-            }
-            distBadge.addView(TextView(this).apply {
-                text = "📍 $distStr"
-                textSize = 10f
-                setTextColor(0xFFFFFFFF.toInt())
-                setTypeface(null, android.graphics.Typeface.BOLD)
-            })
-            imageContainer.addView(distBadge)
-        }
-        mainLayout.addView(imageContainer)
-
-        val infoLayout = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(10))
-        }
-
-        infoLayout.addView(TextView(this).apply {
-            text = item.title.ifEmpty { "${item.address}, ${item.ward}" }
-            textSize = 13f
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            setTextColor(0xFF1A1A2E.toInt())
-            maxLines = 2
-            ellipsize = android.text.TextUtils.TruncateAt.END
-        })
-
-        val fullAddress = buildString {
-            if (item.address.isNotEmpty()) append(item.address)
-            if (item.ward.isNotEmpty()) {
-                if (isNotEmpty()) append(", ")
-                append(item.ward)
-            }
-            if (item.district.isNotEmpty()) {
-                if (isNotEmpty()) append(", ")
-                append(item.district)
-            }
-        }
-
-        infoLayout.addView(TextView(this).apply {
-            text = "Địa chỉ: $fullAddress"
-            textSize = 11f
-            setTextColor(0xFF757575.toInt())
-            maxLines = 2
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .apply { topMargin = dpToPx(3) }
-        })
-
-        val rowPriceDate = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                .apply { topMargin = dpToPx(5) }
-        }
-
-        rowPriceDate.addView(TextView(this).apply {
-            text = "${formatter.format(item.price)} đ/th"
-            setTextColor(0xFFD32F2F.toInt())
-            setTypeface(null, android.graphics.Typeface.BOLD)
-            textSize = 13f
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        })
-
-        val dateStr = if (item.createdAt > 0) {
-            SimpleDateFormat("dd/MM/yyyy", Locale("vi")).format(Date(item.createdAt))
-        } else ""
-
-        if (dateStr.isNotEmpty()) {
-            rowPriceDate.addView(TextView(this).apply {
-                text = "Ngày: $dateStr"
-                textSize = 10f
-                setTextColor(0xFF9E9E9E.toInt())
-            })
-        }
-        infoLayout.addView(rowPriceDate)
-
-        val available = item.roomCount - item.rentedCount
-        if (item.roomCount > 0) {
-            infoLayout.addView(TextView(this).apply {
-                text = if (available > 0) "Còn $available phòng" else "Hết phòng"
-                textSize = 10f
-                setTextColor(0xFFFFFFFF.toInt())
-                setTypeface(null, android.graphics.Typeface.BOLD)
-                setPadding(dpToPx(8), dpToPx(2), dpToPx(8), dpToPx(2))
-                background = android.graphics.drawable.GradientDrawable().apply {
-                    setColor(if (available > 0) 0xFF1976D2.toInt() else 0xFF9E9E9E.toInt())
-                    cornerRadius = dpToPx(4).toFloat()
-                }
-                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
-                    .apply { topMargin = dpToPx(4) }
-            })
-        }
-
-        mainLayout.addView(infoLayout)
-        card.addView(mainLayout)
-
-        card.setOnClickListener {
-            startActivity(Intent(this, RoomDetailActivity::class.java).apply {
-                putExtra("roomId", item.roomId)
-            })
-        }
-
-        return card
     }
 
     private fun displayPagination(currentPage: Int, totalPages: Int, items: List<SearchViewModel.RoomItem>) {
         layoutPagination.removeAllViews()
         if (totalPages <= 1) return
 
-        layoutPagination.gravity = Gravity.CENTER
+        layoutPagination.gravity = android.view.Gravity.CENTER
 
         val btnPrev = TextView(this).apply {
             text = "Trước"

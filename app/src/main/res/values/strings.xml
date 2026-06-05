@@ -209,8 +209,8 @@
     <string name="search_price_custom_hint">\u004e\u0068\u1ead\u0070 \u0067\u0069\u00e1 \u006d\u006f\u006e\u0067 \u006d\u0075\u1ed1\u006e (\u0056\u004e\u0110)</string>
     <string name="search_section_room">Loại / thông tin phòng</string>
     <string name="search_room_type">\u004b\u0069\u1ec3\u0075 \u0070\u0068\u00f2\u006e\u0067</string>
-    <string name="search_room_shared">\u1ede \u0067\u0068\u00e9\u0070</string>
-    <string name="search_room_private">\u0052\u0069\u00ea\u006e\u0067 \u0074\u01b0</string>
+    <string name="search_room_shared">Chung chủ</string>
+    <string name="search_room_private">Riêng chủ</string>
     <string name="search_area_m2">\u0044\u0069\u1ec7\u006e \u0074\u00ed\u0063\u0068 (\u006d\u00b2)</string>
     <string name="search_area_hint">VD: 20</string>
     <string name="search_people">\u0053\u1ed1 \u006e\u0067\u01b0\u1eddi</string>
@@ -260,7 +260,7 @@
     <string name="search_section_amenities_title">\u0054\u0069\u1ec7\u006e \u00ed\u0063\u0068</string>
 
     <string name="settings_version_format">Phiên bản %1$s</string>
-    <string name="delete_account_function_url">https://deleteuseraccount-cg77zy364a-uc.a.run.app</string>
+    <string name="delete_account_function_url">https://deleteuseraccount-cg77zy364a-as.a.run.app</string>
     <string name="settings_terms_title">Điều khoản sử dụng</string>
     <string name="settings_terms_content">CHƯƠNG I: QUY ĐỊNH CHUNG\n\nĐiều khoản Sử dụng này thiết lập các quy tắc pháp lý ràng buộc giữa người dùng và Nền tảng Tìm Trọ 24/7. Bằng việc truy cập, đăng ký và sử dụng bất kỳ dịch vụ nào trên ứng dụng, người dùng đồng ý tuân thủ toàn bộ các quy định tại văn bản này.\n\nCHƯƠNG II: QUY CHẾ QUẢN LÝ VÀ SỬ DỤNG TÀI KHOẢN\n\n1. Người dùng cam kết cung cấp thông tin định danh cá nhân chính xác, trung thực và hoàn toàn tự chịu trách nhiệm trước pháp luật về các thông tin đã khai báo.\n2. Nghiêm cấm mọi hành vi mạo danh cơ quan, tổ chức hoặc cá nhân khác để tạo tài khoản hoặc trục lợi bất chính.\n3. Mỗi tài khoản chỉ đại diện cho một chủ thể duy nhất. Người dùng có trách nhiệm bảo mật thông tin đăng nhập và không được chuyển nhượng, chia sẻ tài khoản cho bên thứ ba.\n\nCHƯƠNG III: QUY ĐỊNH VỀ NỘI DUNG ĐĂNG TẢI VÀ DUYỆT BÀI\n\n1. Thông tin đăng tải về phòng trọ (bao gồm vị trí, diện tích, chi phí dịch vụ, hình ảnh thực tế) phải tuyệt đối chính xác và trung thực.\n2. Nghiêm cấm phát tán nội dung vi phạm pháp luật, thông tin giả mạo, hành vi lừa đảo hoặc gây nhầm lẫn cho cộng đồng.\n3. Quyền sở hữu trí tuệ: Người đăng tin cam kết sở hữu hoặc có quyền sử dụng hợp pháp hình ảnh, tư liệu đính kèm.\n\nCHƯƠNG IV: GIỚI HẠN TRÁCH NHIỆM PHÁP LÝ\n\n1. Tìm Trọ 24/7 vận hành như một nền tảng công nghệ trung gian kết nối thông tin, không trực tiếp tham gia và không chịu trách nhiệm pháp lý đối với bất kỳ thỏa thuận dân sự hoặc giao dịch tài chính nào phát sinh giữa người thuê và người cho thuê.\n2. Ban Quản trị có toàn quyền kiểm duyệt, tạm ẩn hoặc gỡ bỏ vĩnh viễn bất kỳ nội dung nào vi phạm quy chế hoạt động mà không cần báo trước để bảo vệ an toàn cho hệ thống.\n\nCHƯƠNG V: BIỆN PHÁP XỬ LÝ VI PHẠM\n\n1. Mọi hành vi vi phạm quy chế tùy theo mức độ nghiêm trọng sẽ bị xử lý kỷ luật dưới các hình thức: Nhắc nhở hệ thống, đình chỉ tạm thời hoặc khóa vĩnh viễn quyền truy cập tài khoản.\n2. Đối với các hành vi có dấu hiệu lừa đảo, Ban Quản trị sẽ lưu trữ bằng chứng lịch sử hệ thống để cung cấp cho cơ quan chức năng xử lý theo luật định.\n\nCHƯƠNG VI: CHÍNH SÁCH BẢO MẬT VÀ TOÀN VẸN DỮ LIỆU\n\n1. Dữ liệu cá nhân của người dùng được cam kết bảo mật theo tiêu chuẩn công nghệ tiên tiến, chỉ sử dụng cho mục đích vận hành, nâng cao trải nghiệm ứng dụng và bảo vệ an toàn hệ thống.\n2. Người dùng chủ động bảo mật thiết bị cá nhân. Hệ thống được miễn trừ trách nhiệm trong trường hợp rò rỉ dữ liệu phát sinh từ sơ suất bảo mật phía người dùng.\n\nCHƯƠNG VII: ĐIỀU KHOẢN THI HÀNH\n\nQuy chế này có hiệu lực kể từ thời điểm công bố trên ứng dụng. Ban Quản trị có quyền sửa đổi, bổ sung điều khoản vào bất kỳ lúc nào để phù hợp với định hướng phát triển và quy định pháp luật hiện hành.</string>
     <string name="settings_about_title">Giới thiệu ứng dụng</string>
@@ -377,8 +377,7 @@
     <string name="txt_suc_chua">Sức chứa</string>
     <string name="string_t5vcph">--</string>
     <string name="txt_loai_phong">Loại phòng</string>
-    <string name="txt_anh_gia_chu_tro">Đánh giá chủ trọ</string>
-    <string name="txt_anh_gia">Đánh giá</string>
+
     <string name="txt_tien_ich_va_dich_vu">Tiện ích và dịch vụ</string>
     <string name="txt_mo_ta_chi_tiet">Mô tả chi tiết</string>
     <string name="txt_xem_them">Xem thêm</string>
@@ -510,23 +509,21 @@
     <string name="txt_huy_giao_dich">Hủy giao dịch</string>
     <string name="txt_a_het_luot_ang_bai_hom_na">Đã hết lượt đăng bài hôm nay</string>
     <string name="txt_nang_cap_them_luot">Nâng cấp thêm lượt</string>
-    <string name="txt_vui_long_chon_so_sao">Vui lòng chọn số sao:</string>
-    <string name="txt_gui_anh_gia">Gửi đánh giá</string>
-    <string name="txt_nhap_nhan_xet_ve_chu_tro_">Nhập nhận xét về chủ trọ/phòng...</string>
+
     <string name="txt_quy_inh_ang_bai_amp_trach">QUY CHUẨN ĐĂNG BÀI &amp; TRÁCH NHIỆM CHỦ TRỌ</string>
-    <string name="txt_1_yeu_cau_ve_noi_dung_bai">1. Quy định kiểm duyệt nội dung bài đăng</string>
-    <string name="txt_thong_tin_bat_buoc_chinh_">• Đảm bảo độ chính xác 100% về thông tin địa chỉ, giá thuê công khai, diện tích và chi tiết các loại phụ phí đi kèm (điện, nước, dịch vụ, quản lý).\n• Sử dụng hình ảnh/video thực tế chụp trực tiếp tại căn hộ. Nghiêm cấm tuyệt đối việc sử dụng ảnh mạng, ảnh minh họa hoặc ảnh đã qua xử lý kỹ thuật số làm thay đổi bản chất thực tế.\n• Tiêu đề bài viết phải rõ ràng, chuẩn văn phong tiếng Việt, không lạm dụng ký tự đặc biệt hoặc chèn thông tin liên hệ trực tiếp gây nhiễu giao diện.</string>
+    <string name="txt_1_yeu_cau_ve_noi_dung_bai">1. Yêu cầu về nội dung bài đăng</string>
+    <string name="txt_thong_tin_bat_buoc_chinh_">• Đảm bảo độ chính xác 100% về thông tin địa chỉ, giá thuê công khai, diện tích và chi tiết các loại phụ phí đi kèm (điện, nước, dịch vụ, quản lý).\n• Sử dụng hình ảnh thực tế chụp trực tiếp tại phòng trọ. Nghiêm cấm sử dụng ảnh mạng, ảnh minh họa hoặc ảnh đã qua chỉnh sửa làm thay đổi thực tế căn phòng.\n• Tiêu đề bài viết phải rõ ràng, chuẩn văn phong tiếng Việt, không lạm dụng ký tự đặc biệt hoặc chèn thông tin liên hệ trực tiếp gây nhiễu giao diện.</string>
     <string name="txt_2_trach_nhiem_oi_voi_nguo">2. Trách nhiệm chuẩn mực đối với khách thuê</string>
     <string name="txt_cam_ket_giu_ung_gia_niem_">• Cam kết duy trì đúng mức giá cho thuê đã niêm yết công khai trên hệ thống khi khách hàng đến xem phòng và thực hiện giao dịch.\n• Chủ động tiếp nhận, xử lý lịch hẹn và phản hồi tin nhắn của người thuê phòng trong vòng tối đa 24 giờ.\n• Thực hiện cập nhật ngay trạng thái "Đã cho thuê" khi phòng không còn trống. Mọi hành vi cố tình đăng tin ảo gom khách sẽ bị xử lý khóa tài khoản vĩnh viễn.</string>
     <string name="txt_3_quy_trinh_kiem_duyet_am">3. Quy chuẩn kiểm duyệt &amp; Vận hành hệ thống</string>
-    <string name="txt_moi_bai_ang_moi_hoac_chin">• Toàn bộ tin đăng mới hoặc chỉnh sửa sẽ được đội ngũ Kiểm duyệt đánh giá và phê duyệt hiển thị trong vòng tối đa 24 giờ.\n• Tin đăng sẽ tự động chuyển sang trạng thái ẩn sau 60 ngày để tối ưu dữ liệu cập nhật (Chủ trọ có thể thực hiện gia hạn bất kỳ lúc nào).\n• Ban Quản trị có toàn quyền tạm ẩn hoặc gỡ bỏ vĩnh viễn nội dung vi phạm pháp luật hoặc nhận nhiều phản hồi tiêu cực từ cộng đồng mà không cần thông báo trước.</string>
+    <string name="txt_moi_bai_ang_moi_hoac_chin">• Toàn bộ tin đăng mới hoặc chỉnh sửa sẽ được đội ngũ Kiểm duyệt đánh giá và phê duyệt hiển thị trong vòng tối đa 24 giờ.\n• Bài đăng sẽ tự động bị xóa khỏi hệ thống khi đến ngày hạn hiển thị mà bạn đã thiết lập. Hệ thống sẽ gửi thông báo nhắc nhở trước 3 ngày để bạn kịp thời đăng lại nếu phòng vẫn còn trống.\n• Ban Quản trị có toàn quyền tạm ẩn hoặc gỡ bỏ vĩnh viễn nội dung vi phạm pháp luật hoặc nhận nhiều phản hồi tiêu cực từ cộng đồng mà không cần thông báo trước.</string>
     <string name="txt_bang_viec_nhan_ong_y_ban_">Bằng việc nhấn "Đồng ý", bạn xác nhận đã đọc, hiểu rõ và cam kết tuân thủ nghiêm túc các quy chuẩn vận hành của Tìm Trọ 24/7 nhằm xây dựng cộng đồng minh bạch, chuyên nghiệp.</string>
     <string name="txt_toi_a_hieu_va_ong_y">TÔI ĐÃ HIỂU VÀ ĐỒNG Ý</string>
     <string name="txt_tim_ia_chi">Tìm địa chỉ</string>
     <string name="txt_nhap_ia_chi_hoac_ten_khu_">Nhập địa chỉ hoặc tên khu vực</string>
-    <string name="txt_meo_nhap_so_nha_ten_uong_">Mẹo: Nhập số nhà, tên đường hoặc tên khu vực</string>
+    <string name="txt_meo_nhap_so_nha_ten_uong_">Mẹo: Nhập địa chỉ, tên trường, bệnh viện hoặc câu như "tìm phòng gần Cầu Giấy"</string>
     <string name="txt_tim_kiem">Tìm kiếm</string>
-    <string name="txt_vd_15_nguyen_van_linh_ha_">VD: 15 Nguyễn Văn Linh, Hà Đông...</string>
+    <string name="txt_vd_15_nguyen_van_linh_ha_">VD: Đại học Thủy Lợi, Cầu Giấy, Hà Đông...</string>
     <string name="txt_mua_them_luot_ang_bai">Mua thêm lượt đăng bài</string>
     <string name="txt_chon_goi_hoac_nhap_so_luo">Chọn gói hoặc nhập số lượng bạn muốn</string>
     <string name="txt_3_luot_ang_bai">+3 lượt đăng bài</string>

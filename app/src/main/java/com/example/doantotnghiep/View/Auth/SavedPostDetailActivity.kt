@@ -78,7 +78,7 @@ class SavedPostDetailActivity : AppCompatActivity() {
             val address = data["address"] as? String ?: ""
             val ward = data["ward"] as? String ?: ""
             val district = data["district"] as? String ?: ""
-            tvAddress.text = listOf(address, ward, district).filter { it.isNotBlank() }.joinToString(", ")
+            tvAddress.text = listOf(address, ward, district).filter { it.isNotBlank() }.distinct().joinToString(", ")
                 .ifBlank { "Chưa cập nhật địa chỉ" }
 
             tvDescription.text = (data["description"] as? String)?.takeIf { it.isNotBlank() } ?: "Không có mô tả"
@@ -88,6 +88,7 @@ class SavedPostDetailActivity : AppCompatActivity() {
             setupRoomInfo(data)
             setupAmenities(data)
             setupOwnerInfo(data)
+            setupAppointmentInfo(data)
         }
 
         viewModel.deleteResult.observe(this) { success ->
@@ -172,19 +173,23 @@ class SavedPostDetailActivity : AppCompatActivity() {
         val wifiPrice = (data["wifiPrice"] as? Number)?.toLong() ?: 0L
 
         if (area > 0) addInfoRow("Diện tích", "${area} m²")
-        if (peopleCount > 0) addInfoRow("Số người/phòng", "$peopleCount người")
-        if (roomType.isNotEmpty()) addInfoRow("Dạng phòng", roomType)
-        if (genderPrefer.isNotEmpty()) addInfoRow("Giới tính ưu tiên", genderPrefer)
-        if (kitchen.isNotEmpty()) addInfoRow("Bếp", kitchen)
-        if (bathroom.isNotEmpty()) addInfoRow("Vệ sinh", bathroom)
+        if (peopleCount > 0) addInfoRow("Số người ở", "$peopleCount người")
+        if (roomType.isNotEmpty()) addInfoRow("Loại phòng", roomType)
+        if (genderPrefer.isNotEmpty()) addInfoRow("Ưu tiên giới tính", genderPrefer)
+        if (kitchen.isNotEmpty()) addInfoRow("Phòng bếp", kitchen)
+        if (bathroom.isNotEmpty()) addInfoRow("Phòng vệ sinh", bathroom)
         if (electricPrice > 0) addInfoRow("Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
         if (waterPrice > 0) addInfoRow("Tiền nước", "${formatter.format(waterPrice)} đ/m³")
-        if (wifiPrice > 0) addInfoRow("Tiền wifi", "${formatter.format(wifiPrice)} đ/tháng")
-        if (deposit > 0) addInfoRow("Đặt cọc", "${formatter.format(deposit)} đ")
-        if (depositMonths > 0) addInfoRow("Cọc trước", "$depositMonths tháng")
+        if (data["hasWifi"] == true) addInfoRow("Tiền wifi", if (wifiPrice > 0) "${formatter.format(wifiPrice)} đ/tháng" else "Miễn phí")
+        (data["otherFees"] as? List<Map<String, Any>> ?: emptyList()).forEach { fee ->
+            val label = fee["label"] as? String ?: ""; val price = (fee["price"] as? Number)?.toLong() ?: 0L
+            if (label.isNotEmpty()) addInfoRow(label, "${formatter.format(price)} đ/tháng")
+        }
+        if (deposit > 0) addInfoRow("Tiền đặt cọc", "${formatter.format(deposit)} đ")
+        if (depositMonths > 0) addInfoRow("Đặt cọc trước", "$depositMonths tháng")
 
         if (curfew.isNotEmpty()) {
-            val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Khóa cửa $curfewTime" else curfew
+            val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Đóng cửa lúc $curfewTime" else curfew
             addInfoRow("Giờ giấc", text)
         }
 
@@ -192,7 +197,12 @@ class SavedPostDetailActivity : AppCompatActivity() {
         if (pet.isNotEmpty()) {
             val petName = data["petName"] as? String ?: ""
             val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
-            val text = if (pet == "Cho nuôi" && petName.isNotEmpty()) "Cho nuôi: $petName (tối đa $petCount)" else pet
+            val details = mutableListOf<String>()
+            if (petName.isNotEmpty()) details.add(petName)
+            if (petCount > 0) details.add("Số lượng: $petCount")
+            val text = if (pet == "Cho nuôi") {
+                if (details.isNotEmpty()) "Cho nuôi (${details.joinToString(" - ")})" else "Cho nuôi"
+            } else pet
             addInfoRow("Thú cưng", text)
         }
     }
@@ -229,15 +239,37 @@ class SavedPostDetailActivity : AppCompatActivity() {
         val amenities = mutableListOf<String>()
 
         if (data["hasWifi"] == true) amenities.add("✓ Wifi")
-        if (data["hasAirCon"] == true) amenities.add("✓ Điều hòa")
-        if (data["hasWaterHeater"] == true) amenities.add("✓ Nóng lạnh")
-        if (data["hasWasher"] == true) amenities.add("✓ Máy giặt")
-        if (data["hasDryingArea"] == true) amenities.add("✓ Chỗ phơi đồ")
-        if (data["hasWardrobe"] == true) amenities.add("✓ Tủ quần áo")
-        if (data["hasBed"] == true) amenities.add("✓ Giường")
-        if (data["hasMotorbike"] == true) amenities.add("✓ Để xe máy")
-        if (data["hasEBike"] == true) amenities.add("✓ Để xe đạp điện")
-        if (data["hasBicycle"] == true) amenities.add("✓ Để xe đạp")
+        fun aq(k: String) = (data[k] as? Number)?.toInt() ?: 0
+        fun al(n: String, q: Int) = "✓ $n : Số lượng ${q.coerceAtLeast(1)}"
+        if (data["hasAirCon"] == true) amenities.add(al("Điều hòa", aq("airConQty")))
+        if (data["hasWaterHeater"] == true) amenities.add(al("Bình nóng lạnh", aq("waterHeaterQty")))
+        if (data["hasWasher"] == true) amenities.add(al("Máy giặt", aq("washerQty")))
+        if (data["hasDryingArea"] == true) amenities.add(al("Sân phơi đồ", aq("dryingAreaQty")))
+        if (data["hasWardrobe"] == true) amenities.add(al("Tủ quần áo", aq("wardrobeQty")))
+        if (data["hasBed"] == true) amenities.add(al("Giường ngủ", aq("bedQty")))
+        (data["furnitureItems"] as? List<Map<String, Any>> ?: emptyList()).forEach { item ->
+            val name = item["name"] as? String ?: ""; val qty = (item["qty"] as? Number)?.toInt() ?: 1
+            if (name.isNotEmpty()) amenities.add("✓ $name : Số lượng $qty")
+        }
+        (data["serviceItems"] as? List<Map<String, Any>> ?: emptyList()).forEach { item ->
+            val name = item["name"] as? String ?: ""; val price = (item["price"] as? Number)?.toLong() ?: 0L
+            if (name.isNotEmpty()) {
+                val priceText = if (price > 0) " - ${formatter.format(price)} đ/tháng" else ""
+                amenities.add("✓ $name$priceText")
+            }
+        }
+        if (data["hasMotorbike"] == true) {
+            val fee = (data["motorbikeFee"] as? Number)?.toLong() ?: 0L
+            amenities.add(if (fee > 0) "✓ Để xe máy - ${formatter.format(fee)} đ/xe/tháng" else "✓ Để xe máy (miễn phí)")
+        }
+        if (data["hasEBike"] == true) {
+            val fee = (data["eBikeFee"] as? Number ?: data["ebikeFee"] as? Number)?.toLong() ?: 0L
+            amenities.add(if (fee > 0) "✓ Để xe đạp điện - ${formatter.format(fee)} đ/xe/tháng" else "✓ Để xe đạp điện (miễn phí)")
+        }
+        if (data["hasBicycle"] == true) {
+            val fee = (data["bicycleFee"] as? Number)?.toLong() ?: 0L
+            amenities.add(if (fee > 0) "✓ Để xe đạp - ${formatter.format(fee)} đ/xe/tháng" else "✓ Để xe đạp (miễn phí)")
+        }
 
         if (amenities.isEmpty()) {
             layoutAmenities.addView(TextView(this).apply {
@@ -323,6 +355,38 @@ class SavedPostDetailActivity : AppCompatActivity() {
             .setPositiveButton("Bỏ lưu") { _, _ -> viewModel.deleteSavedPost(savedDocId) }
             .setNegativeButton("Hủy", null)
             .show()
+    }
+
+    private fun setupAppointmentInfo(data: Map<String, Any>) {
+        val card = findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardAppointmentInfo) ?: return
+        val layoutExpiry = findViewById<android.widget.LinearLayout>(R.id.layoutExpiryRow) ?: return
+        val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvPostCreatedAtDisplay) ?: return
+        val tvExpiry = findViewById<android.widget.TextView>(R.id.tvPostExpiryDisplay) ?: return
+        val layoutSlots = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsRow) ?: return
+        val tvSlots = findViewById<android.widget.TextView>(R.id.tvAvailableTimeSlotsDisplay) ?: return
+
+        val createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L
+        val expiryDate = (data["postExpiryDate"] as? Number)?.toLong() ?: 0L
+        val timeSlots = data["availableTimeSlots"] as? String ?: ""
+        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
+
+        if (expiryDate <= 0 && timeSlots.isBlank()) { card.visibility = android.view.View.GONE; return }
+        card.visibility = android.view.View.VISIBLE
+
+        if (expiryDate > 0) {
+            layoutExpiry.visibility = android.view.View.VISIBLE
+            tvCreatedAt.text = if (createdAt > 0) sdf.format(java.util.Date(createdAt)) else "--"
+            tvExpiry.text = sdf.format(java.util.Date(expiryDate))
+        } else {
+            layoutExpiry.visibility = android.view.View.GONE
+        }
+
+        if (timeSlots.isNotBlank()) {
+            layoutSlots.visibility = android.view.View.VISIBLE
+            tvSlots.text = timeSlots
+        } else {
+            layoutSlots.visibility = android.view.View.GONE
+        }
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

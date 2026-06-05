@@ -25,9 +25,15 @@ import java.util.Date
 import java.util.Locale
 
 class AIChatAdapter(
-    private val messageList: List<AIMessage>,
+    private val messageList: MutableList<AIMessage>,
     private val quickReplyListener: QuickReplyClickListener? = null
 ) : RecyclerView.Adapter<AIChatAdapter.MessageViewHolder>() {
+
+    fun updateList(newList: List<AIMessage>) {
+        messageList.clear()
+        messageList.addAll(newList)
+        notifyDataSetChanged()
+    }
 
     interface QuickReplyClickListener {
         fun onQuickReplyClicked(text: String)
@@ -111,7 +117,7 @@ class AIChatAdapter(
             } else {
                 holder.tvAITime.visibility = View.VISIBLE
                 holder.tvAITime.text = timeString
-                holder.tvAIName.text = "StayAssist AI"
+                holder.tvAIName.text = "Trợ lý hỗ trợ tìm kiếm phòng trọ"
 
                 val hasText = message.content.trim().isNotEmpty()
                 val hasRooms = message.suggestedRooms.isNotEmpty()
@@ -144,18 +150,14 @@ class AIChatAdapter(
                     holder.scrollQuickReplies.visibility = View.VISIBLE
                     holder.chipGroupQuickReplies.removeAllViews()
                     val context = holder.itemView.context
+                    val inflater = LayoutInflater.from(context)
                     for (replyText in message.quickReplies) {
-                        val chip = Chip(context).apply {
-                            text = replyText
-                            isClickable = true
-                            isCheckable = false
-                            chipBackgroundColor = ColorStateList.valueOf(0xFFE8F4FD.toInt())
-                            setTextColor(0xFF0084FF.toInt())
-                            chipStrokeWidth = 1f
-                            chipStrokeColor = ColorStateList.valueOf(0xFF90CAF9.toInt())
-                            setOnClickListener { quickReplyListener?.onQuickReplyClicked(replyText) }
+                        val suggestionView = inflater.inflate(R.layout.item_chat_suggestion, holder.chipGroupQuickReplies, false) as TextView
+                        suggestionView.text = replyText
+                        suggestionView.setOnClickListener {
+                            quickReplyListener?.onQuickReplyClicked(replyText)
                         }
-                        holder.chipGroupQuickReplies.addView(chip)
+                        holder.chipGroupQuickReplies.addView(suggestionView)
                     }
                 } else {
                     holder.scrollQuickReplies.visibility = View.GONE

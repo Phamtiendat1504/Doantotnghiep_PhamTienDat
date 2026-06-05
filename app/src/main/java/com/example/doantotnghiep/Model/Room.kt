@@ -18,6 +18,7 @@ data class Room(
     val roomCount: Int = 0,
     val rentedCount: Int = 0, // Số phòng đã cho thuê
     val hasWifi: Boolean = false,
+    val hasElectric: Boolean = false,
     val hasWater: Boolean = false,
     val hasAirCon: Boolean = false,
     val hasWaterHeater: Boolean = false,
@@ -29,6 +30,16 @@ data class Room(
     val wifiPrice: Long = 0,
     val electricPrice: Long = 0,
     val waterPrice: Long = 0,
+    val otherFees: List<Map<String, Any>> = listOf(),
+    val furnitureItems: List<Map<String, Any>> = listOf(),
+    val serviceItems: List<Map<String, Any>> = listOf(),
+
+    val airConQty: Int = 0,
+    val waterHeaterQty: Int = 0,
+    val washerQty: Int = 0,
+    val dryingAreaQty: Int = 0,
+    val wardrobeQty: Int = 0,
+    val bedQty: Int = 0,
     val kitchen: String = "",
     val bathroom: String = "",
     val pet: String = "",
@@ -52,5 +63,7 @@ data class Room(
     val ownerAvatarUrl: String = "",
     val status: String = "pending",
     val isFeatured: Boolean = false,
-    val createdAt: Long = System.currentTimeMillis()
+    val createdAt: Long = System.currentTimeMillis(),
+    val postExpiryDate: Long = 0,
+    val availableTimeSlots: String = ""
 )

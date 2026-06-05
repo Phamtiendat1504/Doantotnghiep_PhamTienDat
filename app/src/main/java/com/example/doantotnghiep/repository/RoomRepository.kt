@@ -4,6 +4,7 @@ import android.net.Uri
 import com.example.doantotnghiep.Model.Room
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
 import com.google.firebase.firestore.Source
@@ -26,7 +27,6 @@ class RoomRepository {
     private val imageMetadata = StorageMetadata.Builder()
         .setContentType("image/jpeg")
         .build()
-    private val postQuotaWindowMs = 24L * 60L * 60L * 1000L
 
     private fun mapStorageUploadError(error: Exception?): String {
         val ex = error as? StorageException
@@ -46,14 +46,15 @@ class RoomRepository {
         return when (ex?.code) {
             FirebaseFirestoreException.Code.PERMISSION_DENIED ->
                 "Tài khoản chưa đủ điều kiện đăng bài theo chính sách hiện tại."
+            FirebaseFirestoreException.Code.ABORTED ->
+                ex.message ?: "Thao tác không thể hoàn thành. Vui lòng thử lại."
             else -> "Lưu bài đăng thất bại: ${error?.message ?: "Lỗi không xác định"}"
         }
     }
 
     fun checkDailyPostQuota(
         uid: String,
-        limitPer24h: Int = 3,
-        purchasedSlots: Int = 0,
+        limitPer24h: Int = FREE_POSTS_PER_DAY,
         onAllowed: (remainingToday: Int, usePurchasedSlot: Boolean) -> Unit,
         onBlocked: (unlockAt: Long) -> Unit,
         onFailure: (String) -> Unit
@@ -66,7 +67,7 @@ class RoomRepository {
                     return@addOnSuccessListener
                 }
                 
-                val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+                val today = getTodayGmt7String()
                 val storedDate = doc.getString("dailyPostCountDate") ?: ""
                 val storedCount = if (storedDate == today) {
                     (doc.getLong("dailyPostCount") ?: 0L).toInt()
@@ -112,11 +113,18 @@ class RoomRepository {
         onProgress: (Int) -> Unit
     ) {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập. Vui lòng đăng nhập lại.")
+        
+        // Giới hạn số lượng ảnh tối đa là 10
+        if (imageUris.size > 10) {
+            onFailure("Chỉ được tải lên tối đa 10 ảnh phòng trọ.")
+            return
+        }
+
         val docRef = db.collection("rooms").document()
         val roomId = docRef.id
 
         if (imageUris.isEmpty()) {
-            val roomData = room.copy(id = roomId, userId = uid)
+            val roomData = room.copy(id = roomId, userId = uid, imageUrls = emptyList())
             if (usePurchasedSlot) {
                 saveRoomWithPurchasedSlot(docRef, roomData, uid, {
                     onSuccess(roomId, null)
@@ -148,34 +156,38 @@ class RoomRepository {
                                             "updatedAt" to System.currentTimeMillis()
                                         )
                                     ).addOnSuccessListener {
-                                        if (usePurchasedSlot) {
-                                            consumePurchasedSlot(
-                                                uid = uid,
-                                                onSuccess = {
-                                                    docRef.update("usedPurchasedSlot", true)
-                                                        .addOnCompleteListener {
-                                                            onSuccess(roomId, urls.firstOrNull())
-                                                        }
-                                                },
-                                                onFailure = { error ->
-                                                    docRef.delete().addOnCompleteListener { onFailure(error) }
-                                                }
-                                            )
-                                        } else {
-                                            onSuccess(roomId, urls.firstOrNull())
-                                        }
+                                        onSuccess(roomId, urls.firstOrNull())
                                     }.addOnFailureListener { e ->
                                         onFailure(mapFirestorePostError(e))
                                     }
                                 },
                                 onError = { error ->
-                                    // Upload lỗi: dọn room seed để tránh tạo bài rỗng.
-                                    docRef.delete().addOnCompleteListener { onFailure(error) }
+                                    // Dọn dẹp ảnh mồ côi khỏi Storage
+                                    val folderRef = storage.reference.child("rooms").child(roomId)
+                                    folderRef.listAll()
+                                        .addOnSuccessListener { listResult ->
+                                            listResult.items.forEach { item ->
+                                                item.delete().addOnFailureListener { e ->
+                                                    android.util.Log.e("RoomRepository", "Lỗi xóa ảnh mồ côi: ${e.message}")
+                                                }
+                                            }
+                                        }
+                                        .addOnFailureListener { e ->
+                                            android.util.Log.e("RoomRepository", "Lỗi listAll khi dọn ảnh mồ côi: ${e.message}")
+                                        }
+
+                                    docRef.delete().addOnCompleteListener {
+                                        rollbackPostQuota(uid, usePurchasedSlot)
+                                        onFailure(error)
+                                    }
                                 }
                             )
                         }
                         .addOnFailureListener { e ->
-                            docRef.delete().addOnCompleteListener { onFailure(mapFirestorePostError(e)) }
+                            docRef.delete().addOnCompleteListener {
+                                rollbackPostQuota(uid, usePurchasedSlot)
+                                onFailure(mapFirestorePostError(e))
+                            }
                         }
                 },
                 onFailure = onFailure
@@ -209,41 +221,11 @@ class RoomRepository {
                 )
             )
         }.addOnSuccessListener {
-            val expireAtMs = room.createdAt + 90L * 24 * 60 * 60 * 1000
-            docRef.update(
-                mapOf(
-                    "expireAt" to Timestamp(Date(expireAtMs)),
-                    "usedPurchasedSlot" to true
-                )
-            ).addOnSuccessListener { onSuccess() }
+            docRef.update("usedPurchasedSlot", true)
+                .addOnSuccessListener { onSuccess() }
                 .addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
         }.addOnFailureListener { e ->
             onFailure(e.message ?: "Không thể đăng bài bằng lượt đã mua. Vui lòng thử lại.")
-        }
-    }
-
-    private fun consumePurchasedSlot(uid: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        val userRef = db.collection("users").document(uid)
-        db.runTransaction { tx ->
-            val snap = tx.get(userRef)
-            val currentSlots = (snap.getLong("purchasedSlots") ?: 0L).toInt()
-            if (currentSlots <= 0) {
-                throw FirebaseFirestoreException(
-                    "Bạn đã dùng hết lượt đăng bài đã mua.",
-                    FirebaseFirestoreException.Code.ABORTED
-                )
-            }
-            tx.update(
-                userRef,
-                mapOf(
-                    "purchasedSlots" to currentSlots - 1,
-                    "lastSlotConsumedAt" to System.currentTimeMillis()
-                )
-            )
-        }.addOnSuccessListener {
-            onSuccess()
-        }.addOnFailureListener { e ->
-            onFailure(e.message ?: "Không thể trừ lượt đăng bài đã mua. Vui lòng thử lại.")
         }
     }
 
@@ -254,17 +236,25 @@ class RoomRepository {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        val expireAtMs = room.createdAt + 90L * 24 * 60 * 60 * 1000
-        val expireAtTimestamp = Timestamp(Date(expireAtMs))
-        val today = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val today = getTodayGmt7String()
         val userRef = db.collection("users").document(room.userId)
 
         db.runTransaction { tx ->
             val userSnap = tx.get(userRef)
             
             if (usedPurchasedSlot) {
-                // BỎ QUA KIỂM TRA QUOTA: Nếu dùng lượt mua thêm, không check giới hạn miễn phí và không tăng dailyPostCount
+                val currentSlots = (userSnap.getLong("purchasedSlots") ?: 0L).toInt()
+                if (currentSlots <= 0) {
+                    throw FirebaseFirestoreException(
+                        "Bạn đã dùng hết lượt đăng bài đã mua.",
+                        FirebaseFirestoreException.Code.ABORTED
+                    )
+                }
                 tx.set(docRef, room)
+                tx.update(userRef, mapOf(
+                    "purchasedSlots" to currentSlots - 1,
+                    "lastSlotConsumedAt" to System.currentTimeMillis()
+                ))
             } else {
                 val storedDate = userSnap.getString("dailyPostCountDate") ?: ""
                 val storedCount = if (storedDate == today) {
@@ -285,12 +275,9 @@ class RoomRepository {
                 ))
             }
         }.addOnSuccessListener {
-            docRef.update(mapOf("expireAt" to expireAtTimestamp, "usedPurchasedSlot" to usedPurchasedSlot))
+            docRef.update("usedPurchasedSlot", usedPurchasedSlot)
                 .addOnSuccessListener { onSuccess() }
-                .addOnFailureListener { e ->
-                    android.util.Log.e("RoomRepository", "Cập nhật expireAt thất bại: ${e.message}")
-                    onFailure("Gia hạn bài đăng thất bại. Vui lòng thử lại.")
-                }
+                .addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
         }.addOnFailureListener { e -> onFailure(mapFirestorePostError(e)) }
     }
 
@@ -306,6 +293,50 @@ class RoomRepository {
                 else onFailure("Không tìm thấy bài viết")
             }
             .addOnFailureListener { onFailure("Không thể tải thông tin bài viết, vui lòng thử lại") }
+    }
+
+    // Lấy nhiều bài đăng đã được duyệt theo danh sách ID (batch 30, Firestore whereIn limit)
+    fun getApprovedRoomsByIds(
+        roomIds: List<String>,
+        onSuccess: (List<com.google.firebase.firestore.DocumentSnapshot>) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        if (roomIds.isEmpty()) { onSuccess(emptyList()); return }
+
+        val batches   = roomIds.chunked(30)
+        val allDocs   = mutableListOf<com.google.firebase.firestore.DocumentSnapshot>()
+        var completed = 0
+        var hasError  = false
+
+        for (batch in batches) {
+            db.collection("rooms")
+                .whereEqualTo("status", "approved")
+                .whereIn(com.google.firebase.firestore.FieldPath.documentId(), batch)
+                .get()
+                .addOnSuccessListener { snap ->
+                    if (hasError) return@addOnSuccessListener
+                    synchronized(allDocs) { allDocs.addAll(snap.documents.filter { it.exists() }) }
+                    completed++
+                    if (completed == batches.size) onSuccess(allDocs)
+                }
+                .addOnFailureListener { e ->
+                    if (!hasError) { hasError = true; onFailure("Lỗi tải dữ liệu: ${e.message}") }
+                }
+        }
+    }
+
+    // Lấy một bài đăng đã được duyệt theo ID (dùng cho tìm kiếm chính xác)
+    fun getApprovedRoomById(
+        roomId: String,
+        onSuccess: (com.google.firebase.firestore.DocumentSnapshot) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        db.collection("rooms").document(roomId).get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists() && doc.getString("status") == "approved") onSuccess(doc)
+                else onFailure("Không tìm thấy bài đăng")
+            }
+            .addOnFailureListener { e -> onFailure("Lỗi tải dữ liệu: ${e.message}") }
     }
 
     // Xóa bài viết đã lưu
@@ -396,31 +427,20 @@ class RoomRepository {
         val query = if (filter != "all") {
             baseQuery.whereEqualTo("status", filter)
         } else {
-            baseQuery.whereIn("status", listOf("pending", "approved", "rejected", "expired"))
+            baseQuery.whereIn("status", listOf("pending", "approved", "rejected", "rented"))
         }
 
         query.get()
             .addOnSuccessListener { docs ->
                 // Sắp xếp phía client theo createdAt giảm dần
-                val sorted = docs.toList().sortedByDescending { it.getLong("createdAt") ?: 0L }
+                val sorted = docs.toList().sortedByDescending { it.getCreatedAtMs() }
                 onSuccess(sorted)
             }
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi tải dữ liệu") }
     }
 
-    // Gia hạn bài đăng thêm 60 ngày
-    fun renewPost(docId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
-        val renewedAt = System.currentTimeMillis()
-        val newExpireMs = renewedAt + 60L * 24 * 60 * 60 * 1000
-        val newExpireTimestamp = Timestamp(Date(newExpireMs))
-        db.collection("rooms").document(docId)
-            .update("status", "approved", "renewedAt", renewedAt, "expireAt", newExpireTimestamp)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e -> onFailure("Không thể gia hạn: ${e.message}") }
-    }
-
     /**
-     * Lắng nghe số bài đăng có cập nhật chưa đọc (approved/rejected/expired).
+     * Lắng nghe số bài đăng có cập nhật chưa đọc (approved/rejected).
      * Đây là Badge thông báo cho Chủ trọ, dùng cờ cloud `hasUnreadUpdate` thay vì SharedPreferences.
      */
     fun listenPostBadge(uid: String, onResult: (Int) -> Unit): com.google.firebase.firestore.ListenerRegistration {
@@ -468,7 +488,66 @@ class RoomRepository {
 
     fun loadSavedPosts(uid: String, onSuccess: (List<com.google.firebase.firestore.QueryDocumentSnapshot>) -> Unit, onFailure: (String) -> Unit) {
         db.collection("savedPosts").whereEqualTo("userId", uid).get()
-            .addOnSuccessListener { docs -> onSuccess(docs.toList()) }
+            .addOnSuccessListener { docs ->
+                val savedDocs = docs.toList()
+                if (savedDocs.isEmpty()) {
+                    onSuccess(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                val roomIds = savedDocs.mapNotNull { doc ->
+                    doc.getString("roomId")?.takeIf { it.isNotEmpty() }
+                }
+                if (roomIds.isEmpty()) {
+                    onSuccess(emptyList())
+                    return@addOnSuccessListener
+                }
+
+                val batches = roomIds.chunked(30)
+                val existingRoomIds = mutableSetOf<String>()
+                var completedBatches = 0
+                var hasError = false
+
+                for (batch in batches) {
+                    db.collection("rooms")
+                        .whereIn(com.google.firebase.firestore.FieldPath.documentId(), batch)
+                        .get()
+                        .addOnSuccessListener { snap ->
+                            if (hasError) return@addOnSuccessListener
+                            snap.documents.filter { it.exists() }.forEach { existingRoomIds.add(it.id) }
+                            completedBatches++
+                            if (completedBatches == batches.size) {
+                                val activeSavedDocs = mutableListOf<com.google.firebase.firestore.QueryDocumentSnapshot>()
+                                val deleteBatch = db.batch()
+                                var hasOrphans = false
+
+                                for (doc in savedDocs) {
+                                    val rId = doc.getString("roomId") ?: ""
+                                    if (existingRoomIds.contains(rId) || rId.isEmpty()) {
+                                        activeSavedDocs.add(doc)
+                                    } else {
+                                        deleteBatch.delete(doc.reference)
+                                        hasOrphans = true
+                                    }
+                                }
+
+                                if (hasOrphans) {
+                                    deleteBatch.commit().addOnFailureListener { e ->
+                                        android.util.Log.e("RoomRepository", "Error deleting orphan saved posts: ${e.message}")
+                                    }
+                                }
+
+                                onSuccess(activeSavedDocs)
+                            }
+                        }
+                        .addOnFailureListener { e ->
+                            if (!hasError) {
+                                hasError = true
+                                onFailure("Lỗi tải dữ liệu: ${e.message}")
+                            }
+                        }
+                }
+            }
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi tải dữ liệu") }
     }
 
@@ -553,18 +632,16 @@ class RoomRepository {
             .whereEqualTo("userId", userId)
             .whereEqualTo("status", "approved")
             .get()
-            .addOnSuccessListener { docs -> onSuccess(docs.documents.sortedByDescending { it.getLong("createdAt") ?: 0 }) }
+            .addOnSuccessListener { docs -> onSuccess(docs.documents.sortedByDescending { it.getCreatedAtMs() }) }
             .addOnFailureListener { e -> onFailure("Không thể tải thông tin phòng: ${e.message}") }
     }
 
     fun loadOwnerPostedRooms(userId: String, onSuccess: (List<com.google.firebase.firestore.DocumentSnapshot>) -> Unit, onFailure: (String) -> Unit) {
         val currentUid = auth.currentUser?.uid
         val visibleStatuses = if (currentUid == userId) {
-            // Chủ tài khoản tự xem: thấy toàn bộ bài còn hiệu lực trong hệ thống (trừ rented).
-            listOf("pending", "approved", "rejected", "expired")
+            listOf("pending", "approved", "rejected", "rented")
         } else {
-            // Người khác xem hồ sơ chủ trọ: chỉ được thấy bài công khai theo Firestore Rules.
-            listOf("approved", "expired")
+            listOf("approved")
         }
 
         db.collection("rooms")
@@ -572,10 +649,7 @@ class RoomRepository {
             .whereIn("status", visibleStatuses)
             .get()
             .addOnSuccessListener { docs ->
-                val filtered = docs.documents
-                    .filter { (it.getString("status") ?: "").lowercase(Locale("vi", "VN")) != "rented" }
-                    .sortedByDescending { it.getLong("createdAt") ?: 0L }
-                onSuccess(filtered)
+                onSuccess(docs.documents.sortedByDescending { it.getCreatedAtMs() })
             }
             .addOnFailureListener { e -> onFailure("Không thể tải bài đăng của chủ trọ: ${e.message}") }
     }
@@ -603,26 +677,6 @@ class RoomRepository {
                 onResult(hasActive)
             }
             .addOnFailureListener { onResult(false) }
-    }
-
-    fun loadBookedSlots(roomId: String, onSuccess: (List<Map<String, Any>>) -> Unit) {
-        db.collection("bookedSlots").whereEqualTo("roomId", roomId).get()
-            .addOnSuccessListener { snap ->
-                val activeStatuses = setOf("pending", "confirmed", "tenant_confirmed")
-                val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
-                val active = snap.documents
-                    .filter { activeStatuses.contains(it.getString("status") ?: "") }
-                    .sortedBy { doc ->
-                        try {
-                            dateFormat.parse(doc.getString("date") ?: "")?.time ?: 0L
-                        } catch (e: Exception) {
-                            0L
-                        }
-                    }
-                    .map { it.data ?: emptyMap() }
-                onSuccess(active)
-            }
-            .addOnFailureListener { onSuccess(emptyList()) }
     }
 
     fun toggleSavePost(uid: String, roomId: String, roomData: Map<String, Any>, onResult: (Boolean) -> Unit, onFailure: (String) -> Unit) {
@@ -744,6 +798,7 @@ class RoomRepository {
                     onFailure("Bài đăng không tồn tại")
                     return@addOnSuccessListener
                 }
+                val roomTitle = doc.getString("title") ?: "Phòng trọ"
                 val imageUrls = (doc.get("imageUrls") as? List<*>)?.filterIsInstance<String>() ?: listOf()
                 
                 // Xóa document trong Firestore
@@ -757,7 +812,12 @@ class RoomRepository {
                                 android.util.Log.e("RoomRepository", "Lỗi xóa ảnh: ${e.message}")
                             }
                         }
-                        // Xóa folder chứa ảnh (nếu có thể/cần thiết) hoặc chỉ xóa các file là đủ
+                        
+                        // FIX: Đồng bộ dọn dẹp các bài lưu và tự động hủy lịch hẹn của phòng bị xóa
+                        deleteSavedPostsByRoom(roomId)
+                        cancelAllAppointmentsForRoom(roomId, roomTitle)
+                        cancelFeaturedRequestsForRoom(roomId)
+
                         onSuccess()
                     }
                     .addOnFailureListener { e ->
@@ -769,35 +829,24 @@ class RoomRepository {
             }
     }
 
-    // Đánh dấu đã cho thuê: Xóa ảnh và xóa hẳn bài đăng trên Firestore để tránh phình dữ liệu
+    // Đánh dấu đã cho thuê: Cập nhật trạng thái status thành rented thay vì xóa hẳn
     fun markAsRented(roomId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val roomRef = db.collection("rooms").document(roomId)
         roomRef.get().addOnSuccessListener { document ->
             if (document.exists()) {
                 val roomTitle = document.getString("title") ?: "Phòng trọ"
-                // Fix warning: dùng filterIsInstance thay vì unchecked cast
-                val imageUrls = (document.get("imageUrls") as? List<*>)?.filterIsInstance<String>() ?: emptyList()
 
-                // 1. Xóa ảnh trên Storage
-                if (imageUrls.isNotEmpty()) {
-                    imageUrls.forEach { url ->
-                        try {
-                            storage.getReferenceFromUrl(url).delete()
-                        } catch (e: Exception) {
-                            // Bỏ qua lỗi nếu không xóa được một vài ảnh
-                        }
-                    }
-                }
-
-                // 2. Xóa hẳn bài đăng và dọn dữ liệu liên quan
-                roomRef.delete().addOnSuccessListener {
+                // Cập nhật trạng thái thành "rented"
+                roomRef.update(mapOf(
+                    "status" to "rented",
+                    "updatedAt" to System.currentTimeMillis()
+                )).addOnSuccessListener {
                     deleteSavedPostsByRoom(roomId)
-                    // FIX LỖI 3: Hủy và thông báo tất cả lịch hẹn còn lại của phòng này.
-                    // Luồng này khởi động khi Chủ trọ bấm "Đã cho thuê" từ màn hình Bài đăng,
-                    // khác với luồng từ Lịch hẹn (đã biết tenantId và appointmentId cụ thể).
+                    // Hủy và thông báo tất cả lịch hẹn còn lại của phòng này.
                     cancelAllAppointmentsForRoom(roomId, roomTitle)
+                    cancelFeaturedRequestsForRoom(roomId)
                     onSuccess()
-                }.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi xóa bài đăng đã cho thuê") }
+                }.addOnFailureListener { e -> onFailure(e.message ?: "Lỗi khi cập nhật trạng thái cho thuê") }
             } else {
                 onFailure("Không tìm thấy bài đăng")
             }
@@ -812,6 +861,27 @@ class RoomRepository {
                 if (docs.isEmpty) return@addOnSuccessListener
                 val batch = db.batch()
                 docs.documents.forEach { batch.delete(it.reference) }
+                batch.commit()
+            }
+    }
+
+    private fun cancelFeaturedRequestsForRoom(roomId: String) {
+        db.collection("featured_upgrade_requests")
+            .whereEqualTo("roomId", roomId)
+            .get()
+            .addOnSuccessListener { snapshots ->
+                if (snapshots.isEmpty) return@addOnSuccessListener
+                val batch = db.batch()
+                snapshots.documents.forEach { doc ->
+                    val status = doc.getString("status") ?: ""
+                    if (status == "waiting_for_payment" || status == "paid_waiting_admin") {
+                        batch.update(doc.reference, mapOf(
+                            "status" to "cancelled",
+                            "approvalStatus" to "cancelled",
+                            "updatedAt" to System.currentTimeMillis()
+                        ))
+                    }
+                }
                 batch.commit()
             }
     }
@@ -884,6 +954,7 @@ class RoomRepository {
 
     // Upload ảnh mới và cập nhật bài đăng (dùng cho EditPostViewModel)
     fun updatePost(
+        context: android.content.Context,
         roomId: String,
         existingImageUrls: List<String>,
         newImageUris: List<android.net.Uri>,
@@ -894,16 +965,23 @@ class RoomRepository {
         onFailure: (String) -> Unit
     ) {
         if (newImageUris.isNotEmpty()) {
+            val compressedUris = newImageUris.mapNotNull { uri ->
+                com.example.doantotnghiep.Utils.ImageUtils.compressImage(context, uri)
+            }
+            if (compressedUris.isEmpty()) {
+                onFailure("Lỗi nén ảnh, vui lòng thử lại.")
+                return
+            }
             val urls = mutableListOf<String>()
             var count = 0
-            newImageUris.forEach { uri ->
+            compressedUris.forEach { uri ->
                 val ref = storage.reference.child("rooms/$roomId/img_${java.util.UUID.randomUUID()}.jpg")
                 ref.putFile(uri, imageMetadata).continueWithTask { it.result?.storage?.downloadUrl }
                     .addOnSuccessListener { downloadUrl ->
                         urls.add(downloadUrl.toString())
                         count++
-                        onProgress("Đang đăng bài: $count/${newImageUris.size} ảnh")
-                        if (count == newImageUris.size) {
+                        onProgress("Đang đăng bài: $count/${compressedUris.size} ảnh")
+                        if (count == compressedUris.size) {
                             saveUpdatedPost(roomId, existingImageUrls + urls, deletedImageUrls, data, onSuccess, onFailure)
                         }
                     }
@@ -925,6 +1003,9 @@ class RoomRepository {
         data["imageUrls"] = allUrls
         data["status"] = "pending"
         data["updatedAt"] = System.currentTimeMillis()
+        // Reset lý do từ chối và cờ thông báo khi chủ trọ sửa lại bài
+        data["rejectReason"] = ""
+        data["hasUnreadUpdate"] = false
         db.collection("rooms").document(roomId).update(data)
             .addOnSuccessListener {
                 deletedImageUrls.forEach { url ->
@@ -938,47 +1019,6 @@ class RoomRepository {
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi cập nhật bài") }
     }
 
-    // Kiểm tra và hết hạn bài đăng quá 2 tháng
-    // FIX: Dùng max(createdAt, renewedAt) để bài đã gia hạn không bị expire sai
-    fun checkAndExpirePosts(uid: String, onResult: (Int) -> Unit) {
-        val twoMonthsAgo = System.currentTimeMillis() - 60L * 24 * 60 * 60 * 1000
-        db.collection("rooms")
-            .whereEqualTo("userId", uid)
-            .whereEqualTo("status", "approved")
-            .get()
-            .addOnSuccessListener { documents ->
-                val expiredDocs = documents.filter { doc ->
-                    // Lấy mốc thời gian hoạt động cuối (createdAt hoặc renewedAt, lấy cái mới hơn)
-                    val lastActiveAt = maxOf(
-                        doc.getLong("createdAt") ?: 0L,
-                        doc.getLong("renewedAt") ?: 0L
-                    )
-                    lastActiveAt < twoMonthsAgo
-                }
-                if (expiredDocs.isEmpty()) { onResult(0); return@addOnSuccessListener }
-                val batch = db.batch()
-                for (doc in expiredDocs) {
-                    batch.update(doc.reference, "status", "expired")
-                    val notifRef = db.collection("notifications").document()
-                    batch.set(notifRef, mapOf(
-                        "userId" to uid,
-                        "roomId" to doc.id,
-                        "title" to (doc.getString("title") ?: ""),
-                        "message" to "Bài đăng \"${doc.getString("title") ?: ""}\" đã hết hạn 2 tháng và bị ẩn khỏi kết quả tìm kiếm. Vui lòng gia hạn hoặc đánh dấu đã cho thuê.",
-                        "type" to "expired",
-                        "createdAt" to System.currentTimeMillis(),
-                        "seen" to false
-                    ))
-                }
-                batch.commit().addOnSuccessListener { onResult(expiredDocs.size) }
-                // Ghi cờ hasUnreadUpdate=true để Badge hiển thị ngay cho chủ trọ
-                val flagBatch = db.batch()
-                for (doc in expiredDocs) {
-                    flagBatch.update(doc.reference, "hasUnreadUpdate", true)
-                }
-                flagBatch.commit()
-            }
-    }
 
     fun listenUnseenNotificationCount(uid: String, onResult: (Int) -> Unit): com.google.firebase.firestore.ListenerRegistration {
         return db.collection("notifications")
@@ -1002,5 +1042,40 @@ class RoomRepository {
                 } ?: 0
                 onResult(count)
             }
+    }
+
+    private fun com.google.firebase.firestore.DocumentSnapshot.getCreatedAtMs(): Long =
+        when (val raw = get("createdAt")) {
+            is Number -> raw.toLong()
+            is com.google.firebase.Timestamp -> raw.toDate().time
+            else -> 0L
+        }
+
+    private fun getTodayGmt7String(): String {
+        val sdf = java.text.SimpleDateFormat("yyyy-MM-dd", Locale.US)
+        sdf.timeZone = java.util.TimeZone.getTimeZone("GMT+7")
+        return sdf.format(Date())
+    }
+
+    private fun rollbackPostQuota(uid: String, usePurchasedSlot: Boolean) {
+        val userRef = db.collection("users").document(uid)
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(userRef)
+            if (usePurchasedSlot) {
+                val currentSlots = (snapshot.getLong("purchasedSlots") ?: 0L).toInt()
+                transaction.update(userRef, "purchasedSlots", currentSlots + 1)
+            } else {
+                val storedDate = snapshot.getString("dailyPostCountDate") ?: ""
+                val today = getTodayGmt7String()
+                if (storedDate == today) {
+                    val currentCount = snapshot.getLong("dailyPostCount") ?: 0L
+                    if (currentCount > 0L) {
+                        transaction.update(userRef, "dailyPostCount", currentCount - 1)
+                    }
+                }
+            }
+        }.addOnFailureListener { e ->
+            android.util.Log.e("RoomRepository", "Lỗi rollback quota transaction: ${e.message}")
+        }
     }
 }

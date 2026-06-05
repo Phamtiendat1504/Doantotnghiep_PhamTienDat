@@ -100,6 +100,7 @@ class SupportTicketsActivity : AppCompatActivity() {
         viewModel.errorMessage.observe(this) { error ->
             if (!error.isNullOrEmpty()) {
                 MessageUtils.showErrorDialog(this, "Lỗi", error)
+                viewModel.resetErrorMessage()
             }
         }
     }

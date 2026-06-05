@@ -40,6 +40,8 @@ class BookingActivity : AppCompatActivity() {
     private var selectedDate = ""
     private var selectedTime = ""
     private var selectedDateDisplay = ""
+    // Map khung giờ bận: key = "dd-MM-yyyy_HH-mm", value = số slot đã confirmed
+    private var bookedConflicts: Map<String, Int> = emptyMap()
 
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
@@ -66,6 +68,10 @@ class BookingActivity : AppCompatActivity() {
 
         // Load thông tin user mặc định
         viewModel.loadUserInfo()
+
+        val roomId = intent.getStringExtra("roomId") ?: ""
+        // Lắng nghe realtime các khung giờ đã được chủ trọ CONFIRM (slot đã bị khóa)
+        viewModel.listenTimeConflicts(roomId)
 
         tvSelectDate.setOnClickListener { showDatePicker() }
         tvSelectTime.setOnClickListener { showTimePicker() }
@@ -116,8 +122,13 @@ class BookingActivity : AppCompatActivity() {
 
         viewModel.errorMessage.observe(this) { error ->
             error?.let { 
-                MessageUtils.showErrorDialog(this, "Lỗi", it)
+                if (it.isNotEmpty()) MessageUtils.showErrorDialog(this, "Lỗi", it)
             }
+        }
+
+        // Lắng nghe danh sách khung giờ đã bị khóa (chỉ confirmed) — hiển thị cảnh báo khi chọn trùng
+        viewModel.timeConflicts.observe(this) { conflicts ->
+            bookedConflicts = conflicts
         }
     }
 
@@ -140,10 +151,31 @@ class BookingActivity : AppCompatActivity() {
         val calendar = Calendar.getInstance()
         val picker = TimePickerDialog(this,
             { _, hour, minute ->
-                selectedTime = String.format("%02d:%02d", hour, minute)
-                tvSelectTime.text = selectedTime
+                val chosen = String.format("%02d:%02d", hour, minute)
+                // Kiểm tra ngay sau khi chọn giờ — nếu khung giờ đã bị khóa thì cảnh báo và reset
+                val conflictKey = buildConflictKey(selectedDate, chosen)
+                if (bookedConflicts.getOrDefault(conflictKey, 0) > 0) {
+                    selectedTime = ""
+                    tvSelectTime.text = "Chọn giờ hẹn"
+                    MessageUtils.showInfoDialog(
+                        this,
+                        "Khung giờ đã bận",
+                        "Khung giờ $chosen vào ngày bạn chọn đã được đặt bởi người khác. Vui lòng chọn giờ khác."
+                    )
+                } else {
+                    selectedTime = chosen
+                    tvSelectTime.text = selectedTime
+                }
             }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true)
         picker.show()
+    }
+
+    // Tạo key conflict khớp với format trong checkTimeConflicts: "dd-MM-yyyy_HH-mm"
+    private fun buildConflictKey(date: String, time: String): String {
+        return "${date}_${time}"
+            .replace("/", "-")
+            .replace(":", "-")
+            .replace(" ", "_")
     }
 
     private fun submitBooking() {
@@ -160,47 +192,66 @@ class BookingActivity : AppCompatActivity() {
             return
         }
 
+        // Chặn đặt lịch trong quá khứ nếu ngày hẹn là hôm nay
+        val todayStr = SimpleDateFormat("dd/MM/yyyy", Locale.US).format(Date())
+        if (selectedDate == todayStr) {
+            val currentTimeStr = SimpleDateFormat("HH:mm", Locale.US).format(Date())
+            if (selectedTime <= currentTimeStr) {
+                MessageUtils.showInfoDialog(this, "Thời gian không hợp lệ", "Khung giờ hẹn xem phòng của ngày hôm nay phải lớn hơn thời gian hiện tại.")
+                return
+            }
+        }
+
         val uid = viewModel.getCurrentUserId() ?: return
         val roomId = intent.getStringExtra("roomId") ?: ""
 
-        // KIỂM TRA LỊCH HẸN ĐÃ TỒN TẠI VÀ COOLDOWN
-        viewModel.checkExistingAppointment(uid, roomId) { exists, _, reason, lastCreatedAt ->
-            if (exists) {
-                val builder = androidx.appcompat.app.AlertDialog.Builder(this)
-                when (reason) {
-                    "active" -> {
-                        builder.setTitle("Bạn đã có lịch hẹn")
-                            .setMessage("Bạn đã gửi một yêu cầu đặt lịch cho phòng này và đang chờ xử lý. Bạn có muốn xem lại danh sách lịch hẹn của mình không?")
-                            .setPositiveButton("Xem lịch hẹn") { _, _ ->
-                                val intent = Intent(this, MyAppointmentsActivity::class.java)
-                                startActivity(intent)
-                                finish()
-                            }
-                            .setNegativeButton("Đóng", null)
-                    }
-                    "rented" -> {
-                        builder.setTitle("Phòng đã được thuê")
-                            .setMessage("Bạn đã hoàn tất việc thuê phòng này. Không thể đặt thêm lịch hẹn mới.")
-                            .setPositiveButton("Đóng", null)
-                    }
-                    "cooldown" -> {
-                        val remainingMs = (3 * 24 * 60 * 60 * 1000L) - (System.currentTimeMillis() - (lastCreatedAt ?: 0L))
-                        val days = remainingMs / (24 * 60 * 60 * 1000L)
-                        val hours = (remainingMs % (24 * 60 * 60 * 1000L)) / (60 * 60 * 1000L)
-                        val minutes = (remainingMs % (60 * 60 * 1000L)) / (60 * 1000L)
-                        
-                        val timeStr = if (days > 0) "$days ngày $hours giờ" else "$hours giờ $minutes phút"
-
-                        builder.setTitle("Vui lòng đợi")
-                            .setMessage("Bạn vừa kết thúc một lịch hẹn cho phòng này. Để tránh spam, vui lòng đợi thêm $timeStr nữa để có thể gửi yêu cầu mới.")
-                            .setPositiveButton("Đóng", null)
-                    }
+        // BƯỚC 1: Kiểm tra giới hạn 3 lần đặt lịch mỗi ngày
+        viewModel.checkDailyBookingLimit(uid,
+            onAllowed = { remaining ->
+                val used = 3 - remaining
+                val slotText = when (remaining) {
+                    1 -> "⚠️ Bạn chỉ còn 1 lượt đặt lịch hôm nay!"
+                    else -> "Hôm nay bạn đã dùng $used/3 lượt đặt lịch, còn lại $remaining lượt."
                 }
-                builder.show()
-            } else {
-                performSubmit()
+                // Hiện dialog thông báo số lượt còn lại, hỏi xác nhận trước khi tiếp tục
+                androidx.appcompat.app.AlertDialog.Builder(this)
+                    .setTitle("Xác nhận đặt lịch")
+                    .setMessage("$slotText\n\nBạn có muốn tiếp tục đặt lịch hẹn xem phòng này không?")
+                    .setPositiveButton("Tiếp tục") { _, _ ->
+                        // BƯỚC 2: Kiểm tra lịch hẹn active hoặc đã thuê phòng này
+                        viewModel.checkExistingAppointment(uid, roomId) { exists, _, reason, _ ->
+                            if (exists) {
+                                val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+                                when (reason) {
+                                    "active" -> builder.setTitle("Bạn đã có lịch hẹn")
+                                        .setMessage("Bạn đã gửi một yêu cầu đặt lịch cho phòng này và đang chờ xử lý. Bạn có muốn xem lại danh sách lịch hẹn của mình không?")
+                                        .setPositiveButton("Xem lịch hẹn") { _, _ ->
+                                            startActivity(Intent(this, MyAppointmentsActivity::class.java))
+                                            finish()
+                                        }
+                                        .setNegativeButton("Đóng", null)
+                                    "rented" -> builder.setTitle("Phòng đã được thuê")
+                                        .setMessage("Bạn đã hoàn tất việc thuê phòng này. Không thể đặt thêm lịch hẹn mới.")
+                                        .setPositiveButton("Đóng", null)
+                                    else -> { performSubmit(); return@checkExistingAppointment }
+                                }
+                                builder.show()
+                            } else {
+                                performSubmit()
+                            }
+                        }
+                    }
+                    .setNegativeButton("Hủy", null)
+                    .show()
+            },
+            onBlocked = { usedToday ->
+                MessageUtils.showInfoDialog(
+                    this,
+                    "Đã đạt giới hạn hôm nay",
+                    "Bạn đã dùng hết $usedToday/3 lượt đặt lịch trong ngày hôm nay.\nGiới hạn sẽ được reset lúc 00:00 ngày mai."
+                )
             }
-        }
+        )
     }
 
     private fun performSubmit() {

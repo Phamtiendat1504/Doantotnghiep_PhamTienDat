@@ -90,7 +90,6 @@ class ChatRepository {
         }
     }
 
-
     /**
      * Gửi tin nhắn và cập nhật lastMessage trên document chat.
      */
@@ -119,21 +118,26 @@ class ChatRepository {
             msgData["imageUrl"] = imageUrl
         }
 
-        msgRef.set(msgData).addOnSuccessListener {
-            // Cập nhật lastMessage trên chat document và tăng unread của người nhận
-            val displayMessage = if (!imageUrl.isNullOrEmpty() && text.isEmpty()) "[Hình ảnh]" else text
-            db.collection("chats").document(chatId).update(
-                mapOf(
-                    "lastMessage"     to displayMessage,
-                    "lastMessageAt"   to com.google.firebase.firestore.FieldValue.serverTimestamp(),
-                    "lastSenderId"    to senderId,
-                    "unreadCount.$receiverId" to com.google.firebase.firestore.FieldValue.increment(1)
-                )
-            ).addOnSuccessListener {
+        val displayMessage = if (!imageUrl.isNullOrEmpty() && text.isEmpty()) "[Hình ảnh]" else text
+        val batch = db.batch()
+        batch.set(msgRef, msgData)
+        
+        val chatRef = db.collection("chats").document(chatId)
+        batch.update(
+            chatRef,
+            mapOf(
+                "lastMessage"     to displayMessage,
+                "lastMessageAt"   to com.google.firebase.firestore.FieldValue.serverTimestamp(),
+                "lastSenderId"    to senderId,
+                "unreadCount.$receiverId" to com.google.firebase.firestore.FieldValue.increment(1)
+            )
+        )
+
+        batch.commit()
+            .addOnSuccessListener {
                 onSuccess()
 
                 // Gửi thông báo push cho người nhận bằng cách ghi vào collection notifications.
-                // Cloud Function sendPushNotification sẽ tự động kích hoạt và gửi FCM.
                 db.collection("users").document(senderId).get()
                     .addOnSuccessListener { senderDoc ->
                         val senderName = senderDoc.getString("fullName") ?: "Ai đó"
@@ -154,11 +158,9 @@ class ChatRepository {
                             }
                     }
             }
-                .addOnFailureListener { onFailure(it.message ?: "Lỗi cập nhật") }
-        }.addOnFailureListener {
-            onFailure(it.message ?: "Lỗi gửi tin nhắn")
-        }
-
+            .addOnFailureListener { e ->
+                onFailure(e.message ?: "Lỗi gửi tin nhắn")
+            }
     }
 
     /**
@@ -177,10 +179,14 @@ class ChatRepository {
                 if (snap == null) return@addSnapshotListener
                 val messages = snap.documents.mapNotNull { doc ->
                     try {
-                        val createdAt = when (val timeVal = doc.get("createdAt")) {
+                        val isPending = doc.metadata.hasPendingWrites()
+                        var createdAt = when (val timeVal = doc.get("createdAt")) {
                             is com.google.firebase.Timestamp -> timeVal.toDate().time
                             is Number -> timeVal.toLong()
                             else -> 0L
+                        }
+                        if (isPending && createdAt == 0L) {
+                            createdAt = System.currentTimeMillis()
                         }
                         // Nếu tin nhắn được tạo trước hoặc ngay tại lúc xóa -> Ẩn đi
                         if (myDeletedAt > 0L && createdAt <= myDeletedAt) {
@@ -197,7 +203,8 @@ class ChatRepository {
                             imageUrl  = doc.getString("imageUrl") ?: "", // <--- Parse image url
                             createdAt = createdAt,
                             seen      = doc.getBoolean("seen") ?: false,
-                            reactions = reactions
+                            reactions = reactions,
+                            isPending = isPending
                         )
                     } catch (_: Exception) { null }
                 }
@@ -221,19 +228,20 @@ class ChatRepository {
         val msgRef = db.collection("chats").document(chatId)
             .collection("messages").document(messageId)
 
-        // Đọc reaction hiện tại rồi toggle
-        msgRef.get().addOnSuccessListener { doc ->
-            val current = stringMap(doc.get("reactions")).toMutableMap()
+        db.runTransaction { transaction ->
+            val snapshot = transaction.get(msgRef)
+            val current = stringMap(snapshot.get("reactions")).toMutableMap()
             if (current[userId] == emoji) {
                 // Đã thả emoji này rồi → bỏ (toggle off)
                 current.remove(userId)
             } else {
                 current[userId] = emoji
             }
-            msgRef.update("reactions", current)
-                .addOnSuccessListener { onSuccess() }
-                .addOnFailureListener { onFailure(it.message ?: "Lỗi reaction") }
-        }.addOnFailureListener { onFailure(it.message ?: "Lỗi reaction") }
+            transaction.update(msgRef, "reactions", current)
+            null
+        }
+        .addOnSuccessListener { onSuccess() }
+        .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi reaction") }
     }
 
 
@@ -350,6 +358,7 @@ class ChatRepository {
         db.collection("chats").document(chatId)
             .collection("messages")
             .whereEqualTo("seen", false)
+            .limit(490)
             .get()
             .addOnSuccessListener { snap ->
                 if (snap.isEmpty) return@addOnSuccessListener
@@ -395,27 +404,69 @@ class ChatRepository {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
-        val msgRef = db.collection("chats").document(chatId)
-            .collection("messages").document(messageId)
-            
-        msgRef.delete()
-            .addOnSuccessListener { 
-                onSuccess()
-                // Xóa ảnh nền trên Storage để tiết kiệm dung lượng
-                if (imageUrl.isNotEmpty() &&
-                    (imageUrl.startsWith("https://firebasestorage.googleapis.com") ||
-                     imageUrl.startsWith("gs://"))) {
-                    try {
-                        FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl).delete()
-                            .addOnFailureListener { e ->
-                                android.util.Log.e("ChatRepo", "Lỗi xóa ảnh cũ trên Storage: ${e.message}")
-                            }
-                    } catch (e: Exception) {
-                        android.util.Log.e("ChatRepo", "Lỗi getReferenceFromUrl: ${e.message}")
+        val messagesRef = db.collection("chats").document(chatId).collection("messages")
+        val msgRef = messagesRef.document(messageId)
+        
+        messagesRef.orderBy("createdAt", Query.Direction.DESCENDING).limit(2).get()
+            .addOnSuccessListener { snap ->
+                val docs = snap.documents
+                val isLastMessage = docs.isNotEmpty() && docs[0].id == messageId
+                
+                val batch = db.batch()
+                batch.delete(msgRef)
+                
+                if (isLastMessage) {
+                    val chatRef = db.collection("chats").document(chatId)
+                    if (docs.size > 1) {
+                        val prevDoc = docs[1]
+                        val prevText = prevDoc.getString("text") ?: ""
+                        val prevImg = prevDoc.getString("imageUrl") ?: ""
+                        val prevSenderId = prevDoc.getString("senderId") ?: ""
+                        
+                        var prevCreatedAt = 0L
+                        when (val timeVal = prevDoc.get("createdAt")) {
+                            is com.google.firebase.Timestamp -> prevCreatedAt = timeVal.toDate().time
+                            is Number -> prevCreatedAt = timeVal.toLong()
+                        }
+                        
+                        val displayMsg = if (prevImg.isNotEmpty() && prevText.isEmpty()) "[Hình ảnh]" else prevText
+                        batch.update(chatRef, mapOf(
+                            "lastMessage" to displayMsg,
+                            "lastMessageAt" to prevCreatedAt,
+                            "lastSenderId" to prevSenderId
+                        ))
+                    } else {
+                        batch.update(chatRef, mapOf(
+                            "lastMessage" to "",
+                            "lastMessageAt" to 0L,
+                            "lastSenderId" to ""
+                        ))
                     }
                 }
+                
+                batch.commit()
+                    .addOnSuccessListener {
+                        onSuccess()
+                        if (imageUrl.isNotEmpty() &&
+                            (imageUrl.startsWith("https://firebasestorage.googleapis.com") ||
+                             imageUrl.startsWith("gs://"))) {
+                            try {
+                                FirebaseStorage.getInstance().getReferenceFromUrl(imageUrl).delete()
+                                    .addOnFailureListener { e ->
+                                        android.util.Log.e("ChatRepo", "Lỗi xóa ảnh cũ trên Storage: ${e.message}")
+                                    }
+                            } catch (e: Exception) {
+                                android.util.Log.e("ChatRepo", "Lỗi getReferenceFromUrl: ${e.message}")
+                            }
+                        }
+                    }
+                    .addOnFailureListener { e ->
+                        onFailure(e.message ?: "Lỗi xóa tin nhắn")
+                    }
             }
-            .addOnFailureListener { onFailure(it.message ?: "Lỗi xóa tin nhắn") }
+            .addOnFailureListener { e ->
+                onFailure(e.message ?: "Lỗi truy vấn tin nhắn trước khi xóa")
+            }
     }
 
     /**
@@ -442,6 +493,7 @@ class ChatRepository {
     fun uploadChatImage(
         chatId: String,
         imageUri: Uri,
+        onProgress: (Int) -> Unit = {},
         onSuccess: (String) -> Unit,
         onFailure: (String) -> Unit
     ) {
@@ -451,6 +503,12 @@ class ChatRepository {
             .child("chat_images/${chatId}/${fileName}")
 
         storageRef.putFile(imageUri)
+            .addOnProgressListener { taskSnapshot ->
+                if (taskSnapshot.totalByteCount > 0) {
+                    val progress = (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()
+                    onProgress(progress)
+                }
+            }
             .addOnSuccessListener {
                 storageRef.downloadUrl.addOnSuccessListener { uri ->
                     onSuccess(uri.toString())

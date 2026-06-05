@@ -7,6 +7,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
@@ -26,18 +27,23 @@ data class RoomItem(
     val area: Int,
     val imageUrl: String?,
     val isAvailable: Boolean = true,
-    val createdAt: Long = 0L
+    val createdAt: Long = 0L,
+    val isFeatured: Boolean = false
 )
 
 class RoomAdapter(
-    private val items: MutableList<RoomItem> = mutableListOf(),
     private val viewType: Int = VIEW_TYPE_HORIZONTAL,
     private val showAvailabilityBadge: Boolean = false
-) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+) : ListAdapter<RoomItem, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
 
     companion object {
         const val VIEW_TYPE_HORIZONTAL = 0
         const val VIEW_TYPE_VERTICAL = 1
+
+        private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<RoomItem>() {
+            override fun areItemsTheSame(old: RoomItem, new: RoomItem) = old.id == new.id
+            override fun areContentsTheSame(old: RoomItem, new: RoomItem) = old == new
+        }
     }
 
     private val formatter: DecimalFormat by lazy {
@@ -52,6 +58,7 @@ class RoomAdapter(
         val tvPrice: TextView = itemView.findViewById(R.id.tvPrice)
         val tvTitle: TextView = itemView.findViewById(R.id.tvTitle)
         val tvLocation: TextView = itemView.findViewById(R.id.tvLocation)
+        val tvFeaturedBadge: TextView = itemView.findViewById(R.id.tvFeaturedBadge)
     }
 
     inner class VerticalViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -82,53 +89,59 @@ class RoomAdapter(
     }
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val item = items[position]
+        val item = getItem(position)
 
         when (holder) {
             is HorizontalViewHolder -> {
-                val imageUrl = item.imageUrl ?: ""
-                if (imageUrl.isNotEmpty()) {
-                    Glide.with(holder.itemView.context)
-                        .load(imageUrl)
-                        .placeholder(R.color.gray_300)
-                        .error(R.color.gray_300)
-                        .centerCrop()
-                        .into(holder.imgRoom)
-                }
+                Glide.with(holder.itemView.context)
+                    .load(item.imageUrl?.ifEmpty { null })
+                    .placeholder(R.color.gray_300)
+                    .error(R.color.gray_300)
+                    .centerCrop()
+                    .into(holder.imgRoom)
                 holder.tvPrice.text = "${formatter.format(item.price)} đ/th"
                 holder.tvTitle.text = item.title
-                holder.tvLocation.text = "${item.ward}, ${item.district}"
+                holder.tvLocation.text = listOf(item.ward, item.district).filter { it.isNotBlank() }.distinct().joinToString(", ")
+                holder.tvFeaturedBadge.visibility = if (item.isFeatured) View.VISIBLE else View.GONE
             }
             is VerticalViewHolder -> {
-                val imageUrl = item.imageUrl ?: ""
-                if (imageUrl.isNotEmpty()) {
-                    Glide.with(holder.itemView.context)
-                        .load(imageUrl)
-                        .placeholder(R.color.gray_300)
-                        .error(R.color.gray_300)
-                        .centerCrop()
-                        .into(holder.imgRoom)
-                }
+                Glide.with(holder.itemView.context)
+                    .load(item.imageUrl?.ifEmpty { null })
+                    .placeholder(R.color.gray_300)
+                    .error(R.color.gray_300)
+                    .centerCrop()
+                    .into(holder.imgRoom)
                 holder.tvTitle.text = item.title
-                holder.tvLocation.text = "${item.ward}, ${item.district}"
+                holder.tvLocation.text = listOf(item.ward, item.district).filter { it.isNotBlank() }.distinct().joinToString(", ")
                 holder.tvPrice.text = "${formatter.format(item.price)} đ/tháng"
                 if (item.createdAt > 0L) {
-                    holder.tvPostedDate.text = "Đăng ngày ${dateFormatter.format(Date(item.createdAt))}"
+                    val diffMs = System.currentTimeMillis() - item.createdAt
+                    val oneDayMs = 24 * 60 * 60 * 1000L
+                    val context = holder.itemView.context
+
+                    if (diffMs in 0L..oneDayMs) {
+                        holder.tvPostedDate.text = "Vừa đăng"
+                        holder.tvPostedDate.setTextColor(android.graphics.Color.parseColor("#2E7D32"))
+                    } else if (diffMs in (oneDayMs + 1L)..(2L * oneDayMs)) {
+                        holder.tvPostedDate.text = "Đăng hôm qua"
+                        holder.tvPostedDate.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.text_secondary))
+                    } else {
+                        holder.tvPostedDate.text = "Đăng ngày ${dateFormatter.format(Date(item.createdAt))}"
+                        holder.tvPostedDate.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.text_secondary))
+                    }
                     holder.tvPostedDate.visibility = View.VISIBLE
                 } else {
                     holder.tvPostedDate.visibility = View.GONE
                 }
-
                 if (item.area > 0) {
                     holder.tvArea.text = "${item.area} m²"
                     holder.tvArea.visibility = View.VISIBLE
                 } else {
                     holder.tvArea.visibility = View.GONE
                 }
-
                 if (showAvailabilityBadge && item.isAvailable) {
-                    holder.tvRoomStatus.visibility = View.VISIBLE
                     holder.tvRoomStatus.text = "Còn phòng"
+                    holder.tvRoomStatus.visibility = View.VISIBLE
                 } else {
                     holder.tvRoomStatus.visibility = View.GONE
                 }
@@ -140,21 +153,5 @@ class RoomAdapter(
             intent.putExtra("roomId", item.id)
             holder.itemView.context.startActivity(intent)
         }
-    }
-
-    override fun getItemCount() = items.size
-
-    fun getItems(): List<RoomItem> = items.toList()
-
-    fun submitList(newItems: List<RoomItem>) {
-        val diffResult = DiffUtil.calculateDiff(object : DiffUtil.Callback() {
-            override fun getOldListSize() = items.size
-            override fun getNewListSize() = newItems.size
-            override fun areItemsTheSame(oldPos: Int, newPos: Int) = items[oldPos].id == newItems[newPos].id
-            override fun areContentsTheSame(oldPos: Int, newPos: Int) = items[oldPos] == newItems[newPos]
-        })
-        items.clear()
-        items.addAll(newItems)
-        diffResult.dispatchUpdatesTo(this)
     }
 }

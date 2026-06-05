@@ -127,6 +127,8 @@
                     android:background="@drawable/bg_edit_post"
                     android:inputType="number"
                     android:maxLength="12"
+                    android:imeOptions="actionNext"
+                    android:singleLine="true"
                     android:layout_marginBottom="@dimen/padding_medium" />
 
                 <!-- Số điện thoại -->
@@ -195,7 +197,9 @@
                     android:textSize="@dimen/text_size_14"
                     android:paddingStart="@dimen/padding_medium"
                     android:background="@drawable/bg_edit_post"
-                    android:inputType="textPostalAddress" />
+                    android:inputType="textPostalAddress"
+                    android:imeOptions="actionDone"
+                    android:singleLine="true" />
 
             </LinearLayout>
 

@@ -107,12 +107,12 @@ class ChatActivity : AppCompatActivity() {
         if (uri != null) {
             val loadingDialog = MessageUtils.showLoadingDialog(
                 context = this,
-                title = "\u0110ang g\u1eedi \u1ea3nh",
-                message = "Đang nén và tải ảnh lên, vui l\u00f2ng ch\u1edd."
+                title = "Đang gửi ảnh",
+                message = "Đang nén ảnh..."
             )
 
-            // Chạy nén ảnh trên luồng nền để tránh đơ UI
-            kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+            // Chạy nén ảnh trên luồng nền để tránh đơ UI sử dụng lifecycleScope
+            lifecycleScope.launch(Dispatchers.IO) {
                 val compressedUri = com.example.doantotnghiep.Utils.ImageUtils.compressImage(this@ChatActivity, uri)
                 
                 withContext(Dispatchers.Main) {
@@ -125,6 +125,9 @@ class ChatActivity : AppCompatActivity() {
                     viewModel.sendImageMessage(
                         imageUri = compressedUri,
                         text = etInput.text.toString().trim(),
+                        onProgress = { progress ->
+                            loadingDialog.findViewById<TextView>(R.id.tvLoadingMessage)?.text = "Đang tải ảnh lên: $progress%"
+                        },
                         onSuccess = {
                             loadingDialog.dismiss()
                             etInput.text.clear()
@@ -144,23 +147,25 @@ class ChatActivity : AppCompatActivity() {
 
     private lateinit var btnCamera: ImageView
     private var tempCameraUri: android.net.Uri? = null
+    private var tempCameraFile: java.io.File? = null
 
     private val takePictureLauncher = registerForActivityResult(androidx.activity.result.contract.ActivityResultContracts.TakePicture()) { success: Boolean ->
         if (success) {
             tempCameraUri?.let { uri ->
                 val loadingDialog = MessageUtils.showLoadingDialog(
                     context = this,
-                    title = "\u0110ang g\u1eedi \u1ea3nh",
-                    message = "Đang nén và tải ảnh lên, vui l\u00f2ng ch\u1edd."
+                    title = "Đang gửi ảnh",
+                    message = "Đang nén ảnh..."
                 )
 
-                // Nén ảnh trên luồng nền
-                kotlinx.coroutines.CoroutineScope(Dispatchers.IO).launch {
+                // Nén ảnh trên luồng nền sử dụng lifecycleScope
+                lifecycleScope.launch(Dispatchers.IO) {
                     val compressedUri = com.example.doantotnghiep.Utils.ImageUtils.compressImage(this@ChatActivity, uri)
 
                     withContext(Dispatchers.Main) {
                         if (compressedUri == null) {
                             loadingDialog.dismiss()
+                            cleanupTempCameraFile()
                             MessageUtils.showErrorDialog(this@ChatActivity, "Lỗi", "Không thể xử lý ảnh, vui lòng chụp lại.")
                             return@withContext
                         }
@@ -168,8 +173,12 @@ class ChatActivity : AppCompatActivity() {
                         viewModel.sendImageMessage(
                             imageUri = compressedUri,
                             text = etInput.text.toString().trim(),
+                            onProgress = { progress ->
+                                loadingDialog.findViewById<TextView>(R.id.tvLoadingMessage)?.text = "Đang tải ảnh lên: $progress%"
+                            },
                             onSuccess = {
                                 loadingDialog.dismiss()
+                                cleanupTempCameraFile()
                                 etInput.text.clear()
                                 if (adapter.itemCount > 0) {
                                     rvMessages.smoothScrollToPosition(adapter.itemCount - 1)
@@ -177,12 +186,15 @@ class ChatActivity : AppCompatActivity() {
                             },
                             onFailure = { err ->
                                 loadingDialog.dismiss()
+                                cleanupTempCameraFile()
                                 MessageUtils.showErrorDialog(this@ChatActivity, "Lỗi", "Không thể gửi ảnh: $err")
                             }
                         )
                     }
                 }
             }
+        } else {
+            cleanupTempCameraFile()
         }
     }
 
@@ -190,6 +202,7 @@ class ChatActivity : AppCompatActivity() {
         try {
             val storageDir = cacheDir
             val tempFile = java.io.File.createTempFile("camera_image_${System.currentTimeMillis()}", ".jpg", storageDir)
+            tempCameraFile = tempFile
             tempCameraUri = androidx.core.content.FileProvider.getUriForFile(
                 this,
                 "com.example.doantotnghiep.fileprovider",
@@ -200,6 +213,21 @@ class ChatActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             MessageUtils.showErrorDialog(this, "Lỗi", "Không thể khởi động Camera: ${e.message}")
+        }
+    }
+
+    private fun cleanupTempCameraFile() {
+        try {
+            tempCameraFile?.let { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ChatActivity", "Lỗi dọn dẹp file camera tạm: ${e.message}")
+        } finally {
+            tempCameraFile = null
+            tempCameraUri = null
         }
     }
 
@@ -315,6 +343,12 @@ class ChatActivity : AppCompatActivity() {
             adapter.submitList(messages)
             if (messages.isNotEmpty()) {
                 rvMessages.scrollToPosition(messages.size - 1)
+                
+                // Cập nhật trạng thái "Đã xem" thời gian thực nếu tin nhắn cuối cùng là của đối phương gửi và chưa được xem
+                val lastMsg = messages.last()
+                if (lastMsg.senderId != myUid && !lastMsg.seen) {
+                    viewModel.markSeen()
+                }
             }
         }
 

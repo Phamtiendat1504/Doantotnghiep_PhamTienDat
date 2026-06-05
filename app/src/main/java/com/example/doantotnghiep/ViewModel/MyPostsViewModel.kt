@@ -20,9 +20,6 @@ class MyPostsViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String?>()
     val errorMessage: LiveData<String?> = _errorMessage
 
-    private val _renewResult = MutableLiveData<Boolean>()
-    val renewResult: LiveData<Boolean> = _renewResult
-
     private val _deleteResult = MutableLiveData<Boolean>()
     val deleteResult: LiveData<Boolean> = _deleteResult
 
@@ -42,7 +39,13 @@ class MyPostsViewModel : ViewModel() {
                             "pending" -> 1
                             else -> 2
                         }
-                    }.thenByDescending { it.getLong("createdAt") ?: 0 })
+                    }.thenByDescending {
+                        when (val raw = it.get("createdAt")) {
+                            is Number -> raw.toLong()
+                            is com.google.firebase.Timestamp -> raw.toDate().time
+                            else -> 0L
+                        }
+                    })
                 } else {
                     list
                 }
@@ -52,14 +55,6 @@ class MyPostsViewModel : ViewModel() {
                 _isLoading.value = false
                 _errorMessage.value = e
             }
-        )
-    }
-
-    fun renewPost(docId: String) {
-        repository.renewPost(
-            docId,
-            onSuccess = { _renewResult.value = true },
-            onFailure = { e -> _errorMessage.value = e }
         )
     }
 
@@ -75,6 +70,5 @@ class MyPostsViewModel : ViewModel() {
         repository.markPostsAsRead(uid)
     }
 
-    fun resetRenewResult() { _renewResult.value = false }
     fun resetErrorMessage() { _errorMessage.value = "" }
 }

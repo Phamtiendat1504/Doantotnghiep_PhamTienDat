@@ -1,6 +1,7 @@
 package com.example.doantotnghiep.repository
 
 import com.example.doantotnghiep.Model.User
+import com.example.doantotnghiep.Utils.toUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 
@@ -22,28 +23,8 @@ class UserRepository {
         db.collection("users").document(uid)
             .get(Source.SERVER)
             .addOnSuccessListener { doc ->
-                if (doc.exists()) {
-                    val user = User(
-                        uid            = doc.id,
-                        fullName       = doc.getString("fullName") ?: "",
-                        email          = doc.getString("email") ?: "",
-                        phone          = doc.getString("phone") ?: "",
-                        address        = doc.getString("address") ?: "",
-                        birthday       = doc.getString("birthday") ?: "",
-                        gender         = doc.getString("gender") ?: "",
-                        occupation     = doc.getString("occupation") ?: "",
-                        avatarUrl      = doc.getString("avatarUrl") ?: "",
-                        role           = doc.getString("role") ?: "user",
-                        isVerified     = doc.getBoolean("isVerified") ?: false,
-                        hasAcceptedRules = doc.getBoolean("hasAcceptedRules") ?: false,
-                        isLocked       = doc.getBoolean("isLocked") ?: false,
-                        lockReason     = doc.getString("lockReason") ?: "",
-                        lockUntil      = doc.getLong("lockUntil") ?: 0L,
-                        postingUnlockAt = doc.getLong("postingUnlockAt") ?: 0L,
-                        verifiedAt     = doc.getLong("verifiedAt") ?: 0L,
-                        createdAt      = doc.getLong("createdAt") ?: 0L,
-                        purchasedSlots = doc.getLong("purchasedSlots")?.toInt() ?: 0
-                    )
+                val user = doc.toUser()
+                if (user != null) {
                     onSuccess(user)
                 } else {
                     onFailure("Không tìm thấy người dùng")
@@ -54,28 +35,8 @@ class UserRepository {
                 db.collection("users").document(uid)
                     .get(Source.CACHE)
                     .addOnSuccessListener { cachedDoc ->
-                        if (cachedDoc.exists()) {
-                            val user = User(
-                                uid            = cachedDoc.id,
-                                fullName       = cachedDoc.getString("fullName") ?: "",
-                                email          = cachedDoc.getString("email") ?: "",
-                                phone          = cachedDoc.getString("phone") ?: "",
-                                address        = cachedDoc.getString("address") ?: "",
-                                birthday       = cachedDoc.getString("birthday") ?: "",
-                                gender         = cachedDoc.getString("gender") ?: "",
-                                occupation     = cachedDoc.getString("occupation") ?: "",
-                                avatarUrl      = cachedDoc.getString("avatarUrl") ?: "",
-                                role           = cachedDoc.getString("role") ?: "user",
-                                isVerified     = cachedDoc.getBoolean("isVerified") ?: false,
-                                hasAcceptedRules = cachedDoc.getBoolean("hasAcceptedRules") ?: false,
-                                isLocked       = cachedDoc.getBoolean("isLocked") ?: false,
-                                lockReason     = cachedDoc.getString("lockReason") ?: "",
-                                lockUntil      = cachedDoc.getLong("lockUntil") ?: 0L,
-                                postingUnlockAt = cachedDoc.getLong("postingUnlockAt") ?: 0L,
-                                verifiedAt     = cachedDoc.getLong("verifiedAt") ?: 0L,
-                                createdAt      = cachedDoc.getLong("createdAt") ?: 0L,
-                                purchasedSlots = cachedDoc.getLong("purchasedSlots")?.toInt() ?: 0
-                            )
+                        val user = cachedDoc.toUser()
+                        if (user != null) {
                             onSuccess(user)
                         } else {
                             onFailure("Không tìm thấy người dùng (Cache)")
@@ -110,29 +71,7 @@ class UserRepository {
             .limit(150)
             .get()
             .addOnSuccessListener { docs ->
-                val users = docs.mapNotNull { doc ->
-                    User(
-                        uid              = doc.id,
-                        fullName         = doc.getString("fullName") ?: "",
-                        email            = doc.getString("email") ?: "",
-                        phone            = doc.getString("phone") ?: "",
-                        address          = doc.getString("address") ?: "",
-                        birthday         = doc.getString("birthday") ?: "",
-                        gender           = doc.getString("gender") ?: "",
-                        occupation       = doc.getString("occupation") ?: "",
-                        avatarUrl        = doc.getString("avatarUrl") ?: "",
-                        role             = doc.getString("role") ?: "user",
-                        isVerified       = doc.getBoolean("isVerified") ?: false,
-                        hasAcceptedRules = doc.getBoolean("hasAcceptedRules") ?: false,
-                        isLocked         = doc.getBoolean("isLocked") ?: false,
-                        lockReason       = doc.getString("lockReason") ?: "",
-                        lockUntil        = doc.getLong("lockUntil") ?: 0L,
-                        postingUnlockAt  = doc.getLong("postingUnlockAt") ?: 0L,
-                        verifiedAt       = doc.getLong("verifiedAt") ?: 0L,
-                        createdAt        = doc.getLong("createdAt") ?: 0L,
-                        purchasedSlots   = doc.getLong("purchasedSlots")?.toInt() ?: 0
-                    )
-                }
+                val users = docs.mapNotNull { it.toUser() }
                 
                 // Lọc thông minh ở client: Hỗ trợ tìm kiếm theo bất kỳ thành phần nào của tên (Họ, Tên đệm, Tên chính)
                 // và hoàn toàn không phân biệt chữ HOA hay chữ thường.
@@ -161,47 +100,90 @@ class UserRepository {
     }
 
     /**
-     * Đếm số bài đăng công khai của một người dùng (đúng theo quyền người khác được xem hồ sơ):
-     * approved + expired.
+     * Đếm số bài đăng công khai của một người dùng (approved).
+     * Chỉ dùng cho trường hợp đếm đơn lẻ. Khi cần đếm nhiều user cùng lúc dùng countPublicRoomsForUsers.
      */
     fun countPublicRooms(
         userId: String,
         onResult: (Int) -> Unit
     ) {
-        val firestore = FirebaseFirestore.getInstance()
-        var approvedCount = 0
-        var expiredCount = 0
-        var completed = 0
+        db.collection("rooms").whereEqualTo("userId", userId).whereEqualTo("status", "approved").get()
+            .addOnSuccessListener { docs -> onResult(docs.size()) }
+            .addOnFailureListener { onResult(0) }
+    }
 
-        fun finishIfDone() {
-            completed++
-            if (completed == 2) {
-                onResult(approvedCount + expiredCount)
-            }
+    /**
+     * Đếm số bài đăng công khai cho nhiều user cùng lúc bằng batch whereIn.
+     * Thay vì N×2 queries, chỉ tốn (ceil(N/30)) × 2 queries tổng cộng.
+     * Trả về Map<uid, count>.
+     */
+    fun countPublicRoomsForUsers(
+        uids: List<String>,
+        onResult: (Map<String, Int>) -> Unit
+    ) {
+        if (uids.isEmpty()) {
+            onResult(emptyMap())
+            return
+        }
+        val counts = mutableMapOf<String, Int>().also { map -> uids.forEach { map[it] = 0 } }
+        val chunks = uids.chunked(30) // Firestore whereIn tối đa 30 giá trị
+        val totalTasks = chunks.size
+        var completedTasks = 0
+
+        fun finish() {
+            completedTasks++
+            if (completedTasks == totalTasks) onResult(counts)
         }
 
-        firestore.collection("rooms")
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("status", "approved")
-            .get()
-            .addOnSuccessListener { docs ->
-                approvedCount = docs.size()
-                finishIfDone()
-            }
-            .addOnFailureListener {
-                finishIfDone()
-            }
+        for (chunk in chunks) {
+            db.collection("rooms").whereIn("userId", chunk).whereEqualTo("status", "approved").get()
+                .addOnSuccessListener { docs ->
+                    docs.forEach { doc -> val uid = doc.getString("userId") ?: return@forEach; counts[uid] = (counts[uid] ?: 0) + 1 }
+                    finish()
+                }
+                .addOnFailureListener { finish() }
+        }
+    }
 
-        firestore.collection("rooms")
-            .whereEqualTo("userId", userId)
-            .whereEqualTo("status", "expired")
-            .get()
-            .addOnSuccessListener { docs ->
-                expiredCount = docs.size()
-                finishIfDone()
+    fun getUserFromServer(
+        uid: String,
+        onSuccess: (User?) -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        db.collection("users").document(uid)
+            .get(Source.SERVER)
+            .addOnSuccessListener { doc -> onSuccess(doc.toUser()) }
+            .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi tải dữ liệu") }
+    }
+
+    fun listenUser(
+        uid: String,
+        onUpdate: (User?) -> Unit
+    ): com.google.firebase.firestore.ListenerRegistration {
+        return db.collection("users").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                onUpdate(snapshot?.toUser())
             }
-            .addOnFailureListener {
-                finishIfDone()
+    }
+
+    fun listenVerificationStatus(
+        uid: String,
+        onUpdate: (status: String?, rejectReason: String?, autoCheckStatus: String?) -> Unit
+    ): com.google.firebase.firestore.ListenerRegistration {
+        return db.collection("verifications").document(uid)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) return@addSnapshotListener
+                if (snapshot != null && snapshot.exists()) {
+                    onUpdate(
+                        snapshot.getString("status"),
+                        snapshot.getString("rejectReason"),
+                        snapshot.getString("autoCheckStatus")
+                    )
+                } else {
+                    onUpdate(null, null, null)
+                }
             }
     }
 }
+

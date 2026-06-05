@@ -16,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.MyPostDetailViewModel
 import com.google.android.material.button.MaterialButton
 import java.text.DecimalFormat
@@ -28,6 +29,7 @@ class MyPostDetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MyPostDetailViewModel
     private var imagePageCallback: ViewPager2.OnPageChangeCallback? = null
+    private var loadingDialog: AlertDialog? = null
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -58,11 +60,21 @@ class MyPostDetailActivity : AppCompatActivity() {
         }
 
         viewModel.markRentedStatus.observe(this) { success ->
+            hideLoading()
             if (success) {
-                Toast.makeText(this, "\u0110\u00e3 c\u1eadp nh\u1eadt tr\u1ea1ng th\u00e1i \u0111\u00e3 cho thu\u00ea", Toast.LENGTH_SHORT).show()
-                finish()
+                MessageUtils.showSuccessDialog(
+                    context = this,
+                    title = "Thành công",
+                    message = "Bài đăng đã được chuyển sang trạng thái Đã cho thuê thành công."
+                ) {
+                    finish()
+                }
             } else {
-                Toast.makeText(this, "C\u1eadp nh\u1eadt th\u1ea5t b\u1ea1i", Toast.LENGTH_SHORT).show()
+                MessageUtils.showErrorDialog(
+                    context = this,
+                    title = "Thất bại",
+                    message = "Không thể cập nhật trạng thái bài đăng. Vui lòng thử lại."
+                )
             }
         }
 
@@ -102,11 +114,8 @@ class MyPostDetailActivity : AppCompatActivity() {
         val address = d["address"] as? String ?: ""
         val ward = d["ward"] as? String ?: ""
         val district = d["district"] as? String ?: ""
-        findViewById<TextView>(R.id.tvAddress).text = if (address.isNotEmpty()) {
-            "\u0110\u1ecba ch\u1ec9: $address, $ward, $district"
-        } else {
-            "\u0110\u1ecba ch\u1ec9: $ward, $district"
-        }
+        val locationList = listOf(address, ward, district).filter { it.isNotBlank() }.distinct()
+        findViewById<TextView>(R.id.tvAddress).text = "Địa chỉ: ${locationList.joinToString(", ")}"
 
         val createdAt = (d["createdAt"] as? Number)?.toLong() ?: 0L
         val sdf = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale("vi", "VN"))
@@ -120,8 +129,11 @@ class MyPostDetailActivity : AppCompatActivity() {
             (d["description"] as? String)?.takeIf { it.isNotBlank() } ?: "Kh\u00f4ng c\u00f3 m\u00f4 t\u1ea3"
 
         setupImageSlider((d["imageUrls"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList())
-        setupRoomInfo(d)
+        setupBasicInfo(d)
+        setupCostInfo(d)
+        setupRulesInfo(d)
         setupAmenities(d)
+        setupAppointmentInfo(d)
 
         val btnEdit = findViewById<MaterialButton>(R.id.btnEditPost)
         val btnMarkRented = findViewById<MaterialButton>(R.id.btnMarkRented)
@@ -137,7 +149,7 @@ class MyPostDetailActivity : AppCompatActivity() {
             btnEdit.visibility = View.GONE
         }
 
-        if (status == "approved" || status == "expired") {
+        if (status == "approved") {
             btnMarkRented.visibility = View.VISIBLE
             btnMarkRented.isEnabled = true
             btnMarkRented.setOnClickListener {
@@ -152,7 +164,7 @@ class MyPostDetailActivity : AppCompatActivity() {
         val (text, textColor, bgColor) = when (status) {
             "approved" -> Triple("\u0110\u00e3 duy\u1ec7t", 0xFF2E7D32.toInt(), 0x334CAF50)
             "rejected" -> Triple("T\u1eeb ch\u1ed1i", 0xFFD32F2F.toInt(), 0x33F44336)
-            "expired" -> Triple("H\u1ebft h\u1ea1n", 0xFF757575.toInt(), 0x33757575)
+            "rented" -> Triple("Đã cho thuê", 0xFF1976D2.toInt(), 0x331976D2)
             else -> Triple("Ch\u1edd duy\u1ec7t", 0xFFE65100.toInt(), 0x33FF9800)
         }
         view.text = text
@@ -165,17 +177,27 @@ class MyPostDetailActivity : AppCompatActivity() {
     }
 
     private fun showMarkRentedDialog() {
-        AlertDialog.Builder(this)
-            .setTitle("X\u00e1c nh\u1eadn \u0111\u00e3 cho thu\u00ea")
-            .setMessage(
-                "B\u00e0i \u0111\u0103ng s\u1ebd \u0111\u01b0\u1ee3c \u1ea9n kh\u1ecfi trang t\u00ecm ki\u1ebfm sau khi b\u1ea1n x\u00e1c nh\u1eadn.\n\n" +
-                    "C\u00e1c l\u1ecbch h\u1eb9n li\u00ean quan s\u1ebd \u0111\u01b0\u1ee3c c\u1eadp nh\u1eadt theo tr\u1ea1ng th\u00e1i ph\u00f2ng \u0111\u00e3 cho thu\u00ea."
-            )
-            .setPositiveButton("X\u00e1c nh\u1eadn") { _, _ ->
+        MessageUtils.showConfirmDialog(
+            context = this,
+            title = "Xác nhận đã cho thuê",
+            message = "Bài đăng sẽ được ẩn khỏi trang tìm kiếm sau khi bạn xác nhận.\n\nCác lịch hẹn liên quan sẽ được cập nhật theo trạng thái phòng đã cho thuê.",
+            positiveText = "Xác nhận",
+            negativeText = "Hủy",
+            onConfirm = {
+                showLoading()
                 viewModel.markAsRented(roomId)
             }
-            .setNegativeButton("H\u1ee7y", null)
-            .show()
+        )
+    }
+
+    private fun showLoading() {
+        loadingDialog?.dismiss()
+        loadingDialog = MessageUtils.showLoadingDialog(this, "Đang cập nhật trạng thái...", "Đang xử lý")
+    }
+
+    private fun hideLoading() {
+        loadingDialog?.dismiss()
+        loadingDialog = null
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -218,80 +240,108 @@ class MyPostDetailActivity : AppCompatActivity() {
         viewPager.registerOnPageChangeCallback(callback)
     }
 
-    private fun setupRoomInfo(data: Map<String, Any>) {
-        val layout = findViewById<LinearLayout>(R.id.layoutRoomInfo)
+    private fun setupBasicInfo(data: Map<String, Any>) {
+        val layout = findViewById<LinearLayout>(R.id.layoutBasicInfo)
         layout.removeAllViews()
 
         val area = (data["area"] as? Number)?.toInt() ?: 0
-        if (area > 0) addInfoRow(layout, "Di\u1ec7n t\u00edch", "${area} m\u00b2")
+        if (area > 0) addInfoRow(layout, "Diện tích", "${area} m²")
 
         val peopleCount = (data["peopleCount"] as? Number)?.toInt() ?: 0
-        if (peopleCount > 0) addInfoRow(layout, "S\u1ed1 ng\u01b0\u1eddi \u1edf", "$peopleCount ng\u01b0\u1eddi")
+        if (peopleCount > 0) addInfoRow(layout, "Số người ở", "$peopleCount người")
 
         val roomType = data["roomType"] as? String ?: ""
-        if (roomType.isNotEmpty()) addInfoRow(layout, "Lo\u1ea1i ph\u00f2ng", roomType)
+        if (roomType.isNotEmpty()) addInfoRow(layout, "Loại phòng", roomType)
+
+        val roomCount = (data["roomCount"] as? Number)?.toInt() ?: 0
+        val rentedCount = (data["rentedCount"] as? Number)?.toInt() ?: 0
+        if (roomCount > 0) {
+            val available = roomCount - rentedCount
+            addInfoRow(layout, "Số phòng", "$roomCount phòng (còn $available trống)")
+        }
 
         val genderPrefer = data["genderPrefer"] as? String ?: ""
-        if (genderPrefer.isNotEmpty()) addInfoRow(layout, "\u0110\u1ed1i t\u01b0\u1ee3ng thu\u00ea", genderPrefer)
+        if (genderPrefer.isNotEmpty()) addInfoRow(layout, "Ưu tiên giới tính", genderPrefer)
 
-        val depositMonths = (data["depositMonths"] as? Number)?.toInt() ?: 0
-        if (depositMonths > 0) addInfoRow(layout, "\u0110\u1eb7t c\u1ecdc", "$depositMonths th\u00e1ng")
+        if (layout.childCount == 0) addInfoRow(layout, "Thông tin", "Chưa cập nhật")
+    }
+
+    private fun setupCostInfo(data: Map<String, Any>) {
+        val layout = findViewById<LinearLayout>(R.id.layoutCostInfo)
+        layout.removeAllViews()
 
         val depositAmount = (data["depositAmount"] as? Number)?.toLong() ?: 0L
-        if (depositAmount > 0) addInfoRow(layout, "S\u1ed1 ti\u1ec1n c\u1ecdc", "${formatter.format(depositAmount)} \u0111")
+        if (depositAmount > 0) addInfoRow(layout, "Tiền đặt cọc", "${formatter.format(depositAmount)} đ")
+
+        val depositMonths = (data["depositMonths"] as? Number)?.toInt() ?: 0
+        if (depositMonths > 0) addInfoRow(layout, "Đặt cọc trước", "$depositMonths tháng")
+
+        val electricPrice = (data["electricPrice"] as? Number)?.toLong() ?: 0L
+        if (electricPrice > 0) addInfoRow(layout, "Tiền điện", "${formatter.format(electricPrice)} đ/kWh")
+
+        val waterPrice = (data["waterPrice"] as? Number)?.toLong() ?: 0L
+        if (waterPrice > 0) addInfoRow(layout, "Tiền nước", "${formatter.format(waterPrice)} đ/m³")
 
         val wifiPrice = (data["wifiPrice"] as? Number)?.toLong() ?: 0L
         if (data["hasWifi"] == true) {
-            addInfoRow(layout, "Internet", if (wifiPrice > 0) "${formatter.format(wifiPrice)} \u0111/th\u00e1ng" else "Mi\u1ec5n ph\u00ed")
+            addInfoRow(layout, "Tiền wifi", if (wifiPrice > 0) "${formatter.format(wifiPrice)} đ/tháng" else "Miễn phí")
         }
 
-        val electricPrice = (data["electricPrice"] as? Number)?.toLong() ?: 0L
-        if (electricPrice > 0) addInfoRow(layout, "Ti\u1ec1n \u0111i\u1ec7n", "${formatter.format(electricPrice)} \u0111/kWh")
-
-        val waterPrice = (data["waterPrice"] as? Number)?.toLong() ?: 0L
-        if (waterPrice > 0) addInfoRow(layout, "Ti\u1ec1n n\u01b0\u1edbc", "${formatter.format(waterPrice)} \u0111/kh\u1ed1i")
+        (data["otherFees"] as? List<Map<String, Any>> ?: emptyList()).forEach { fee ->
+            val label = fee["label"] as? String ?: ""
+            val price = (fee["price"] as? Number)?.toLong() ?: 0L
+            if (label.isNotEmpty()) addInfoRow(layout, label, "${formatter.format(price)} đ/tháng")
+        }
 
         if (data["hasMotorbike"] == true) {
             val fee = (data["motorbikeFee"] as? Number)?.toLong() ?: 0L
-            addInfoRow(layout, "\u0110\u1ec3 xe m\u00e1y", if (fee > 0) "${formatter.format(fee)} \u0111/xe/th\u00e1ng" else "Mi\u1ec5n ph\u00ed")
+            addInfoRow(layout, "Để xe máy", if (fee > 0) "${formatter.format(fee)} đ/xe/tháng" else "Miễn phí")
         }
-
         if (data["hasEBike"] == true) {
-            val fee = (data["eBikeFee"] as? Number)?.toLong() ?: 0L
-            addInfoRow(layout, "\u0110\u1ec3 xe \u0111\u1ea1p \u0111i\u1ec7n", if (fee > 0) "${formatter.format(fee)} \u0111/xe/th\u00e1ng" else "Mi\u1ec5n ph\u00ed")
+            val fee = (data["eBikeFee"] as? Number ?: data["ebikeFee"] as? Number)?.toLong() ?: 0L
+            addInfoRow(layout, "Để xe đạp điện", if (fee > 0) "${formatter.format(fee)} đ/xe/tháng" else "Miễn phí")
         }
-
         if (data["hasBicycle"] == true) {
             val fee = (data["bicycleFee"] as? Number)?.toLong() ?: 0L
-            addInfoRow(layout, "\u0110\u1ec3 xe \u0111\u1ea1p", if (fee > 0) "${formatter.format(fee)} \u0111/xe/th\u00e1ng" else "Mi\u1ec5n ph\u00ed")
+            addInfoRow(layout, "Để xe đạp", if (fee > 0) "${formatter.format(fee)} đ/xe/tháng" else "Miễn phí")
         }
+
+        if (layout.childCount == 0) addInfoRow(layout, "Chi phí", "Chưa cập nhật")
+    }
+
+    private fun setupRulesInfo(data: Map<String, Any>) {
+        val layout = findViewById<LinearLayout>(R.id.layoutRulesInfo)
+        layout.removeAllViews()
+
+        val kitchen = data["kitchen"] as? String ?: ""
+        if (kitchen.isNotEmpty() && kitchen != "Không") addInfoRow(layout, "Phòng bếp", kitchen)
+
+        val bathroom = data["bathroom"] as? String ?: ""
+        if (bathroom.isNotEmpty()) addInfoRow(layout, "Phòng vệ sinh", bathroom)
 
         val curfew = data["curfew"] as? String ?: ""
         val curfewTime = data["curfewTime"] as? String ?: ""
         if (curfew.isNotEmpty()) {
-            val text = if (curfew == "T\u00f9y ch\u1ecdn" && curfewTime.isNotEmpty()) curfewTime else curfew
-            addInfoRow(layout, "Gi\u1edd \u0111\u00f3ng c\u1eeda", text)
+            val text = if (curfew == "Tùy chọn" && curfewTime.isNotEmpty()) "Đóng cửa lúc $curfewTime" else curfew
+            addInfoRow(layout, "Giờ giấc", text)
         }
 
         val pet = data["pet"] as? String ?: ""
         if (pet.isNotEmpty()) {
             val petName = data["petName"] as? String ?: ""
             val petCount = (data["petCount"] as? Number)?.toInt() ?: 0
-            val petText = if (pet == "Cho nu\u00f4i") {
-                buildString {
-                    append("Cho nu\u00f4i")
-                    if (petName.isNotEmpty()) append(": $petName")
-                    if (petCount > 0) append(" (SL: $petCount con)")
-                }
+            val petText = if (pet == "Cho nuôi") {
+                val details = mutableListOf<String>()
+                if (petName.isNotEmpty()) details.add(petName)
+                if (petCount > 0) details.add("Số lượng: $petCount")
+                if (details.isNotEmpty()) "Cho nuôi (${details.joinToString(" - ")})" else "Cho nuôi"
             } else {
                 pet
             }
-            addInfoRow(layout, "Th\u00fa c\u01b0ng", petText)
+            addInfoRow(layout, "Thú cưng", petText)
         }
 
-        if (layout.childCount == 0) {
-            addInfoRow(layout, "Th\u00f4ng tin", "Ch\u01b0a c\u1eadp nh\u1eadt")
-        }
+        if (layout.childCount == 0) addInfoRow(layout, "Quy định", "Chưa cập nhật")
     }
 
     private fun addInfoRow(parent: LinearLayout, label: String, value: String) {
@@ -329,45 +379,55 @@ class MyPostDetailActivity : AppCompatActivity() {
         val layout = findViewById<LinearLayout>(R.id.layoutAmenities)
         layout.removeAllViews()
 
+        fun aqty(key: String) = (data[key] as? Number)?.toInt() ?: 0
+        fun alabel(name: String, qty: Int) = "$name : Số lượng ${qty.coerceAtLeast(1)}"
         val amenities = mutableListOf<String>()
-        if (data["hasAirCon"] == true) amenities.add("\u0110i\u1ec1u h\u00f2a")
-        if (data["hasWaterHeater"] == true) amenities.add("M\u00e1y n\u01b0\u1edbc n\u00f3ng")
-        if (data["hasWasher"] == true) amenities.add("M\u00e1y gi\u1eb7t")
-        if (data["hasBed"] == true) amenities.add("Gi\u01b0\u1eddng ng\u1ee7")
-        if (data["hasWardrobe"] == true) amenities.add("T\u1ee7 qu\u1ea7n \u00e1o")
-        if (data["hasDryingArea"] == true) amenities.add("S\u00e2n ph\u01a1i \u0111\u1ed3")
+        if (data["hasAirCon"] == true) amenities.add(alabel("Điều hòa", aqty("airConQty")))
+        if (data["hasWaterHeater"] == true) amenities.add(alabel("Bình nóng lạnh", aqty("waterHeaterQty")))
+        if (data["hasWasher"] == true) amenities.add(alabel("Máy giặt", aqty("washerQty")))
+        if (data["hasDryingArea"] == true) amenities.add(alabel("Sân phơi đồ", aqty("dryingAreaQty")))
+        if (data["hasWardrobe"] == true) amenities.add(alabel("Tủ quần áo", aqty("wardrobeQty")))
+        if (data["hasBed"] == true) amenities.add(alabel("Giường ngủ", aqty("bedQty")))
+        (data["furnitureItems"] as? List<Map<String, Any>> ?: emptyList()).forEach { item ->
+            val name = item["name"] as? String ?: ""
+            val qty = (item["qty"] as? Number)?.toInt() ?: 1
+            if (name.isNotEmpty()) amenities.add("$name : Số lượng $qty")
+        }
+        (data["serviceItems"] as? List<Map<String, Any>> ?: emptyList()).forEach { item ->
+            val name = item["name"] as? String ?: ""
+            val price = (item["price"] as? Number)?.toLong() ?: 0L
+            if (name.isNotEmpty()) {
+                val priceText = if (price > 0) " - ${formatter.format(price)} đ/tháng" else ""
+                amenities.add("$name$priceText")
+            }
+        }
 
-        val kitchen = data["kitchen"] as? String ?: ""
-        if (kitchen.isNotEmpty() && kitchen != "Kh\u00f4ng") amenities.add("B\u1ebfp $kitchen")
+        val hasAnyParking = data["hasMotorbike"] == true || data["hasEBike"] == true || data["hasBicycle"] == true
 
-        val bathroom = data["bathroom"] as? String ?: ""
-        if (bathroom.isNotEmpty()) amenities.add("WC $bathroom")
-
-        if (amenities.isEmpty()) {
+        if (amenities.isEmpty() && !hasAnyParking) {
             layout.addView(TextView(this).apply {
-                text = "Kh\u00f4ng c\u00f3 th\u00f4ng tin ti\u1ec7n \u00edch"
+                text = "Không có thông tin tiện ích"
                 textSize = 13f
                 setTextColor(0xFF999999.toInt())
             })
             return
         }
 
+        // Hiển thị tiện ích dạng 2 cột
         for (i in amenities.indices step 2) {
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 setPadding(0, dpToPx(5), 0, dpToPx(5))
             }
-
             row.addView(TextView(this).apply {
-                text = amenities[i]
+                text = "✓  ${amenities[i]}"
                 textSize = 13f
                 setTextColor(0xFF212121.toInt())
                 layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
             })
-
             if (i + 1 < amenities.size) {
                 row.addView(TextView(this).apply {
-                    text = amenities[i + 1]
+                    text = "✓  ${amenities[i + 1]}"
                     textSize = 13f
                     setTextColor(0xFF212121.toInt())
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
@@ -377,7 +437,6 @@ class MyPostDetailActivity : AppCompatActivity() {
                     layoutParams = LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f)
                 })
             }
-
             layout.addView(row)
         }
     }
@@ -387,6 +446,52 @@ class MyPostDetailActivity : AppCompatActivity() {
             findViewById<ViewPager2>(R.id.viewPagerImages).unregisterOnPageChangeCallback(it)
         }
         super.onDestroy()
+    }
+
+    private fun setupAppointmentInfo(data: Map<String, Any>) {
+        val card = findViewById<com.google.android.material.card.MaterialCardView>(R.id.cardAppointmentInfo) ?: return
+        val layoutExpiry = findViewById<android.widget.LinearLayout>(R.id.layoutExpiryRow) ?: return
+        val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvPostCreatedAtDisplay) ?: return
+        val tvExpiry = findViewById<android.widget.TextView>(R.id.tvPostExpiryDisplay) ?: return
+        val layoutSlots = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsRow) ?: return
+        val tvSlots = findViewById<android.widget.TextView>(R.id.tvAvailableTimeSlotsDisplay) ?: return
+
+        // Xử lý createdAt: Firestore có thể trả về Timestamp hoặc Long
+        val createdAt: Long = when (val raw = data["createdAt"]) {
+            is Number -> raw.toLong()
+            is com.google.firebase.Timestamp -> raw.toDate().time
+            else -> 0L
+        }
+        // Xử lý postExpiryDate tương tự
+        val expiryDate: Long = when (val raw = data["postExpiryDate"]) {
+            is Number -> raw.toLong()
+            is com.google.firebase.Timestamp -> raw.toDate().time
+            else -> 0L
+        }
+        val timeSlots = data["availableTimeSlots"] as? String ?: ""
+        val sdf = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale("vi", "VN"))
+
+        // Hiển thị card nếu có bất kỳ thông tin nào: createdAt, expiryDate hoặc timeSlots
+        if (createdAt <= 0 && expiryDate <= 0 && timeSlots.isBlank()) {
+            card.visibility = View.GONE
+            return
+        }
+        card.visibility = View.VISIBLE
+
+        if (createdAt > 0 || expiryDate > 0) {
+            layoutExpiry.visibility = View.VISIBLE
+            tvCreatedAt.text = if (createdAt > 0) sdf.format(java.util.Date(createdAt)) else "--"
+            tvExpiry.text = if (expiryDate > 0) sdf.format(java.util.Date(expiryDate)) else "--"
+        } else {
+            layoutExpiry.visibility = View.GONE
+        }
+
+        if (timeSlots.isNotBlank()) {
+            layoutSlots.visibility = View.VISIBLE
+            tvSlots.text = timeSlots
+        } else {
+            layoutSlots.visibility = View.GONE
+        }
     }
 
     private fun dpToPx(dp: Int): Int = (dp * resources.displayMetrics.density).toInt()

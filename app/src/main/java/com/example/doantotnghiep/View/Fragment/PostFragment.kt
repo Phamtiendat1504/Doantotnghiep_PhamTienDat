@@ -11,6 +11,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.*
+import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.cardview.widget.CardView
@@ -31,9 +32,10 @@ import com.example.doantotnghiep.Utils.PostNotificationHelper
 import com.example.doantotnghiep.ViewModel.PostViewModel
 import com.google.android.material.button.MaterialButton
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import java.text.SimpleDateFormat
 import java.util.*
-import com.google.firebase.firestore.Source
 
 class PostFragment : Fragment() {
 
@@ -45,6 +47,7 @@ class PostFragment : Fragment() {
     private val MAX_PHOTOS = 10
     private var isFormSetup = false
     private var userRoleChecked = false
+    var isDirty = false
 
     private lateinit var viewModel: PostViewModel
 
@@ -55,11 +58,155 @@ class PostFragment : Fragment() {
     private var postLoadingDialog: AlertDialog? = null
     private var postQuotaDialog: AlertDialog? = null
     private var postQuotaTimer: CountDownTimer? = null
+    private var upgradeSlotsDialog: AlertDialog? = null
+    private var paymentWarningDialog: AlertDialog? = null
+    private var paymentQrDialog: AlertDialog? = null
+
+
+    private var otherFeeContainer: LinearLayout? = null
+    private val otherFeeRows = mutableListOf<Pair<EditText, EditText>>()
+    private var furnitureContainer: LinearLayout? = null
+    private val furnitureRows = mutableListOf<Pair<EditText, EditText>>()
+    private var serviceContainer: LinearLayout? = null
+    private val serviceRows = mutableListOf<Pair<EditText, EditText>>()
+
+    private fun addFurnitureRow(initName: String = "", initQty: String = "") {
+        val container = furnitureContainer ?: return
+        val ctx = context ?: return
+        val d = resources.displayMetrics.density
+        fun dp(v: Int) = (v * d + 0.5f).toInt()
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(42))
+                .apply { bottomMargin = dp(6) }
+        }
+        val edtName = EditText(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+            hint = "Tên đồ dùng (VD: Sofa, Tủ lạnh...)"
+            textSize = 13f
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            setPadding(dp(12), 0, dp(4), 0)
+            setBackgroundResource(R.drawable.bg_edit_post)
+            if (initName.isNotEmpty()) setText(initName)
+        }
+        val edtQty = EditText(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(72), LinearLayout.LayoutParams.MATCH_PARENT)
+                .apply { marginStart = dp(6) }
+            hint = "SL"
+            textSize = 13f
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(8), 0, dp(8), 0)
+            setBackgroundResource(R.drawable.bg_edit_post)
+            if (initQty.isNotEmpty()) setText(initQty)
+        }
+        val tvDel = android.widget.TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginStart = dp(6) }
+            text = "✕"; textSize = 16f; gravity = android.view.Gravity.CENTER
+            setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.text_secondary))
+        }
+        val pair = edtName to edtQty
+        furnitureRows.add(pair)
+        row.addView(edtName); row.addView(edtQty); row.addView(tvDel)
+        container.addView(row)
+        tvDel.setOnClickListener { container.removeView(row); furnitureRows.remove(pair) }
+    }
+
+    private fun addServiceRow(initName: String = "", initPrice: String = "") {
+        val container = serviceContainer ?: return
+        val ctx = context ?: return
+        val d = resources.displayMetrics.density
+        fun dp(v: Int) = (v * d + 0.5f).toInt()
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(42))
+                .apply { bottomMargin = dp(6) }
+        }
+        val edtName = EditText(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+            hint = "Tên dịch vụ (VD: Giặt đồ, Dọn phòng...)"
+            textSize = 13f
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            setPadding(dp(12), 0, dp(4), 0)
+            setBackgroundResource(R.drawable.bg_edit_post)
+            if (initName.isNotEmpty()) setText(initName)
+        }
+        val edtPrice = EditText(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(100), LinearLayout.LayoutParams.MATCH_PARENT)
+                .apply { marginStart = dp(6) }
+            hint = "đ/tháng"
+            textSize = 12f
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(8), 0, dp(8), 0)
+            setBackgroundResource(R.drawable.bg_edit_post)
+            if (initPrice.isNotEmpty()) setText(initPrice)
+        }
+        NumberFormatUtils.addFormatWatcher(edtPrice)
+        val tvDel = android.widget.TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginStart = dp(6) }
+            text = "✕"; textSize = 16f; gravity = android.view.Gravity.CENTER
+            setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.text_secondary))
+        }
+        val pair = edtName to edtPrice
+        serviceRows.add(pair)
+        row.addView(edtName); row.addView(edtPrice); row.addView(tvDel)
+        container.addView(row)
+        tvDel.setOnClickListener { container.removeView(row); serviceRows.remove(pair) }
+    }
+
+    private fun addFeeRow(initLabel: String = "", initPrice: String = "") {
+        val container = otherFeeContainer ?: return
+        val ctx = context ?: return
+        val d = resources.displayMetrics.density
+        fun dp(v: Int) = (v * d + 0.5f).toInt()
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(42))
+                .apply { bottomMargin = dp(6) }
+        }
+        val edtLabel = EditText(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1.5f)
+            hint = "Tên khoản phí (VD: Phí vệ sinh)"
+            textSize = 13f
+            inputType = android.text.InputType.TYPE_CLASS_TEXT
+            setPadding(dp(12), 0, dp(4), 0)
+            setBackgroundResource(R.drawable.bg_edit_post)
+            if (initLabel.isNotEmpty()) setText(initLabel)
+        }
+        val edtPrice = EditText(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f)
+                .apply { marginStart = dp(6) }
+            hint = "Số tiền/tháng"
+            textSize = 13f
+            inputType = android.text.InputType.TYPE_CLASS_NUMBER
+            setPadding(dp(12), 0, dp(4), 0)
+            setBackgroundResource(R.drawable.bg_edit_post)
+            if (initPrice.isNotEmpty()) setText(initPrice)
+        }
+        val tvDel = android.widget.TextView(ctx).apply {
+            layoutParams = LinearLayout.LayoutParams(dp(32), dp(32)).apply { marginStart = dp(6) }
+            text = "✕"
+            textSize = 16f
+            gravity = android.view.Gravity.CENTER
+            setTextColor(androidx.core.content.ContextCompat.getColor(ctx, R.color.text_secondary))
+        }
+        NumberFormatUtils.addFormatWatcher(edtPrice)
+        val pair = edtLabel to edtPrice
+        otherFeeRows.add(pair)
+        row.addView(edtLabel); row.addView(edtPrice); row.addView(tvDel)
+        container.addView(row)
+        tvDel.setOnClickListener { container.removeView(row); otherFeeRows.remove(pair) }
+    }
 
     private var rulesDialogShown = false  // Tránh show dialog quy định 2 lần do observer trigger lại
     private var lastPostUnlockDialogTimestamp: Long = -1L
     private var selectedLatitude: Double? = null
     private var selectedLongitude: Double? = null
+    private var selectedExpiryMs: Long? = null
     private var selectedLocationAddress: String = ""
     private var isPostProcessing = false
 
@@ -162,6 +309,7 @@ class PostFragment : Fragment() {
 
         viewModel.userObject.observe(viewLifecycleOwner) { user ->
             if (user == null) return@observe
+            if (!isVisible) return@observe
             userRoleChecked = true
             val now = System.currentTimeMillis()
             val unlockAt = user.postingUnlockAt
@@ -181,6 +329,34 @@ class PostFragment : Fragment() {
 
             if (isPrivileged) {
                 showPostForm()
+
+                // Vô hiệu hóa Họ tên, SĐT và Giới tính khi tài khoản đã KYC (isVerified == true) và không phải admin
+                val formView = postFormView
+                if (formView != null) {
+                    val edtName = formView.findViewById<EditText>(R.id.edtOwnerName)
+                    val edtPhone = formView.findViewById<EditText>(R.id.edtOwnerPhone)
+                    val rgGender = formView.findViewById<RadioGroup>(R.id.rgOwnerGender)
+                    if (user.isVerified && user.role != "admin") {
+                        edtName?.isEnabled = false
+                        edtName?.isFocusable = false
+                        edtPhone?.isEnabled = false
+                        edtPhone?.isFocusable = false
+                        rgGender?.isEnabled = false
+                        for (i in 0 until (rgGender?.childCount ?: 0)) {
+                            rgGender?.getChildAt(i)?.isEnabled = false
+                        }
+                    } else {
+                        edtName?.isEnabled = true
+                        edtName?.isFocusableInTouchMode = true
+                        edtPhone?.isEnabled = true
+                        edtPhone?.isFocusableInTouchMode = true
+                        rgGender?.isEnabled = true
+                        for (i in 0 until (rgGender?.childCount ?: 0)) {
+                            rgGender?.getChildAt(i)?.isEnabled = true
+                        }
+                    }
+                }
+
                 if (!user.hasAcceptedRules && !rulesDialogShown) {
                     rulesDialogShown = true
                     showRulesDialog(isFirstTime = true)
@@ -191,22 +367,28 @@ class PostFragment : Fragment() {
             } else {
                 when (user.role) {
                     "pending" -> showPendingStatus()
-                    "rejected" -> showRejectedStatus(user.occupation)
+                    "rejected" -> showRejectedStatus(user.verificationRejectReason)
                     else -> showVerifyRequired()
                 }
             }
         }
 
 
-        viewModel.ownerInfo.observe(viewLifecycleOwner) { (name, phone, avatarUrl) ->
+        viewModel.ownerInfo.observe(viewLifecycleOwner) { info ->
             val v = postFormView ?: return@observe
-            v.findViewById<EditText>(R.id.edtOwnerName)?.setText(name)
-            v.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(phone)
-            currentOwnerAvatarUrl = avatarUrl
+            v.findViewById<EditText>(R.id.edtOwnerName)?.setText(info.name)
+            v.findViewById<EditText>(R.id.edtOwnerPhone)?.setText(info.phone)
+            currentOwnerAvatarUrl = info.avatarUrl
+            val rgGender = v.findViewById<RadioGroup>(R.id.rgOwnerGender)
+            when (info.gender) {
+                "Nam" -> rgGender?.check(R.id.rbOwnerMale)
+                "Nữ" -> rgGender?.check(R.id.rbOwnerFemale)
+            }
         }
 
         viewModel.postQuotaBlocked.observe(viewLifecycleOwner) { info ->
             if (info == null) return@observe
+            if (!isVisible) return@observe
             showPostQuotaLimitDialog(info.unlockAt)
             viewModel.clearPostQuotaBlockedEvent()
         }
@@ -301,6 +483,23 @@ class PostFragment : Fragment() {
         if (!isFormSetup) {
             setupPostForm()
             isFormSetup = true
+            requireActivity().onBackPressedDispatcher.addCallback(
+                viewLifecycleOwner,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        if (isDirty) {
+                            showDiscardDialog {
+                                isDirty = false
+                                isEnabled = false
+                                requireActivity().onBackPressedDispatcher.onBackPressed()
+                            }
+                        } else {
+                            isEnabled = false
+                            requireActivity().onBackPressedDispatcher.onBackPressed()
+                        }
+                    }
+                }
+            )
         }
     }
 
@@ -360,7 +559,14 @@ class PostFragment : Fragment() {
 
     private fun showPostQuotaLimitDialog(unlockAt: Long) {
         if (!isAdded) return
+        if (upgradeSlotsDialog?.isShowing == true || 
+            paymentWarningDialog?.isShowing == true || 
+            paymentQrDialog?.isShowing == true) {
+            // Không hiển thị dialog hết lượt nếu người dùng đang trong luồng thanh toán mua lượt
+            return
+        }
         dismissPostQuotaDialog()
+
 
         val now = System.currentTimeMillis()
         val remainMs = (unlockAt - now).coerceAtLeast(0L)
@@ -473,6 +679,18 @@ class PostFragment : Fragment() {
         val tvPickedLocation = view.findViewById<TextView>(R.id.tvPickedLocation)
         val edtDescription = view.findViewById<EditText>(R.id.edtDescription)
         val edtPrice = view.findViewById<EditText>(R.id.edtPrice)
+
+        val dirtyWatcher = object : android.text.TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (!s.isNullOrEmpty()) isDirty = true
+            }
+            override fun afterTextChanged(s: android.text.Editable?) {}
+        }
+        edtTitle.addTextChangedListener(dirtyWatcher)
+        edtAddress.addTextChangedListener(dirtyWatcher)
+        edtDescription.addTextChangedListener(dirtyWatcher)
+        edtPrice.addTextChangedListener(dirtyWatcher)
         val edtArea = view.findViewById<EditText>(R.id.edtArea)
         val edtPeopleCount = view.findViewById<EditText>(R.id.edtPeopleCount)
         val rgRoomStyle = view.findViewById<RadioGroup>(R.id.rgRoomStyle)
@@ -485,11 +703,17 @@ class PostFragment : Fragment() {
         val edtElectricPrice = view.findViewById<EditText>(R.id.edtElectricPrice)
         val edtWaterPrice = view.findViewById<EditText>(R.id.edtWaterPrice)
         val cbAirCon = view.findViewById<CheckBox>(R.id.cbAirCon)
+        val edtAirConQty = view.findViewById<EditText>(R.id.edtAirConQty)
         val cbWaterHeater = view.findViewById<CheckBox>(R.id.cbWaterHeater)
+        val edtWaterHeaterQty = view.findViewById<EditText>(R.id.edtWaterHeaterQty)
         val cbWasher = view.findViewById<CheckBox>(R.id.cbWasher)
+        val edtWasherQty = view.findViewById<EditText>(R.id.edtWasherQty)
         val cbDryingArea = view.findViewById<CheckBox>(R.id.cbDryingArea)
+        val edtDryingAreaQty = view.findViewById<EditText>(R.id.edtDryingAreaQty)
         val cbWardrobe = view.findViewById<CheckBox>(R.id.cbWardrobe)
+        val edtWardrobeQty = view.findViewById<EditText>(R.id.edtWardrobeQty)
         val cbBed = view.findViewById<CheckBox>(R.id.cbBed)
+        val edtBedQty = view.findViewById<EditText>(R.id.edtBedQty)
         val rgKitchen = view.findViewById<RadioGroup>(R.id.rgKitchen)
         val rgBathroom = view.findViewById<RadioGroup>(R.id.rgBathroom)
         val rgPet = view.findViewById<RadioGroup>(R.id.rgPet)
@@ -519,6 +743,140 @@ class PostFragment : Fragment() {
         pickerAmPm.setOnValueChangedListener { _, _, _ -> syncCurfewTime() }
         syncCurfewTime()
 
+        // Mục 5: Thông tin lịch hẹn — hạn hiển thị (bắt buộc, tối đa 6 tháng)
+        val tvExpiryDisplay = view.findViewById<TextView>(R.id.tvExpiryDisplay)
+        val containerExpiryPicker = view.findViewById<android.widget.LinearLayout>(R.id.containerExpiryPicker)
+        val expiryDateFormat = SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale("vi", "VN"))
+
+        fun openExpiryPicker() {
+            val now = Calendar.getInstance()
+            val maxCal = Calendar.getInstance().apply { add(Calendar.MONTH, 6) }
+
+            DatePickerDialog(
+                requireContext(),
+                { _, year, month, day ->
+                    TimePickerDialog(
+                        requireContext(),
+                        { _, hour, minute ->
+                            val selected = Calendar.getInstance().apply {
+                                set(year, month, day, hour, minute, 0)
+                                set(Calendar.MILLISECOND, 0)
+                            }.timeInMillis
+
+                            if (selected <= System.currentTimeMillis()) {
+                                Toast.makeText(requireContext(), "Hạn hiển thị phải sau thời điểm hiện tại", Toast.LENGTH_SHORT).show()
+                                return@TimePickerDialog
+                            }
+                            if (selected > maxCal.timeInMillis) {
+                                Toast.makeText(requireContext(), "Hạn hiển thị không được quá 6 tháng kể từ hôm nay", Toast.LENGTH_SHORT).show()
+                                return@TimePickerDialog
+                            }
+
+                            selectedExpiryMs = selected
+                            tvExpiryDisplay.text = expiryDateFormat.format(Date(selected))
+                            tvExpiryDisplay.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                        },
+                        now.get(Calendar.HOUR_OF_DAY),
+                        now.get(Calendar.MINUTE),
+                        true
+                    ).show()
+                },
+                now.get(Calendar.YEAR),
+                now.get(Calendar.MONTH),
+                now.get(Calendar.DAY_OF_MONTH)
+            ).apply {
+                datePicker.minDate = System.currentTimeMillis()
+                datePicker.maxDate = maxCal.timeInMillis
+                show()
+            }
+        }
+
+        containerExpiryPicker.setOnClickListener { openExpiryPicker() }
+        tvExpiryDisplay.setOnClickListener { openExpiryPicker() }
+
+        // Khung giờ theo ngày trong tuần
+        val layoutTimeSlotRows = view.findViewById<LinearLayout>(R.id.layoutTimeSlotRows)
+        val dayLabels = listOf("Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
+        // Triple<CheckBox, tvStart, tvEnd>
+        val dayRows = mutableListOf<Triple<CheckBox, TextView, TextView>>()
+
+        for ((i, dayLabel) in dayLabels.withIndex()) {
+            val row = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = android.view.Gravity.CENTER_VERTICAL
+                layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                ).apply { bottomMargin = if (i < dayLabels.size - 1) dpToPx(8) else 0 }
+            }
+
+            val cb = CheckBox(requireContext()).apply {
+                text = dayLabel
+                textSize = 13f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.primary)
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
+            }
+
+            val tvStart = TextView(requireContext()).apply {
+                text = "08:00"
+                textSize = 13f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.primary))
+                background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_edit_post)
+                setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
+                isEnabled = false
+                alpha = 0.4f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            val tvSep = TextView(requireContext()).apply {
+                text = " – "
+                textSize = 14f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            }
+
+            val tvEnd = TextView(requireContext()).apply {
+                text = "17:00"
+                textSize = 13f
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.primary))
+                background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_edit_post)
+                setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
+                isEnabled = false
+                alpha = 0.4f
+                layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+            }
+
+            cb.setOnCheckedChangeListener { _, checked ->
+                tvStart.isEnabled = checked
+                tvEnd.isEnabled = checked
+                tvStart.alpha = if (checked) 1f else 0.4f
+                tvEnd.alpha = if (checked) 1f else 0.4f
+            }
+
+            fun showTimePicker(tv: TextView) {
+                val parts = tv.text.toString().split(":").mapNotNull { it.toIntOrNull() }
+                val h = parts.getOrElse(0) { 8 }
+                val m = parts.getOrElse(1) { 0 }
+                android.app.TimePickerDialog(requireContext(), { _, hour, minute ->
+                    tv.text = String.format("%02d:%02d", hour, minute)
+                }, h, m, true).show()
+            }
+
+            tvStart.setOnClickListener { if (cb.isChecked) showTimePicker(tvStart) }
+            tvEnd.setOnClickListener { if (cb.isChecked) showTimePicker(tvEnd) }
+
+            row.addView(cb)
+            row.addView(tvStart)
+            row.addView(tvSep)
+            row.addView(tvEnd)
+            layoutTimeSlotRows.addView(row)
+            dayRows.add(Triple(cb, tvStart, tvEnd))
+        }
+
+        fun buildTimeSlotsString(): String = dayRows.mapIndexed { i, r ->
+            if (r.first.isChecked) "${dayLabels[i]}: ${r.second.text}-${r.third.text}" else null
+        }.filterNotNull().joinToString("\n")
+
         val btnAddPhoto = view.findViewById<CardView>(R.id.btnAddPhoto)
         val btnPostRoom = view.findViewById<MaterialButton>(R.id.btnPostRoom)
         val tvRulesLink = view.findViewById<TextView>(R.id.tvRulesLink)
@@ -535,12 +893,18 @@ class PostFragment : Fragment() {
         val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale("vi", "VN"))
         tvPostDate.text = dateFormat.format(Date())
 
-        val allAreas = mutableListOf("-- Chọn phường/xã --")
-        allAreas.addAll(AddressData.phuongList.drop(1))
-        allAreas.addAll(AddressData.xaList.drop(1))
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, allAreas)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinnerWard.adapter = adapter
+        val chipPostPhuong = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipPostPhuong)
+        val chipPostXa = view.findViewById<com.google.android.material.chip.Chip>(R.id.chipPostXa)
+
+        fun loadWardList(list: Array<String>) {
+            val items = mutableListOf("-- Chọn phường/xã --").apply { addAll(list.drop(1)) }
+            val adp = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, items)
+            adp.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinnerWard.adapter = adp
+        }
+        loadWardList(AddressData.phuongList)
+        chipPostPhuong.setOnCheckedChangeListener { _, isChecked -> if (isChecked) loadWardList(AddressData.phuongList) }
+        chipPostXa.setOnCheckedChangeListener { _, isChecked -> if (isChecked) loadWardList(AddressData.xaList) }
         tvPickedLocation.text = "Chưa chọn vị trí chính xác"
 
         btnPickLocation.setOnClickListener {
@@ -560,6 +924,24 @@ class PostFragment : Fragment() {
         NumberFormatUtils.addFormatWatcher(edtWifiPrice)
         NumberFormatUtils.addFormatWatcher(edtElectricPrice)
         NumberFormatUtils.addFormatWatcher(edtWaterPrice)
+        otherFeeContainer = view.findViewById(R.id.layoutOtherFees)
+        otherFeeRows.clear()
+        addFeeRow()
+        view.findViewById<MaterialButton>(R.id.btnAddOtherFee).setOnClickListener { addFeeRow() }
+        furnitureContainer = view.findViewById(R.id.layoutFurnitureItems)
+        furnitureRows.clear()
+        addFurnitureRow()
+        view.findViewById<MaterialButton>(R.id.btnAddFurnitureItem).setOnClickListener { addFurnitureRow() }
+        serviceContainer = view.findViewById(R.id.layoutServiceItems)
+        serviceRows.clear()
+        addServiceRow()
+        view.findViewById<MaterialButton>(R.id.btnAddServiceItem).setOnClickListener { addServiceRow() }
+        cbAirCon.setOnCheckedChangeListener { _, c -> edtAirConQty.isEnabled = c; if (!c) edtAirConQty.text?.clear() }
+        cbWaterHeater.setOnCheckedChangeListener { _, c -> edtWaterHeaterQty.isEnabled = c; if (!c) edtWaterHeaterQty.text?.clear() }
+        cbWasher.setOnCheckedChangeListener { _, c -> edtWasherQty.isEnabled = c; if (!c) edtWasherQty.text?.clear() }
+        cbDryingArea.setOnCheckedChangeListener { _, c -> edtDryingAreaQty.isEnabled = c; if (!c) edtDryingAreaQty.text?.clear() }
+        cbWardrobe.setOnCheckedChangeListener { _, c -> edtWardrobeQty.isEnabled = c; if (!c) edtWardrobeQty.text?.clear() }
+        cbBed.setOnCheckedChangeListener { _, c -> edtBedQty.isEnabled = c; if (!c) edtBedQty.text?.clear() }
         NumberFormatUtils.addFormatWatcher(edtDepositAmount)
 
         cbWifi.setOnCheckedChangeListener { _, isChecked -> edtWifiPrice.isEnabled = isChecked; if (!isChecked) edtWifiPrice.text?.clear() }
@@ -622,6 +1004,29 @@ class PostFragment : Fragment() {
             }
         }
 
+        viewModel.showLastPurchasedSlotWarning.observe(viewLifecycleOwner) { shouldShow ->
+            if (shouldShow == true) {
+                viewModel.resetLastPurchasedSlotWarning()
+                isPostProcessing = false
+                
+                AlertDialog.Builder(requireContext())
+                    .setTitle("Lượt đăng sắp hết")
+                    .setMessage("Bạn chỉ còn lại đúng 1 lượt đăng bài đã mua (tính phí).\n\nBạn có muốn tiếp tục sử dụng lượt này để đăng bài ngay hay muốn mua thêm lượt mới?")
+                    .setPositiveButton("Tiếp tục đăng") { dialog, _ ->
+                        dialog.dismiss()
+                        isPostProcessing = true
+                        viewModel.proceedWithPendingPost(requireContext())
+                    }
+                    .setNegativeButton("Mua thêm lượt") { dialog, _ ->
+                        dialog.dismiss()
+                        viewModel.cancelPendingPost()
+                        showUpgradeSlotsDialog()
+                    }
+                    .setCancelable(false)
+                    .show()
+            }
+        }
+
         btnAddPhoto.setOnClickListener {
             if (imageUris.size >= MAX_PHOTOS) {
                 MessageUtils.showInfoDialog(requireContext(), "Giới hạn ảnh", "Bạn chỉ được chọn tối đa $MAX_PHOTOS ảnh.")
@@ -643,10 +1048,35 @@ class PostFragment : Fragment() {
             val districtName = if (selectedWard.contains("(")) selectedWard.substringAfter("(").replace(")", "").trim() else ""
             val lat = selectedLatitude
             val lng = selectedLongitude
-            if (lat == null || lng == null) {
-                MessageUtils.showInfoDialog(requireContext(), "Thiếu vị trí", "Vui lòng chọn vị trí trên bản đồ trước khi đăng bài.")
+            val address = edtAddress.text.toString().trim()
+            if (address.isEmpty() && (lat == null || lng == null)) {
+                MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin vị trí", "Vui lòng nhập địa chỉ cụ thể hoặc chọn vị trí trên bản đồ trước khi đăng bài.")
                 return@setOnClickListener
             }
+
+            // Kiểm tra hạn hiển thị bắt buộc
+            if (selectedExpiryMs == null) {
+                MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 5)", "Vui lòng chọn hạn hiển thị bài đăng.")
+                return@setOnClickListener
+            }
+
+            // Kiểm tra hạn hiển thị không vượt quá 6 tháng (phòng trường hợp state cũ)
+            val maxAllowedMs = Calendar.getInstance().apply { add(Calendar.MONTH, 6) }.timeInMillis
+            if (selectedExpiryMs!! > maxAllowedMs) {
+                MessageUtils.showInfoDialog(requireContext(), "Hạn hiển thị không hợp lệ", "Hạn hiển thị không được quá 6 tháng kể từ hôm nay. Vui lòng chọn lại.")
+                selectedExpiryMs = null
+                tvExpiryDisplay.text = "Nhấn để chọn ngày và giờ hết hạn"
+                tvExpiryDisplay.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_hint))
+                return@setOnClickListener
+            }
+
+            // Kiểm tra khung giờ nhận lịch hẹn bắt buộc
+            val timeSlotsStr = buildTimeSlotsString()
+            if (timeSlotsStr.isEmpty()) {
+                MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 5)", "Vui lòng chọn ít nhất một khung giờ có thể nhận lịch hẹn.")
+                return@setOnClickListener
+            }
+
 
             val cbMotorbike = view.findViewById<CheckBox>(R.id.cbMotorbike)
             val cbEBike = view.findViewById<CheckBox>(R.id.cbEBike)
@@ -664,7 +1094,7 @@ class PostFragment : Fragment() {
                 ownerGender = when (rgOwnerGender.checkedRadioButtonId) { R.id.rbOwnerMale -> "Nam"; R.id.rbOwnerFemale -> "Nữ"; else -> "" },
                 ownerAvatarUrl = currentOwnerAvatarUrl,
                 title = edtTitle.text.toString().trim(),
-                ward = wardName, district = districtName,
+                ward = wardName, district = if (districtName.isEmpty()) wardName else districtName,
                 latitude = lat,
                 longitude = lng,
                 address = edtAddress.text.toString().trim(),
@@ -676,13 +1106,35 @@ class PostFragment : Fragment() {
                 depositMonths = edtDepositMonths.text.toString().toIntOrNull() ?: 0,
                 depositAmount = NumberFormatUtils.getRawNumber(edtDepositAmount).toLongOrNull() ?: 0,
                 hasWifi = cbWifi.isChecked,
+                hasElectric = cbElectric.isChecked,
                 hasWater = cbWater.isChecked,
                 wifiPrice = NumberFormatUtils.getRawNumber(edtWifiPrice).toLongOrNull() ?: 0,
                 electricPrice = NumberFormatUtils.getRawNumber(edtElectricPrice).toLongOrNull() ?: 0,
                 waterPrice = NumberFormatUtils.getRawNumber(edtWaterPrice).toLongOrNull() ?: 0,
+                otherFees = otherFeeRows.mapNotNull { (lbl, prc) ->
+                    val label = lbl.text.toString().trim()
+                    val price = NumberFormatUtils.getRawNumber(prc).toLongOrNull() ?: 0L
+                    if (label.isNotEmpty()) mapOf<String, Any>("label" to label, "price" to price) else null
+                },
                 hasAirCon = cbAirCon.isChecked, hasWaterHeater = cbWaterHeater.isChecked,
                 hasWasher = cbWasher.isChecked, hasDryingArea = cbDryingArea.isChecked,
                 hasWardrobe = cbWardrobe.isChecked, hasBed = cbBed.isChecked,
+                airConQty = if (cbAirCon.isChecked) edtAirConQty.text.toString().toIntOrNull() ?: 1 else 0,
+                waterHeaterQty = if (cbWaterHeater.isChecked) edtWaterHeaterQty.text.toString().toIntOrNull() ?: 1 else 0,
+                washerQty = if (cbWasher.isChecked) edtWasherQty.text.toString().toIntOrNull() ?: 1 else 0,
+                dryingAreaQty = if (cbDryingArea.isChecked) edtDryingAreaQty.text.toString().toIntOrNull() ?: 1 else 0,
+                wardrobeQty = if (cbWardrobe.isChecked) edtWardrobeQty.text.toString().toIntOrNull() ?: 1 else 0,
+                bedQty = if (cbBed.isChecked) edtBedQty.text.toString().toIntOrNull() ?: 1 else 0,
+                furnitureItems = furnitureRows.mapNotNull { (name, qty) ->
+                    val n = name.text.toString().trim()
+                    val q = qty.text.toString().toIntOrNull() ?: 1
+                    if (n.isNotEmpty()) mapOf<String, Any>("name" to n, "qty" to q) else null
+                },
+                serviceItems = serviceRows.mapNotNull { (name, price) ->
+                    val n = name.text.toString().trim()
+                    val p = NumberFormatUtils.getRawNumber(price).toLongOrNull() ?: 0L
+                    if (n.isNotEmpty()) mapOf<String, Any>("name" to n, "price" to p) else null
+                },
                 kitchen = when (rgKitchen.checkedRadioButtonId) { R.id.rbKitchenShared -> "Chung"; R.id.rbKitchenPrivate -> "Riêng"; R.id.rbKitchenNone -> "Không"; else -> "" },
                 bathroom = when (rgBathroom.checkedRadioButtonId) { R.id.rbBathroomShared -> "Chung"; R.id.rbBathroomPrivate -> "Riêng"; else -> "" },
                 pet = when (rgPet.checkedRadioButtonId) { R.id.rbPetYes -> "Cho nuôi"; R.id.rbPetNo -> "Không"; else -> "" },
@@ -697,12 +1149,14 @@ class PostFragment : Fragment() {
                 bicycleFee = if (cbBicycle?.isChecked == true && rgBicycleFee?.checkedRadioButtonId == R.id.rbBicyclePaid) NumberFormatUtils.getRawNumber(edtBicycleFee).toLongOrNull() ?: 0 else 0,
                 curfew = when (rgCurfew.checkedRadioButtonId) { R.id.rbCurfewFree -> "Tự do"; R.id.rbCurfewCustom -> "Tùy chọn"; else -> "" },
                 curfewTime = edtCurfewTime.text.toString().trim(),
+                postExpiryDate = selectedExpiryMs!!,
+                availableTimeSlots = timeSlotsStr,
                 status = "pending", createdAt = System.currentTimeMillis()
             )
 
             lastPostedTitle = room.title
             lastPostedPrice = room.price
-            lastPostedLocation = if (room.ward.isNotEmpty()) "${room.ward}, ${room.district}" else room.district
+            lastPostedLocation = listOf(room.ward, room.district).filter { it.isNotBlank() }.distinct().joinToString(", ")
             isPostProcessing = true
             viewModel.postRoom(requireContext(), room, imageUris)
         }
@@ -715,28 +1169,32 @@ class PostFragment : Fragment() {
             view.findViewById<LinearLayout>(R.id.llHeaderCard1),
             view.findViewById<LinearLayout>(R.id.llHeaderCard2),
             view.findViewById<LinearLayout>(R.id.llHeaderCard3),
-            view.findViewById<LinearLayout>(R.id.llHeaderCard4)
+            view.findViewById<LinearLayout>(R.id.llHeaderCard4),
+            view.findViewById<LinearLayout>(R.id.llHeaderCard5)
         )
         val contents = listOf(
             view.findViewById<LinearLayout>(R.id.llContentCard1),
             view.findViewById<LinearLayout>(R.id.llContentCard2),
             view.findViewById<LinearLayout>(R.id.llContentCard3),
-            view.findViewById<LinearLayout>(R.id.llContentCard4)
+            view.findViewById<LinearLayout>(R.id.llContentCard4),
+            view.findViewById<LinearLayout>(R.id.llContentCard5)
         )
         val arrows = listOf(
             view.findViewById<ImageView>(R.id.ivArrowCard1),
             view.findViewById<ImageView>(R.id.ivArrowCard2),
             view.findViewById<ImageView>(R.id.ivArrowCard3),
-            view.findViewById<ImageView>(R.id.ivArrowCard4)
+            view.findViewById<ImageView>(R.id.ivArrowCard4),
+            view.findViewById<ImageView>(R.id.ivArrowCard5)
         )
         val nextBtns = listOf(
             view.findViewById<View>(R.id.btnNextCard1),
             view.findViewById<View>(R.id.btnNextCard2),
             view.findViewById<View>(R.id.btnNextCard3),
+            view.findViewById<View>(R.id.btnNextCard4),
             null
         )
 
-        for (i in 0..3) {
+        for (i in 0..4) {
             headers[i]?.setOnClickListener {
                 val isVisible = contents[i]?.visibility == View.VISIBLE
                 if (isVisible) {
@@ -751,7 +1209,7 @@ class PostFragment : Fragment() {
             nextBtns[i]?.setOnClickListener {
                 contents[i]?.visibility = View.GONE
                 arrows[i]?.animate()?.rotation(0f)?.setDuration(200)?.start()
-                if (i + 1 < 4) {
+                if (i + 1 < 5) {
                     contents[i + 1]?.visibility = View.VISIBLE
                     arrows[i + 1]?.animate()?.rotation(90f)?.setDuration(200)?.start()
                 }
@@ -783,19 +1241,46 @@ class PostFragment : Fragment() {
         NumberFormatUtils.addFormatWatcher(edtBicycleFee)
     }
 
+    fun showDiscardDialog(onConfirmed: () -> Unit) {
+        MessageUtils.showConfirmDialog(
+            context = requireContext(),
+            title = "Bỏ nội dung đã nhập?",
+            message = "Thông tin bạn đã điền sẽ bị xóa. Bạn có muốn thoát không?",
+            positiveText = "Thoát",
+            negativeText = "Tiếp tục điền",
+            onConfirm = onConfirmed
+        )
+    }
+
     private fun resetForm(view: View) {
+        isDirty = false
         listOf(R.id.edtOwnerName, R.id.edtOwnerPhone, R.id.edtTitle, R.id.edtAddress,
             R.id.edtDescription, R.id.edtPrice, R.id.edtArea, R.id.edtPeopleCount,
             R.id.edtDepositMonths, R.id.edtDepositAmount, R.id.edtWifiPrice,
             R.id.edtElectricPrice, R.id.edtWaterPrice, R.id.edtPetName, R.id.edtPetCount,
-            R.id.edtMotorbikeFee, R.id.edtEBikeFee, R.id.edtBicycleFee
+            R.id.edtMotorbikeFee, R.id.edtEBikeFee, R.id.edtBicycleFee,
+            R.id.edtAirConQty, R.id.edtWaterHeaterQty, R.id.edtWasherQty,
+            R.id.edtDryingAreaQty, R.id.edtWardrobeQty, R.id.edtBedQty
         ).forEach { id -> view.findViewById<EditText>(id)?.text?.clear() }
         view.findViewById<TextView>(R.id.edtCurfewTime)?.text = ""
+        otherFeeRows.clear()
+        otherFeeContainer?.removeAllViews()
+        addFeeRow()
+        furnitureRows.clear()
+        furnitureContainer?.removeAllViews()
+        serviceRows.clear()
+        serviceContainer?.removeAllViews()
+        view.findViewById<com.google.android.material.chip.Chip>(R.id.chipPostPhuong)?.isChecked = true
         view.findViewById<Spinner>(R.id.spinnerWard)?.setSelection(0)
         selectedLatitude = null
         selectedLongitude = null
         selectedLocationAddress = ""
+        selectedExpiryMs = null
         view.findViewById<TextView>(R.id.tvPickedLocation)?.text = "Chưa chọn vị trí chính xác"
+        view.findViewById<TextView>(R.id.tvExpiryDisplay)?.apply {
+            text = "Nhấn để chọn ngày và giờ hết hạn"
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.text_hint))
+        }
         listOf(R.id.cbWifi, R.id.cbElectric, R.id.cbWater, R.id.cbAirCon, R.id.cbWaterHeater,
             R.id.cbWasher, R.id.cbDryingArea, R.id.cbWardrobe, R.id.cbBed,
             R.id.cbMotorbike, R.id.cbEBike, R.id.cbBicycle
@@ -872,11 +1357,36 @@ class PostFragment : Fragment() {
         SlotPackage("+10 lượt đăng bài", "GOI03", 10, 40_000)
     )
 
-    // ⚠️ ĐIỀN THÔNG TIN NGÂN HÀNG CỦA BẠN VÀO ĐÂY:
-    private val BANK_ID       = "mbbank"          // mã ngân hàng VietQR (mbbank, vietcombank, tpbank...)
-    private val ACCOUNT_NO    = "0889740127"       // số tài khoản của bạn
-    private val ACCOUNT_NAME  = "PHAM TIEN DAT"   // tên chủ tài khoản IN HOA không dấu
-    private val BANK_DISPLAY  = "MB Bank"          // tên hiển thị trên dialog
+    companion object {
+        private const val DEFAULT_BANK_ID = "970422"
+        private const val DEFAULT_ACCOUNT_NO = "9999999999"
+        private const val DEFAULT_ACCOUNT_NAME = "TAI KHOAN DEMO"
+        private const val DEFAULT_BANK_DISPLAY = "MB Bank"
+    }
+
+    private var activeBankId = DEFAULT_BANK_ID
+    private var activeAccountNo = DEFAULT_ACCOUNT_NO
+    private var activeAccountName = DEFAULT_ACCOUNT_NAME
+    private var activeBankDisplay = DEFAULT_BANK_DISPLAY
+
+    private fun fetchPaymentConfig(onComplete: () -> Unit) {
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            .collection("system_configs")
+            .document("payment")
+            .get()
+            .addOnSuccessListener { doc ->
+                if (doc.exists()) {
+                    activeBankId = doc.getString("bankId") ?: activeBankId
+                    activeAccountNo = doc.getString("accountNo") ?: activeAccountNo
+                    activeAccountName = doc.getString("accountName") ?: activeAccountName
+                    activeBankDisplay = doc.getString("bankDisplay") ?: activeBankDisplay
+                }
+                onComplete()
+            }
+            .addOnFailureListener {
+                onComplete()
+            }
+    }
 
     private fun showUpgradeSlotsDialog() {
         if (!isAdded) return
@@ -887,6 +1397,7 @@ class PostFragment : Fragment() {
             .setView(dialogView)
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        upgradeSlotsDialog = dialog
 
         var packageSelected = false
 
@@ -939,6 +1450,7 @@ class PostFragment : Fragment() {
         }
 
         dialog.setOnDismissListener {
+            upgradeSlotsDialog = null
             if (!packageSelected) {
                 // Nếu người dùng đóng bảng chọn gói mà chưa mua, kiểm tra lại quota
                 // để hiện lại dialog "Hết lượt" nếu họ vẫn đang bị chặn
@@ -950,6 +1462,47 @@ class PostFragment : Fragment() {
     }
 
     private fun showPaymentQrDialog(pkg: SlotPackage) {
+        if (!isAdded) return
+        // Delay 200ms để dialog trước kịp ẩn dim, tránh double-dim làm màn hình quá tối
+        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (!isAdded) return@postDelayed
+            val builder = AlertDialog.Builder(requireContext(), R.style.RoundedDialogStyle)
+                .setTitle("Lưu ý quan trọng trước khi thanh toán")
+                .setMessage(
+                    "Khi quét mã QR, ứng dụng ngân hàng sẽ tự điền đầy đủ thông tin.\n\n" +
+                    "⚠ KHÔNG thay đổi số tiền hoặc nội dung chuyển khoản.\n\n" +
+                    "Nếu chuyển sai số tiền hoặc sai nội dung, hệ thống sẽ không xác nhận giao dịch " +
+                    "và bạn sẽ không nhận được lượt đăng bài. Số tiền đã chuyển sẽ không được hoàn lại."
+                )
+                .setPositiveButton("Đã hiểu, tiếp tục") { warningDialog, _ ->
+                    warningDialog.dismiss()
+                    val progressDialog = MessageUtils.showLoadingDialog(requireContext(), "Đang tải thông tin thanh toán...")
+                    fetchPaymentConfig {
+                        progressDialog.dismiss()
+                        proceedToPaymentQr(pkg)
+                    }
+                }
+                .setNegativeButton("Quay lại") { warningDialog, _ ->
+                    warningDialog.dismiss()
+                    showUpgradeSlotsDialog()
+                }
+            
+            val dialog = builder.create()
+            dialog.setOnDismissListener {
+                paymentWarningDialog = null
+            }
+            paymentWarningDialog = dialog
+            dialog.show()
+            
+            dialog.window?.apply {
+                setBackgroundDrawableResource(R.drawable.bg_dialog_surface)
+                val width = (resources.displayMetrics.widthPixels * 0.9f).toInt()
+                setLayout(width, ViewGroup.LayoutParams.WRAP_CONTENT)
+            }
+        }, 200L)
+    }
+
+    private fun proceedToPaymentQr(pkg: SlotPackage) {
         if (!isAdded) return
         val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
@@ -976,7 +1529,7 @@ class PostFragment : Fragment() {
 
         docRef.set(request)
             .addOnSuccessListener {
-                showPaymentQrDialogContent(docRef, pkg, addInfo)
+                showPaymentQrDialogContent(docRef, pkg, addInfo, expiresAt)
             }
             .addOnFailureListener {
                 if (!isAdded) return@addOnFailureListener
@@ -991,7 +1544,8 @@ class PostFragment : Fragment() {
     private fun showPaymentQrDialogContent(
         docRef: com.google.firebase.firestore.DocumentReference,
         pkg: SlotPackage,
-        addInfo: String
+        addInfo: String,
+        expiresAt: Long
     ) {
         if (!isAdded) return
         val dialogView = LayoutInflater.from(requireContext())
@@ -1002,16 +1556,20 @@ class PostFragment : Fragment() {
             .setCancelable(false)
             .create()
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+        paymentQrDialog = dialog
+
 
         dialogView.findViewById<TextView>(R.id.tvQrPackageName).text = "${pkg.label} — ${"%,.0f".format(pkg.price.toDouble())}đ"
-        dialogView.findViewById<TextView>(R.id.tvQrBank).text = BANK_DISPLAY
-        dialogView.findViewById<TextView>(R.id.tvQrAccountNo).text = ACCOUNT_NO
-        dialogView.findViewById<TextView>(R.id.tvQrAccountName).text = ACCOUNT_NAME
+        dialogView.findViewById<TextView>(R.id.tvQrBank).text = activeBankDisplay
+        dialogView.findViewById<TextView>(R.id.tvQrAccountNo).text = activeAccountNo
+        dialogView.findViewById<TextView>(R.id.tvQrAccountName).text = activeAccountName
         dialogView.findViewById<TextView>(R.id.tvQrTransferNote).text = addInfo
 
-        val addInfoEncoded = addInfo.replace(" ", "%20").replace("/", "%2F")
-        val qrUrl = "https://img.vietqr.io/image/$BANK_ID-$ACCOUNT_NO-compact2.png" +
-                "?amount=${pkg.price}&addInfo=$addInfoEncoded&accountName=${ACCOUNT_NAME.replace(" ", "%20")}"
+        val cleanBankId = activeBankId.trim().lowercase(java.util.Locale.US)
+        val normalizedBankId = if (cleanBankId == "mb") "970422" else activeBankId.trim()
+        val normalizedAccountNo = activeAccountNo.trim()
+        val qrUrl = "https://img.vietqr.io/image/$normalizedBankId-$normalizedAccountNo-compact2.png" +
+                "?amount=${pkg.price}&addInfo=${android.net.Uri.encode(addInfo)}&accountName=${android.net.Uri.encode(activeAccountName)}"
 
         Glide.with(this)
             .load(qrUrl)
@@ -1025,11 +1583,10 @@ class PostFragment : Fragment() {
         btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
 
         val btnCancel = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.btnCancelPayment)
+        val tvCountdown = dialogView.findViewById<TextView>(R.id.tvQrCountdown)
 
         var paymentCompleted = false
         var latestStatus = "waiting_for_payment"
-        val statusPollHandler = Handler(Looper.getMainLooper())
-        var stopStatusPolling = false
 
         fun applyPaymentStatus(status: String) {
             latestStatus = status
@@ -1064,6 +1621,13 @@ class PostFragment : Fragment() {
                     btnConfirm.setBackgroundColor(android.graphics.Color.GRAY)
                     btnCancel.visibility = android.view.View.GONE
                 }
+                "amount_mismatch" -> {
+                    btnConfirm.isEnabled = false
+                    btnConfirm.text = "Sai số tiền — vui lòng liên hệ hỗ trợ"
+                    btnConfirm.setBackgroundColor(ContextCompat.getColor(requireContext(), R.color.warning))
+                    btnCancel.visibility = android.view.View.VISIBLE
+                    tvCountdown.visibility = android.view.View.GONE
+                }
             }
         }
 
@@ -1077,43 +1641,50 @@ class PostFragment : Fragment() {
             applyPaymentStatus(status)
         }
 
-        val pollStatusRunnable = object : Runnable {
-            override fun run() {
-                if (stopStatusPolling || !dialog.isShowing) return
-                docRef.get(Source.SERVER)
-                    .addOnSuccessListener { serverSnap ->
-                        val serverStatus = serverSnap.getString("status")
-                        if (!serverStatus.isNullOrBlank()) {
-                            applyPaymentStatus(serverStatus)
-                        }
-                    }
-                    .addOnFailureListener { pollError ->
-                        android.util.Log.w("PostFragment", "Payment status polling failed", pollError)
-                    }
-                    .addOnCompleteListener {
-                        if (!stopStatusPolling && dialog.isShowing) {
-                            statusPollHandler.postDelayed(this, 3000L)
-                        }
-                    }
-            }
+        val remainMs = expiresAt - System.currentTimeMillis()
+        val paymentCountdown: CountDownTimer? = if (remainMs > 0) {
+            object : CountDownTimer(remainMs, 1000L) {
+                override fun onTick(millisUntilFinished: Long) {
+                    if (!isAdded) return
+                    val mins = millisUntilFinished / 60000
+                    val secs = (millisUntilFinished % 60000) / 1000
+                    tvCountdown.text = "Hết hạn sau: %02d:%02d".format(mins, secs)
+                }
+                override fun onFinish() {
+                    if (!isAdded) return
+                    tvCountdown.text = "Giao dịch đã hết hạn"
+                }
+            }.also { it.start() }
+        } else {
+            tvCountdown.text = "Giao dịch đã hết hạn"
+            null
         }
-        statusPollHandler.postDelayed(pollStatusRunnable, 3000L)
 
         btnCancel.setOnClickListener {
             if (latestStatus == "paid") {
                 dialog.dismiss()
                 return@setOnClickListener
             }
-            btnCancel.isEnabled = false
-            btnCancel.text = "Đang hủy..."
-            val cancelAt = System.currentTimeMillis()
-            docRef.update(
-                mapOf(
-                    "status" to "cancelled",
-                    "cancelledAt" to cancelAt,
-                    "updatedAt" to cancelAt
-                )
-            ).addOnCompleteListener { dialog.dismiss() }
+
+            MessageUtils.showConfirmDialog(
+                context = requireContext(),
+                title = "Xác nhận hủy giao dịch",
+                message = "Nếu bạn ĐÃ thực hiện chuyển tiền thành công bằng app ngân hàng, vui lòng KHÔNG hủy giao dịch này để tránh thất thoát và được hỗ trợ tốt nhất.\n\nBạn có chắc chắn muốn hủy giao dịch?",
+                positiveText = "Hủy giao dịch",
+                negativeText = "Quay lại",
+                onConfirm = {
+                    btnCancel.isEnabled = false
+                    btnCancel.text = "Đang hủy..."
+                    val cancelAt = System.currentTimeMillis()
+                    docRef.update(
+                        mapOf(
+                            "status" to "cancelled",
+                            "cancelledAt" to cancelAt,
+                            "updatedAt" to cancelAt
+                        )
+                    ).addOnCompleteListener { dialog.dismiss() }
+                }
+            )
         }
 
         btnConfirm.setOnClickListener {
@@ -1123,14 +1694,14 @@ class PostFragment : Fragment() {
             MessageUtils.showInfoDialog(
                 requireContext(),
                 "Thanh toán thành công",
-                "Hệ thống đã xác nhận thanh toán. Bạn đã được cộng thêm ${pkg.slots} lượt đăng bài."
+                "Hệ thống đã ghi nhận thanh toán. Lượt đăng bài mới của bạn đang được cập nhật tự động trong giây lát."
             )
-            viewModel.loadUserObject()
+            viewModel.loadUserObject(forceFromServer = true)
         }
 
         dialog.setOnDismissListener {
-            stopStatusPolling = true
-            statusPollHandler.removeCallbacks(pollStatusRunnable)
+            paymentQrDialog = null
+            paymentCountdown?.cancel()
             listener.remove()
             if (!paymentCompleted) {
                 viewModel.checkPrePostQuota()
@@ -1141,25 +1712,37 @@ class PostFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+        if (!isVisible) return
         val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
         if (currentUser != null) {
             viewModel.loadUserObject()
             viewModel.loadOwnerInfo()
             val mainViewModel = androidx.lifecycle.ViewModelProvider(requireActivity())[com.example.doantotnghiep.ViewModel.MainViewModel::class.java]
-            com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                .collection("users").document(currentUser.uid).get()
-                .addOnSuccessListener { doc ->
-                    val role = doc.getString("role") ?: ""
-                    val isVerified = doc.getBoolean("isVerified") ?: false
-                    val effectiveRole = if (role == "admin") "admin" else if (isVerified) "verified" else "user"
-                    mainViewModel.loadAppointmentBadge(currentUser.uid, effectiveRole)
-                }
+            mainViewModel.loadAppointmentBadgeForCurrentUser(currentUser.uid)
+        }
+    }
+
+    override fun onHiddenChanged(hidden: Boolean) {
+        super.onHiddenChanged(hidden)
+        if (!hidden) {
+            val currentUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+            if (currentUser != null) {
+                viewModel.loadUserObject()
+                viewModel.loadOwnerInfo()
+                viewModel.checkPrePostQuota()
+            }
         }
     }
 
     override fun onDestroyView() {
         dismissPostLoadingDialog()
         dismissPostQuotaDialog()
+        upgradeSlotsDialog?.dismiss()
+        upgradeSlotsDialog = null
+        paymentWarningDialog?.dismiss()
+        paymentWarningDialog = null
+        paymentQrDialog?.dismiss()
+        paymentQrDialog = null
         super.onDestroyView()
     }
 }

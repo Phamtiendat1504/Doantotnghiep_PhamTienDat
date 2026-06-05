@@ -222,95 +222,183 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Tra cứu hồ sơ chủ trọ -->
+            <!-- Tra cứu hồ sơ chủ trọ — Redesigned Blue & White Card -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginHorizontal="@dimen/spacing_24"
                 android:layout_marginTop="@dimen/padding_large"
-                app:cardBackgroundColor="@color/color_0F172A"
-                app:cardCornerRadius="@dimen/padding_large"
-                app:cardElevation="@dimen/padding_small">
+                app:cardBackgroundColor="@color/primary"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="6dp">
 
+                <!-- Clickable overlay cho toàn bộ card -->
                 <LinearLayout
                     android:id="@+id/btnSearchProfileView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="@dimen/padding_large"
-                    android:paddingVertical="@dimen/spacing_18">
+                    android:orientation="vertical"
+                    android:padding="@dimen/padding_large">
 
-                    <FrameLayout
-                        android:layout_width="@dimen/dimen_46dp"
-                        android:layout_height="@dimen/dimen_46dp"
-                        android:background="@drawable/bg_circle_white_alpha"
-                        android:foreground="?attr/selectableItemBackgroundBorderless">
-
-                        <ImageView
-                            android:layout_width="@dimen/spacing_24"
-                            android:layout_height="@dimen/spacing_24"
-                            android:layout_gravity="center"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_shield_check"
-                            app:tint="@color/color_38BDF8" />
-                    </FrameLayout>
-
+                    <!-- Row 1: Icon + Title + Badge -->
                     <LinearLayout
-                        android:layout_width="0dp"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/spacing_14"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <com.google.android.material.textview.MaterialTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="@string/txt_tra_cuu_thong_tin_nguoi_d"
-                            android:textColor="@color/color_F8FAFC"
-                            android:textSize="@dimen/text_size_13"
-                            android:textStyle="bold" />
-
-                        <com.google.android.material.textview.MaterialTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginTop="@dimen/elevation_4"
-                            android:lineSpacingExtra="@dimen/stroke_2"
-                            android:text="@string/txt_xem_anh_gia_amp_xac_thuc_"
-                            android:textColor="@color/color_94A3B8"
-                            android:textSize="@dimen/text_size_12" />
-                    </LinearLayout>
-
-                    <LinearLayout
-                        android:id="@+id/btnSearchProfile"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="@dimen/padding_medium"
-                        android:background="@drawable/bg_badge_blue"
-                        android:gravity="center_vertical"
                         android:orientation="horizontal"
-                        android:paddingHorizontal="@dimen/spacing_14"
-                        android:paddingVertical="@dimen/padding_small">
+                        android:gravity="center_vertical">
 
-                        <com.google.android.material.textview.MaterialTextView
+                        <!-- Icon Badge -->
+                        <FrameLayout
+                            android:layout_width="52dp"
+                            android:layout_height="52dp"
+                            android:background="@drawable/bg_circle_white_alpha">
+
+                            <ImageView
+                                android:layout_width="28dp"
+                                android:layout_height="28dp"
+                                android:layout_gravity="center"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_shield_check"
+                                app:tint="@color/white" />
+                        </FrameLayout>
+
+                        <!-- Title + Subtitle -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:layout_marginStart="14dp"
+                            android:orientation="vertical">
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_tra_cuu_thong_tin_nguoi_d"
+                                android:textColor="@color/white"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:letterSpacing="0.01" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="3dp"
+                                android:text="@string/txt_xem_anh_gia_amp_xac_thuc_"
+                                android:textColor="#B3FFFFFF"
+                                android:textSize="12sp"
+                                android:lineSpacingExtra="2dp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Divider line -->
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="14dp"
+                        android:layout_marginBottom="14dp"
+                        android:background="#33FFFFFF" />
+
+                    <!-- Row 2: Stats pills + CTA Button -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Stat: Đánh giá -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="#1AFFFFFF"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="7dp">
+
+                            <ImageView
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:src="@drawable/ic_verified_check"
+                                android:contentDescription="@null"
+                                app:tint="#FFD700" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:text="Đánh giá uy tín"
+                                android:textColor="@color/white"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <View
+                            android:layout_width="8dp"
+                            android:layout_height="0dp" />
+
+                        <!-- Stat: Xác thực -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="#1AFFFFFF"
+                            android:paddingHorizontal="10dp"
+                            android:paddingVertical="7dp">
+
+                            <ImageView
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:src="@drawable/ic_shield_check"
+                                android:contentDescription="@null"
+                                app:tint="#90EE90" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="5dp"
+                                android:text="Xác thực danh tính"
+                                android:textColor="@color/white"
+                                android:textSize="11sp" />
+                        </LinearLayout>
+
+                        <!-- CTA Button -->
+                        <LinearLayout
+                            android:id="@+id/btnSearchProfile"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:text="@string/txt_tra_cuu"
-                            android:textColor="@color/white"
-                            android:textSize="@dimen/text_size_12"
-                            android:textStyle="bold" />
+                            android:layout_marginStart="10dp"
+                            android:background="@color/white"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:paddingHorizontal="14dp"
+                            android:paddingVertical="10dp">
 
-                        <ImageView
-                            android:layout_width="@dimen/spacing_14"
-                            android:layout_height="@dimen/spacing_14"
-                            android:layout_marginStart="@dimen/elevation_4"
-                            android:contentDescription="@null"
-                            android:src="@drawable/ic_arrow_right"
-                            app:tint="@color/bg_white" />
+                            <com.google.android.material.textview.MaterialTextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/txt_tra_cuu"
+                                android:textColor="@color/primary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+
+                            <ImageView
+                                android:layout_width="14dp"
+                                android:layout_height="14dp"
+                                android:layout_marginStart="4dp"
+                                android:contentDescription="@null"
+                                android:src="@drawable/ic_arrow_right"
+                                app:tint="@color/primary" />
+                        </LinearLayout>
+
                     </LinearLayout>
+
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
+
+
 
             <!-- Sections with Typography Focus -->
             <LinearLayout

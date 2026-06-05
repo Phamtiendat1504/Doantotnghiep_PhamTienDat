@@ -34,9 +34,6 @@ class RoomViewModel : ViewModel() {
     private val _hasActiveBooking = MutableLiveData<Boolean>()
     val hasActiveBooking: LiveData<Boolean> = _hasActiveBooking
 
-    private val _bookedSlots = MutableLiveData<List<Map<String, Any>>>()
-    val bookedSlots: LiveData<List<Map<String, Any>>> = _bookedSlots
-
     private val _saveResult = MutableLiveData<Boolean>()
     val saveResult: LiveData<Boolean> = _saveResult
 
@@ -94,10 +91,6 @@ class RoomViewModel : ViewModel() {
 
     fun checkActiveBooking(uid: String, roomId: String) {
         repository.checkActiveBooking(uid, roomId) { active -> _hasActiveBooking.value = active }
-    }
-
-    fun loadBookedSlots(roomId: String) {
-        repository.loadBookedSlots(roomId) { slots -> _bookedSlots.value = slots }
     }
 
     fun toggleSavePost(uid: String, roomId: String, roomData: Map<String, Any>) {

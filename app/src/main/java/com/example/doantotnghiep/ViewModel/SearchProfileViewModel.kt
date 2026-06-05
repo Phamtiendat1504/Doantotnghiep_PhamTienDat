@@ -55,28 +55,15 @@ class SearchProfileViewModel : ViewModel() {
 
                 // Hiển thị danh sách ngay lập tức với số phòng = 0 để tránh UI bị đơ
                 _users.value = result.toList()
-                
-                var remaining = rawUsers.size
-                if (remaining == 0) {
-                    _isLoading.value = false
-                    return@searchUsersByName
-                }
 
-                rawUsers.forEachIndexed { index, user ->
-                    userRepository.countPublicRooms(user.uid) { count ->
-                        if (currentSearchQuery != query) return@countPublicRooms
-                        
-                        result[index] = result[index].copy(roomCount = count)
-                        remaining--
-                        
-                        // Cập nhật lại UI từng bước hoặc khi tất cả hoàn thành để thấy thay đổi
-                        // Update UI progressively so user sees numbers appear
-                        _users.value = result.toList()
-
-                        if (remaining == 0) {
-                            _isLoading.value = false
-                        }
+                val uids = rawUsers.map { it.uid }
+                userRepository.countPublicRoomsForUsers(uids) { countsMap ->
+                    if (currentSearchQuery != query) return@countPublicRoomsForUsers
+                    rawUsers.forEachIndexed { index, user ->
+                        result[index] = result[index].copy(roomCount = countsMap[user.uid] ?: 0)
                     }
+                    _users.value = result.toList()
+                    _isLoading.value = false
                 }
             },
             onFailure = {

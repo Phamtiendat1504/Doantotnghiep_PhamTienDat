@@ -28,7 +28,11 @@
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\AndroidStudioProjects\\\\Doantotnghiep\" -Recurse -Filter \"*.kt\")",
       "Bash(Sort-Object)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" -Force)",
-      "Bash(Select-Object Name, PSIsContainer)"
+      "Bash(Select-Object Name, PSIsContainer)",
+      "Bash(git -C \"C:\\\\Users\\\\tiend\\\\Admin_TimTro_New\" diff --stat HEAD)",
+      "Bash(git *)",
+      "Bash(Test-Path *)",
+      "Bash(xargs grep -l \"featured\\\\|boost\\\\|payment\\\\|credit\\\\|slot\\\\|upgrade\")"
     ]
   }
 }

@@ -201,12 +201,12 @@
                 android:padding="@dimen/image_size_40"
                 android:visibility="gone" />
 
-            <!-- Danh sách kết quả dạng lưới -->
-            <LinearLayout
-                android:id="@+id/layoutResults"
+            <!-- Danh sách kết quả dạng RecyclerView -->
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/recyclerViewResults"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:nestedScrollingEnabled="false" />
 
             <!-- Phân trang -->
             <LinearLayout

@@ -3,15 +3,10 @@ package com.example.doantotnghiep.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.doantotnghiep.View.Adapter.RoomItem
 import com.example.doantotnghiep.repository.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentSnapshot
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 
 class HomeViewModel : ViewModel() {
 
@@ -56,23 +51,22 @@ class HomeViewModel : ViewModel() {
     private val REFRESH_INTERVAL = 60 * 60 * 1000L
     private val NEW_ROOMS_PAGE_SIZE = 10L
 
-    private var allFeaturedRoomsList: List<RoomItem> = emptyList()
-    private var rotationJob: Job? = null
-
-    private fun startFeaturedRotation() {
-        rotationJob?.cancel()
-        rotationJob = viewModelScope.launch {
-            while (isActive) {
-                if (allFeaturedRoomsList.isNotEmpty()) {
-                    val shuffled = allFeaturedRoomsList.shuffled().take(10)
-                    _featuredRooms.value = shuffled
-                } else {
-                    _featuredRooms.value = emptyList()
-                }
-                delay(10000L) // Rotate every 10s
-            }
-        }
-    }
+    @Suppress("UNCHECKED_CAST")
+    private fun mapDocToRoomItem(doc: DocumentSnapshot, isFeatured: Boolean = false) = RoomItem(
+        id = doc.id,
+        title = doc.getString("title") ?: "",
+        price = doc.getLong("price") ?: 0,
+        ward = doc.getString("ward") ?: "",
+        district = doc.getString("district") ?: "",
+        area = doc.getLong("area")?.toInt() ?: 0,
+        imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
+        createdAt = when (val raw = doc.get("createdAt")) {
+            is Number -> raw.toLong()
+            is com.google.firebase.Timestamp -> raw.toDate().time
+            else -> 0L
+        },
+        isFeatured = isFeatured
+    )
 
     fun loadUserName() {
         updateGreetingAndDate()
@@ -104,24 +98,8 @@ class HomeViewModel : ViewModel() {
     fun loadFeaturedRooms() {
         _isLoadingFeatured.value = true
         repository.loadFeaturedRooms { featuredDocs ->
-            @Suppress("UNCHECKED_CAST")
-            val featuredList = featuredDocs.map { doc ->
-                RoomItem(
-                    id = doc.id,
-                    title = doc.getString("title") ?: "",
-                    price = doc.getLong("price") ?: 0,
-                    ward = doc.getString("ward") ?: "",
-                    district = doc.getString("district") ?: "",
-                    area = doc.getLong("area")?.toInt() ?: 0,
-                    imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
-                    createdAt = doc.getLong("createdAt") ?: 0L
-                )
-            }
-            allFeaturedRoomsList = featuredList
+            _featuredRooms.value = featuredDocs.map { mapDocToRoomItem(it, isFeatured = true) }
             _isLoadingFeatured.value = false
-            
-            // Start rotation using Coroutines
-            startFeaturedRotation()
         }
     }
 
@@ -150,19 +128,8 @@ class HomeViewModel : ViewModel() {
                 lastLoadTime = System.currentTimeMillis()
                 lastNewRoomDoc = lastDoc
                 _hasMoreRooms.value = docs.size.toLong() == NEW_ROOMS_PAGE_SIZE
-                @Suppress("UNCHECKED_CAST")
-                _newRooms.value = docs.map { doc ->
-                    RoomItem(
-                        id = doc.id,
-                        title = doc.getString("title") ?: "",
-                        price = doc.getLong("price") ?: 0,
-                        ward = doc.getString("ward") ?: "",
-                        district = doc.getString("district") ?: "",
-                        area = doc.getLong("area")?.toInt() ?: 0,
-                        imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
-                        createdAt = doc.getLong("createdAt") ?: 0L
-                    )
-                }
+                val featuredIds = _featuredRooms.value?.map { it.id }?.toSet() ?: emptySet()
+                _newRooms.value = docs.map { mapDocToRoomItem(it) }.filter { it.id !in featuredIds }
             },
             onFailure = {
                 _isLoadingNew.value = false
@@ -185,19 +152,8 @@ class HomeViewModel : ViewModel() {
                 }
                 lastNewRoomDoc = newLastDoc
                 _hasMoreRooms.value = docs.size.toLong() == NEW_ROOMS_PAGE_SIZE
-                @Suppress("UNCHECKED_CAST")
-                val newItems = docs.map { doc ->
-                    RoomItem(
-                        id = doc.id,
-                        title = doc.getString("title") ?: "",
-                        price = doc.getLong("price") ?: 0,
-                        ward = doc.getString("ward") ?: "",
-                        district = doc.getString("district") ?: "",
-                        area = doc.getLong("area")?.toInt() ?: 0,
-                        imageUrl = (doc.get("imageUrls") as? List<*>)?.mapNotNull { it as? String }?.firstOrNull(),
-                        createdAt = doc.getLong("createdAt") ?: 0L
-                    )
-                }
+                val featuredIds = _featuredRooms.value?.map { it.id }?.toSet() ?: emptySet()
+                val newItems = docs.map { mapDocToRoomItem(it) }.filter { it.id !in featuredIds }
                 val currentList = _newRooms.value?.toMutableList() ?: mutableListOf()
                 currentList.addAll(newItems)
                 _newRooms.value = currentList
@@ -217,7 +173,6 @@ class HomeViewModel : ViewModel() {
     override fun onCleared() {
         super.onCleared()
         notificationListener?.remove()
-        rotationJob?.cancel()
     }
 
     fun loadNotificationBadge() {

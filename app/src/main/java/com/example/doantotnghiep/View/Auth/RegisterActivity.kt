@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
@@ -54,17 +55,30 @@ class RegisterActivity : AppCompatActivity() {
 
         viewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 
+        // Dialog xác nhận khi bấm nút Back hệ thống
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (hasAnyInputFilled()) {
+                    showExitConfirmDialog()
+                } else {
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
+
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnRegister.isEnabled = !isLoading
         }
 
+        // Dialog đăng ký thành công
         viewModel.registerResult.observe(this) { success ->
             if (success) {
                 MessageUtils.showSuccessDialog(
                     this,
-                    "Thành công",
-                    "Đăng ký tài khoản thành công! Vui lòng đăng nhập để tiếp tục."
+                    "Đăng ký thành công!",
+                    "Tài khoản của bạn đã được tạo thành công!\n\nEmail xác thực đã được gửi đến\n${edtEmail.text.toString().trim()}\n\nVui lòng kiểm tra hộp thư và nhấn link xác thực trước khi đăng nhập."
                 ) {
                     viewModel.resetRegisterResult()
                     viewModel.logOut()
@@ -77,21 +91,27 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
+        viewModel.registerFieldError.observe(this) { fieldError ->
+            if (fieldError == null) return@observe
+            clearErrors()
+            when (fieldError.field) {
+                "fullName"        -> tilFullName.error = fieldError.message
+                "email"           -> tilEmail.error = fieldError.message
+                "phone"           -> tilPhone.error = fieldError.message
+                "password"        -> tilPassword.error = fieldError.message
+                "confirmPassword" -> tilConfirmPassword.error = fieldError.message
+            }
+            viewModel.resetRegisterFieldError()
+        }
+
         viewModel.errorMessage.observe(this) { message ->
             if (message.isNullOrEmpty()) return@observe
-            clearErrors()
-            when {
-                message.contains("họ và tên", ignoreCase = true) -> tilFullName.error = message
-                message.contains("email", ignoreCase = true) -> tilEmail.error = message
-                message.contains("điện thoại", ignoreCase = true) -> tilPhone.error = message
-                message.contains("xác nhận", ignoreCase = true) -> tilConfirmPassword.error = message
-                message.contains("mật khẩu", ignoreCase = true) -> tilPassword.error = message
-                // Lỗi mạng → hiện Toast nhanh để user thử lại ngay
-                message.contains("mạng", ignoreCase = true) || message.contains("Internet", ignoreCase = true) -> {
-                    android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
-                }
-                else -> MessageUtils.showErrorDialog(this, "Lỗi đăng ký", message)
+            if (message.contains("mạng", ignoreCase = true) || message.contains("Internet", ignoreCase = true)) {
+                android.widget.Toast.makeText(this, message, android.widget.Toast.LENGTH_LONG).show()
+            } else {
+                MessageUtils.showErrorDialog(this, "Lỗi đăng ký", message)
             }
+            viewModel.resetErrorMessage()
         }
 
         btnRegister.setOnClickListener {
@@ -99,8 +119,8 @@ class RegisterActivity : AppCompatActivity() {
             val fullName = edtFullName.text.toString().trim()
             val email = edtEmail.text.toString().trim()
             val phone = edtPhone.text.toString().trim()
-            val password = edtPassword.text.toString().trim()
-            val confirmPassword = edtConfirmPassword.text.toString().trim()
+            val password = edtPassword.text.toString()
+            val confirmPassword = edtConfirmPassword.text.toString()
             viewModel.register(fullName, email, phone, password, confirmPassword)
         }
 
@@ -113,8 +133,31 @@ class RegisterActivity : AppCompatActivity() {
             }
         }
 
-        btnBack.setOnClickListener { finish() }
-        tvGoToLogin.setOnClickListener { finish() }
+        // Nút Back trong UI và link "Đã có tài khoản" đều hiện dialog xác nhận nếu đã nhập thông tin
+        btnBack.setOnClickListener {
+            if (hasAnyInputFilled()) showExitConfirmDialog() else finish()
+        }
+        tvGoToLogin.setOnClickListener {
+            if (hasAnyInputFilled()) showExitConfirmDialog() else finish()
+        }
+    }
+
+    private fun hasAnyInputFilled(): Boolean =
+        edtFullName.text?.isNotEmpty() == true ||
+        edtEmail.text?.isNotEmpty() == true ||
+        edtPhone.text?.isNotEmpty() == true ||
+        edtPassword.text?.isNotEmpty() == true ||
+        edtConfirmPassword.text?.isNotEmpty() == true
+
+    private fun showExitConfirmDialog() {
+        MessageUtils.showConfirmDialog(
+            context = this,
+            title = "Bỏ qua đăng ký?",
+            message = "Thông tin bạn đã nhập sẽ bị mất. Bạn có chắc muốn thoát không?",
+            positiveText = "Thoát",
+            negativeText = "Tiếp tục điền",
+            onConfirm = { finish() }
+        )
     }
 
     private fun clearErrors() {
