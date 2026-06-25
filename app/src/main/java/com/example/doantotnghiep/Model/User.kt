@@ -29,5 +29,6 @@ data class User(
     var lastLogin: Long = 0,
     var lastDevice: String = "",
     var lastOsVersion: String = "",
-    var bio: String = ""
+    var bio: String = "",
+    var noShowCount: Int = 0           // Số lần không đến đúng hẹn (cộng dồn)
 )

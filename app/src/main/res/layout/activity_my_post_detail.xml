@@ -490,31 +490,17 @@
                             android:textColor="@color/text_secondary"
                             android:layout_marginBottom="@dimen/elevation_6" />
 
-                        <com.google.android.material.textview.MaterialTextView
-                            android:id="@+id/tvAvailableTimeSlotsDisplay"
+                        <LinearLayout
+                            android:id="@+id/layoutTimeSlotsContent"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="@dimen/text_size_13"
-                            android:textColor="@color/text_primary"
-                            android:lineSpacingExtra="@dimen/stroke_2" />
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_info_strip"
+                            android:padding="@dimen/spacing_12" />
                     </LinearLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnMarkRented"
-                android:layout_width="match_parent"
-                android:layout_height="@dimen/dimen_52dp"
-                android:layout_marginStart="@dimen/padding_large"
-                android:layout_marginEnd="@dimen/padding_large"
-                android:layout_marginTop="@dimen/spacing_14"
-                android:text="@string/status_rented"
-                android:textAllCaps="false"
-                android:textSize="@dimen/text_size_16"
-                android:visibility="gone"
-                app:backgroundTint="@color/success"
-                app:cornerRadius="@dimen/spacing_14" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnEditPost"

@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import com.example.doantotnghiep.Utils.PresenceManager
+import com.example.doantotnghiep.Utils.ServerTime
 
 class MyApp : Application(), Application.ActivityLifecycleCallbacks {
 
@@ -23,6 +24,7 @@ class MyApp : Application(), Application.ActivityLifecycleCallbacks {
 
     override fun onCreate() {
         super.onCreate()
+        ServerTime.init()
         registerActivityLifecycleCallbacks(this)
     }
 

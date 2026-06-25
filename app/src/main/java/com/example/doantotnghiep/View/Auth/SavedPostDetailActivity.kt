@@ -363,7 +363,7 @@ class SavedPostDetailActivity : AppCompatActivity() {
         val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvPostCreatedAtDisplay) ?: return
         val tvExpiry = findViewById<android.widget.TextView>(R.id.tvPostExpiryDisplay) ?: return
         val layoutSlots = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsRow) ?: return
-        val tvSlots = findViewById<android.widget.TextView>(R.id.tvAvailableTimeSlotsDisplay) ?: return
+        val layoutSlotsContent = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsContent) ?: return
 
         val createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L
         val expiryDate = (data["postExpiryDate"] as? Number)?.toLong() ?: 0L
@@ -383,7 +383,7 @@ class SavedPostDetailActivity : AppCompatActivity() {
 
         if (timeSlots.isNotBlank()) {
             layoutSlots.visibility = android.view.View.VISIBLE
-            tvSlots.text = timeSlots
+            com.example.doantotnghiep.Utils.TimeSlotRenderer.render(layoutSlotsContent, timeSlots)
         } else {
             layoutSlots.visibility = android.view.View.GONE
         }

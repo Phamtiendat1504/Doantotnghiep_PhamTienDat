@@ -125,9 +125,7 @@ class MyPostsActivity : AppCompatActivity() {
                     startActivity(Intent(this@MyPostsActivity, EditPostActivity::class.java).apply { putExtra("roomId", docId) })
                 }
 
-                override fun onRenewClick(docId: String) {
-                    // Tính năng gia hạn đã được thay bằng hạn hiển thị do chủ trọ tự đặt
-                }
+
             }
         )
         rvMyPosts.adapter = postsAdapter

@@ -56,11 +56,15 @@ class LocationPickerActivity : AppCompatActivity() {
         const val EXTRA_POST_ID          = "post_id"
         const val EXTRA_POST_IDS         = "post_ids"      // ArrayList<String>
         const val EXTRA_RADIUS_KM        = "radius_km"
+        // Tọa độ GPS sẵn (chế độ "tìm phòng gần tôi")
+        const val EXTRA_INITIAL_LAT       = "initial_lat"
+        const val EXTRA_INITIAL_LNG       = "initial_lng"
+        const val EXTRA_INITIAL_RADIUS_KM = "initial_radius_km"
 
-        // Bước bán kính: 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0 km
-        private val RADIUS_STEPS = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0)
+        // Bước bán kính: 0.5–10.0 km (15 bước)
+        private val RADIUS_STEPS = listOf(0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0)
         private const val DEFAULT_RADIUS_INDEX = 5   // 3.0 km
-        private const val MAX_LOAD_RADIUS = 5.0      // Luôn tải 5km, filter client-side
+        private const val MAX_LOAD_RADIUS = 10.0     // Luôn tải 10km, filter client-side
         private const val MAX_VISIBLE_ITEMS = 4      // Chiều cao RecyclerView = max 4 items
         private const val ITEM_HEIGHT_DP = 64
     }
@@ -84,6 +88,7 @@ class LocationPickerActivity : AppCompatActivity() {
     private lateinit var btnConfirmLocations: MaterialButton
     private lateinit var btnRefreshPanel: MaterialButton
     private lateinit var btnTogglePanel: ImageView
+    private lateinit var btnExpandRadius: MaterialButton
 
     // ── Map ──
     private var googleMap: GoogleMap? = null
@@ -104,6 +109,12 @@ class LocationPickerActivity : AppCompatActivity() {
     private var refreshAnimator: ObjectAnimator? = null
     private var lastPanelItems: List<NearbyPostAdapter.PostItem> = emptyList()
     private var isPanelCollapsed: Boolean = false
+    private var queryGeneration: Int = 0  // Ngăn stale callback ghi đè data mới hơn
+
+    // Tọa độ GPS ban đầu (từ chế độ "tìm phòng gần tôi")
+    private var initialLat: Double = Double.NaN
+    private var initialLng: Double = Double.NaN
+    private var initialRadiusKm: Double = Double.NaN
 
     // ────────────────────────────────────────────────
     // Lifecycle
@@ -112,7 +123,10 @@ class LocationPickerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_location_picker)
 
-        isStrict = intent.getBooleanExtra(EXTRA_IS_STRICT, false)
+        isStrict        = intent.getBooleanExtra(EXTRA_IS_STRICT, false)
+        initialLat      = intent.getDoubleExtra(EXTRA_INITIAL_LAT, Double.NaN)
+        initialLng      = intent.getDoubleExtra(EXTRA_INITIAL_LNG, Double.NaN)
+        initialRadiusKm = intent.getDoubleExtra(EXTRA_INITIAL_RADIUS_KM, Double.NaN)
 
         bindViews()
 
@@ -166,6 +180,7 @@ class LocationPickerActivity : AppCompatActivity() {
         btnConfirmLocations = findViewById(R.id.btnConfirmLocations)
         btnRefreshPanel     = findViewById(R.id.btnRefreshPanel)
         btnTogglePanel      = findViewById(R.id.btnTogglePanel)
+        btnExpandRadius     = findViewById(R.id.btnExpandRadius)
     }
 
     // ────────────────────────────────────────────────
@@ -246,6 +261,24 @@ class LocationPickerActivity : AppCompatActivity() {
                 hidePanel()
                 updateMarker(latLng, true)
                 reverseGeocode(latLng)
+            }
+
+            // Nếu GPS đã được truyền sẵn (chế độ "tìm phòng gần tôi") → tự động tải
+            if (!initialLat.isNaN() && !initialLng.isNaN()) {
+                val latLng = LatLng(initialLat, initialLng)
+                centerLatLng    = latLng
+                selectedLatLng  = latLng
+                selectedAddress = "Vị trí hiện tại của tôi"
+                renderPickedAddress()
+                if (!initialRadiusKm.isNaN()) {
+                    val idx = RADIUS_STEPS.indexOfFirst { it >= initialRadiusKm }.coerceAtLeast(0)
+                    currentPanelRadius = RADIUS_STEPS[idx]
+                    seekBarPanelRadius.progress = idx
+                    tvPanelRadiusValue.text = formatRadius(currentPanelRadius)
+                }
+                updateSelectedMarkerForSearch(latLng)
+                startRefreshAnimation()
+                loadNearbyPostsFromFirestore(latLng)
             }
         }
     }
@@ -498,12 +531,15 @@ class LocationPickerActivity : AppCompatActivity() {
         tvNearbyCount.visibility = View.VISIBLE
         tvNearbyCount.setOnClickListener(null)
 
+        // Tăng generation: callback cũ hơn sẽ bị bỏ qua khi trả về
+        val myGen = ++queryGeneration
+
         val latDelta = GeoUtils.latDelta(MAX_LOAD_RADIUS)
         val minLat   = center.latitude - latDelta
         val maxLat   = center.latitude + latDelta
 
         // Dùng bounding box latitude để giảm số document tải từ Firestore
-        // (yêu cầu Composite Index: status ASC + latitude ASC — đã có cho searchNearbyRooms)
+        // (yêu cầu Composite Index: status ASC + latitude ASC)
         FirebaseFirestore.getInstance()
             .collection("rooms")
             .whereEqualTo("status", "approved")
@@ -512,6 +548,8 @@ class LocationPickerActivity : AppCompatActivity() {
             .get()
             .addOnSuccessListener { snapshot ->
                 if (isFinishing || isDestroyed) return@addOnSuccessListener
+                // Bỏ qua nếu đã có query mới hơn đang chờ kết quả
+                if (myGen != queryGeneration) return@addOnSuccessListener
 
                 // Lọc chính xác bằng Haversine (loại bỏ các điểm nằm ngoài hình tròn)
                 allNearbyDocs = snapshot.documents.filter { doc ->
@@ -524,7 +562,7 @@ class LocationPickerActivity : AppCompatActivity() {
                 applyPanelFilter()
             }
             .addOnFailureListener { e ->
-                if (!isFinishing && !isDestroyed) {
+                if (!isFinishing && !isDestroyed && myGen == queryGeneration) {
                     val msg = e.message ?: ""
                     tvNearbyCount.text = if (msg.contains("index", ignoreCase = true) ||
                         msg.contains("FAILED_PRECONDITION", ignoreCase = true))
@@ -589,15 +627,45 @@ class LocationPickerActivity : AppCompatActivity() {
         isPanelCollapsed = false
 
         if (items.isEmpty()) {
-            hidePanel()
-            tvNearbyCount.text       = "Không tìm thấy phòng trọ trong ${formatRadius(currentPanelRadius)}"
-            tvNearbyCount.visibility = View.VISIBLE
+            // Giữ panel hiển thị để người dùng có thể kéo SeekBar hoặc nhấn mở rộng
+            tvNearbyCount.visibility      = View.GONE
+            tvPanelTitle.text             = "Không tìm thấy phòng trọ trong ${formatRadius(currentPanelRadius)}"
+            nearbyAdapter.submitList(emptyList())
+            cbPanelSelectAll.isChecked    = false
+            cbPanelSelectAll.visibility   = View.GONE
+            btnConfirmLocations.isEnabled = false
+            rvNearbyPosts.layoutParams    = rvNearbyPosts.layoutParams.also { it.height = 0 }
+            btnTogglePanel.rotation       = 0f
+            panelNearbyPosts.visibility   = View.VISIBLE
+            tvMapHint.visibility          = View.GONE
+
+            // Hiện nút mở rộng nếu chưa đến bán kính tối đa
+            val currentIdx = RADIUS_STEPS.indexOf(currentPanelRadius)
+            if (currentIdx < RADIUS_STEPS.size - 1) {
+                val nextRadius = RADIUS_STEPS[currentIdx + 1]
+                btnExpandRadius.text = "Mở rộng lên ${formatRadius(nextRadius)}"
+                btnExpandRadius.visibility = View.VISIBLE
+                btnExpandRadius.setOnClickListener {
+                    val newIdx = currentIdx + 1
+                    seekBarPanelRadius.progress = newIdx
+                    currentPanelRadius = RADIUS_STEPS[newIdx]
+                    tvPanelRadiusValue.text = formatRadius(currentPanelRadius)
+                    btnExpandRadius.visibility = View.GONE
+                    // allNearbyDocs đã chứa đủ 10km — chỉ cần lọc lại client-side
+                    applyPanelFilter()
+                }
+            } else {
+                btnExpandRadius.visibility = View.GONE
+            }
             return
         }
+
+        btnExpandRadius.visibility = View.GONE
 
         tvNearbyCount.visibility = View.GONE
         tvNearbyCount.setOnClickListener(null)
         tvPanelTitle.text = "${items.size} phòng trọ trong ${formatRadius(currentPanelRadius)}"
+        cbPanelSelectAll.visibility = View.VISIBLE
 
         nearbyAdapter.submitList(items)
         cbPanelSelectAll.isChecked = false

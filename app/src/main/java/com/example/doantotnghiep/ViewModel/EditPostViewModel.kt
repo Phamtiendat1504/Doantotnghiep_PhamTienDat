@@ -36,6 +36,7 @@ class EditPostViewModel : ViewModel() {
                     val merged = data.toMutableMap()
                     if (user != null) {
                         merged["ownerName"] = user.fullName
+                        merged["ownerPhone"] = user.phone
                     }
                     _roomData.value = merged
                 },

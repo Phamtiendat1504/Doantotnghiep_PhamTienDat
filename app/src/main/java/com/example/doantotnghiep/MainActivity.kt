@@ -131,8 +131,11 @@ class MainActivity : AppCompatActivity() {
         }
 
         fabAI.setOnClickListener {
-            val intent = Intent(this, com.example.doantotnghiep.View.Auth.AIChatActivity::class.java)
-            startActivity(intent)
+            if (FirebaseAuth.getInstance().currentUser == null) {
+                promptLogin()
+            } else {
+                startActivity(Intent(this, com.example.doantotnghiep.View.Auth.AIChatActivity::class.java))
+            }
         }
     }
 

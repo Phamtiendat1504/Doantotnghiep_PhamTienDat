@@ -488,7 +488,7 @@ class RoomDetailActivity : AppCompatActivity() {
         val tvPostCreatedAtDisplay = findViewById<TextView>(R.id.tvPostCreatedAtDisplay)
         val tvPostExpiryDisplay = findViewById<TextView>(R.id.tvPostExpiryDisplay)
         val layoutTimeSlotsRow = findViewById<LinearLayout>(R.id.layoutTimeSlotsRow)
-        val tvAvailableTimeSlotsDisplay = findViewById<TextView>(R.id.tvAvailableTimeSlotsDisplay)
+        val layoutTimeSlotsContent = findViewById<LinearLayout>(R.id.layoutTimeSlotsContent)
 
         val createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L
         val expiryDate = (data["postExpiryDate"] as? Number)?.toLong() ?: 0L
@@ -511,7 +511,7 @@ class RoomDetailActivity : AppCompatActivity() {
 
         if (hasTimeSlots) {
             layoutTimeSlotsRow.visibility = View.VISIBLE
-            tvAvailableTimeSlotsDisplay.text = timeSlots
+            com.example.doantotnghiep.Utils.TimeSlotRenderer.render(layoutTimeSlotsContent, timeSlots)
         } else {
             layoutTimeSlotsRow.visibility = View.GONE
         }

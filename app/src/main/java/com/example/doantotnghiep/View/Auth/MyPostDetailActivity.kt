@@ -9,14 +9,12 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.bumptech.glide.Glide
 import com.example.doantotnghiep.R
-import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.ViewModel.MyPostDetailViewModel
 import com.google.android.material.button.MaterialButton
 import java.text.DecimalFormat
@@ -29,7 +27,6 @@ class MyPostDetailActivity : AppCompatActivity() {
 
     private lateinit var viewModel: MyPostDetailViewModel
     private var imagePageCallback: ViewPager2.OnPageChangeCallback? = null
-    private var loadingDialog: AlertDialog? = null
     private val formatter: DecimalFormat by lazy {
         val symbols = DecimalFormatSymbols(Locale("vi", "VN"))
         symbols.groupingSeparator = '.'
@@ -57,25 +54,6 @@ class MyPostDetailActivity : AppCompatActivity() {
                 return@observe
             }
             bindData(data)
-        }
-
-        viewModel.markRentedStatus.observe(this) { success ->
-            hideLoading()
-            if (success) {
-                MessageUtils.showSuccessDialog(
-                    context = this,
-                    title = "Thành công",
-                    message = "Bài đăng đã được chuyển sang trạng thái Đã cho thuê thành công."
-                ) {
-                    finish()
-                }
-            } else {
-                MessageUtils.showErrorDialog(
-                    context = this,
-                    title = "Thất bại",
-                    message = "Không thể cập nhật trạng thái bài đăng. Vui lòng thử lại."
-                )
-            }
         }
 
         loadRoomDetail()
@@ -136,7 +114,6 @@ class MyPostDetailActivity : AppCompatActivity() {
         setupAppointmentInfo(d)
 
         val btnEdit = findViewById<MaterialButton>(R.id.btnEditPost)
-        val btnMarkRented = findViewById<MaterialButton>(R.id.btnMarkRented)
 
         if (status == "rejected") {
             btnEdit.visibility = View.VISIBLE
@@ -147,16 +124,6 @@ class MyPostDetailActivity : AppCompatActivity() {
             }
         } else {
             btnEdit.visibility = View.GONE
-        }
-
-        if (status == "approved") {
-            btnMarkRented.visibility = View.VISIBLE
-            btnMarkRented.isEnabled = true
-            btnMarkRented.setOnClickListener {
-                showMarkRentedDialog()
-            }
-        } else {
-            btnMarkRented.visibility = View.GONE
         }
     }
 
@@ -174,30 +141,6 @@ class MyPostDetailActivity : AppCompatActivity() {
             cornerRadius = dpToPx(999).toFloat()
             setColor(bgColor)
         }
-    }
-
-    private fun showMarkRentedDialog() {
-        MessageUtils.showConfirmDialog(
-            context = this,
-            title = "Xác nhận đã cho thuê",
-            message = "Bài đăng sẽ được ẩn khỏi trang tìm kiếm sau khi bạn xác nhận.\n\nCác lịch hẹn liên quan sẽ được cập nhật theo trạng thái phòng đã cho thuê.",
-            positiveText = "Xác nhận",
-            negativeText = "Hủy",
-            onConfirm = {
-                showLoading()
-                viewModel.markAsRented(roomId)
-            }
-        )
-    }
-
-    private fun showLoading() {
-        loadingDialog?.dismiss()
-        loadingDialog = MessageUtils.showLoadingDialog(this, "Đang cập nhật trạng thái...", "Đang xử lý")
-    }
-
-    private fun hideLoading() {
-        loadingDialog?.dismiss()
-        loadingDialog = null
     }
 
     private fun setupImageSlider(imageUrls: List<String>) {
@@ -454,7 +397,7 @@ class MyPostDetailActivity : AppCompatActivity() {
         val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvPostCreatedAtDisplay) ?: return
         val tvExpiry = findViewById<android.widget.TextView>(R.id.tvPostExpiryDisplay) ?: return
         val layoutSlots = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsRow) ?: return
-        val tvSlots = findViewById<android.widget.TextView>(R.id.tvAvailableTimeSlotsDisplay) ?: return
+        val layoutSlotsContent = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsContent) ?: return
 
         // Xử lý createdAt: Firestore có thể trả về Timestamp hoặc Long
         val createdAt: Long = when (val raw = data["createdAt"]) {
@@ -488,7 +431,7 @@ class MyPostDetailActivity : AppCompatActivity() {
 
         if (timeSlots.isNotBlank()) {
             layoutSlots.visibility = View.VISIBLE
-            tvSlots.text = timeSlots
+            com.example.doantotnghiep.Utils.TimeSlotRenderer.render(layoutSlotsContent, timeSlots)
         } else {
             layoutSlots.visibility = View.GONE
         }

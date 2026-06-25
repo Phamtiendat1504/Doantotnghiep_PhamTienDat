@@ -5,6 +5,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.doantotnghiep.Utils.GeoUtils
 import com.example.doantotnghiep.Utils.LocationNormalizer
+import com.example.doantotnghiep.Utils.ServerTime
 import com.example.doantotnghiep.repository.RoomRepository
 import kotlin.math.abs
 import kotlin.math.max
@@ -61,9 +62,11 @@ class SearchViewModel : ViewModel() {
     }
 
     // Trả về true nếu bài đăng đã quá hạn hiển thị do chủ trọ thiết lập
+    // Dùng ServerTime.now() thay System.currentTimeMillis() để không bị ảnh hưởng
+    // khi người dùng thay đổi giờ trên điện thoại
     private fun isPostExpiredByDate(data: Map<String, Any>): Boolean {
         val expiry = (data["postExpiryDate"] as? Number)?.toLong() ?: 0L
-        return expiry > 0L && expiry < System.currentTimeMillis()
+        return expiry > 0L && expiry < ServerTime.now()
     }
 
     fun searchByQuery(query: String) {

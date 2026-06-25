@@ -896,15 +896,13 @@
                                 android:textSize="@dimen/text_size_12" />
                         </LinearLayout>
 
-                        <com.google.android.material.textview.MaterialTextView
-                            android:id="@+id/tvAvailableTimeSlotsDisplay"
+                        <LinearLayout
+                            android:id="@+id/layoutTimeSlotsContent"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:orientation="vertical"
                             android:background="@drawable/bg_info_strip"
-                            android:padding="@dimen/spacing_12"
-                            android:textColor="@color/color_374151"
-                            android:textSize="@dimen/text_size_14"
-                            android:lineSpacingExtra="@dimen/stroke_2" />
+                            android:padding="@dimen/spacing_12" />
                     </LinearLayout>
 
                 </LinearLayout>

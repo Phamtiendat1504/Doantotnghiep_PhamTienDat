@@ -78,7 +78,7 @@ class AIChatRepository {
     }
 
     fun fetchApprovedRooms(
-        limit: Long = 50,
+        limit: Long = 200,
         onSuccess: (List<DocumentSnapshot>) -> Unit,
         onFailure: (String) -> Unit
     ) {

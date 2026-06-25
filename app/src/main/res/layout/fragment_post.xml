@@ -2120,38 +2120,34 @@
                         android:textColor="@color/text_hint"
                         android:layout_marginBottom="@dimen/elevation_6" />
 
-                    <LinearLayout
-                        android:id="@+id/containerExpiryPicker"
+                    <com.google.android.material.textfield.TextInputLayout
+                        android:id="@+id/tilExpiryDate"
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
-                        android:layout_height="@dimen/dimen_48dp"
-                        android:orientation="horizontal"
-                        android:gravity="center_vertical"
-                        android:background="@drawable/bg_edit_post"
-                        android:paddingStart="@dimen/padding_medium"
-                        android:paddingEnd="@dimen/padding_medium"
+                        android:layout_height="wrap_content"
                         android:layout_marginBottom="@dimen/spacing_14"
-                        android:clickable="true"
-                        android:focusable="true">
+                        app:endIconMode="custom"
+                        app:endIconDrawable="@drawable/ic_calendar"
+                        app:endIconTint="@color/primary"
+                        app:boxStrokeColor="@color/primary"
+                        app:hintTextColor="@color/primary"
+                        app:boxCornerRadiusTopStart="8dp"
+                        app:boxCornerRadiusTopEnd="8dp"
+                        app:boxCornerRadiusBottomStart="8dp"
+                        app:boxCornerRadiusBottomEnd="8dp">
 
-                        <TextView
-                            android:id="@+id/tvExpiryDisplay"
-                            android:layout_width="0dp"
-                            android:layout_weight="1"
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/etExpiryDate"
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:text="Nhấn để chọn ngày và giờ hết hạn"
-                            android:textSize="@dimen/text_size_13"
-                            android:textColor="@color/text_hint"
-                            android:singleLine="true"
-                            android:ellipsize="end" />
+                            android:hint="Nhấn để chọn ngày và giờ hết hạn"
+                            android:focusable="false"
+                            android:focusableInTouchMode="false"
+                            android:cursorVisible="false"
+                            android:inputType="none"
+                            android:textSize="@dimen/text_size_13" />
 
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="📅"
-                            android:textSize="16sp"
-                            android:layout_marginStart="@dimen/elevation_6" />
-
-                    </LinearLayout>
+                    </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Khung giờ nhận lịch hẹn (bắt buộc) -->
                     <com.google.android.material.textview.MaterialTextView

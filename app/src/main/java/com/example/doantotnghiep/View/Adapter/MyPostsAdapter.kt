@@ -28,7 +28,6 @@ class MyPostsAdapter(
         fun onDeleteClick(docId: String)
         fun onFeaturedClick(docId: String, title: String)
         fun onEditClick(docId: String)
-        fun onRenewClick(docId: String)
     }
 
     private val formatter: DecimalFormat by lazy {
@@ -57,9 +56,6 @@ class MyPostsAdapter(
         val tvRejectReason: TextView = itemView.findViewById(R.id.tvRejectReason)
         val btnEditAndRepublish: TextView = itemView.findViewById(R.id.btnEditAndRepublish)
         
-        val layoutExpiredWarning: LinearLayout = itemView.findViewById(R.id.layoutExpiredWarning)
-        val tvExpiredWarning: TextView = itemView.findViewById(R.id.tvExpiredWarning)
-        val btnRenew: TextView = itemView.findViewById(R.id.btnRenew)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PostViewHolder {
@@ -220,18 +216,6 @@ class MyPostsAdapter(
         } else {
             holder.layoutRejectReason.visibility = View.GONE
             holder.btnEditAndRepublish.visibility = View.GONE
-        }
-
-        // 5. Rented warning & renew click callback
-        if (status == "rented") {
-            holder.layoutExpiredWarning.visibility = View.VISIBLE
-            holder.tvExpiredWarning.text = "Bài đăng đang ở trạng thái đã cho thuê. Bấm 'Đăng lại' để gửi yêu cầu duyệt lại bài đăng khi phòng trống."
-            holder.btnRenew.text = "Đăng lại"
-            holder.btnRenew.visibility = View.VISIBLE
-            holder.btnRenew.setOnClickListener { listener.onRenewClick(docId) }
-        } else {
-            holder.layoutExpiredWarning.visibility = View.GONE
-            holder.btnRenew.visibility = View.GONE
         }
 
         // Item click callback

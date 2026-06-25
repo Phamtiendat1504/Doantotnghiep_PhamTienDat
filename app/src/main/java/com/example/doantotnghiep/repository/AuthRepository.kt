@@ -13,6 +13,7 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -54,6 +55,9 @@ class AuthRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
     private val storage = FirebaseStorage.getInstance()
+    private val imageMetadata = StorageMetadata.Builder()
+        .setContentType("image/jpeg")
+        .build()
     private val mainHandler = Handler(Looper.getMainLooper())
     private val httpClient by lazy {
         OkHttpClient.Builder()
@@ -357,7 +361,7 @@ class AuthRepository {
         val uid = auth.currentUser?.uid ?: return onFailure("Chưa đăng nhập")
         val ref = storage.reference.child("avatars/$uid")
         ref.delete().addOnCompleteListener {
-            ref.putFile(uri).addOnSuccessListener {
+            ref.putFile(uri, imageMetadata).addOnSuccessListener {
                 ref.downloadUrl
                     .addOnSuccessListener { downloadUri ->
                         val url = downloadUri.toString()

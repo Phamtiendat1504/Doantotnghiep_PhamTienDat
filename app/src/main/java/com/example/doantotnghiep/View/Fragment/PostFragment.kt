@@ -32,8 +32,13 @@ import com.example.doantotnghiep.Utils.PostNotificationHelper
 import com.example.doantotnghiep.ViewModel.PostViewModel
 import com.google.android.material.button.MaterialButton
 
-import android.app.DatePickerDialog
-import android.app.TimePickerDialog
+import com.google.android.material.datepicker.CalendarConstraints
+import com.google.android.material.datepicker.DateValidatorPointForward
+import com.google.android.material.datepicker.MaterialDatePicker
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
+import com.google.android.material.timepicker.MaterialTimePicker
+import com.google.android.material.timepicker.TimeFormat
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -744,138 +749,261 @@ class PostFragment : Fragment() {
         syncCurfewTime()
 
         // Mục 5: Thông tin lịch hẹn — hạn hiển thị (bắt buộc, tối đa 6 tháng)
-        val tvExpiryDisplay = view.findViewById<TextView>(R.id.tvExpiryDisplay)
-        val containerExpiryPicker = view.findViewById<android.widget.LinearLayout>(R.id.containerExpiryPicker)
+        val etExpiryDate = view.findViewById<TextInputEditText>(R.id.etExpiryDate)
+        val tilExpiryDate = view.findViewById<TextInputLayout>(R.id.tilExpiryDate)
         val expiryDateFormat = SimpleDateFormat("HH:mm, dd/MM/yyyy", Locale("vi", "VN"))
 
-        fun openExpiryPicker() {
+        fun openExpiryTimePicker(year: Int, month: Int, day: Int) {
             val now = Calendar.getInstance()
-            val maxCal = Calendar.getInstance().apply { add(Calendar.MONTH, 6) }
-
-            DatePickerDialog(
-                requireContext(),
-                { _, year, month, day ->
-                    TimePickerDialog(
-                        requireContext(),
-                        { _, hour, minute ->
-                            val selected = Calendar.getInstance().apply {
-                                set(year, month, day, hour, minute, 0)
-                                set(Calendar.MILLISECOND, 0)
-                            }.timeInMillis
-
-                            if (selected <= System.currentTimeMillis()) {
-                                Toast.makeText(requireContext(), "Hạn hiển thị phải sau thời điểm hiện tại", Toast.LENGTH_SHORT).show()
-                                return@TimePickerDialog
-                            }
-                            if (selected > maxCal.timeInMillis) {
-                                Toast.makeText(requireContext(), "Hạn hiển thị không được quá 6 tháng kể từ hôm nay", Toast.LENGTH_SHORT).show()
-                                return@TimePickerDialog
-                            }
-
-                            selectedExpiryMs = selected
-                            tvExpiryDisplay.text = expiryDateFormat.format(Date(selected))
-                            tvExpiryDisplay.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
-                        },
-                        now.get(Calendar.HOUR_OF_DAY),
-                        now.get(Calendar.MINUTE),
-                        true
-                    ).show()
-                },
-                now.get(Calendar.YEAR),
-                now.get(Calendar.MONTH),
-                now.get(Calendar.DAY_OF_MONTH)
-            ).apply {
-                datePicker.minDate = System.currentTimeMillis()
-                datePicker.maxDate = maxCal.timeInMillis
-                show()
+            val minMs = System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000
+            val maxMs = Calendar.getInstance().apply { add(Calendar.MONTH, 6) }.timeInMillis
+            val timePicker = MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setHour(now.get(Calendar.HOUR_OF_DAY))
+                .setMinute(now.get(Calendar.MINUTE))
+                .setTitleText("Chọn giờ hết hạn")
+                .build()
+            timePicker.addOnPositiveButtonClickListener {
+                val selected = Calendar.getInstance().apply {
+                    set(year, month, day, timePicker.hour, timePicker.minute, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }.timeInMillis
+                if (selected < minMs) {
+                    MessageUtils.showInfoDialog(requireContext(), "Hạn hiển thị không hợp lệ", "Hạn hiển thị phải ít nhất 1 tuần kể từ ngày đăng bài.")
+                    return@addOnPositiveButtonClickListener
+                }
+                if (selected > maxMs) {
+                    MessageUtils.showInfoDialog(requireContext(), "Hạn hiển thị không hợp lệ", "Hạn hiển thị không được quá 6 tháng kể từ hôm nay.")
+                    return@addOnPositiveButtonClickListener
+                }
+                selectedExpiryMs = selected
+                etExpiryDate.setText(expiryDateFormat.format(Date(selected)))
             }
+            timePicker.show(parentFragmentManager, "expiryTimePicker")
         }
 
-        containerExpiryPicker.setOnClickListener { openExpiryPicker() }
-        tvExpiryDisplay.setOnClickListener { openExpiryPicker() }
+        fun openExpiryPicker() {
+            val minMs = System.currentTimeMillis() + 7L * 24 * 60 * 60 * 1000
+            val maxMs = Calendar.getInstance().apply { add(Calendar.MONTH, 6) }.timeInMillis
+            val constraints = CalendarConstraints.Builder()
+                .setStart(minMs)
+                .setEnd(maxMs)
+                .setValidator(DateValidatorPointForward.from(minMs))
+                .build()
+            val datePicker = MaterialDatePicker.Builder.datePicker()
+                .setTitleText("Chọn ngày hết hạn")
+                .setCalendarConstraints(constraints)
+                .setSelection(minMs)
+                .build()
+            datePicker.addOnPositiveButtonClickListener { selection ->
+                val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply { timeInMillis = selection }
+                openExpiryTimePicker(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH), cal.get(Calendar.DAY_OF_MONTH))
+            }
+            datePicker.show(parentFragmentManager, "expiryDatePicker")
+        }
 
-        // Khung giờ theo ngày trong tuần
+        etExpiryDate.setOnClickListener { openExpiryPicker() }
+        tilExpiryDate.setEndIconOnClickListener { openExpiryPicker() }
+
+        // Khung giờ nhận lịch hẹn: chọn ngày + cấu hình từng ngày riêng biệt
         val layoutTimeSlotRows = view.findViewById<LinearLayout>(R.id.layoutTimeSlotRows)
-        val dayLabels = listOf("Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
-        // Triple<CheckBox, tvStart, tvEnd>
-        val dayRows = mutableListOf<Triple<CheckBox, TextView, TextView>>()
+        layoutTimeSlotRows.removeAllViews()
 
-        for ((i, dayLabel) in dayLabels.withIndex()) {
-            val row = LinearLayout(requireContext()).apply {
+        val dayShortLabels = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
+        val dayFullLabels = listOf("Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ nhật")
+        val dayCbs = mutableListOf<CheckBox>()
+
+        // Lớp lưu trữ cấu hình buổi của từng ngày
+        data class DayPeriodConfig(
+            val container: LinearLayout,
+            val cbMorning: CheckBox, val tvMorningStart: TextView, val tvMorningEnd: TextView,
+            val cbNoon: CheckBox, val tvNoonStart: TextView, val tvNoonEnd: TextView,
+            val cbEvening: CheckBox, val tvEveningStart: TextView, val tvEveningEnd: TextView
+        )
+        val dayConfigs = mutableMapOf<String, DayPeriodConfig>()
+
+        // Hàm bổ trợ: hiển thị dialog chọn giờ
+        fun showTimePicker(tv: TextView) {
+            val parts = tv.text.toString().split(":").mapNotNull { it.toIntOrNull() }
+            val picker = MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setHour(parts.getOrElse(0) { 8 })
+                .setMinute(parts.getOrElse(1) { 0 })
+                .setTitleText("Chọn giờ")
+                .build()
+            picker.addOnPositiveButtonClickListener {
+                tv.text = String.format("%02d:%02d", picker.hour, picker.minute)
+            }
+            picker.show(parentFragmentManager, "slotTimePicker")
+        }
+
+        // Hàm bổ trợ: xây dựng 1 dòng buổi, trả về (container, cb, tvStart, tvEnd)
+        data class PeriodRowResult(val container: LinearLayout, val cb: CheckBox, val tvStart: TextView, val tvEnd: TextView)
+        fun buildPeriodRow(periodLabel: String, defaultStart: String, defaultEnd: String): PeriodRowResult {
+            val container = LinearLayout(requireContext()).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = android.view.Gravity.CENTER_VERTICAL
-                layoutParams = LinearLayout.LayoutParams(
-                    LinearLayout.LayoutParams.MATCH_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT
-                ).apply { bottomMargin = if (i < dayLabels.size - 1) dpToPx(8) else 0 }
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { bottomMargin = dpToPx(8) }
             }
-
             val cb = CheckBox(requireContext()).apply {
-                text = dayLabel
-                textSize = 13f
+                text = periodLabel; textSize = 13f
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
                 buttonTintList = ContextCompat.getColorStateList(requireContext(), R.color.primary)
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.5f)
             }
-
             val tvStart = TextView(requireContext()).apply {
-                text = "08:00"
-                textSize = 13f
+                text = defaultStart; textSize = 13f
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.primary))
                 background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_edit_post)
                 setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
-                isEnabled = false
-                alpha = 0.4f
+                isEnabled = false; alpha = 0.4f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
-
             val tvSep = TextView(requireContext()).apply {
-                text = " – "
-                textSize = 14f
+                text = " – "; textSize = 14f
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
             }
-
             val tvEnd = TextView(requireContext()).apply {
-                text = "17:00"
-                textSize = 13f
+                text = defaultEnd; textSize = 13f
                 setTextColor(ContextCompat.getColor(requireContext(), R.color.primary))
                 background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_edit_post)
                 setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
-                isEnabled = false
-                alpha = 0.4f
+                isEnabled = false; alpha = 0.4f
                 layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
             }
-
             cb.setOnCheckedChangeListener { _, checked ->
-                tvStart.isEnabled = checked
-                tvEnd.isEnabled = checked
-                tvStart.alpha = if (checked) 1f else 0.4f
-                tvEnd.alpha = if (checked) 1f else 0.4f
+                tvStart.isEnabled = checked; tvEnd.isEnabled = checked
+                tvStart.alpha = if (checked) 1f else 0.4f; tvEnd.alpha = if (checked) 1f else 0.4f
             }
-
-            fun showTimePicker(tv: TextView) {
-                val parts = tv.text.toString().split(":").mapNotNull { it.toIntOrNull() }
-                val h = parts.getOrElse(0) { 8 }
-                val m = parts.getOrElse(1) { 0 }
-                android.app.TimePickerDialog(requireContext(), { _, hour, minute ->
-                    tv.text = String.format("%02d:%02d", hour, minute)
-                }, h, m, true).show()
-            }
-
             tvStart.setOnClickListener { if (cb.isChecked) showTimePicker(tvStart) }
             tvEnd.setOnClickListener { if (cb.isChecked) showTimePicker(tvEnd) }
-
-            row.addView(cb)
-            row.addView(tvStart)
-            row.addView(tvSep)
-            row.addView(tvEnd)
-            layoutTimeSlotRows.addView(row)
-            dayRows.add(Triple(cb, tvStart, tvEnd))
+            container.addView(cb); container.addView(tvStart); container.addView(tvSep); container.addView(tvEnd)
+            return PeriodRowResult(container, cb, tvStart, tvEnd)
         }
 
-        fun buildTimeSlotsString(): String = dayRows.mapIndexed { i, r ->
-            if (r.first.isChecked) "${dayLabels[i]}: ${r.second.text}-${r.third.text}" else null
-        }.filterNotNull().joinToString("\n")
+        // Hàng chọn ngày (T2 → CN)
+        val dayRow = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply { bottomMargin = dpToPx(8) }
+        }
+
+        // Container cha chứa tất cả section cấu hình từng ngày
+        val dayConfigsContainer = LinearLayout(requireContext()).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        }
+
+        // Tạo checkbox và section cấu hình riêng cho từng ngày
+        for (i in dayShortLabels.indices) {
+            val short = dayShortLabels[i]
+            val full = dayFullLabels[i]
+
+            val cb = CheckBox(requireContext()).apply {
+                text = short; textSize = 12f
+                gravity = android.view.Gravity.CENTER
+                setButtonDrawable(0) // Hide default checkbox drawable
+                
+                // Use styling from XML resource files
+                setTextColor(ContextCompat.getColorStateList(requireContext(), R.color.selector_day_text))
+                background = ContextCompat.getDrawable(requireContext(), R.drawable.selector_day_bg)
+                
+                layoutParams = LinearLayout.LayoutParams(0, dpToPx(36), 1f).apply {
+                    if (i < dayShortLabels.size - 1) {
+                        marginEnd = dpToPx(5)
+                    }
+                }
+            }
+            dayCbs.add(cb)
+            dayRow.addView(cb)
+
+            // Section riêng của ngày này (ban đầu ẩn)
+            val daySection = LinearLayout(requireContext()).apply {
+                orientation = LinearLayout.VERTICAL
+                visibility = android.view.View.GONE
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { bottomMargin = dpToPx(6) }
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(0x0A1976D2.toInt())
+                    cornerRadius = dpToPx(8).toFloat()
+                }
+                setPadding(dpToPx(12), dpToPx(10), dpToPx(12), dpToPx(10))
+            }
+
+            // Tiêu đề ngày trong section
+            daySection.addView(TextView(requireContext()).apply {
+                text = "📅 $full"
+                textSize = 13f
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                setTextColor(ContextCompat.getColor(requireContext(), R.color.text_primary))
+                layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                    .apply { bottomMargin = dpToPx(8) }
+            })
+
+            // 3 dòng buổi cho ngày này (sáng/trưa/chiều tối)
+            val mRow = buildPeriodRow("Buổi sáng", "08:00", "12:00")
+            val nRow = buildPeriodRow("Buổi trưa", "12:00", "14:00")
+            val eRow = buildPeriodRow("Buổi chiều/tối", "14:00", "18:00")
+            daySection.addView(mRow.container)
+            daySection.addView(nRow.container)
+            daySection.addView(eRow.container)
+
+            dayConfigs[full] = DayPeriodConfig(
+                daySection,
+                mRow.cb, mRow.tvStart, mRow.tvEnd,
+                nRow.cb, nRow.tvStart, nRow.tvEnd,
+                eRow.cb, eRow.tvStart, eRow.tvEnd
+            )
+            dayConfigsContainer.addView(daySection)
+
+            // Khi tích ngày → hiện section cấu hình; bỏ tích → ẩn
+            cb.setOnCheckedChangeListener { _, checked ->
+                daySection.visibility = if (checked) android.view.View.VISIBLE else android.view.View.GONE
+            }
+        }
+
+        layoutTimeSlotRows.addView(dayRow)
+        layoutTimeSlotRows.addView(dayConfigsContainer)
+
+        val tvNotesLabel = TextView(requireContext()).apply {
+            text = "Ghi chú / Lưu ý:"
+            textSize = 13f
+            setTextColor(ContextCompat.getColor(requireContext(), R.color.text_secondary))
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+                .apply { topMargin = dpToPx(6); bottomMargin = dpToPx(4) }
+        }
+        layoutTimeSlotRows.addView(tvNotesLabel)
+
+        val etAppointmentNotice = EditText(requireContext()).apply {
+            hint = "Ví dụ: Liên hệ trước 30 phút, không nhận hẹn thứ 2..."
+            textSize = 13f
+            minLines = 2; maxLines = 4
+            setPadding(dpToPx(10), dpToPx(8), dpToPx(10), dpToPx(8))
+            background = ContextCompat.getDrawable(requireContext(), R.drawable.bg_edit_post)
+            layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT)
+        }
+        layoutTimeSlotRows.addView(etAppointmentNotice)
+
+        // Tạo chuỗi lịch hẹn theo định dạng per-day mới
+        fun buildTimeSlotsString(): String {
+            val result = StringBuilder()
+            for (i in dayFullLabels.indices) {
+                if (i >= dayCbs.size || !dayCbs[i].isChecked) continue
+                val full = dayFullLabels[i]
+                val config = dayConfigs[full] ?: continue
+                val periods = StringBuilder()
+                if (config.cbMorning.isChecked) periods.append("\nBuổi sáng: ${config.tvMorningStart.text}-${config.tvMorningEnd.text}")
+                if (config.cbNoon.isChecked) periods.append("\nBuổi trưa: ${config.tvNoonStart.text}-${config.tvNoonEnd.text}")
+                if (config.cbEvening.isChecked) periods.append("\nBuổi chiều/tối: ${config.tvEveningStart.text}-${config.tvEveningEnd.text}")
+                if (periods.isEmpty()) continue
+                result.append("$full:$periods\n")
+            }
+            val notes = etAppointmentNotice.text.toString().trim()
+            val str = result.toString().trimEnd()
+            return if (str.isEmpty()) "" else if (notes.isNotEmpty()) "$str\nGhi chú: $notes" else str
+        }
 
         val btnAddPhoto = view.findViewById<CardView>(R.id.btnAddPhoto)
         val btnPostRoom = view.findViewById<MaterialButton>(R.id.btnPostRoom)
@@ -1065,15 +1193,14 @@ class PostFragment : Fragment() {
             if (selectedExpiryMs!! > maxAllowedMs) {
                 MessageUtils.showInfoDialog(requireContext(), "Hạn hiển thị không hợp lệ", "Hạn hiển thị không được quá 6 tháng kể từ hôm nay. Vui lòng chọn lại.")
                 selectedExpiryMs = null
-                tvExpiryDisplay.text = "Nhấn để chọn ngày và giờ hết hạn"
-                tvExpiryDisplay.setTextColor(ContextCompat.getColor(requireContext(), R.color.text_hint))
+                view.findViewById<TextInputEditText>(R.id.etExpiryDate)?.setText("")
                 return@setOnClickListener
             }
 
             // Kiểm tra khung giờ nhận lịch hẹn bắt buộc
             val timeSlotsStr = buildTimeSlotsString()
             if (timeSlotsStr.isEmpty()) {
-                MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 5)", "Vui lòng chọn ít nhất một khung giờ có thể nhận lịch hẹn.")
+                MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 5)", "Vui lòng chọn ít nhất một ngày và một buổi có thể nhận lịch hẹn.")
                 return@setOnClickListener
             }
 
@@ -1087,6 +1214,156 @@ class PostFragment : Fragment() {
             val edtMotorbikeFee = view.findViewById<EditText>(R.id.edtMotorbikeFee)
             val edtEBikeFee = view.findViewById<EditText>(R.id.edtEBikeFee)
             val edtBicycleFee = view.findViewById<EditText>(R.id.edtBicycleFee)
+
+            // Kiểm tra tiện ích bắt buộc đi kèm giá khi tích chọn (Mục 4)
+            if (cbWifi.isChecked) {
+                val wifiPrice = NumberFormatUtils.getRawNumber(edtWifiPrice).toLongOrNull() ?: 0L
+                if (wifiPrice <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số tiền mạng/Wifi hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbElectric.isChecked) {
+                val electricPrice = NumberFormatUtils.getRawNumber(edtElectricPrice).toLongOrNull() ?: 0L
+                if (electricPrice <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập tiền điện hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbWater.isChecked) {
+                val waterPrice = NumberFormatUtils.getRawNumber(edtWaterPrice).toLongOrNull() ?: 0L
+                if (waterPrice <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập tiền nước hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+
+            // Kiểm tra phí gửi xe nếu chọn tính phí
+            if (cbMotorbike?.isChecked == true && rgMotorbikeFee?.checkedRadioButtonId == R.id.rbMotorbikePaid) {
+                val fee = NumberFormatUtils.getRawNumber(edtMotorbikeFee).toLongOrNull() ?: 0L
+                if (fee <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập phí gửi xe máy hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbEBike?.isChecked == true && rgEBikeFee?.checkedRadioButtonId == R.id.rbEBikePaid) {
+                val fee = NumberFormatUtils.getRawNumber(edtEBikeFee).toLongOrNull() ?: 0L
+                if (fee <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập phí gửi xe đạp điện hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbBicycle?.isChecked == true && rgBicycleFee?.checkedRadioButtonId == R.id.rbBicyclePaid) {
+                val fee = NumberFormatUtils.getRawNumber(edtBicycleFee).toLongOrNull() ?: 0L
+                if (fee <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập phí gửi xe đạp hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+
+            // Kiểm tra thông tin thú cưng nếu cho nuôi
+            if (rgPet.checkedRadioButtonId == R.id.rbPetYes) {
+                val petName = edtPetName.text.toString().trim()
+                val petCountStr = edtPetCount.text.toString().trim()
+                val petCount = petCountStr.toIntOrNull() ?: 0
+                if (petName.isEmpty()) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập loại thú cưng cho phép.")
+                    return@setOnClickListener
+                }
+                if (petCountStr.isEmpty() || petCount <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng thú cưng cho phép.")
+                    return@setOnClickListener
+                }
+            }
+
+            // Kiểm tra các dòng chi phí khác (dynamic list)
+            for (row in otherFeeRows) {
+                val label = row.first.text.toString().trim()
+                val priceStr = row.second.text.toString().trim()
+                val price = NumberFormatUtils.getRawNumber(row.second).toLongOrNull() ?: 0L
+                if (label.isNotEmpty() && (priceStr.isEmpty() || price <= 0)) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số tiền hợp lệ cho chi phí '${label}'.")
+                    return@setOnClickListener
+                }
+                if (label.isEmpty() && priceStr.isNotEmpty()) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng điền tên chi phí cho ô nhập số tiền.")
+                    return@setOnClickListener
+                }
+            }
+
+            // Kiểm tra nội thất phát sinh (dynamic list)
+            for (row in furnitureRows) {
+                val label = row.first.text.toString().trim()
+                val qtyStr = row.second.text.toString().trim()
+                val qty = qtyStr.toIntOrNull() ?: 0
+                if (label.isNotEmpty() && (qtyStr.isEmpty() || qty <= 0)) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng hợp lệ cho nội thất '${label}'.")
+                    return@setOnClickListener
+                }
+                if (label.isEmpty() && qtyStr.isNotEmpty()) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng điền tên nội thất.")
+                    return@setOnClickListener
+                }
+            }
+
+            // Kiểm tra dịch vụ phát sinh (dynamic list)
+            for (row in serviceRows) {
+                val label = row.first.text.toString().trim()
+                val priceStr = row.second.text.toString().trim()
+                val price = NumberFormatUtils.getRawNumber(row.second).toLongOrNull() ?: 0L
+                if (label.isNotEmpty() && (priceStr.isEmpty() || price <= 0)) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số tiền hợp lệ cho dịch vụ '${label}'.")
+                    return@setOnClickListener
+                }
+                if (label.isEmpty() && priceStr.isNotEmpty()) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng điền tên dịch vụ.")
+                    return@setOnClickListener
+                }
+            }
+
+            // Kiểm tra số lượng đồ dùng tiện ích cơ bản (nếu được tích)
+            if (cbAirCon.isChecked) {
+                val qty = edtAirConQty.text.toString().toIntOrNull() ?: 0
+                if (qty <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng Điều hòa hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbWaterHeater.isChecked) {
+                val qty = edtWaterHeaterQty.text.toString().toIntOrNull() ?: 0
+                if (qty <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng Bình nóng lạnh hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbWasher.isChecked) {
+                val qty = edtWasherQty.text.toString().toIntOrNull() ?: 0
+                if (qty <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng Máy giặt hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbDryingArea.isChecked) {
+                val qty = edtDryingAreaQty.text.toString().toIntOrNull() ?: 0
+                if (qty <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng Giàn phơi hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbWardrobe.isChecked) {
+                val qty = edtWardrobeQty.text.toString().toIntOrNull() ?: 0
+                if (qty <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng Tủ quần áo hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
+            if (cbBed.isChecked) {
+                val qty = edtBedQty.text.toString().toIntOrNull() ?: 0
+                if (qty <= 0) {
+                    MessageUtils.showInfoDialog(requireContext(), "Thiếu thông tin (Mục 4)", "Vui lòng nhập số lượng Giường hợp lệ (lớn hơn 0).")
+                    return@setOnClickListener
+                }
+            }
 
             val room = Room(
                 ownerName = edtOwnerName.text.toString().trim(),
@@ -1151,6 +1428,7 @@ class PostFragment : Fragment() {
                 curfewTime = edtCurfewTime.text.toString().trim(),
                 postExpiryDate = selectedExpiryMs!!,
                 availableTimeSlots = timeSlotsStr,
+                appointmentNotice = etAppointmentNotice.text.toString().trim(),
                 status = "pending", createdAt = System.currentTimeMillis()
             )
 
@@ -1277,10 +1555,7 @@ class PostFragment : Fragment() {
         selectedLocationAddress = ""
         selectedExpiryMs = null
         view.findViewById<TextView>(R.id.tvPickedLocation)?.text = "Chưa chọn vị trí chính xác"
-        view.findViewById<TextView>(R.id.tvExpiryDisplay)?.apply {
-            text = "Nhấn để chọn ngày và giờ hết hạn"
-            setTextColor(ContextCompat.getColor(requireContext(), R.color.text_hint))
-        }
+        view.findViewById<TextInputEditText>(R.id.etExpiryDate)?.setText("")
         listOf(R.id.cbWifi, R.id.cbElectric, R.id.cbWater, R.id.cbAirCon, R.id.cbWaterHeater,
             R.id.cbWasher, R.id.cbDryingArea, R.id.cbWardrobe, R.id.cbBed,
             R.id.cbMotorbike, R.id.cbEBike, R.id.cbBicycle

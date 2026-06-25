@@ -1,19 +1,25 @@
 package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.EditText
+import android.widget.ImageButton
+import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.Spinner
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.cardview.widget.CardView
 import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.doantotnghiep.Model.SupportTicket
 import com.example.doantotnghiep.R
+import com.example.doantotnghiep.Utils.ImageUtils
 import com.example.doantotnghiep.Utils.MessageUtils
 import com.example.doantotnghiep.View.Adapter.SupportTicketAdapter
 import com.example.doantotnghiep.ViewModel.SupportViewModel
@@ -55,7 +61,7 @@ class SupportTicketsActivity : AppCompatActivity() {
         filterGroup = findViewById(R.id.rgTicketFilters)
 
         findViewById<View>(R.id.btnSupportBack).setOnClickListener { finish() }
-        findViewById<View>(R.id.btnNewTicket).setOnClickListener { showCreateTicketDialog() }
+        findViewById<View>(R.id.btnNewTicket).setOnClickListener { checkAndShowCreateTicketDialog() }
         filterGroup.setOnCheckedChangeListener { _, checkedId ->
             currentFilter = when (checkedId) {
                 R.id.rbNewTickets -> "new"
@@ -114,6 +120,20 @@ class SupportTicketsActivity : AppCompatActivity() {
         emptyView.visibility = if (filtered.isEmpty()) View.VISIBLE else View.GONE
         rvTickets.visibility = if (filtered.isEmpty()) View.GONE else View.VISIBLE
         adapter.submitList(filtered, selectedTicketId)
+    }
+
+    // Fix #8: Kiểm tra ticket đang mở trước khi hiện dialog tạo mới
+    private fun checkAndShowCreateTicketDialog() {
+        viewModel.checkExistingOpenTicket(
+            onExists = {
+                MessageUtils.showInfoDialog(
+                    this,
+                    "Đã có yêu cầu đang xử lý",
+                    "Bạn đang có một yêu cầu hỗ trợ chưa được giải quyết. Vui lòng chờ admin phản hồi hoặc xem yêu cầu hiện tại."
+                )
+            },
+            onCanCreate = { showCreateTicketDialog() }
+        )
     }
 
     private fun showCreateTicketDialog() {

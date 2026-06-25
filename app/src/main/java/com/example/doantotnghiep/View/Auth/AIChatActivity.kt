@@ -60,8 +60,12 @@ class AIChatActivity : AppCompatActivity() {
 
         observeViewModel()
 
-        val uid = auth.currentUser?.uid ?: ""
-        viewModel.loadContext(uid) { viewModel.loadHistory(uid) }
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            finish()
+            return
+        }
+        viewModel.loadHistory(uid)
 
         btnSend.setOnClickListener {
             val text = edtMessage.text.toString().trim()

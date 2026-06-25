@@ -65,5 +65,10 @@ data class Room(
     val isFeatured: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val postExpiryDate: Long = 0,
-    val availableTimeSlots: String = ""
+    val postDurationDays: Int = 30,
+    val availableTimeSlots: String = "",
+    val maxDailyAppointments: Int = 10,
+    val appointmentNotice: String = "",
+    val totalAppointments: Int = 0,
+    val activeAppointments: Int = 0
 )

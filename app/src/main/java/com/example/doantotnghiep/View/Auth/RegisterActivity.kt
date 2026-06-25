@@ -7,6 +7,7 @@ import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import com.example.doantotnghiep.R
@@ -33,6 +34,7 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var btnBack: ImageView
     private lateinit var tvGoToLogin: TextView
     private lateinit var viewModel: AuthViewModel
+    private var loadingDialog: AlertDialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -70,6 +72,16 @@ class RegisterActivity : AppCompatActivity() {
         viewModel.isLoading.observe(this) { isLoading ->
             progressBar.visibility = if (isLoading) View.VISIBLE else View.GONE
             btnRegister.isEnabled = !isLoading
+            if (isLoading) {
+                loadingDialog = MessageUtils.showLoadingDialog(
+                    context = this,
+                    message = "Vui lòng chờ trong giây lát...",
+                    title = "Đang đăng ký"
+                )
+            } else {
+                loadingDialog?.dismiss()
+                loadingDialog = null
+            }
         }
 
         // Dialog đăng ký thành công

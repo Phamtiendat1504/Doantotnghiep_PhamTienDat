@@ -53,12 +53,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="@dimen/padding_medium"
-            app:boxCornerRadiusTopStart="@dimen/padding_small"
-            app:boxCornerRadiusTopEnd="@dimen/padding_small"
-            app:boxCornerRadiusBottomStart="@dimen/padding_small"
-            app:boxCornerRadiusBottomEnd="@dimen/padding_small"
+            app:boxCornerRadiusTopStart="12dp"
+            app:boxCornerRadiusTopEnd="12dp"
+            app:boxCornerRadiusBottomStart="12dp"
+            app:boxCornerRadiusBottomEnd="12dp"
             app:boxStrokeColor="@color/primary"
-            app:startIconDrawable="@android:drawable/ic_menu_search"
+            app:startIconDrawable="@drawable/ic_search"
             android:hint="@string/txt_tim_kiem_ten_so_ien_thoai">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -71,33 +71,24 @@
 
         </com.google.android.material.textfield.TextInputLayout>
 
-        <!-- Bộ lọc trạng thái dạng Dropdown Menu -->
-
-
-        <com.google.android.material.textfield.TextInputLayout
-            android:id="@+id/menuFilterLayout"
-            style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
+        <!-- Bộ lọc trạng thái dạng Chip Group -->
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            app:boxCornerRadiusTopStart="@dimen/padding_small"
-            app:boxCornerRadiusTopEnd="@dimen/padding_small"
-            app:boxCornerRadiusBottomStart="@dimen/padding_small"
-            app:boxCornerRadiusBottomEnd="@dimen/padding_small"
-            app:boxStrokeColor="@color/primary"
-            android:hint="@string/txt_trang_thai_lich_hen">
+            android:scrollbars="none"
+            android:clipToPadding="false">
 
-            <AutoCompleteTextView
-                android:id="@+id/menuFilter"
-                android:layout_width="match_parent"
+            <com.google.android.material.chip.ChipGroup
+                android:id="@+id/chipGroupFilter"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:inputType="none"
-                android:textSize="@dimen/text_size_15"
-                android:textColor="@color/color_333333"
-                android:fontFamily="sans-serif-medium"
-                android:paddingTop="@dimen/spacing_14"
-                android:paddingBottom="@dimen/spacing_14" />
+                app:singleSelection="true"
+                app:selectionRequired="true"
+                app:chipSpacingHorizontal="8dp">
+                <!-- Chips will be added dynamically via code -->
+            </com.google.android.material.chip.ChipGroup>
 
-        </com.google.android.material.textfield.TextInputLayout>
+        </HorizontalScrollView>
 
     </LinearLayout>
 

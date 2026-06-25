@@ -1,0 +1,15 @@
+## 15. Use case: Lưu phòng trọ yêu thích
+
+| Trường | Nội dung |
+| :--- | :--- |
+| **Tên Use case** | Lưu phòng trọ yêu thích (Thêm / Bỏ lưu) |
+| **Tác nhân chính** | Người thuê |
+| **Mục đích** | Cho phép người dùng lưu trữ lại các bài đăng phòng trọ mà họ quan tâm vào danh sách yêu thích để dễ dàng xem lại sau. |
+| **Mức độ ưu tiên** | Trung bình |
+| **Điều kiện kích hoạt** | Người dùng bấm vào nút biểu tượng "Lưu bài" (Bookmark) trên màn hình Chi tiết phòng trọ. |
+| **Điều kiện tiên quyết** | Thiết bị có kết nối mạng. Bài đăng không phải do chính người dùng hiện tại đăng lên (nếu là chủ bài đăng, hệ thống sẽ tự động ẩn nút Lưu). |
+| **Điều kiện thành công** | Trạng thái lưu được cập nhật vào cơ sở dữ liệu và biểu tượng nút Lưu thay đổi màu sắc tương ứng. |
+| **Điều kiện thất bại** | Lỗi kết nối mạng, lỗi truy xuất cơ sở dữ liệu. |
+| **Luồng sự kiện chính** | **1.** Tại màn hình Chi tiết phòng trọ, người dùng bấm vào nút biểu tượng "Lưu bài".<br><br>**2.** Hệ thống kiểm tra trạng thái đăng nhập của người dùng.<br><br>**3.** Hệ thống xác nhận người dùng đã đăng nhập tài khoản hợp lệ.<br><br>**4.** Hệ thống kiểm tra trạng thái lưu của bài đăng đối với tài khoản người dùng trong cơ sở dữ liệu (`savedPosts`).<br><br>**5.** Bài đăng chưa được lưu trước đó. Hệ thống tiến hành lưu thông tin tóm tắt của bài đăng (ID phòng, ID chủ nhà, tiêu đề, giá, địa chỉ, ảnh đại diện) vào danh sách yêu thích.<br><br>**6.** Hệ thống trả về kết quả thành công.<br><br>**7.** Hệ thống hiển thị hộp thoại thông báo: "Đã lưu - Bài đăng đã được thêm vào danh sách yêu thích".<br><br>**8.** Hệ thống đổi màu biểu tượng "Lưu bài" sang màu xanh (Primary Color) để thể hiện bài đăng đã được lưu. *(Use case kết thúc)*. |
+| **Luồng thay thế** | **(Rẽ nhánh từ bước 5 - Bỏ lưu phòng trọ đã lưu)**<br>**5.1.** Hệ thống nhận thấy bài đăng đã được người dùng lưu từ trước (tồn tại bản ghi trong danh sách yêu thích).<br>**5.2.** Hệ thống tiến hành xóa bản ghi bài đăng khỏi cơ sở dữ liệu danh sách yêu thích của người dùng.<br>**5.3.** Hệ thống trả về kết quả thành công.<br>**5.4.** Hệ thống hiển thị hộp thoại thông báo: "Đã bỏ lưu - Bài đăng đã được xóa khỏi danh sách yêu thích".<br>**5.5.** Hệ thống đổi màu biểu tượng "Lưu bài" về lại màu xám để thể hiện bài đăng chưa được lưu. *(Use case kết thúc)*. |
+| **Luồng ngoại lệ** | **(Rẽ nhánh từ bước 3 - Người dùng chưa đăng nhập)**<br>**3.1.** Hệ thống phát hiện người dùng chưa đăng nhập (tài khoản là Khách truy cập).<br>**3.2.** Hệ thống hiển thị hộp thoại "Yêu cầu đăng nhập" với nội dung nhắc nhở kèm hai lựa chọn "Đăng nhập" và "Hủy".<br>**3.3.** Nếu người dùng chọn "Đăng nhập", hệ thống chuyển hướng sang màn hình Đăng nhập. Nếu chọn "Hủy", hệ thống đóng hộp thoại. *(Use case kết thúc)*.<br><br>**(Rẽ nhánh từ bước 4 hoặc 5 - Lỗi cơ sở dữ liệu hoặc mạng)**<br>**4.1.** Quá trình kiểm tra hoặc lưu/xóa dữ liệu trên Firebase thất bại do lỗi kết nối mạng.<br>**4.2.** Hệ thống hiển thị hộp thoại báo lỗi (VD: "Không thể lưu bài", "Không thể bỏ lưu") kèm chi tiết lỗi.<br>**4.3.** Nút Lưu giữ nguyên trạng thái màu sắc cũ. *(Use case kết thúc)*. |

@@ -130,6 +130,19 @@ class SupportViewModel : ViewModel() {
         )
     }
 
+    // Fix #8: Kiểm tra ticket đang mở trước khi cho phép tạo mới
+    fun checkExistingOpenTicket(
+        onExists: (ticketId: String) -> Unit,
+        onCanCreate: () -> Unit
+    ) {
+        repository.checkExistingOpenTicket(
+            onResult = { existingId ->
+                if (existingId != null) onExists(existingId) else onCanCreate()
+            },
+            onError = { onCanCreate() }
+        )
+    }
+
     override fun onCleared() {
         ticketListener?.remove()
         messageListener?.remove()

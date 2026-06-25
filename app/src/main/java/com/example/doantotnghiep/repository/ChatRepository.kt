@@ -6,12 +6,16 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 import android.net.Uri
 
 
 class ChatRepository {
 
     private val db = FirebaseFirestore.getInstance()
+    private val imageMetadata = StorageMetadata.Builder()
+        .setContentType("image/jpeg")
+        .build()
 
     private fun stringMap(value: Any?): Map<String, String> {
         return (value as? Map<*, *>)?.mapNotNull { (key, mapValue) ->
@@ -502,7 +506,7 @@ class ChatRepository {
             .reference
             .child("chat_images/${chatId}/${fileName}")
 
-        storageRef.putFile(imageUri)
+        storageRef.putFile(imageUri, imageMetadata)
             .addOnProgressListener { taskSnapshot ->
                 if (taskSnapshot.totalByteCount > 0) {
                     val progress = (100.0 * taskSnapshot.bytesTransferred / taskSnapshot.totalByteCount).toInt()

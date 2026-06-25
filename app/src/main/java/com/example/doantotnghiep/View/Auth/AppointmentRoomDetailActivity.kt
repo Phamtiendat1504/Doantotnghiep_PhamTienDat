@@ -111,7 +111,7 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
         val tvCreatedAt = findViewById<android.widget.TextView>(R.id.tvPostCreatedAtDisplay) ?: return
         val tvExpiry = findViewById<android.widget.TextView>(R.id.tvPostExpiryDisplay) ?: return
         val layoutSlots = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsRow) ?: return
-        val tvSlots = findViewById<android.widget.TextView>(R.id.tvAvailableTimeSlotsDisplay) ?: return
+        val layoutSlotsContent = findViewById<android.widget.LinearLayout>(R.id.layoutTimeSlotsContent) ?: return
 
         // Xử lý createdAt: Firestore có thể trả về Timestamp hoặc Long
         val createdAt: Long = when (val raw = data["createdAt"]) {
@@ -145,7 +145,7 @@ class AppointmentRoomDetailActivity : AppCompatActivity() {
 
         if (timeSlots.isNotBlank()) {
             layoutSlots.visibility = android.view.View.VISIBLE
-            tvSlots.text = timeSlots
+            com.example.doantotnghiep.Utils.TimeSlotRenderer.render(layoutSlotsContent, timeSlots)
         } else {
             layoutSlots.visibility = android.view.View.GONE
         }

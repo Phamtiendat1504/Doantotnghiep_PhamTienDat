@@ -222,43 +222,5 @@
 
         </LinearLayout>
 
-        <!-- Expired Block -->
-        <LinearLayout
-            android:id="@+id/layoutExpiredWarning"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <TextView
-                android:id="@+id/tvExpiredWarning"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="⚠ Bài đăng đã ẩn khỏi kết quả tìm kiếm sau 2 tháng. Bài sẽ tự động xóa sau 1 tháng nữa."
-                android:textSize="12sp"
-                android:textColor="#795548"
-                android:paddingStart="12dp"
-                android:paddingEnd="12dp"
-                android:paddingBottom="8dp" />
-
-            <TextView
-                android:id="@+id/btnRenew"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text=" Gia hạn bài đăng thêm 2 tháng"
-                android:textSize="14sp"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:padding="10dp"
-                android:layout_marginStart="12dp"
-                android:layout_marginEnd="12dp"
-                android:layout_marginBottom="12dp"
-                android:background="@drawable/bg_btn_action_blue"
-                android:clickable="true"
-                android:focusable="true" />
-
-        </LinearLayout>
-
     </LinearLayout>
 </androidx.cardview.widget.CardView>

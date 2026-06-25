@@ -3,29 +3,26 @@ package com.example.doantotnghiep.ViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import com.example.doantotnghiep.Model.Appointment
 import com.example.doantotnghiep.Model.Room
+import com.example.doantotnghiep.Model.TimeSlotConfig
 import com.example.doantotnghiep.Model.User
+import com.example.doantotnghiep.Utils.AppointmentConstants
 import com.example.doantotnghiep.repository.AppointmentRepository
 import com.example.doantotnghiep.repository.AuthRepository
-import com.example.doantotnghiep.repository.RoomRepository
-import com.example.doantotnghiep.repository.RoomRentedNotice
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
 
-class BookingViewModel : ViewModel() {
-
-    data class AppointmentAccess(
-        val isHostAccess: Boolean,
-        val effectiveRole: String
-    )
-
-    private val repository = AppointmentRepository()
+// Fix #2: ViewModel này chỉ còn logic đặt lịch (BookingActivity)
+// Fix #1: Constructor injection thay vì khởi tạo trực tiếp
+class BookingViewModel(
+    private val repository: AppointmentRepository = AppointmentRepository(),
+    private val authRepository: AuthRepository = AuthRepository()
+) : ViewModel() {
 
     fun getCurrentUserId(): String? = FirebaseAuth.getInstance().currentUser?.uid
-    private val authRepository = AuthRepository()
-    private val roomRepository = RoomRepository()
-    private var appointmentListener: ListenerRegistration? = null
-    private var roomRentedNoticeListener: ListenerRegistration? = null
+
+    private var bookedSlotsListener: ListenerRegistration? = null
 
     private val _isLoading = MutableLiveData<Boolean>()
     val isLoading: LiveData<Boolean> = _isLoading
@@ -39,361 +36,72 @@ class BookingViewModel : ViewModel() {
     private val _errorMessage = MutableLiveData<String>()
     val errorMessage: LiveData<String> = _errorMessage
 
-    private val _appointments = MutableLiveData<List<Map<String, Any>>>()
-    val appointments: LiveData<List<Map<String, Any>>> = _appointments
+    private val _remainingQuota = MutableLiveData<Int>()
+    val remainingQuota: LiveData<Int> = _remainingQuota
 
-    private val _tenantAppointments = MutableLiveData<List<Map<String, Any>>>(emptyList())
-    val tenantAppointments: LiveData<List<Map<String, Any>>> = _tenantAppointments
+    // ─── Booking wizard ───────────────────────────────────────────────────────
 
-    private val _landlordAppointments = MutableLiveData<List<Map<String, Any>>>(emptyList())
-    val landlordAppointments: LiveData<List<Map<String, Any>>> = _landlordAppointments
-
-    private val _userRole = MutableLiveData<String>()
-    val userRole: LiveData<String> = _userRole
-
-    private val _selectedRoomDetails = MutableLiveData<Room?>()
-    val selectedRoomDetails: LiveData<Room?> = _selectedRoomDetails
-
-    private val _selectedTenantDetails = MutableLiveData<User?>()
-    val selectedTenantDetails: LiveData<User?> = _selectedTenantDetails
-
-    private val _timeConflicts = MutableLiveData<Map<String, Int>>()
-    val timeConflicts: LiveData<Map<String, Int>> = _timeConflicts
-
-    private val _appointmentAccess = MutableLiveData<AppointmentAccess>()
-    val appointmentAccess: LiveData<AppointmentAccess> = _appointmentAccess
-
-    private val _roomRentedNotice = MutableLiveData<RoomRentedNotice?>()
-    val roomRentedNotice: LiveData<RoomRentedNotice?> = _roomRentedNotice
-
-    fun initializeAppointmentsScreen() {
-        val uid = getCurrentUserId()
-        if (uid.isNullOrBlank()) {
-            _errorMessage.value = "Chưa đăng nhập"
-            return
+    fun loadRemainingQuota(roomId: String) {
+        val uid = getCurrentUserId() ?: return
+        repository.checkDailyBookingQuotaForRoom(uid, roomId) { used ->
+            // Fix #9: Dùng hằng số thay vì magic number
+            _remainingQuota.value = maxOf(0, AppointmentConstants.MAX_DAILY_BOOKING_QUOTA - used)
         }
+    }
 
-        listenRoomRentedNotices(uid)
+    fun loadRoomForBooking(roomId: String, onResult: (Room, List<TimeSlotConfig>) -> Unit) {
+        repository.fetchRoomForBooking(roomId,
+            onSuccess = { room, slots -> onResult(room, slots) },
+            onFailure = { e -> _errorMessage.value = e }
+        )
+    }
+
+    fun listenBookedSlotsForRoom(roomId: String, onUpdate: (Set<String>) -> Unit) {
+        bookedSlotsListener?.remove()
+        bookedSlotsListener = repository.listenBookedSlotsForRoom(roomId, onUpdate)
+    }
+
+    fun loadUserInfo() {
         _isLoading.value = true
-        repository.loadCurrentUserAppointmentAccess(
-            onSuccess = { isHostAccess, effectiveRole ->
-                _isLoading.value = false
-                _appointmentAccess.value = AppointmentAccess(isHostAccess, effectiveRole)
-                repository.markAllAppointmentsRead(uid, effectiveRole)
-
-                if (isHostAccess) {
-                    fetchBothAppointments()
-                } else {
-                    fetchAppointmentsByRole()
-                }
-            },
-            onFailure = {
-                _isLoading.value = false
-                fetchAppointmentsByRole()
-            }
+        authRepository.loadUserObject(
+            onSuccess = { user -> _isLoading.value = false; _userData.value = user },
+            onFailure = { e -> _isLoading.value = false; _errorMessage.value = e }
         )
     }
 
-    private fun listenRoomRentedNotices(uid: String) {
-        roomRentedNoticeListener?.remove()
-        roomRentedNoticeListener = repository.listenRoomRentedNotices(
-            uid = uid,
-            onNotice = { notice -> _roomRentedNotice.value = notice },
-            onError = { error -> _errorMessage.value = error }
+    fun submitBooking(appointment: Appointment) {
+        _isLoading.value = true
+        repository.submitBooking(appointment,
+            onSuccess = { _isLoading.value = false; _bookingResult.value = true },
+            onFailure = { e -> _isLoading.value = false; _errorMessage.value = e }
         )
-    }
-
-    fun markRoomRentedNoticeRead(notificationId: String) {
-        repository.markRoomRentedNoticeRead(notificationId)
-        _roomRentedNotice.value = null
     }
 
     fun checkExistingAppointment(tenantId: String, roomId: String, onResult: (Boolean, String?, String?, Long?) -> Unit) {
         repository.checkExistingAppointment(tenantId, roomId, onResult)
     }
 
-    fun checkDailyBookingLimit(tenantId: String, onAllowed: (remaining: Int) -> Unit, onBlocked: (usedToday: Int) -> Unit) {
-        repository.checkDailyBookingLimit(tenantId, onAllowed, onBlocked)
+    fun checkTenantPendingCount(uid: String, onResult: (Int) -> Unit) {
+        repository.checkTenantPendingCount(uid, onResult)
     }
 
-    fun listenTimeConflicts(roomId: String) {
-        repository.checkTimeConflicts(roomId) { conflicts ->
-            _timeConflicts.value = conflicts
-        }
+    fun checkTenantConfirmedCount(uid: String, onResult: (Int) -> Unit) {
+        repository.checkTenantConfirmedCount(uid, onResult)
     }
 
-    fun clearSelectedDetails() {
-        _selectedRoomDetails.value = null
-        _selectedTenantDetails.value = null
+    fun checkTenantNoShowCount(uid: String, onResult: (Int, Long) -> Unit) {
+        repository.checkTenantNoShowCount(uid, onResult)
     }
 
-    fun loadUserInfo() {
-        _isLoading.value = true
-        authRepository.loadUserObject(
-            onSuccess = { user ->
-                _isLoading.value = false
-                _userData.value = user
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
+    fun loadConfirmedAppointmentsForDate(roomId: String, dateStr: String, onResult: (List<Appointment>) -> Unit) {
+        repository.loadConfirmedAppointmentsForDate(roomId, dateStr, onResult)
     }
 
-    fun submitBooking(
-        appointment: HashMap<String, Any>,
-        landlordId: String,
-        roomTitle: String,
-        fullName: String,
-        selectedDateDisplay: String,
-        selectedTime: String
-    ) {
-        _isLoading.value = true
-        repository.submitBooking(
-            appointment, landlordId, roomTitle, fullName, selectedDateDisplay, selectedTime,
-            onSuccess = {
-                _isLoading.value = false
-                _bookingResult.value = true
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    fun fetchAppointments(isLandlord: Boolean) {
-        _isLoading.value = true
-        appointmentListener?.remove()
-        appointmentListener = repository.listenAppointments(
-            isLandlord,
-            onUpdate = { list ->
-                _isLoading.value = false
-                _appointments.value = list
-            },
-            onError = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    // Load role rồi tự động fetch appointments — dùng cho MyAppointmentsActivity
-    fun fetchAppointmentsByRole() {
-        _isLoading.value = true
-        repository.getCurrentUserRole(
-            onSuccess = { role ->
-                _userRole.value = role
-                val hasHostAccess = role == "admin" || role == "verified"
-                fetchAppointments(hasHostAccess)
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    fun fetchBothAppointments() {
-        _isLoading.value = true
-        appointmentListener?.remove()
-
-        val listeners = repository.listenBothAppointments(
-            onTenantUpdate = { list ->
-                _tenantAppointments.value = list
-                _isLoading.value = false
-            },
-            onLandlordUpdate = { list ->
-                _landlordAppointments.value = list
-                _isLoading.value = false
-            },
-            onError = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-
-        appointmentListener = object : ListenerRegistration {
-            override fun remove() {
-                listeners.first.remove()
-                listeners.second.remove()
-            }
-        }
-    }
-
-    fun fetchAppointmentDetails(roomId: String, tenantId: String) {
-        _isLoading.value = true
-        var roomDone = false
-        var tenantDone = false
-
-        fun checkDone() {
-            if (roomDone && tenantDone) _isLoading.value = false
-        }
-
-        repository.fetchAppointmentDetails(
-            roomId, tenantId,
-            onRoomLoaded = { room ->
-                _selectedRoomDetails.value = room
-                roomDone = true
-                checkDone()
-            },
-            onTenantLoaded = { user ->
-                _selectedTenantDetails.value = user
-                tenantDone = true
-                checkDone()
-            },
-            onError = { e ->
-                _errorMessage.value = e
-                roomDone = true
-                tenantDone = true
-                checkDone()
-            }
-        )
-    }
-
-    fun tenantConfirmAppointment(
-        appointmentId: String, landlordId: String, roomTitle: String,
-        roomId: String, date: String, time: String
-    ) {
-        _isLoading.value = true
-        repository.tenantConfirmAppointment(
-            appointmentId, landlordId, roomTitle, roomId, date, time,
-            onSuccess = {
-                _isLoading.value = false
-                _bookingResult.value = true
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    fun confirmAppointment(appointmentId: String, tenantId: String, roomTitle: String, date: String, time: String) {
-        _isLoading.value = true
-        repository.confirmAppointment(
-            appointmentId, tenantId, roomTitle, date, time,
-            onSuccess = {
-                _isLoading.value = false
-                _bookingResult.value = true
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    fun rejectAppointment(
-        appointmentId: String, tenantId: String, roomTitle: String, reason: String,
-        roomId: String, date: String, time: String
-    ) {
-        _isLoading.value = true
-        repository.rejectAppointment(
-            appointmentId, tenantId, roomTitle, reason, roomId, date, time,
-            onSuccess = {
-                _isLoading.value = false
-                _bookingResult.value = true
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    fun markAsRented(
-        appointmentId: String,
-        roomId: String,
-        tenantId: String,
-        roomTitle: String,
-        date: String,
-        time: String
-    ) {
-        _isLoading.value = true
-        repository.markAsRented(
-            appointmentId, roomId, tenantId, roomTitle, date, time,
-            onSuccess = {
-                _isLoading.value = false
-                _bookingResult.value = true
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    fun cancelPendingAppointment(
-        appointmentId: String, landlordId: String, roomTitle: String,
-        roomId: String, date: String, time: String,
-        onSuccess: () -> Unit, onFailure: (String) -> Unit
-    ) {
-        _isLoading.value = true
-        repository.cancelPendingAppointment(
-            appointmentId, landlordId, roomTitle, roomId, date, time,
-            onSuccess = {
-                _isLoading.value = false
-                onSuccess()
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                onFailure(e)
-            }
-        )
-    }
-
-    fun editPendingAppointment(
-        appointmentId: String, landlordId: String, roomTitle: String,
-        newDate: String, newDateDisplay: String, newTime: String,
-        onSuccess: () -> Unit, onFailure: (String) -> Unit
-    ) {
-        _isLoading.value = true
-        repository.editPendingAppointment(
-            appointmentId, landlordId, roomTitle, newDate, newDateDisplay, newTime,
-            onSuccess = {
-                _isLoading.value = false
-                onSuccess()
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                onFailure(e)
-            }
-        )
-    }
-
-    fun tenantRejectAppointment(
-        appointmentId: String, landlordId: String, roomTitle: String,
-        roomId: String, date: String, time: String
-    ) {
-        _isLoading.value = true
-        repository.tenantRejectAppointment(
-            appointmentId, landlordId, roomTitle, roomId, date, time,
-            onSuccess = {
-                _isLoading.value = false
-                _bookingResult.value = true
-            },
-            onFailure = { e ->
-                _isLoading.value = false
-                _errorMessage.value = e
-            }
-        )
-    }
-
-    // Lấy bookingResult để reset từ bên ngoài
-    fun resetBookingResult() {
-        _bookingResult.value = false
-    }
-
-    // Lấy errorMessage để reset từ bên ngoài
-    fun resetErrorMessage() {
-        _errorMessage.value = ""
-    }
+    fun resetBookingResult() { _bookingResult.value = false }
+    fun resetErrorMessage() { _errorMessage.value = "" }
 
     override fun onCleared() {
         super.onCleared()
-        appointmentListener?.remove()
-        roomRentedNoticeListener?.remove()
+        bookedSlotsListener?.remove()
     }
 }

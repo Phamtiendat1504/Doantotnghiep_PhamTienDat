@@ -6,6 +6,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.example.doantotnghiep.repository.AppointmentRepository
 import com.example.doantotnghiep.repository.AuthRepository
+import com.example.doantotnghiep.repository.ChatRepository
 import com.example.doantotnghiep.repository.RoomRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.ListenerRegistration
@@ -13,6 +14,7 @@ import com.google.firebase.firestore.ListenerRegistration
 class ProfileViewModel : ViewModel() {
 
     private val authRepository = AuthRepository()
+    private val chatRepository = ChatRepository()
     private val roomRepository = RoomRepository()
     private val appointmentRepository = AppointmentRepository()
 
@@ -126,6 +128,9 @@ class ProfileViewModel : ViewModel() {
             onSuccess = { url ->
                 _isUploadingAvatar.value = false
                 _newAvatarUrl.value = url
+                val uid = getCurrentUserId() ?: return@uploadAvatar
+                val name = _userInfo.value?.fullName ?: ""
+                chatRepository.updateUserInfoInChats(uid, name, url)
             },
             onFailure = { e ->
                 _isUploadingAvatar.value = false

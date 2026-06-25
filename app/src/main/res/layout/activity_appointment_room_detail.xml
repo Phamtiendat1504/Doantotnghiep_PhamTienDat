@@ -300,13 +300,13 @@
                             android:textColor="@color/text_secondary"
                             android:layout_marginBottom="@dimen/elevation_6" />
 
-                        <com.google.android.material.textview.MaterialTextView
-                            android:id="@+id/tvAvailableTimeSlotsDisplay"
+                        <LinearLayout
+                            android:id="@+id/layoutTimeSlotsContent"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:textSize="@dimen/text_size_13"
-                            android:textColor="@color/text_primary"
-                            android:lineSpacingExtra="@dimen/stroke_2" />
+                            android:orientation="vertical"
+                            android:background="@drawable/bg_info_strip"
+                            android:padding="@dimen/spacing_12" />
                     </LinearLayout>
 
                 </LinearLayout>

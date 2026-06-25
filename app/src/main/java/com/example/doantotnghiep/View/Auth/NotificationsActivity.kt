@@ -2,9 +2,12 @@ package com.example.doantotnghiep.View.Auth
 
 import android.content.Intent
 import android.os.Bundle
+import android.view.LayoutInflater
 import android.view.View
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -23,24 +26,7 @@ class NotificationsActivity : AppCompatActivity() {
     private lateinit var btnMarkAll: TextView
     private lateinit var btnBack: View
 
-    private val adapter = NotificationAdapter { item ->
-        // Bấm vào thông báo -> đánh dấu đã xem
-        // BUG-FCM-04: Set cả seen và isRead để đồng bộ với markAllRead()
-        if (!item.isRead) {
-            FirebaseFirestore.getInstance()
-                .collection("notifications")
-                .document(item.id)
-                .update(mapOf("seen" to true, "isRead" to true))
-        }
-        if (item.type == "support_reply" && item.ticketId.isNotBlank()) {
-            startActivity(Intent(this, SupportTicketDetailActivity::class.java).apply {
-                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_ID, item.ticketId)
-                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, item.ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
-                // Bug #3: Thêm status mặc định để tránh ticketStatus rỗng ban đầu
-                putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
-            })
-        }
-    }
+    private val adapter = NotificationAdapter { item -> showNotificationDetail(item) }
 
     private var listenerRegistration: ListenerRegistration? = null
     private val db = FirebaseFirestore.getInstance()
@@ -136,6 +122,65 @@ class NotificationsActivity : AppCompatActivity() {
                     com.example.doantotnghiep.Utils.MessageUtils.showSuccessDialog(this, "Thành công", "Đã đánh dấu tất cả là đã đọc.")
                 }
             }
+    }
+
+    private fun showNotificationDetail(item: NotificationItem) {
+        // Đánh dấu đã đọc khi mở dialog
+        if (!item.isRead) {
+            db.collection("notifications").document(item.id)
+                .update(mapOf("seen" to true, "isRead" to true))
+        }
+
+        val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_notification_detail, null)
+
+        val ivIcon     = dialogView.findViewById<ImageView>(R.id.dialogIvIcon)
+        val tvTitle    = dialogView.findViewById<TextView>(R.id.dialogTvTitle)
+        val tvMessage  = dialogView.findViewById<TextView>(R.id.dialogTvMessage)
+        val tvTime     = dialogView.findViewById<TextView>(R.id.dialogTvTime)
+
+        tvTitle.text   = item.title
+        tvMessage.text = item.message
+        tvTime.text    = timeAgo(item.createdAt)
+
+        val iconRes = when (item.type) {
+            "post_approved"         -> R.drawable.ic_check_circle
+            "post_rejected"         -> R.drawable.ic_cancel
+            "verification_approved" -> R.drawable.ic_verified
+            "verification_rejected" -> R.drawable.ic_cancel
+            "appointment"           -> R.drawable.ic_calendar
+            "support_reply"         -> R.drawable.ic_info
+            else                    -> R.drawable.ic_notification
+        }
+        ivIcon.setImageResource(iconRes)
+
+        val builder = AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setNegativeButton("Đóng", null)
+
+        if (item.type == "support_reply" && item.ticketId.isNotBlank()) {
+            builder.setPositiveButton("Xem chi tiết") { _, _ ->
+                startActivity(Intent(this, SupportTicketDetailActivity::class.java).apply {
+                    putExtra(SupportTicketDetailActivity.EXTRA_TICKET_ID, item.ticketId)
+                    putExtra(SupportTicketDetailActivity.EXTRA_TICKET_TITLE, item.ticketTitle.ifBlank { "Yêu cầu hỗ trợ" })
+                    putExtra(SupportTicketDetailActivity.EXTRA_TICKET_STATUS, "new")
+                })
+            }
+        }
+
+        builder.show()
+    }
+
+    private fun timeAgo(ms: Long): String {
+        if (ms == 0L) return ""
+        val diff = System.currentTimeMillis() - ms
+        val minutes = diff / 60000
+        if (minutes < 1) return "Vừa xong"
+        if (minutes < 60) return "$minutes phút trước"
+        val hours = minutes / 60
+        if (hours < 24) return "$hours giờ trước"
+        val days = hours / 24
+        if (days < 7) return "$days ngày trước"
+        return java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault()).format(ms)
     }
 
     override fun onDestroy() {

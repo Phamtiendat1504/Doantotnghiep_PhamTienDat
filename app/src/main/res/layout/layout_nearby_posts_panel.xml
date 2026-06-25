@@ -84,6 +84,23 @@
 
         </LinearLayout>
 
+        <!-- Nút mở rộng bán kính - chỉ hiện khi không có kết quả -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExpandRadius"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/elevation_6"
+            android:text="Mở rộng bán kính tìm kiếm"
+            android:textAllCaps="false"
+            android:textColor="@color/primary"
+            android:textSize="@dimen/text_size_13"
+            android:visibility="gone"
+            app:cornerRadius="@dimen/corner_radius_10"
+            app:icon="@drawable/ic_location"
+            app:iconTint="@color/primary"
+            app:strokeColor="@color/primary" />
+
         <!-- Bán kính tìm kiếm -->
         <LinearLayout
             android:layout_width="match_parent"

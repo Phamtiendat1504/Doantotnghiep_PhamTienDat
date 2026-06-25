@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <!-- Gradient header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/bg_dialog_header"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingTop="28dp"
+        android:paddingBottom="22dp"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp">
+
+        <ImageView
+            android:layout_width="52dp"
+            android:layout_height="52dp"
+            android:layout_marginBottom="12dp"
+            android:src="@drawable/ic_search_location"
+            app:tint="@android:color/white" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tìm phòng gần vị trí"
+            android:textColor="@android:color/white"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="Chọn phạm vi bán kính tìm kiếm"
+            android:textColor="@color/color_CCFFFFFF"
+            android:textSize="13sp" />
+
+    </LinearLayout>
+
+    <!-- Content body -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@android:color/white"
+        android:orientation="vertical"
+        android:paddingStart="20dp"
+        android:paddingEnd="20dp"
+        android:paddingTop="22dp"
+        android:paddingBottom="20dp">
+
+        <!-- Label -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Bán kính tìm kiếm"
+            android:textColor="@color/text_secondary"
+            android:textSize="12sp"
+            android:textAllCaps="true"
+            android:letterSpacing="0.08" />
+
+        <!-- Value display -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tvRadiusValue"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="2 km"
+            android:textColor="@color/primary"
+            android:textSize="40sp"
+            android:textStyle="bold" />
+
+        <!-- Slider -->
+        <com.google.android.material.slider.Slider
+            android:id="@+id/sliderRadius"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:value="2.0"
+            android:valueFrom="0.5"
+            android:valueTo="10.0"
+            android:stepSize="0.5"
+            app:labelBehavior="gone"
+            app:thumbColor="@color/primary"
+            app:thumbRadius="10dp"
+            app:trackColorActive="@color/primary"
+            app:trackColorInactive="@color/gray_300"
+            app:trackHeight="4dp" />
+
+        <!-- Min / Max labels -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="2dp">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="0.5 km"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp" />
+
+            <com.google.android.material.textview.MaterialTextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="10 km"
+                android:textColor="@color/text_hint"
+                android:textSize="11sp" />
+
+        </LinearLayout>
+
+        <!-- Hint box -->
+        <com.google.android.material.textview.MaterialTextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@color/primary_surface"
+            android:drawableStart="@drawable/ic_location"
+            android:drawablePadding="6dp"
+            android:padding="10dp"
+            android:text="Tất cả phòng trọ trong bán kính bạn chọn sẽ được hiển thị để lựa chọn"
+            android:textColor="@color/primary_dark"
+            android:textSize="12sp"
+            app:drawableTint="@color/primary" />
+
+        <!-- Buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRadiusCancel"
+                style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:layout_marginEnd="8dp"
+                android:paddingStart="20dp"
+                android:paddingEnd="20dp"
+                android:text="Hủy"
+                android:textAllCaps="false"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
+                app:cornerRadius="10dp"
+                app:strokeColor="@color/primary" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btnRadiusSearch"
+                android:layout_width="wrap_content"
+                android:layout_height="44dp"
+                android:paddingStart="24dp"
+                android:paddingEnd="24dp"
+                android:text="Tìm ngay"
+                android:textAllCaps="false"
+                android:textSize="14sp"
+                app:backgroundTint="@color/primary"
+                app:cornerRadius="10dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

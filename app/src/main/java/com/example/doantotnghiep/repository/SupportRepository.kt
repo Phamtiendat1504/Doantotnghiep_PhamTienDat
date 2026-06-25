@@ -10,6 +10,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.storage.StorageMetadata
 import java.util.UUID
 
 class SupportRepository {
@@ -17,6 +18,9 @@ class SupportRepository {
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val storage = FirebaseStorage.getInstance("gs://doantotnghiep-b39ae.firebasestorage.app")
+    private val imageMetadata = StorageMetadata.Builder()
+        .setContentType("image/jpeg")
+        .build()
 
     fun listenMyTickets(
         onUpdate: (List<SupportTicket>) -> Unit,
@@ -55,6 +59,13 @@ class SupportRepository {
                 }
                 val messages = snap?.documents?.mapNotNull { doc ->
                     try {
+                        val senderRole = doc.getString("senderRole") ?: "user"
+                        // Fix #5: seen = admin đã đọc tin user gửi, hoặc user đã đọc tin admin gửi
+                        val seen = if (senderRole == "user") {
+                            doc.getBoolean("seenByAdmin") ?: false
+                        } else {
+                            doc.getBoolean("seenByUser") ?: false
+                        }
                         Message(
                             id = doc.id,
                             chatId = ticketId,
@@ -62,7 +73,7 @@ class SupportRepository {
                             text = doc.getString("text") ?: "",
                             imageUrl = doc.getString("imageUrl") ?: "",
                             createdAt = doc.getLong("createdAt") ?: 0L,
-                            seen = doc.getBoolean("seenByAdmin") ?: false
+                            seen = seen
                         )
                     } catch (_: Exception) {
                         null
@@ -231,12 +242,14 @@ class SupportRepository {
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
+        // Fix #3: set unreadForAdmin=true để admin biết user đã chủ động đóng ticket
         db.collection("support_tickets").document(ticketId)
             .update(
                 mapOf(
                     "status" to "closed",
                     "updatedAt" to System.currentTimeMillis(),
-                    "unreadForUser" to false
+                    "unreadForUser" to false,
+                    "unreadForAdmin" to true
                 )
             )
             .addOnSuccessListener { onSuccess() }
@@ -246,10 +259,15 @@ class SupportRepository {
     fun markUserRead(ticketId: String) {
         val ticketRef = db.collection("support_tickets").document(ticketId)
         ticketRef.update("unreadForUser", false).addOnFailureListener { }
+        markAdminMessagesAsSeen(ticketRef)
+    }
+
+    // Fix #7: Đệ quy theo trang 400 để xử lý > 490 messages chưa đọc
+    private fun markAdminMessagesAsSeen(ticketRef: com.google.firebase.firestore.DocumentReference) {
         ticketRef.collection("messages")
             .whereEqualTo("senderRole", "admin")
             .whereEqualTo("seenByUser", false)
-            .limit(490)
+            .limit(400)
             .get()
             .addOnSuccessListener { snap ->
                 if (snap.isEmpty) return@addOnSuccessListener
@@ -257,8 +275,27 @@ class SupportRepository {
                 snap.documents.forEach { doc ->
                     batch.update(doc.reference, "seenByUser", true)
                 }
-                batch.commit()
+                batch.commit().addOnSuccessListener {
+                    if (snap.size() == 400) markAdminMessagesAsSeen(ticketRef)
+                }
             }
+    }
+
+    // Fix #8: Kiểm tra user có ticket đang mở chưa trước khi cho tạo mới
+    fun checkExistingOpenTicket(
+        onResult: (existingTicketId: String?) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val uid = auth.currentUser?.uid ?: run { onResult(null); return }
+        db.collection("support_tickets")
+            .whereEqualTo("userId", uid)
+            .whereIn("status", listOf("new", "in_progress"))
+            .limit(1)
+            .get()
+            .addOnSuccessListener { snap ->
+                onResult(snap.documents.firstOrNull()?.id)
+            }
+            .addOnFailureListener { onError("Lỗi kiểm tra ticket: ${it.message}") }
     }
 
     private fun uploadSupportImage(
@@ -269,7 +306,7 @@ class SupportRepository {
     ) {
         val fileName = "${System.currentTimeMillis()}_${UUID.randomUUID()}.jpg"
         val storageRef = storage.reference.child("support_images/$ticketId/$fileName")
-        storageRef.putFile(imageUri)
+        storageRef.putFile(imageUri, imageMetadata)
             .addOnSuccessListener {
                 storageRef.downloadUrl
                     .addOnSuccessListener { onSuccess(it.toString()) }

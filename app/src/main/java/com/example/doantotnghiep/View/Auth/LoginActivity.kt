@@ -3,6 +3,7 @@ package com.example.doantotnghiep.View.Auth
 import android.content.Intent
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
@@ -29,6 +30,7 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvForgotPassword: TextView
     private lateinit var tvGoToRegister: TextView
+    private lateinit var btnBack: ImageView
     private lateinit var viewModel: AuthViewModel
 
     private var loginLoadingDialog: AlertDialog? = null
@@ -45,6 +47,8 @@ class LoginActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         tvForgotPassword = findViewById(R.id.tvForgotPassword)
         tvGoToRegister = findViewById(R.id.tvGoToRegister)
+        btnBack = findViewById(R.id.btnBack)
+        btnBack.setOnClickListener { finish() }
 
         viewModel = ViewModelProvider(this)[AuthViewModel::class.java]
 

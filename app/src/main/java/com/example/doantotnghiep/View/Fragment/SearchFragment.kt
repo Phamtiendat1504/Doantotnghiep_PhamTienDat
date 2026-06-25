@@ -32,6 +32,8 @@ import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import com.google.android.material.slider.Slider
 
 class SearchFragment : Fragment() {
 
@@ -575,27 +577,42 @@ class SearchFragment : Fragment() {
     }
 
     private fun showRadiusPickerDialog(lat: Double, lng: Double) {
-        val options = arrayOf("1 km", "2 km", "5 km", "10 km")
-        val radii = doubleArrayOf(1.0, 2.0, 5.0, 10.0)
-        var selected = 1 // mặc định 2km
+        val dialogView = LayoutInflater.from(requireContext())
+            .inflate(R.layout.dialog_radius_picker, null)
 
-        AlertDialog.Builder(requireContext())
-            .setTitle("Chọn bán kính tìm kiếm")
-            .setSingleChoiceItems(options, selected) { _, which -> selected = which }
-            .setPositiveButton("Tìm ngay") { dialog, _ ->
-                dialog.dismiss()
-                val radiusKm = radii[selected]
-                val intent = Intent(requireContext(), SearchResultsActivity::class.java).apply {
-                    putExtra("searchMode", "nearby")
-                    putExtra("lat", lat)
-                    putExtra("lng", lng)
-                    putExtra("radiusKm", radiusKm)
-                    putExtra("mapAddress", "Vị trí hiện tại của tôi")
-                }
-                startActivity(intent)
+        val slider    = dialogView.findViewById<Slider>(R.id.sliderRadius)
+        val tvValue   = dialogView.findViewById<android.widget.TextView>(R.id.tvRadiusValue)
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnRadiusCancel)
+        val btnSearch = dialogView.findViewById<MaterialButton>(R.id.btnRadiusSearch)
+
+        fun formatRadius(km: Float): String =
+            if (km == kotlin.math.floor(km.toDouble()).toFloat()) "${km.toInt()} km" else "$km km"
+
+        tvValue.text = formatRadius(slider.value)
+
+        slider.addOnChangeListener { _, value, _ ->
+            tvValue.text = formatRadius(value)
+        }
+
+        val dialog = AlertDialog.Builder(requireContext(), R.style.RoundedDialogStyle)
+            .setView(dialogView)
+            .create()
+
+        btnCancel.setOnClickListener { dialog.dismiss() }
+
+        btnSearch.setOnClickListener {
+            val radiusKm = slider.value.toDouble()
+            dialog.dismiss()
+            val intent = Intent(requireContext(), LocationPickerActivity::class.java).apply {
+                putExtra(LocationPickerActivity.EXTRA_IS_STRICT, false)
+                putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, lat)
+                putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, lng)
+                putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS_KM, radiusKm)
             }
-            .setNegativeButton("Hủy", null)
-            .show()
+            locationPickerLauncher.launch(intent)
+        }
+
+        dialog.show()
     }
 
     private fun loadAreaOptions(list: Array<String>) {
