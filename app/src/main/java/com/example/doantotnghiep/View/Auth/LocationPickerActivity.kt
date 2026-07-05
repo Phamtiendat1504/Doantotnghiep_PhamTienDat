@@ -116,9 +116,10 @@ class LocationPickerActivity : AppCompatActivity() {
     private var initialLng: Double = Double.NaN
     private var initialRadiusKm: Double = Double.NaN
 
-    // ────────────────────────────────────────────────
-    // Lifecycle
-    // ────────────────────────────────────────────────
+    // Danh sách từ khóa nhiễu (load từ JSON)
+    private var noiseWordsList: List<String> = emptyList()
+
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_location_picker)
@@ -128,6 +129,7 @@ class LocationPickerActivity : AppCompatActivity() {
         initialLng      = intent.getDoubleExtra(EXTRA_INITIAL_LNG, Double.NaN)
         initialRadiusKm = intent.getDoubleExtra(EXTRA_INITIAL_RADIUS_KM, Double.NaN)
 
+        loadNoiseWords()
         bindViews()
 
         if (savedInstanceState != null) {
@@ -183,9 +185,8 @@ class LocationPickerActivity : AppCompatActivity() {
         btnExpandRadius     = findViewById(R.id.btnExpandRadius)
     }
 
-    // ────────────────────────────────────────────────
+
     // Adapter
-    // ────────────────────────────────────────────────
     private fun setupAdapter() {
         nearbyAdapter = NearbyPostAdapter { selectedCount ->
             // Cập nhật nút xác nhận
@@ -201,9 +202,8 @@ class LocationPickerActivity : AppCompatActivity() {
         rvNearbyPosts.adapter = nearbyAdapter
     }
 
-    // ────────────────────────────────────────────────
+
     // Panel setup
-    // ────────────────────────────────────────────────
     private fun setupPanel() {
         seekBarPanelRadius.max      = RADIUS_STEPS.size - 1
         seekBarPanelRadius.progress = DEFAULT_RADIUS_INDEX
@@ -242,50 +242,73 @@ class LocationPickerActivity : AppCompatActivity() {
         btnTogglePanel.setOnClickListener { collapsePanel() }
     }
 
-    // ────────────────────────────────────────────────
-    // Map
-    // ────────────────────────────────────────────────
+
+    // Tìm phòng trọ gần vị trí của tôi -1-
+    // Cài đặt và khởi tạo bản đồ Google Maps
     private fun setupMap() {
+        // Tìm Fragment chứa bản đồ trong giao diện XML (R.id.mapPickerContainer)
         val mapFragment = supportFragmentManager
             .findFragmentById(R.id.mapPickerContainer) as? SupportMapFragment ?: return
+            
+        // getMapAsync: Đợi bản đồ tải xong (bất đồng bộ) rồi mới thực thi khối code bên trong
         mapFragment.getMapAsync { map ->
             googleMap = map
-            map.uiSettings.isZoomControlsEnabled = true
-            map.uiSettings.isCompassEnabled      = true
-            map.uiSettings.isMapToolbarEnabled   = true
+            
+            // Kích hoạt các nút điều khiển cơ bản trên bản đồ
+            map.uiSettings.isZoomControlsEnabled = true // Nút phóng to/thu nhỏ (+/-)
+            map.uiSettings.isCompassEnabled      = true // La bàn chỉ hướng
+            map.uiSettings.isMapToolbarEnabled   = true // Thanh công cụ bản đồ
+            
+            // Mặc định khi mới mở, đưa camera bản đồ về khu vực trung tâm Hà Nội (Zoom level 11)
             map.moveCamera(CameraUpdateFactory.newLatLngZoom(hanoiLatLng, 11f))
+            
+            // Nếu trước đó đã chọn một vị trí thì vẽ lại điểm đánh dấu (Marker) đó
             selectedLatLng?.let { updateMarker(it, false) }
+            
+            // Bắt sự kiện khi người dùng bấm chạm vào bất kỳ đâu trên bản đồ
             map.setOnMapClickListener { latLng ->
                 selectedLatLng = latLng
                 centerLatLng   = latLng
-                hidePanel()
-                updateMarker(latLng, true)
-                reverseGeocode(latLng)
+                hidePanel() // Ẩn danh sách phòng trọ cũ đi
+                updateMarker(latLng, true) // Đặt cây kim đỏ (Marker) xuống vị trí vừa bấm
+                reverseGeocode(latLng) // Đổi từ Tọa độ -> Tên đường (địa chỉ chữ)
             }
 
-            // Nếu GPS đã được truyền sẵn (chế độ "tìm phòng gần tôi") → tự động tải
+            // ĐÂY LÀ PHẦN DÀNH CHO TÍNH NĂNG "TÌM PHÒNG GẦN VỊ TRÍ CỦA TÔI"
+            // Kiểm tra xem Activity trước (SearchFragment) có truyền GPS (initialLat, initialLng) sang không
             if (!initialLat.isNaN() && !initialLng.isNaN()) {
+                // Tạo đối tượng Tọa độ từ GPS cá nhân
                 val latLng = LatLng(initialLat, initialLng)
+                
+                // Lấy tọa độ đó làm tâm điểm để tìm kiếm
                 centerLatLng    = latLng
                 selectedLatLng  = latLng
                 selectedAddress = "Vị trí hiện tại của tôi"
-                renderPickedAddress()
+                renderPickedAddress() // Hiển thị chữ "Vị trí hiện tại của tôi" lên màn hình
+                
+                // Xử lý Bán kính (Radius) được truyền từ SearchFragment sang
                 if (!initialRadiusKm.isNaN()) {
+                    // Tìm vị trí của bán kính này trên thanh kéo (SeekBar) và tự động kéo đến đó
                     val idx = RADIUS_STEPS.indexOfFirst { it >= initialRadiusKm }.coerceAtLeast(0)
                     currentPanelRadius = RADIUS_STEPS[idx]
                     seekBarPanelRadius.progress = idx
                     tvPanelRadiusValue.text = formatRadius(currentPanelRadius)
                 }
+                
+                // Vẽ tâm điểm vị trí cá nhân lên bản đồ
                 updateSelectedMarkerForSearch(latLng)
+                
+                // Hiển thị hiệu ứng xoay (Loading)
                 startRefreshAnimation()
+                
+                // [QUAN TRỌNG NHẤT]: Bắt đầu truy vấn Firebase để tìm các phòng trọ xung quanh vị trí GPS này
                 loadNearbyPostsFromFirestore(latLng)
             }
         }
     }
 
-    // ────────────────────────────────────────────────
-    // Button listeners
-    // ────────────────────────────────────────────────
+
+    // Button listener
     private fun setupActions() {
         btnBack.setOnClickListener    { finish() }
         btnCancel.setOnClickListener  { finish() }
@@ -293,9 +316,8 @@ class LocationPickerActivity : AppCompatActivity() {
         btnConfirm.setOnClickListener { confirmSelection() }
     }
 
-    // ────────────────────────────────────────────────
+
     // Tìm địa chỉ qua Geocoder
-    // ────────────────────────────────────────────────
     // Nhóm 1 — Địa điểm phổ biến (chip ngắn, cuộn ngang)
     private val locationSuggestions = listOf(
         "Đại học Thủy Lợi",
@@ -430,9 +452,6 @@ class LocationPickerActivity : AppCompatActivity() {
         if (!isStrict) loadNearbyPostsFromFirestore(latLng)
     }
 
-    // ────────────────────────────────────────────────
-    // Reverse geocode khi tap bản đồ
-    // ────────────────────────────────────────────────
     @Suppress("DEPRECATION")
     private fun reverseGeocode(latLng: LatLng) {
         geocodeExecutor.execute {
@@ -468,9 +487,6 @@ class LocationPickerActivity : AppCompatActivity() {
         }
     }
 
-    // ────────────────────────────────────────────────
-    // Khởi tạo marker từ địa chỉ ban đầu (strict mode)
-    // ────────────────────────────────────────────────
     @Suppress("DEPRECATION")
     private fun applyInitialAddress() {
         val initial  = intent.getStringExtra(EXTRA_INITIAL_ADDRESS).orEmpty().trim()
@@ -518,50 +534,63 @@ class LocationPickerActivity : AppCompatActivity() {
         }
     }
 
-    // ────────────────────────────────────────────────
-    // Tải phòng trong MAX_LOAD_RADIUS (5km) dùng latitude bounding box → filter client-side
-    // ────────────────────────────────────────────────
+
+    // Tìm kiếm phòng trọ gần vị trí của tôi -2-
+    // Hàm nòng cốt: Kéo dữ liệu phòng trọ từ Firebase dựa trên vùng không gian (Bounding Box)
     private fun loadNearbyPostsFromFirestore(center: LatLng) {
+        // Dọn dẹp bản đồ: Xóa các mốc (Marker) và dữ liệu cũ trước khi tìm kiếm mới
         postMarkers.forEach { it.remove() }
         postMarkers.clear()
         allNearbyDocs = emptyList()
-        hidePanel()
+        hidePanel() // Ẩn danh sách kết quả cũ
 
+        // Hiển thị trạng thái đang tải dữ liệu cho người dùng biết
         tvNearbyCount.text       = "Đang tìm phòng trọ gần đây..."
         tvNearbyCount.visibility = View.VISIBLE
         tvNearbyCount.setOnClickListener(null)
 
-        // Tăng generation: callback cũ hơn sẽ bị bỏ qua khi trả về
+        // Cờ (Flag) an toàn: Đánh dấu lượt truy vấn hiện tại. Nếu người dùng spam bấm liên tục, 
+        // app chỉ nhận kết quả của lượt bấm cuối cùng, bỏ qua các kết quả tải chậm của lượt trước.
         val myGen = ++queryGeneration
 
+        // --- BƯỚC 1: TỐI ƯU TRUY VẤN (BOUNDING BOX) ---
+        // Thay vì tải toàn bộ phòng trọ ở Việt Nam về, ta tính toán vĩ độ giới hạn (minLat, maxLat).
+        // MAX_LOAD_RADIUS mặc định là 10km. Ứng dụng chỉ tải các phòng trong phạm vi hình vuông 10km này.
         val latDelta = GeoUtils.latDelta(MAX_LOAD_RADIUS)
         val minLat   = center.latitude - latDelta
         val maxLat   = center.latitude + latDelta
 
-        // Dùng bounding box latitude để giảm số document tải từ Firestore
-        // (yêu cầu Composite Index: status ASC + latitude ASC)
+        // Gọi lên Firestore Database để lấy danh sách phòng trọ
         FirebaseFirestore.getInstance()
-            .collection("rooms")
-            .whereEqualTo("status", "approved")
-            .whereGreaterThanOrEqualTo("latitude", minLat)
-            .whereLessThanOrEqualTo("latitude", maxLat)
+            .collection("rooms") // Vào bảng "rooms"
+            .whereEqualTo("status", "approved") // Chỉ lấy phòng đã được Admin duyệt
+            .whereGreaterThanOrEqualTo("latitude", minLat) // Cắt bỏ các phòng nằm tuốt ở phía Nam xa xôi
+            .whereLessThanOrEqualTo("latitude", maxLat) // Cắt bỏ các phòng nằm tuốt ở phía Bắc xa xôi
             .get()
             .addOnSuccessListener { snapshot ->
+                // Nếu người dùng đã thoát màn hình thì ngưng xử lý để tránh crash app
                 if (isFinishing || isDestroyed) return@addOnSuccessListener
-                // Bỏ qua nếu đã có query mới hơn đang chờ kết quả
+                // Bỏ qua kết quả này nếu người dùng đã thao tác tìm kiếm cái mới (nhờ cờ queryGeneration)
                 if (myGen != queryGeneration) return@addOnSuccessListener
 
-                // Lọc chính xác bằng Haversine (loại bỏ các điểm nằm ngoài hình tròn)
+                // --- BƯỚC 2: LỌC CHÍNH XÁC (HAVERSINE FORMULA) ---
+                // Firestore ở trên chỉ lọc được theo hình vuông (Bounding Box) dư ra ở 4 góc.
+                // Ở đây ta dùng thuật toán Haversine để đo khoảng cách cong thực tế trên mặt đất.
                 allNearbyDocs = snapshot.documents.filter { doc ->
                     val lat = doc.getDouble("latitude") ?: return@filter false
                     val lng = doc.getDouble("longitude") ?: return@filter false
+                    // Chỉ giữ lại những phòng thực sự nằm lọt thỏm trong VÒNG TRÒN bán kính 10km
                     GeoUtils.haversineKm(center.latitude, center.longitude, lat, lng) <= MAX_LOAD_RADIUS
                 }
 
+                // Ẩn chữ đang tải
                 tvNearbyCount.visibility = View.GONE
+                
+                // Bắt đầu hiển thị danh sách phòng vừa lọc được lên màn hình và cắm mốc lên bản đồ
                 applyPanelFilter()
             }
             .addOnFailureListener { e ->
+                // Xử lý báo lỗi nếu truy vấn thất bại (thường do chưa cấu hình Index trên Firebase)
                 if (!isFinishing && !isDestroyed && myGen == queryGeneration) {
                     val msg = e.message ?: ""
                     tvNearbyCount.text = if (msg.contains("index", ignoreCase = true) ||
@@ -574,35 +603,48 @@ class LocationPickerActivity : AppCompatActivity() {
             }
     }
 
-    // ────────────────────────────────────────────────
-    // Filter client-side theo bán kính hiện tại + cập nhật panel
-    // ────────────────────────────────────────────────
+
+    // TÌm kiếm phòng trọ gần vị trí của tôi -3-
+    // Hàm xử lý việc lọc danh sách phòng trọ ở phía Client (điện thoại) và hiển thị lên giao diện
     private fun applyPanelFilter() {
+        // Lấy tâm điểm bản đồ (chính là vị trí GPS của người dùng). Nếu chưa có thì thoát hàm.
         val center = centerLatLng ?: return
 
-        // Pin đỏ: xóa cũ, vẽ lại theo bán kính hiện tại
+        // Dọn dẹp bản đồ: Xóa sạch các cây kim đỏ (Marker) của lượt tìm kiếm/lượt kéo thanh trượt trước đó
         postMarkers.forEach { it.remove() }
         postMarkers.clear()
 
+        // Bắt đầu duyệt qua danh sách các phòng trọ (allNearbyDocs) đã lấy được từ Firebase ở hàm trên
         val filtered = allNearbyDocs.mapNotNull { doc ->
+            // Bóc tách tọa độ Vĩ độ, Kinh độ của từng phòng trọ
             val lat  = doc.getDouble("latitude")  ?: return@mapNotNull null
             val lng  = doc.getDouble("longitude") ?: return@mapNotNull null
+            
+            // Dùng thuật toán Haversine đo khoảng cách thực tế từ vị trí người dùng (center) đến phòng trọ
             val dist = GeoUtils.haversineKm(center.latitude, center.longitude, lat, lng)
+            
+            // Nếu khoảng cách này xa hơn Bán kính mà người dùng chọn (VD: lớn hơn 2km) -> Loại bỏ phòng này
             if (dist > currentPanelRadius) return@mapNotNull null
 
+            // Nếu phòng nằm trong bán kính, tiến hành lấy thêm thông tin để hiển thị
             val address  = doc.getString("address")  ?: "Chưa có địa chỉ"
             val price    = doc.getLong("price") ?: 0L
+            
+            // Định dạng giá tiền (VD: 2000000 -> 2,000,000 đ/tháng)
             val snippet  = if (price > 0) "${String.format("%,d", price)} đ/tháng" else "Liên hệ"
 
+            // Tạo và cắm một cây kim đỏ (Marker) lên bản đồ Google Maps cho phòng trọ này
             val marker = googleMap?.addMarker(
                 MarkerOptions()
-                    .position(LatLng(lat, lng))
-                    .title(address)
-                    .snippet(snippet)
-                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED))
+                    .position(LatLng(lat, lng)) // Tọa độ đặt kim
+                    .title(address) // Tiêu đề khi bấm vào kim
+                    .snippet(snippet) // Dòng chữ nhỏ (giá tiền) hiện dưới tiêu đề
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)) // Màu đỏ
             )
+            // Lưu Marker lại vào danh sách để sau này có thể xóa đi nếu cần
             marker?.let { postMarkers.add(it) }
 
+            // Chuyển đổi dữ liệu từ Firebase Document sang dạng Object (PostItem) để nhét vào Adapter (Danh sách RecyclerView ở dưới đáy màn hình)
             NearbyPostAdapter.PostItem(
                 id          = doc.id,
                 address     = address,
@@ -613,14 +655,14 @@ class LocationPickerActivity : AppCompatActivity() {
                 lng         = lng,
                 distanceKm  = dist
             )
-        }.sortedBy { it.distanceKm }
+        }.sortedBy { it.distanceKm } // Quan trọng: Sắp xếp danh sách trả về theo thứ tự từ GẦN NHẤT đến XA NHẤT
 
+        // Gửi danh sách đã lọc và sắp xếp xuống hàm updatePanel để vẽ danh sách (RecyclerView) lên màn hình
         updatePanel(filtered)
     }
 
-    // ────────────────────────────────────────────────
+
     // Cập nhật UI panel
-    // ────────────────────────────────────────────────
     private fun updatePanel(items: List<NearbyPostAdapter.PostItem>) {
         stopRefreshAnimation()
         lastPanelItems   = items
@@ -693,9 +735,9 @@ class LocationPickerActivity : AppCompatActivity() {
         stopRefreshAnimation()
     }
 
-    // ────────────────────────────────────────────────
+
     // Ẩn / hiện panel (toggle)
-    // ────────────────────────────────────────────────
+
     private fun collapsePanel() {
         if (isPanelCollapsed || lastPanelItems.isEmpty()) return
         isPanelCollapsed = true
@@ -758,9 +800,7 @@ class LocationPickerActivity : AppCompatActivity() {
         btnRefreshPanel.isEnabled = true
     }
 
-    // ────────────────────────────────────────────────
     // Xác nhận chọn từ panel (multi-select)
-    // ────────────────────────────────────────────────
     private fun confirmPanelSelection() {
         val selected = nearbyAdapter.getSelectedItems()
         if (selected.isEmpty()) return
@@ -788,9 +828,8 @@ class LocationPickerActivity : AppCompatActivity() {
         finish()
     }
 
-    // ────────────────────────────────────────────────
+
     // Xác nhận vị trí (nút dưới cùng — tap thẳng bản đồ hoặc tìm khu vực)
-    // ────────────────────────────────────────────────
     private fun confirmSelection() {
         val latLng = selectedLatLng ?: run {
             Toast.makeText(this, "Vui lòng chọn vị trí trên bản đồ", Toast.LENGTH_SHORT).show()
@@ -820,9 +859,9 @@ class LocationPickerActivity : AppCompatActivity() {
         finish()
     }
 
-    // ────────────────────────────────────────────────
+
     // Helpers - Map markers
-    // ────────────────────────────────────────────────
+
     private fun updateMarker(latLng: LatLng, animate: Boolean) {
         val map = googleMap ?: return
         postMarkers.clear()
@@ -853,9 +892,9 @@ class LocationPickerActivity : AppCompatActivity() {
             if (selectedAddress.isNotBlank()) selectedAddress else "Chưa chọn vị trí"
     }
 
-    // ────────────────────────────────────────────────
+
     // Helpers - Format & Haversine
-    // ────────────────────────────────────────────────
+
     private fun formatRadius(km: Double): String =
         if (km == km.toLong().toDouble()) "${km.toInt()} km" else "$km km"
 
@@ -876,22 +915,30 @@ class LocationPickerActivity : AppCompatActivity() {
         return specificKeywords.none { addressLower.contains(it) }
     }
 
+    private fun loadNoiseWords() {
+        try {
+            val inputStream = assets.open("noise_words.json")
+            val size = inputStream.available()
+            val buffer = ByteArray(size)
+            inputStream.read(buffer)
+            inputStream.close()
+            val json = String(buffer, Charsets.UTF_8)
+            val jsonArray = org.json.JSONArray(json)
+            val list = mutableListOf<String>()
+            for (i in 0 until jsonArray.length()) {
+                list.add(jsonArray.getString(i))
+            }
+            noiseWordsList = list.sortedByDescending { it.length }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Fallback nếu lỗi đọc file
+            noiseWordsList = listOf("tìm phòng trọ", "khu vực", "gần")
+        }
+    }
+
     private fun extractLocation(input: String): String {
-        val noiseWords = listOf(
-            "tìm phòng trọ quanh khu vực", "tìm phòng quanh khu vực",
-            "tìm trọ quanh khu vực", "tìm kiếm phòng quanh",
-            "tìm phòng trọ gần khu vực", "tìm trọ gần khu vực",
-            "phòng trọ quanh khu vực", "phòng quanh khu vực",
-            "tìm phòng trọ", "tìm phòng", "tìm trọ",
-            "quanh khu vực", "xung quanh khu vực",
-            "khu vực", "xung quanh",
-            "quanh", "gần khu vực", "gần đây", "gần",
-            "ở khu vực", "tại khu vực", "ở tại",
-            "cho thuê", "thuê phòng", "muốn thuê",
-            "muốn tìm", "tìm kiếm", "tìm"
-        )
         var result = input.trim()
-        noiseWords.sortedByDescending { it.length }.forEach { word ->
+        noiseWordsList.forEach { word ->
             result = result.replace(word, "", ignoreCase = true)
         }
         return result.trim().ifBlank { input.trim() }

@@ -266,15 +266,57 @@ class RoomRepository {
     }
 
     // Lấy chi tiết một phòng theo ID
+    // Tích hợp logic tự động kiểm tra và mở lại bài đăng bị ẩn (hidden_by_system) sau 24 tiếng
     fun getRoomById(
         roomId: String,
         onSuccess: (Map<String, Any>) -> Unit,
         onFailure: (String) -> Unit
     ) {
-        db.collection("rooms").document(roomId).get()
+        val roomRef = db.collection("rooms").document(roomId)
+        roomRef.get()
             .addOnSuccessListener { doc ->
-                if (doc.exists()) onSuccess(doc.data ?: emptyMap())
-                else onFailure("Không tìm thấy bài viết")
+                if (!doc.exists()) { onFailure("Không tìm thấy bài viết"); return@addOnSuccessListener }
+
+                val status = doc.getString("status") ?: ""
+                val hiddenUntilMs = doc.getLong("hiddenUntilMs") ?: 0L
+                val now = System.currentTimeMillis()
+
+                // Tự động mở lại bài nếu đã đủ 24 tiếng bị ẩn
+                if (status == "hidden_by_system" && hiddenUntilMs > 0 && now >= hiddenUntilMs) {
+                    val landlordId = doc.getString("landlordId") ?: ""
+                    val roomTitle = doc.getString("title") ?: ""
+                    roomRef.update(mapOf(
+                        "status" to "approved",
+                        "hiddenUntilMs" to 0L,
+                        "hiddenAt" to 0L,
+                        "hiddenReason" to "",
+                        "noShowReportCount" to 0,
+                        "updatedAt" to now
+                    )).addOnSuccessListener {
+                        // Gửi thông báo cho chủ trọ biết bài đã được hiển thị lại
+                        if (landlordId.isNotEmpty()) {
+                            db.collection("notifications").add(mapOf(
+                                "userId" to landlordId,
+                                "title" to "Bài đăng của bạn đã được hiển thị lại",
+                                "message" to "Bài đăng \"$roomTitle\" đã hết thời gian tạm ẩn và được tự động hiển thị lại trên kết quả tìm kiếm.",
+                                "type" to "room_restored",
+                                "seen" to false,
+                                "isRead" to false,
+                                "createdAt" to now
+                            ))
+                        }
+                        // Trả về dữ liệu phòng đã được cập nhật
+                        val updatedData = doc.data?.toMutableMap() ?: mutableMapOf()
+                        updatedData["status"] = "approved"
+                        updatedData["noShowReportCount"] = 0L
+                        onSuccess(updatedData)
+                    }.addOnFailureListener {
+                        // Dù update thất bại vẫn trả dữ liệu gốc để app không bị treo
+                        onSuccess(doc.data ?: emptyMap())
+                    }
+                } else {
+                    onSuccess(doc.data ?: emptyMap())
+                }
             }
             .addOnFailureListener { onFailure("Không thể tải thông tin bài viết, vui lòng thử lại") }
     }
@@ -408,10 +450,11 @@ class RoomRepository {
         val baseQuery = db.collection("rooms").whereEqualTo("userId", uid)
 
         // Không dùng orderBy ở đây để tránh bắt buộc phải tạo Composite Index
+        // Thêm "hidden_by_system" để chủ trọ vẫn thấy bài đang bị ẩn trong quản lý của họ
         val query = if (filter != "all") {
             baseQuery.whereEqualTo("status", filter)
         } else {
-            baseQuery.whereIn("status", listOf("pending", "approved", "rejected", "rented"))
+            baseQuery.whereIn("status", listOf("pending", "approved", "rejected", "rented", "hidden_by_system"))
         }
 
         query.get()
@@ -595,8 +638,7 @@ class RoomRepository {
         val maxLat = lat + latDelta
 
         // FIX: Phải thêm whereEqualTo("status", "approved") để thỏa mãn Security Rules của Firestore.
-        // LƯU Ý: Việc thêm filter này yêu cầu bạn phải tạo một Composite Index cho (status: ASC, latitude: ASC) 
-        // trong Firebase Console, nếu không sẽ gặp lỗi "The query requires an index".
+
         db.collection("rooms")
             .whereEqualTo("status", "approved")
             .whereGreaterThanOrEqualTo("latitude", minLat)
@@ -630,7 +672,8 @@ class RoomRepository {
     fun loadOwnerPostedRooms(userId: String, onSuccess: (List<com.google.firebase.firestore.DocumentSnapshot>) -> Unit, onFailure: (String) -> Unit) {
         val currentUid = auth.currentUser?.uid
         val visibleStatuses = if (currentUid == userId) {
-            listOf("pending", "approved", "rejected", "rented")
+            // Chủ trọ thấy tất cả bài kể cả bài bị ẩn do vi phạm (hidden_by_system)
+            listOf("pending", "approved", "rejected", "rented", "hidden_by_system")
         } else {
             listOf("approved")
         }

@@ -16,65 +16,75 @@ data class StatusChange(
 }
 
 data class Appointment(
-    val id: String = "",
-    val roomId: String = "",
-    val roomTitle: String = "",
-    val roomAddress: String = "",
-    val roomImageUrl: String = "",
-    val postExpiryDate: Long = 0L,
+    // 1. THÔNG TIN CHUNG CỦA LỊCH HẸN
+    val id: String = "",                    // Mã ID duy nhất của lịch hẹn này
+    val roomId: String = "",                // Mã ID của phòng trọ
+    val roomTitle: String = "",             // Tên/Tiêu đề của phòng trọ (vd: Phòng trọ giá rẻ sinh viên)
+    val roomAddress: String = "",           // Địa chỉ phòng trọ
+    val roomImageUrl: String = "",          // Link ảnh đại diện của phòng
+    val postExpiryDate: Long = 0L,          // Hạn sử dụng của bài đăng phòng (tránh việc phòng đã gỡ mà vẫn hẹn)
 
-    val tenantId: String = "",
-    val tenantName: String = "",
-    val tenantPhone: String = "",
-    val tenantGender: String = "",
-    val landlordId: String = "",
-    val landlordName: String = "",
-    val landlordPhone: String = "",
+    // 2. THÔNG TIN NGƯỜI THUÊ (Khách)
+    val tenantId: String = "",              // Mã ID của người đi thuê
+    val tenantName: String = "",            // Tên người đi thuê
+    val tenantPhone: String = "",           // Số điện thoại người đi thuê
+    val tenantGender: String = "",          // Giới tính người đi thuê
 
-    val appointmentDate: String = "",           // "dd/MM/yyyy"
-    val appointmentDateMs: Long = 0L,           // Midnight ngày hẹn (ms)
-    val appointmentTimestampMs: Long = 0L,      // Timestamp chính xác ngày + giờ (ms)
-    val appointmentTime: String = "",           // "HH:mm"
-    val appointmentDateDisplay: String = "",    // "Thứ Tư, 10/06/2026"
+    // 3. THÔNG TIN CHỦ TRỌ
+    val landlordId: String = "",            // Mã ID của chủ trọ
+    val landlordName: String = "",          // Tên chủ trọ
+    val landlordPhone: String = "",         // Số điện thoại chủ trọ
 
-    val status: String = "pending",
+    // 4. THỜI GIAN HẸN XEM PHÒNG
+    val appointmentDate: String = "",           // Ngày hẹn dạng chữ (VD: "20/10/2026")
+    val appointmentDateMs: Long = 0L,           // Mốc thời gian (0h sáng) của ngày hẹn (tính bằng mili-giây)
+    val appointmentTimestampMs: Long = 0L,      // Mốc thời gian chính xác của Giờ + Ngày hẹn (dùng để đếm ngược)
+    val appointmentTime: String = "",           // Giờ hẹn (VD: "08:30")
+    val appointmentDateDisplay: String = "",    // Ngày hẹn hiển thị đẹp (VD: "Thứ Ba, 20/10/2026")
+
+    // 5. TRẠNG THÁI & LỊCH SỬ
+    val status: String = "pending",             // Trạng thái hiện tại (đang chờ duyệt, đã duyệt, đã hủy,...)
     // Statuses: pending | confirmed | tenant_confirmed | rejected | cancelled |
     //           cancelled_by_landlord | expired_pending | no_show | completed | rented
-    val statusHistory: List<StatusChange> = emptyList(),
-    val rejectReason: String = "",
-    val cancelReason: String = "",
+    val statusHistory: List<StatusChange> = emptyList(), // Danh sách lưu lại toàn bộ lịch sử các lần đổi trạng thái
+    val rejectReason: String = "",              // Lý do chủ trọ từ chối lịch hẹn (nếu có)
+    val cancelReason: String = "",              // Lý do khách hàng tự hủy lịch hẹn (nếu có)
 
-    val landlordConfirmDeadline: Long = 0L,     // createdAt + 48h
-    val tenantConfirmDeadline: Long = 0L,       // appointmentTimestampMs - 1h
+    // 6. HẠN CHÓT XÁC NHẬN
+    val landlordConfirmDeadline: Long = 0L,     // Hạn chót chủ trọ phải duyệt (= appointmentTimestampMs, tức là đúng giờ hẹn)
+    val tenantConfirmDeadline: Long = 0L,       // Hạn chót khách phải xác nhận sẽ đến (thường là trước giờ hẹn 1 tiếng)
 
-    val note: String = "",
-    val editCount: Int = 0,                     // Số lần đổi lịch, tối đa 3
+    // 7. THÔNG TIN BỔ SUNG
+    val note: String = "",                      // Lời nhắn, ghi chú của khách gửi cho chủ trọ
+    val editCount: Int = 0,                     // Số lần khách đã sửa lịch hẹn (giới hạn tối đa 3 lần để chống spam)
 
-    // Flags nhắc landlord khi pending (+12h, +36h, +47h)
-    val landlordRemind12hSent: Boolean = false,
-    val landlordRemind36hSent: Boolean = false,
-    val landlordRemind47hSent: Boolean = false,
+    // 8. CÁC CỜ (FLAGS) ĐÁNH DẤU ĐÃ GỬI THÔNG BÁO CHO CHỦ TRỌ
+    // (Dùng để Server biết là đã gửi tin nhắn nhắc nhở rồi, không gửi lặp lại nữa)
+    val landlordRemind1hPendingSent: Boolean = false, // Đã nhắc chủ trọ duyệt lịch (trước 1 tiếng so với giờ hẹn)
 
-    // Flags nhắc tenant khi appointment đến gần (T-24h, T-2h, T-30m, T=0)
-    val reminder24hSent: Boolean = false,
-    val reminder2hSent: Boolean = false,
-    val reminder30mSent: Boolean = false,
-    val reminder0hSent: Boolean = false,
+    // 9. CÁC CỜ ĐÁNH DẤU ĐÃ NHẮC LỊCH SẮP ĐẾN GIỜ
+    val reminder24hSent: Boolean = false,           // Đã nhắc khách: "Còn 24 tiếng nữa đến giờ xem phòng"
+    val reminder2hSent: Boolean = false,            // Đã nhắc khách: "Còn 2 tiếng"
+    val reminder30mSent: Boolean = false,           // Đã nhắc khách: "Còn 30 phút"
+    val reminder0hSent: Boolean = false,            // Đã báo khách: "Đến giờ rồi!"
 
-    // Flags nhắc landlord khi appointment đến gần (T-24h, T-2h, T-30m, T=0)
-    val landlordReminder24hSent: Boolean = false,
-    val landlordReminder2hSent: Boolean = false,
-    val landlordReminder30mSent: Boolean = false,
-    val landlordReminder0hSent: Boolean = false,
+    val landlordReminder24hSent: Boolean = false,   // Đã nhắc chủ trọ: "Còn 24 tiếng nữa khách đến"
 
-    val resultAskedSent: Boolean = false,       // Đã nhắc landlord cập nhật kết quả
-    val autoNoShowSent: Boolean = false,        // Auto no_show sau 24h không cập nhật
+    val landlordReminder30mSent: Boolean = false,   // Đã nhắc chủ trọ: "Còn 30 phút"
+    val landlordReminder0hSent: Boolean = false,    // Đã báo chủ trọ: "Khách đang đến!"
 
-    val hasUnreadUpdate: Boolean = false,
-    val lastNotifiedAt: Long = 0L,
-    val createdAt: Long = 0L,
-    val updatedAt: Long = 0L
+    // 10. CÁC CỜ SAU KHI LỊCH HẸN KẾT THÚC
+    val resultAskedSent: Boolean = false,       // Đã nhắn tin hỏi chủ trọ: "Khách có đến không?"
+    val autoNoShowSent: Boolean = false,        // Đã tự động phạt khách (vì chủ trọ lười không trả lời)
+
+    // 11. THÔNG TIN HỆ THỐNG
+    val hasUnreadUpdate: Boolean = false,       // Có cập nhật mới mà người dùng chưa đọc (để hiện chấm đỏ)
+    val lastNotifiedAt: Long = 0L,              // Lần gửi thông báo gần nhất
+    val createdAt: Long = 0L,                   // Thời điểm tạo lịch hẹn này
+    val updatedAt: Long = 0L                    // Thời điểm có chỉnh sửa gần nhất
 ) {
+    // hàm toMap() dùng để parse (chuyển đổi) đối tượng Appointment từ Kotlin sang kiểu dữ liệu Map (Key-Value) tiêu chuẩn
+    // giúp cho việc đẩy dữ liệu lên Firebase Firestore được chính xác và không bị lỗi kiểu dữ liệu
     fun toMap(): Map<String, Any> = buildMap {
         put("roomId", roomId); put("roomTitle", roomTitle)
         put("roomAddress", roomAddress); put("roomImageUrl", roomImageUrl)
@@ -95,15 +105,13 @@ data class Appointment(
         put("tenantConfirmDeadline", tenantConfirmDeadline)
         put("note", note)
         put("editCount", editCount)
-        put("landlordRemind12hSent", landlordRemind12hSent)
-        put("landlordRemind36hSent", landlordRemind36hSent)
-        put("landlordRemind47hSent", landlordRemind47hSent)
+        put("landlordRemind1hPendingSent", landlordRemind1hPendingSent)
         put("reminder24hSent", reminder24hSent)
         put("reminder2hSent", reminder2hSent)
         put("reminder30mSent", reminder30mSent)
         put("reminder0hSent", reminder0hSent)
         put("landlordReminder24hSent", landlordReminder24hSent)
-        put("landlordReminder2hSent", landlordReminder2hSent)
+
         put("landlordReminder30mSent", landlordReminder30mSent)
         put("landlordReminder0hSent", landlordReminder0hSent)
         put("resultAskedSent", resultAskedSent)
@@ -113,6 +121,9 @@ data class Appointment(
         put("createdAt", createdAt); put("updatedAt", updatedAt)
     }
 
+    // companion object trong Kotlin đóng vai trò giống như các hàm static trong Java
+    // hàm fromMap(). Hàm này là một Factory Method, làm nhiệm vụ nhận dữ liệu thô dạng Map (Key-Value) tải từ Firebase về
+    // sau đó parse và khởi tạo ra một đối tượng Appointment hoàn chỉnh mà không cần phải new (khởi tạo) class Appointment từ trước
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun fromMap(id: String, map: Map<String, Any>): Appointment {
@@ -161,16 +172,12 @@ data class Appointment(
                 note = map["note"] as? String ?: "",
                 editCount = (map["editCount"] as? Long)?.toInt()
                     ?: (map["editCount"] as? Number)?.toInt() ?: 0,
-                // New flags — fallback to old names for any existing test data
-                landlordRemind12hSent = (map["landlordRemind12hSent"] ?: map["landlordRemind1Sent"]) as? Boolean ?: false,
-                landlordRemind36hSent = (map["landlordRemind36hSent"] ?: map["landlordRemind2Sent"]) as? Boolean ?: false,
-                landlordRemind47hSent = (map["landlordRemind47hSent"] ?: map["landlordRemindFinalSent"]) as? Boolean ?: false,
+                landlordRemind1hPendingSent = map["landlordRemind1hPendingSent"] as? Boolean ?: false,
                 reminder24hSent = map["reminder24hSent"] as? Boolean ?: false,
                 reminder2hSent = map["reminder2hSent"] as? Boolean ?: false,
                 reminder30mSent = map["reminder30mSent"] as? Boolean ?: false,
                 reminder0hSent = map["reminder0hSent"] as? Boolean ?: false,
                 landlordReminder24hSent = map["landlordReminder24hSent"] as? Boolean ?: false,
-                landlordReminder2hSent = map["landlordReminder2hSent"] as? Boolean ?: false,
                 landlordReminder30mSent = map["landlordReminder30mSent"] as? Boolean ?: false,
                 landlordReminder0hSent = map["landlordReminder0hSent"] as? Boolean ?: false,
                 resultAskedSent = map["resultAskedSent"] as? Boolean ?: false,

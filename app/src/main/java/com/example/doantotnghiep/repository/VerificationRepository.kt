@@ -87,6 +87,13 @@ class VerificationRepository {
             .addOnFailureListener { e -> onFailure(e.message ?: "Lỗi") }
     }
 
+    // Xác minh danh tính -1-
+    // Thuật toán kiểm duyệt tự động (Auto-Check) hồ sơ xác minh:
+// 1. Quét OCR 2 mặt ảnh bằng ML Kit Vision.
+// 2. Phân tích Tín hiệu (Signals): Xác định đúng ảnh mặt trước và mặt sau dựa vào từ khóa đặc trưng.
+// 3. Kiểm duyệt Đường biên (Boundary Integrity): Ép buộc ảnh phải hiển thị đủ từ "CỘNG HÒA..." (phía trên) đến "THƯỜNG TRÚ..." (phía dưới) để chống cắt xén.
+// 4. Đối chiếu (Matching): So khớp 12 số CCCD và Họ Tên trên ảnh với dữ liệu người dùng nhập.
+// Lưu ý: Bất kỳ bước nào thất bại đều bị ghi nhận vào biến đếm Spam (AutoFailureCounter).
     fun runAutoCheckCccd(
         context: Context,
         fullName: String,
@@ -407,6 +414,54 @@ class VerificationRepository {
         }
     }
 
+    // Hủy hồ sơ xác minh đã quá 24h chưa được Admin duyệt.
+    // Thực hiện 3 bước: Xóa bản ghi verifications, xóa CCCD khỏi cccd_registry, và xóa ảnh trên Storage.
+    fun cancelPendingVerification(
+        uid: String,
+        onSuccess: () -> Unit,
+        onFailure: (String) -> Unit
+    ) {
+        val verificationRef = db.collection("verifications").document(uid)
+        verificationRef.get()
+            .addOnSuccessListener { doc ->
+                if (!doc.exists()) {
+                    // Hồ sơ đã bị xóa trước đó -> coi như thành công
+                    onSuccess()
+                    return@addOnSuccessListener
+                }
+                val cccdNumber = doc.getString("cccdNumber")
+                val oldFrontUrl = doc.getString("cccdFrontUrl")
+                val oldBackUrl = doc.getString("cccdBackUrl")
+
+                // Xóa bản ghi verifications + giải phóng cccd_registry trong 1 batch
+                val batch = db.batch()
+                batch.delete(verificationRef)
+                if (!cccdNumber.isNullOrBlank()) {
+                    val normalizedCccd = normalizeDigits(cccdNumber)
+                    if (normalizedCccd.length == 12) {
+                        batch.delete(db.collection("cccd_registry").document(normalizedCccd))
+                    }
+                }
+                batch.commit()
+                    .addOnSuccessListener {
+                        // Sau khi xóa Firestore thành công, xóa ảnh trên Storage (best-effort)
+                        if (!oldFrontUrl.isNullOrBlank()) {
+                            try { storage.getReferenceFromUrl(oldFrontUrl).delete() } catch (_: Exception) {}
+                        }
+                        if (!oldBackUrl.isNullOrBlank()) {
+                            try { storage.getReferenceFromUrl(oldBackUrl).delete() } catch (_: Exception) {}
+                        }
+                        onSuccess()
+                    }
+                    .addOnFailureListener { e ->
+                        onFailure(e.message ?: "Không thể hủy hồ sơ. Vui lòng thử lại sau.")
+                    }
+            }
+            .addOnFailureListener { e ->
+                onFailure(e.message ?: "Không thể kết nối máy chủ. Vui lòng thử lại.")
+            }
+    }
+
     private fun deleteOldVerificationImages(uid: String, onComplete: () -> Unit) {
         db.collection("verifications").document(uid).get()
             .addOnSuccessListener { doc ->
@@ -441,6 +496,13 @@ class VerificationRepository {
             .addOnFailureListener { onComplete() }
     }
 
+    // Xác minh danh tính -2-
+    // Hàm thao tác trực tiếp với Database, sử dụng kỹ thuật nối chuỗi (continueWithTask) để xử lý bất đồng bộ:
+// 1. Dọn dẹp ảnh cũ (nếu user gửi lại hồ sơ).
+// 2. Upload ảnh Mặt trước lên Storage -> Lấy URL.
+// 3. Upload tiếp ảnh Mặt sau lên Storage -> Lấy URL.
+// 4. Lưu toàn bộ Object (Text + URLs + Metadata AI) vào collection 'verifications'.
+// 5. Nếu hồ sơ thuộc diện Spam (escalatedToAdmin), tự động bắn Notification về hệ thống cho Admin.
     fun submitVerification(
         fullName: String,
         email: String,
@@ -557,6 +619,7 @@ class VerificationRepository {
         return normalized.toString()
     }
 
+
     private fun normalizeNoAccentUpper(raw: String): String {
         val normalized = Normalizer.normalize(raw, Normalizer.Form.NFD)
             .replace("\\p{M}+".toRegex(), "")
@@ -654,6 +717,10 @@ class VerificationRepository {
     private fun remainingAutoRetriesFromCount(failCount: Int): Int =
         (MAX_AUTO_FAIL_BEFORE_ESCALATE - failCount).coerceAtLeast(0)
 
+    // Xác minh danh tính-1-
+    // Bộ đếm (Counter) theo dõi số lần user nhập sai CCCD.
+// Mỗi khi quét ảnh lỗi hoặc text không khớp, hàm này tăng biến đếm lên 1 đơn vị.
+// Nó lưu cục bộ (Local) cho app chạy mượt, và lưu cả lên Đám mây (Cloud) để chống người dùng gian lận xóa App cài lại.
     private fun recordAutoFailure(context: Context): Int {
         val prefs = context.getSharedPreferences(PREF_VERIFICATION_ATTEMPTS, Context.MODE_PRIVATE)
         val today = todayKey()
@@ -685,6 +752,11 @@ class VerificationRepository {
         }
     }
 
+    // Xác minh danh tính -4-
+    // Cơ chế đồng bộ hóa Anti-Spam:
+// Trước khi cho phép User bấm "Xác minh", app sẽ gọi lên Server lấy số lần đã lỗi trong ngày hôm nay.
+// Nếu số lần trên Server lớn hơn số lần đang lưu trên Máy (do user vừa xóa data app),
+// hệ thống lập tức khôi phục biến đếm trên máy bằng với Server.
     fun syncCounterFromServer(context: Context, uid: String, onDone: () -> Unit) {
         db.collection("verification_counters").document(uid).get(com.google.firebase.firestore.Source.SERVER)
             .addOnSuccessListener { snap ->

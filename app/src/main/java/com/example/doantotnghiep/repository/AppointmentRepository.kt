@@ -25,9 +25,13 @@ class AppointmentRepository {
     private fun buildSlotId(roomId: String, date: String, time: String): String =
         "${roomId}_${date}_${time}".replace("/", "-").replace(":", "-").replace(" ", "_")
 
-    // ─── Submit booking (Giai đoạn 2 - Bước 3) ─────────────────────────────
-    // Tất cả kiểm tra (pending limit, maxDailyAppointments, slot race condition)
-    // được enforce server-side bởi serverSubmitBooking CF callable.
+    // 3. Nhóm hàm: THỰC THI (Chốt hạ)
+    /**
+     * Hàm chốt hạ: Đóng gói toàn bộ dữ liệu lịch hẹn hợp lệ và gửi thẳng lên Server.
+     * (Sử dụng Cloud Functions để ẩn logic xử lý, lưu chính thức bản ghi vào Database của Firebase).
+     */
+    // Đặt lịch hẹn -3-
+    // [ĐẶT LỊCH] Gửi dữ liệu lên Cloud Functions để lưu, đảm bảo bảo mật & chống trùng lịch.
     fun submitBooking(
         appointment: Appointment,
         onSuccess: () -> Unit,
@@ -79,6 +83,14 @@ class AppointmentRepository {
             }
     }
 
+    /**
+     * Thuật toán bóc tách dữ liệu chuỗi (String Manipulation).
+     * Nhiệm vụ: Phân tích chuỗi văn bản lưu lịch rảnh thô ráp từ Firebase (vd: "T2:08:00-11:00;T3...")
+     * và chuyển đổi nó thành danh sách các Đối tượng (Object) Thời gian có cấu trúc chuẩn,
+     * giúp giao diện App dễ dàng đọc hiểu và chia nhỏ thành các khung 30 phút.
+     */
+    // Đặt lịch hẹn -2-
+    // [THUẬT TOÁN ĐẶT LỊCH] Dịch chuỗi Text (Thứ 2:08:00-11:00) thành các ô thời gian 30 phút.
     private fun parseTimeSlotsString(str: String): List<TimeSlotConfig> {
         if (str.isBlank()) return TimeSlotConfig.defaults()
         val lines = str.lines()
@@ -139,7 +151,13 @@ class AppointmentRepository {
         }
     }
 
-    // ─── Fetch room để lấy availableTimeSlots, postExpiryDate ────────────────
+    // 1. Nhóm hàm: NẠP DỮ LIỆU HIỂN THỊ
+    /**
+     * Lấy thông tin chi tiết của phòng và cấu hình lịch rảnh của chủ trọ từ Firebase.
+     * (Dùng để có dữ liệu vẽ ra tờ lịch và các khung giờ rảnh cho khách chọn).
+     */
+    // Đặt lịch hẹn -1-
+    // [ĐẶT LỊCH] Tải thông tin phòng và cấu hình giờ rảnh của chủ trọ để vẽ màn hình.
     fun fetchRoomForBooking(roomId: String, onSuccess: (Room, List<TimeSlotConfig>) -> Unit, onFailure: (String) -> Unit) {
         db.collection("rooms").document(roomId).get()
             .addOnSuccessListener { doc ->
@@ -147,28 +165,33 @@ class AppointmentRepository {
                 val slotsStr = doc.getString("availableTimeSlots") ?: ""
                 val timeSlots = parseTimeSlotsString(slotsStr)
                 val room = Room(
-                    id = doc.id,
-                    userId = doc.getString("userId") ?: "",
-                    title = doc.getString("title") ?: "",
-                    address = doc.getString("address") ?: "",
-                    price = doc.getLong("price") ?: 0L,
-                    imageUrls = (doc.get("imageUrls") as? List<*>)?.filterIsInstance<String>() ?: listOf(),
-                    status = doc.getString("status") ?: "pending",
-                    postExpiryDate = doc.getLong("postExpiryDate") ?: 0L,
-                    postDurationDays = doc.getLong("postDurationDays")?.toInt() ?: 30,
-                    availableTimeSlots = slotsStr,
-                    maxDailyAppointments = doc.getLong("maxDailyAppointments")?.toInt() ?: 10,
-                    appointmentNotice = doc.getString("appointmentNotice") ?: "",
-                    ownerName = doc.getString("ownerName") ?: "",
-                    ownerPhone = doc.getString("ownerPhone") ?: "",
-                    ownerGender = doc.getString("ownerGender") ?: ""
+                    id = doc.id,                                // Lấy mã ID duy nhất của phòng (chính là tên Document trên Firebase)
+                    userId = doc.getString("userId") ?: "",     // Lấy mã UID của chủ trọ (người đăng bài). Nếu trên mạng bị null thì gán tạm là chuỗi rỗng ("") để tránh lỗi
+                    title = doc.getString("title") ?: "",       // Lấy tiêu đề bài đăng phòng
+                    address = doc.getString("address") ?: "",   // Lấy địa chỉ cụ thể của phòng trọ
+                    price = doc.getLong("price") ?: 0L,         // Lấy giá tiền thuê phòng (Kiểu số nguyên lớn Long). Mặc định nếu lỗi là 0 đồng
+                    imageUrls = (doc.get("imageUrls") as? List<*>)?.filterIsInstance<String>() ?: listOf(), // Ép kiểu an toàn: Ép mảng hình ảnh trên mạng về chuẩn danh sách chuỗi (List<String>) trong Kotlin
+                    status = doc.getString("status") ?: "pending", // Lấy trạng thái duyệt bài của admin. Mặc định là "pending" (đang chờ duyệt)
+                    postExpiryDate = doc.getLong("postExpiryDate") ?: 0L, // Lấy mốc thời gian bài đăng hết hạn (tính bằng Mili-giây)
+                    postDurationDays = doc.getLong("postDurationDays")?.toInt() ?: 30, // Gói đăng bài trong bao nhiêu ngày. Mặc định nếu không có là 30 ngày
+                    availableTimeSlots = slotsStr,              // Gắn chuỗi cấu hình lịch rảnh (đã lấy và xử lý ở phía trên) vào đây
+                    maxDailyAppointments = doc.getLong("maxDailyAppointments")?.toInt() ?: 10, // Giới hạn phòng này tiếp tối đa bao nhiêu khách/ngày. Mặc định là 10
+                    appointmentNotice = doc.getString("appointmentNotice") ?: "", // Lời nhắn dặn dò của chủ trọ khi khách đến xem phòng
+                    ownerName = doc.getString("ownerName") ?: "",   // Lấy tên hiển thị của chủ trọ
+                    ownerPhone = doc.getString("ownerPhone") ?: "", // Lấy số điện thoại liên hệ của chủ trọ
+                    ownerGender = doc.getString("ownerGender") ?: ""// Lấy giới tính của chủ trọ (để khách biết đường xưng hô)
                 )
                 onSuccess(room, timeSlots)
             }
             .addOnFailureListener { e -> onFailure("Lỗi tải phòng: ${e.message}") }
     }
 
-    // ─── Realtime listen bookedSlots của một phòng theo ngày ─────────────────
+    /**
+     * Lắng nghe theo thời gian thực (Real-time) các khung giờ đã bị người khác đặt mất.
+     * (Hễ có người đặt xong, hàm này lập tức báo về để Giao diện bôi xám/khóa cái khung giờ đó lại).
+     */
+    // Đặt lịch hẹn -4-
+    // [ĐẶT LỊCH] Lắng nghe Real-time các khung giờ đã bị người khác đặt để bôi xám nút.
     fun listenBookedSlotsForRoom(roomId: String, onUpdate: (Set<String>) -> Unit): ListenerRegistration {
         return db.collection("bookedSlots")
             .whereEqualTo("roomId", roomId)
@@ -185,7 +208,9 @@ class AppointmentRepository {
             }
     }
 
-    // ─── Lắng nghe lịch hẹn realtime ─────────────────────────────────────────
+
+    // Đặt lịch hẹn -5-
+    // Lắng nghe lịch hẹn realtime
     fun listenAppointments(isLandlord: Boolean, onUpdate: (List<Appointment>) -> Unit, onError: (String) -> Unit): ListenerRegistration {
         val uid = auth.currentUser?.uid ?: return object : ListenerRegistration { override fun remove() {} }
         val field = if (isLandlord) "landlordId" else "tenantId"
@@ -199,6 +224,7 @@ class AppointmentRepository {
             }
     }
 
+    // Đặt lịch hẹn -5-
     fun listenBothAppointments(
         onTenantUpdate: (List<Appointment>) -> Unit,
         onLandlordUpdate: (List<Appointment>) -> Unit,
@@ -221,21 +247,22 @@ class AppointmentRepository {
         return Pair(tenantListener, landlordListener)
     }
 
-    // ─── Confirm appointment (Fully Atomic Transaction) ──────────────────────
-    // Fix #4+#5: Overlapping pending appointments bị hủy TRONG cùng transaction,
-    // đảm bảo atomicity — không còn non-atomic batch riêng sau transaction.
+
+    // Đặt lịch hẹn -6-
+    // Bấm xác nhận lịch hẹn
     fun confirmAppointment(
         appointmentId: String, tenantId: String, roomTitle: String,
         date: String, time: String,
         onSuccess: () -> Unit, onFailure: (String) -> Unit
     ) {
+        // 1. Tìm thông tin của lịch hẹn mà chủ trọ vừa bấm xác nhận
         val apptRef = db.collection("appointments").document(appointmentId)
         apptRef.get().addOnSuccessListener { apptDoc ->
             if (!apptDoc.exists()) { onFailure("Không tìm thấy lịch hẹn"); return@addOnSuccessListener }
             val roomId = apptDoc.getString("roomId") ?: run { onFailure("Lịch hẹn thiếu roomId"); return@addOnSuccessListener }
 
-            // Pre-query overlapping pending appointments trước khi mở transaction
-            // (Firestore transaction không hỗ trợ query bên trong — chỉ doc reads)
+            // 2. BƯỚC CHUẨN BỊ: Tìm TẤT CẢ các lịch hẹn của người khác đang đặt trùng ngày, trùng giờ, trùng phòng
+            // (Phải tìm trước vì Transaction của Firebase không cho phép dùng lệnh query bên trong)
             db.collection("appointments")
                 .whereEqualTo("roomId", roomId)
                 .whereEqualTo("appointmentDate", date)
@@ -251,20 +278,22 @@ class AppointmentRepository {
                         now + AppointmentConstants.HOURS_4_MS
                     val slotRef = db.collection("bookedSlots").document(buildSlotId(roomId, date, time))
 
-                    // Lấy ref + tenantId của các lịch trùng (trừ lịch đang xác nhận)
+                    // 3. Lọc danh sách trùng: Lấy ra ID của những người khách bị trùng giờ (để lát nữa bắn thông báo hủy)
                     val overlapEntries = overlapSnap.documents
                         .filter { it.id != appointmentId }
                         .map { Pair(it.reference, it.getString("tenantId") ?: "") }
 
+                    // 4. MỞ GIAO DỊCH (TRANSACTION): Đảm bảo khóa giờ và hủy lịch trùng diễn ra cùng lúc 100%
                     db.runTransaction { tx ->
-                        // ── TẤT CẢ READS TRƯỚC ──────────────────────────────
+                        // Bước 4.1: Đọc dữ liệu trước (Bắt buộc theo nguyên tắc của Transaction)
                         val slotSnap = tx.get(slotRef)
                         val freshAppt = tx.get(apptRef)
                         val overlapFreshDocs = overlapEntries.map { (ref, tid) ->
                             Triple(ref, tid, tx.get(ref))
                         }
 
-                        // ── VALIDATIONS ──────────────────────────────────────
+                        // Bước 4.2: Kiểm tra an ninh (Validation)
+                        // Tránh lỗi 2 chủ trọ xài 2 máy cùng bấm xác nhận 1 lúc, ai tới trước người đó ăn
                         if (slotSnap.exists()) throw FirebaseFirestoreException(
                             "Khung giờ này đã được xác nhận cho khách hàng khác.",
                             FirebaseFirestoreException.Code.ABORTED
@@ -275,7 +304,8 @@ class AppointmentRepository {
                             FirebaseFirestoreException.Code.ABORTED
                         )
 
-                        // ── WRITES SAU READS ─────────────────────────────────
+                        // Bước 4.3: TIẾN HÀNH GHI DỮ LIỆU
+                        // Việc 1: Đổi trạng thái lịch của ông khách được chọn thành "Đã chốt" (confirmed)
                         tx.update(apptRef, mapOf(
                             "status" to "confirmed",
                             "hasUnreadUpdate" to true,
@@ -286,6 +316,7 @@ class AppointmentRepository {
                                     auth.currentUser?.uid ?: "", "", now).toMap()
                             )
                         ))
+                        // Việc 2: Ghi dữ liệu vào bảng bookedSlots. Đây chính là hành động "KHÓA GIỜ", làm màn hình máy khác bị bôi xám
                         tx.set(slotRef, hashMapOf<String, Any>(
                             "roomId" to roomId,
                             "appointmentId" to appointmentId,
@@ -295,7 +326,7 @@ class AppointmentRepository {
                             "time" to time,
                             "createdAt" to now
                         ))
-                        // Hủy các lịch trùng NGAY TRONG transaction (atomic)
+                        // Việc 3: HỦY TỰ ĐỘNG toàn bộ lịch của những người xui xẻo trùng giờ NGAY TRONG Transaction này
                         overlapFreshDocs.forEach { (ref, _, freshDoc) ->
                             if (freshDoc.getString("status") == "pending") {
                                 tx.update(ref, mapOf(
@@ -310,10 +341,13 @@ class AppointmentRepository {
                                 ))
                             }
                         }
+                    // 5. THÀNH CÔNG: Bắn thông báo (Push Notification) cho từng người
                     }.addOnSuccessListener {
+                        // Báo tin vui cho khách may mắn được chọn
                         sendNotification(tenantId, "Lịch hẹn đã xác nhận — Xác nhận sẽ đến!",
                             "Chủ trọ đã xác nhận lịch xem phòng \"$roomTitle\" vào $date lúc $time. Vui lòng mở ứng dụng và xác nhận bạn sẽ đến.",
                             "appointment_confirmed")
+                        // Báo tin buồn (bị hủy lịch) cho những người rớt đài
                         overlapEntries.forEach { (_, otherTenantId) ->
                             if (otherTenantId.isNotEmpty()) {
                                 sendNotification(otherTenantId, "Lịch hẹn bị hủy do trùng giờ",
@@ -332,21 +366,30 @@ class AppointmentRepository {
         }.addOnFailureListener { e -> onFailure("Lỗi đọc lịch hẹn: ${e.message}") }
     }
 
-    // ─── Tenant confirm attendance ────────────────────────────────────────────
+    // Khách hàng xác nhận "Sẽ đến xem" (Xác nhận 2 chiều sau khi chủ trọ đã chốt lịch)
+    // 1 tiếng trước khi lịch hẹn bị hủy
     fun tenantConfirmAppointment(
         appointmentId: String, landlordId: String, roomTitle: String,
         onSuccess: () -> Unit, onFailure: (String) -> Unit
     ) {
         val now = System.currentTimeMillis()
         val apptRef = db.collection("appointments").document(appointmentId)
+        
+        // Dùng Transaction để đảm bảo tính chính xác tuyệt đối khi đọc/ghi dữ liệu
         db.runTransaction { tx ->
             val doc = tx.get(apptRef)
+            // 1. Kiểm tra an ninh (Validation)
             if (!doc.exists()) throw FirebaseFirestoreException("Không tìm thấy lịch hẹn", FirebaseFirestoreException.Code.NOT_FOUND)
+            
             val status = doc.getString("status")
+            // Chỉ cho phép khách bấm xác nhận nếu lịch đang ở trạng thái "Đã duyệt" (confirmed)
             if (status != "confirmed") throw FirebaseFirestoreException("Lịch hẹn không ở trạng thái chờ xác nhận từ bạn.", FirebaseFirestoreException.Code.ABORTED)
+            
             val deadline = doc.getLong("tenantConfirmDeadline") ?: 0L
+            // Kiểm tra xem khách có bấm xác nhận quá trễ so với deadline cho phép không
             if (deadline in 1..<now) throw FirebaseFirestoreException("Đã quá hạn xác nhận lịch hẹn.", FirebaseFirestoreException.Code.ABORTED)
             
+            // 2. Tiến hành Ghi dữ liệu: Đổi trạng thái sang "tenant_confirmed" (Khách đã cam kết đi xem)
             tx.update(apptRef, mapOf(
                 "status" to "tenant_confirmed",
                 "hasUnreadUpdate" to true,
@@ -357,11 +400,13 @@ class AppointmentRepository {
                 )
             ))
         }.addOnSuccessListener {
+            // 3. THÀNH CÔNG: Bắn thông báo báo tin mừng về cho Chủ trọ biết để chuẩn bị đón
             sendNotification(landlordId, "Khách đã xác nhận sẽ đến!",
                 "Khách đã xác nhận sẽ đến xem phòng \"$roomTitle\" đúng giờ hẹn. Hãy chuẩn bị đón tiếp!",
                 "appointment_tenant_confirmed")
             onSuccess()
         }.addOnFailureListener { e ->
+            // Bắt lỗi nếu có vấn đề (Ví dụ: khách bấm trễ hạn, mạng lag...)
             val msg = if (e is FirebaseFirestoreException && e.code == FirebaseFirestoreException.Code.ABORTED)
                 e.message ?: "Xác nhận thất bại"
             else "Xác nhận thất bại: ${e.message}"
@@ -369,7 +414,8 @@ class AppointmentRepository {
         }
     }
 
-    // ─── Reject appointment ───────────────────────────────────────────────────
+
+    // Đặt lịch hẹn -7-
     fun rejectAppointment(
         appointmentId: String, tenantId: String, roomTitle: String, reason: String,
         onSuccess: () -> Unit, onFailure: (String) -> Unit
@@ -405,7 +451,7 @@ class AppointmentRepository {
         }
     }
 
-    // ─── Mark as Viewed (Khách đến xem xong - chủ trọ xác nhận) ─────────────
+
     fun markAsViewed(appointmentId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val now = System.currentTimeMillis()
         val apptRef = db.collection("appointments").document(appointmentId)
@@ -436,7 +482,7 @@ class AppointmentRepository {
         }.addOnFailureListener { e -> onFailure("Lỗi đọc lịch hẹn: ${e.message}") }
     }
 
-    // ─── Mark as Not Rented (Khách đã đến nhưng không thuê) ─────────────────
+
     fun markAsNotRented(appointmentId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         val now = System.currentTimeMillis()
         val apptRef = db.collection("appointments").document(appointmentId)
@@ -533,6 +579,60 @@ class AppointmentRepository {
                                 "lastNoShowAt" to now
                             ))
                     }
+
+                    // ─── Tăng noShowReportCount của phòng và kiểm tra ngưỡng ẩn bài ───
+                    if (appt.roomId.isNotEmpty()) {
+                        val roomRef = db.collection("rooms").document(appt.roomId)
+                        db.runTransaction { tx ->
+                            val roomSnap = tx.get(roomRef)
+                            if (!roomSnap.exists()) return@runTransaction
+
+                            val currentCount = (roomSnap.getLong("noShowReportCount") ?: 0L).toInt()
+                            val newCount = currentCount + 1
+                            val currentStatus = roomSnap.getString("status") ?: ""
+
+                            if (newCount >= 3 && currentStatus == "approved") {
+                                // Đủ 3 lần bị report → ẩn bài khỏi tìm kiếm trong 24 tiếng
+                                val hiddenUntilMs = now + 24 * 3_600_000L
+                                tx.update(roomRef, mapOf(
+                                    "noShowReportCount" to newCount,
+                                    "status" to "hidden_by_system",
+                                    "hiddenReason" to "Bài đăng bị ẩn do chủ trọ không đến điểm hẹn 3 lần",
+                                    "hiddenAt" to now,
+                                    "hiddenUntilMs" to hiddenUntilMs,
+                                    "hasUnreadUpdate" to true,
+                                    "updatedAt" to now
+                                ))
+                            } else {
+                                tx.update(roomRef, mapOf(
+                                    "noShowReportCount" to newCount,
+                                    "updatedAt" to now
+                                ))
+                            }
+                        }.addOnSuccessListener {
+                            // Đọc lại để biết count mới sau transaction để quyết định có gửi thông báo ẩn bài không
+                            db.collection("rooms").document(appt.roomId).get()
+                                .addOnSuccessListener { roomDoc ->
+                                    val finalCount = (roomDoc.getLong("noShowReportCount") ?: 0L).toInt()
+                                    val finalStatus = roomDoc.getString("status") ?: ""
+                                    val roomTitle = roomDoc.getString("title") ?: appt.roomTitle
+
+                                    if (finalStatus == "hidden_by_system" && finalCount >= 3) {
+                                        // Gửi thông báo realtime: bài đăng đã bị ẩn 24 tiếng
+                                        val hiddenUntilMs = roomDoc.getLong("hiddenUntilMs") ?: 0L
+                                        val sdf = java.text.SimpleDateFormat("HH:mm dd/MM/yyyy", java.util.Locale("vi", "VN"))
+                                        val unlockStr = sdf.format(java.util.Date(hiddenUntilMs))
+                                        sendNotification(
+                                            userId = appt.landlordId,
+                                            title = "Bài đăng của bạn đã bị ẩn tạm thời",
+                                            message = "Bài đăng \"$roomTitle\" đã bị ẩn khỏi kết quả tìm kiếm do có $finalCount khách báo cáo bạn không đến điểm hẹn. Bài sẽ tự động hiển thị lại lúc $unlockStr.",
+                                            type = "room_hidden_by_system"
+                                        )
+                                    }
+                                }
+                        }
+                    }
+
                     sendNotification(appt.landlordId, "Khách báo cáo bạn không đến",
                         "Khách hẹn xem phòng \"${appt.roomTitle}\" báo cáo bạn không có mặt đúng giờ hẹn.",
                         "appointment_landlord_no_show")
@@ -658,7 +758,8 @@ class AppointmentRepository {
             }.addOnFailureListener { e -> onFailure("Lỗi: ${e.message}") }
     }
 
-    // ─── Cancel pending (người thuê hủy lịch pending) ────────────────────────
+    // Đặt lịch hẹn -7-
+    // Cancel pending (người thuê hủy lịch pending)
     fun cancelPendingAppointment(
         appointmentId: String, landlordId: String, roomTitle: String,
         onSuccess: () -> Unit, onFailure: (String) -> Unit
@@ -682,7 +783,7 @@ class AppointmentRepository {
             .addOnFailureListener { e -> onFailure("Hủy lịch thất bại: ${e.message}") }
     }
 
-    // ─── Cancel confirmed (người thuê hủy sau khi đã confirmed) ──────────────
+    // Người dùng bấm hủy lịch hẹn
     fun tenantRejectAppointment(
         appointmentId: String, landlordId: String, roomTitle: String,
         roomId: String, date: String, time: String, currentStatus: String,
@@ -695,6 +796,7 @@ class AppointmentRepository {
         batch.update(apptRef, mapOf(
             "status" to "cancelled_by_tenant",
             "cancelReason" to cancelReason,
+            "isQuotaPenalized" to true, // PHẠT: Đánh dấu mất lượt vì hủy sau khi đã duyệt
             "hasUnreadUpdate" to true, "updatedAt" to now,
             "statusHistory" to FieldValue.arrayUnion(
                 StatusChange(currentStatus, "cancelled_by_tenant", "tenant",
@@ -732,19 +834,6 @@ class AppointmentRepository {
                 return@addOnSuccessListener
             }
 
-            db.collection("rooms").document(appt.roomId).get()
-                .addOnSuccessListener { roomDoc ->
-                    val maxDaily = roomDoc.getLong("maxDailyAppointments")?.toInt() ?: 10
-                    db.collection("bookedSlots")
-                        .whereEqualTo("roomId", appt.roomId)
-                        .whereEqualTo("date", newDate)
-                        .get()
-                        .addOnSuccessListener { slotCountSnap ->
-                            if (slotCountSnap.size() >= maxDaily) {
-                                onFailure("Ngày $newDate đã đạt giới hạn tối đa $maxDaily lịch hẹn đã xác nhận. Vui lòng chọn ngày khác.")
-                                return@addOnSuccessListener
-                            }
-
                             val newSlotId = buildSlotId(appt.roomId, newDate, newTime)
                             val slotRef = db.collection("bookedSlots").document(newSlotId)
                             
@@ -760,7 +849,7 @@ class AppointmentRepository {
                                     FirebaseFirestoreException.Code.ABORTED
                                 )
                                 
-                                val newDeadline = now + AppointmentConstants.HOURS_48_MS
+                                val newDeadline = newTimestampMs // Hạn duyệt = đúng giờ hẹn mới
                                 val newTenantDeadline = newTimestampMs - AppointmentConstants.HOURS_1_MS
                                 tx.update(apptRef, mapOf(
                                     "appointmentDate" to newDate,
@@ -771,15 +860,12 @@ class AppointmentRepository {
                                     "landlordConfirmDeadline" to newDeadline,
                                     "tenantConfirmDeadline" to newTenantDeadline,
                                     "editCount" to (appt.editCount + 1),
-                                    "landlordRemind12hSent" to false,
-                                    "landlordRemind36hSent" to false,
-                                    "landlordRemind47hSent" to false,
+                                    "landlordRemind1hPendingSent" to false,
                                     "reminder24hSent" to false,
                                     "reminder2hSent" to false,
                                     "reminder30mSent" to false,
                                     "reminder0hSent" to false,
                                     "landlordReminder24hSent" to false,
-                                    "landlordReminder2hSent" to false,
                                     "landlordReminder30mSent" to false,
                                     "landlordReminder0hSent" to false,
                                     "resultAskedSent" to false,
@@ -801,14 +887,14 @@ class AppointmentRepository {
                                 else "Đổi lịch thất bại: ${e.message}"
                                 onFailure(msg)
                             }
-                        }
-                        .addOnFailureListener { e -> onFailure("Lỗi kiểm tra giới hạn đặt lịch mới: ${e.message}") }
-                }
-                .addOnFailureListener { e -> onFailure("Lỗi tải thông tin phòng: ${e.message}") }
         }.addOnFailureListener { e -> onFailure("Lỗi đọc lịch hẹn: ${e.message}") }
     }
 
-    // ─── Check existing appointment của user với phòng này ────────────────────
+
+    // Kiểm tra xem khách đã từng tạo lịch hẹn cho phòng này vào đúng cái ngày/giờ này chưa.
+    // (Ngăn chặn lỗi logic khách đặt đè 2 lịch hẹn trùng y hệt nhau).
+    // Đặt lịch hẹn
+    // [AN NINH ĐẶT LỊCH] Chặn khách hàng đặt đè thêm lịch vào căn phòng mà họ đang đặt.
     fun checkExistingAppointment(
         tenantId: String, roomId: String,
         onResult: (Boolean, String?, String?, Long?) -> Unit
@@ -984,18 +1070,45 @@ class AppointmentRepository {
         }.addOnFailureListener { e -> onFailure("Hủy lịch thất bại: ${e.message}") }
     }
 
-    // ─── Check no-show count của tenant trước khi đặt lịch ───────────────────
+    // Check no-show count của tenant trước khi đặt lịch
+    // Đặt lịch hẹn
+    // [AN NINH ĐẶT LỊCH] Tra cứu xem khách có dính 3 án tích bùng kèo (No-show) không.
     fun checkTenantNoShowCount(tenantId: String, onResult: (Int, Long) -> Unit) {
         db.collection("users").document(tenantId).get()
             .addOnSuccessListener { doc ->
-                val count = (doc.getLong("noShowCount") ?: 0L).toInt()
+                var count = (doc.getLong("noShowCount") ?: 0L).toInt()
                 val lastTime = doc.getLong("lastNoShowAt") ?: 0L
+                val now = System.currentTimeMillis()
+
+                if (count > 0 && lastTime > 0) {
+                    val calLast = java.util.Calendar.getInstance().apply { timeInMillis = lastTime }
+                    val calNow = java.util.Calendar.getInstance().apply { timeInMillis = now }
+                    val isSameDay = calLast.get(java.util.Calendar.YEAR) == calNow.get(java.util.Calendar.YEAR) &&
+                                    calLast.get(java.util.Calendar.DAY_OF_YEAR) == calNow.get(java.util.Calendar.DAY_OF_YEAR)
+                    
+                    if (!isSameDay) {
+                        // Sang ngày mới -> Xóa án tích, reset về 0
+                        count = 0
+                        db.collection("users").document(tenantId).update(
+                            mapOf(
+                                "noShowCount" to 0,
+                                "lastNoShowAt" to 0L
+                            )
+                        )
+                    }
+                }
+                
                 onResult(count, lastTime)
             }
             .addOnFailureListener { onResult(0, 0L) }
     }
 
-    // ─── Check số lịch hẹn pending của tenant ────────────────────────────────
+    /**
+     * Kiểm tra xem khách có đang gửi đi quá nhiều yêu cầu chờ duyệt hay không.
+     * (Nếu khách đang có 3 lịch hẹn ở trạng thái Pending chưa được duyệt, sẽ khóa không cho đặt tiếp).
+     */
+    // Đặt lịch hẹn
+    // [AN NINH ĐẶT LỊCH] Đếm xem khách có đang spam quá 3 lịch chờ duyệt không.
     fun checkTenantPendingCount(tenantId: String, onResult: (Int) -> Unit) {
         db.collection("appointments")
             .whereEqualTo("tenantId", tenantId)
@@ -1005,7 +1118,9 @@ class AppointmentRepository {
             .addOnFailureListener { onResult(0) }
     }
 
-    // ─── Check số lịch hẹn confirmed+tenant_confirmed của tenant ─────────────
+    // Check số lịch hẹn confirmed+tenant_confirmed của tenant
+    // Đặt lịch hẹn
+    // [AN NINH ĐẶT LỊCH] Đếm xem khách có đang ôm quá 2 lịch đã chốt không.
     fun checkTenantConfirmedCount(tenantId: String, onResult: (Int) -> Unit) {
         db.collection("appointments")
             .whereEqualTo("tenantId", tenantId)
@@ -1015,8 +1130,16 @@ class AppointmentRepository {
             .addOnFailureListener { onResult(0) }
     }
 
-    // ─── Check số lượt đặt phòng trong ngày của tenant ───────────────────────
+    // 2. Nhóm hàm: ĐIỀU TRA AN NINH & CHỐNG SPAM (Trước khi đặt)
+    /**
+     * Kiểm tra giới hạn (Quota) số lần đặt lịch trong ngày của 1 khách đối với 1 phòng.
+     * (Ví dụ: Chặn không cho 1 khách đặt liên tục quá 3 lần/ngày vào cùng 1 phòng để chống phá hoại).
+     */
+    // Giới hạn 5 lượt đặt lịch hẹn cho 1 bài đăng trong ngày -1-
+    // Trực tiếp móc nối với Database (Firebase), dùng lệnh query lọc các lịch hẹn có tenantId và roomId trùng khớp được tạo trong "ngày hôm nay",
+    // đếm ra tổng số lượng và trả về cho ViewModel.
     fun checkDailyBookingQuotaForRoom(tenantId: String, roomId: String, onResult: (Int) -> Unit) {
+        // 1. Tính toán mốc thời gian 00:00:00 của ngày hôm nay
         val startOfDay = java.util.Calendar.getInstance().apply {
             set(java.util.Calendar.HOUR_OF_DAY, 0)
             set(java.util.Calendar.MINUTE, 0)
@@ -1024,18 +1147,32 @@ class AppointmentRepository {
             set(java.util.Calendar.MILLISECOND, 0)
         }.timeInMillis
 
+        // 2. Tìm tất cả lịch hẹn của khách này (tenantId) tại phòng này (roomId)
         db.collection("appointments")
             .whereEqualTo("tenantId", tenantId)
             .whereEqualTo("roomId", roomId)
             .get()
             .addOnSuccessListener { snaps ->
+                // 3. Đếm số lượng lịch hẹn HỢP LỆ trong ngày hôm nay để trừ lượt
                 val used = snaps.documents.count { doc ->
                     val createdAt = doc.getLong("createdAt") ?: 0L
                     val status = doc.getString("status")
-                    createdAt >= startOfDay && status != "rejected" && status != "cancelled_by_landlord" && status != "cancelled_by_system" && status != "cancelled_by_tenant" && status != "no_show"
+                    // Cờ đánh dấu: Lịch này có bị tính vào án phạt trừ lượt không? (Ví dụ: khách quay xe hủy lịch)
+                    val isPenalized = doc.getBoolean("isQuotaPenalized") ?: false
+                    
+                    if (isPenalized) {
+                        // Nếu bị đánh dấu phạt: Bỏ qua trạng thái, cứ tạo trong hôm nay là Đếm (Mất 1 lượt)
+                        createdAt >= startOfDay
+                    } else {
+                        // Nếu bình thường: Chỉ đếm những lịch tạo trong hôm nay VÀ KHÔNG bị hủy/từ chối
+                        // rejected (Chủ trọ từ chối), cancelled_by_landlord (Chủ trọ hủy), cancelled_by_system (Hệ thống hủy), no_show (Khách hủy)
+                        createdAt >= startOfDay && status != "rejected" && status != "cancelled_by_landlord" && status != "cancelled_by_system" && status != "cancelled_by_tenant" && status != "no_show"
+                    }
                 }
+                // 4. Trả về tổng số lượt đã dùng cho ViewModel
                 onResult(used)
             }
+            // 5. Nếu lỗi mạng, tạm coi như chưa dùng lượt nào (0) để không làm kẹt tính năng đặt lịch
             .addOnFailureListener { onResult(0) }
     }
 
@@ -1056,7 +1193,8 @@ class AppointmentRepository {
             .addOnFailureListener { onResult(emptyList()) }
     }
 
-    // ─── Send notification ────────────────────────────────────────────────────
+    // Send notification
+    // [ĐẶT LỊCH] Bắn thông báo Push Notification rung máy chủ trọ ngay lập tức.
     fun sendNotification(userId: String, title: String, message: String, type: String) {
         db.collection("notifications").add(hashMapOf(
             "userId" to userId, "title" to title, "message" to message,

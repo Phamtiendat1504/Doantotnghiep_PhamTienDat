@@ -28,6 +28,10 @@ class VerifyLandlordActivity : AppCompatActivity() {
     private var backUri: Uri? = null
     private var captureTarget: CaptureTarget = CaptureTarget.FRONT
 
+    // Xác minh danh tính
+    // Khởi tạo Launcher để mở CccdCameraActivity và chờ kết quả trả về.
+    // Nếu chụp thành công (RESULT_OK), nó sẽ lấy đường dẫn ảnh (Uri) từ Intent,
+    // sau đó gán hình ảnh đó vào khung ảnh tương ứng (Mặt trước hoặc Mặt sau) trên giao diện.
     private val cccdCameraLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -94,7 +98,12 @@ class VerifyLandlordActivity : AppCompatActivity() {
         }
     }
 
-    // TỐI ƯU HÓA KIẾN TRÚC MVVM: Lắng nghe trạng thái kiểm duyệt hồ sơ từ ViewModel
+    // Xác minh danh tính  -3-
+    //Hàm theo dõi luồng trạng thái của quá trình xác minh. Khi ViewModel thay đổi dữ liệu, hàm này sẽ tự phản ứng:
+    //Loading: Hiện vòng xoay chờ đợi.
+    //FormReady: Mở form cho user nhập liệu.
+    //Pending / AlreadyApproved: Hiện thông báo chờ duyệt hoặc đã duyệt thành công.
+    //Error: Bật hộp thoại thông báo lỗi.
     private fun observeVerificationState() {
         viewModel.verificationState.observe(this) { state ->
             when (state) {
@@ -128,6 +137,11 @@ class VerifyLandlordActivity : AppCompatActivity() {
                         "Hồ sơ của bạn đã được gửi và đang được hệ thống xử lý. Nếu cần can thiệp thủ công, admin sẽ phản hồi trong 24 giờ."
                     ) { finish() }
                 }
+                is VerificationState.VerificationEscalatedExpired -> {
+                    // Hồ sơ đã quá 24h admin chưa duyệt -> hiển thị UI cho phép người dùng hủy và nộp lại
+                    showPrecheckLoading(false)
+                    showExpiredCard()
+                }
                 is VerificationState.FormReady -> {
                     showPrecheckLoading(false)
                     setupForm()
@@ -157,6 +171,63 @@ class VerifyLandlordActivity : AppCompatActivity() {
         } else {
             loadingDialog?.dismiss()
             loadingDialog = null
+        }
+    }
+
+    // Hiển thị card thông báo hồ sơ đã quá 24h và nút hủy để nộp lại
+    private fun showExpiredCard() {
+        binding.cardExpiredVerification.visibility = android.view.View.VISIBLE
+
+        // Quan sát isLoading để hiện/ẩn dialog và disable nút tránh bấm đúp
+        viewModel.isLoading.observe(this) { isLoading ->
+            if (isLoading) {
+                loadingDialog = MessageUtils.showLoadingDialog(
+                    context = this,
+                    title = "Đang hủy hồ sơ",
+                    message = "Vui lòng chờ trong giây lát..."
+                )
+            } else {
+                loadingDialog?.dismiss()
+                loadingDialog = null
+            }
+            binding.btnCancelAndResubmit.isEnabled = !isLoading
+        }
+
+        // Quan sát kết quả hủy hồ sơ
+        viewModel.cancelResult.observe(this) { result ->
+            if (result == null) return@observe
+            viewModel.clearCancelResult()
+            if (result) {
+                // Hủy thành công -> ẩn card expired, tải lại form để nộp mới
+                binding.cardExpiredVerification.visibility = android.view.View.GONE
+                MessageUtils.showInfoDialog(
+                    this,
+                    "Đã hủy hồ sơ cũ",
+                    "Hồ sơ cũ đã được xóa. Bạn có thể điền và gửi lại ngay bây giờ."
+                ) {
+                    // Tải lại trạng thái -> sẽ emit FormReady -> gọi setupForm()
+                    viewModel.checkCurrentStatus(this)
+                }
+            } else {
+                MessageUtils.showErrorDialog(
+                    this,
+                    "Không thể hủy",
+                    "Có lỗi xảy ra khi hủy hồ sơ. Vui lòng thử lại sau."
+                )
+            }
+        }
+
+        binding.btnCancelAndResubmit.setOnClickListener {
+            MessageUtils.showConfirmDialog(
+                context = this,
+                title = "Xác nhận hủy hồ sơ",
+                message = "Hồ sơ cũ sẽ bị xóa và bạn cần chụp lại ảnh CCCD để nộp mới. Bạn có chắc chắn muốn hủy không?",
+                positiveText = "Hủy hồ sơ",
+                negativeText = "Giữ lại",
+                onConfirm = {
+                    viewModel.cancelExpiredVerification(this)
+                }
+            )
         }
     }
 
@@ -300,6 +371,13 @@ class VerifyLandlordActivity : AppCompatActivity() {
         cccdCameraLauncher.launch(intent)
     }
 
+    // Xác mịnh danh tính -2-
+    // Hàm xử lý sự kiện khi người dùng bấm nút "Gửi yêu cầu xác minh".
+    // Các bước thực hiện:
+    // 1. Lấy dữ liệu chữ (Tên, SĐT, CCCD, Địa chỉ) và ảnh (Mặt trước, Mặt sau).
+    // 2. Validate (Kiểm tra) mã CCCD phải đúng chuẩn 12 số của Việt Nam.
+    // 3. Bắt lỗi không để trống thông tin và bắt buộc tích chọn đồng ý nội quy.
+    // 4. Nếu pass (hợp lệ) toàn bộ, đẩy dữ liệu qua ViewModel để xử lý gửi đi.
     private fun submitVerification() {
         binding.apply {
             val cccd = edtCccdNumber.text.toString().trim()

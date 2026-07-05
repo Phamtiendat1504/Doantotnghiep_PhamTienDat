@@ -301,6 +301,10 @@ class PostFragment : Fragment() {
         return frameLayout
     }
 
+    //Xác minh danh tính -1-
+    //Hàm vòng đời của Fragment: Kích hoạt khi toàn bộ các View (nút bấm, text, form...) đã được vẽ lên màn hình.
+    //Chức năng chính trong file này: Kiểm tra trạng thái đăng nhập, theo dõi quyền của tài khoản (đã xác minh hay chưa) để quyết định hiển thị Form đăng bài hay giao diện chặn.
+    //override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
@@ -419,6 +423,10 @@ class PostFragment : Fragment() {
         viewModel.loadUserObject()
     }
 
+    // Xác minh danh tính -2-
+    //Hàm chuyển đổi giao diện sang trạng thái "Bắt buộc xác minh".
+    //Nó sẽ ẩn view nhập liệu (postFormView) và hiện view cảnh báo (verifyRequiredView),
+    //đồng thời thiết lập tiêu đề, icon và hiển thị nút "TIẾN HÀNH XÁC MINH".
     private fun showVerifyRequired() {
         verifyRequiredView?.visibility = View.VISIBLE
         postFormView?.visibility = View.GONE
@@ -629,6 +637,10 @@ class PostFragment : Fragment() {
         postQuotaDialog = null
     }
 
+    // Xác minh danh tính -3-
+    // Khởi tạo các bộ lắng nghe sự kiện (Click Listeners) cho màn hình chặn:
+    // Khi bấm "Tiến hành xác minh": Chuyển hướng user sang màn hình chụp ảnh CCCD (VerifyLandlordActivity).
+    // Khi bấm "Xem nội quy": Mở popup hiển thị các quy định đăng tin.
     private fun setupVerifyButton() {
         verifyRequiredView?.findViewById<MaterialButton>(R.id.btnStartVerify)?.setOnClickListener {
             startActivity(Intent(requireContext(), VerifyLandlordActivity::class.java))
@@ -1777,6 +1789,7 @@ class PostFragment : Fragment() {
         }, 200L)
     }
 
+    // Mã nội dung
     private fun proceedToPaymentQr(pkg: SlotPackage) {
         if (!isAdded) return
         val uid = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid ?: return
@@ -1816,6 +1829,7 @@ class PostFragment : Fragment() {
             }
     }
 
+    // Hiên thị mã qr
     private fun showPaymentQrDialogContent(
         docRef: com.google.firebase.firestore.DocumentReference,
         pkg: SlotPackage,

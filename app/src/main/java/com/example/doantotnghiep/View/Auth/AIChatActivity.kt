@@ -17,8 +17,9 @@ import com.example.doantotnghiep.R
 import com.example.doantotnghiep.View.Adapter.AIChatAdapter
 import com.example.doantotnghiep.ViewModel.AIChatViewModel
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
-// Fix 3: Activity is now a thin UI layer — all logic lives in AIChatViewModel
+
 class AIChatActivity : AppCompatActivity() {
 
     private lateinit var rvAiChat: RecyclerView
@@ -65,7 +66,8 @@ class AIChatActivity : AppCompatActivity() {
             finish()
             return
         }
-        viewModel.loadHistory(uid)
+        loadHistoryWithUserName(uid)
+
 
         btnSend.setOnClickListener {
             val text = edtMessage.text.toString().trim()
@@ -87,7 +89,7 @@ class AIChatActivity : AppCompatActivity() {
             progressBar.visibility = if (loading) View.VISIBLE else View.GONE
         }
 
-        // Fix 10: disable send button while a reply is being processed
+
         viewModel.isProcessing.observe(this) { processing ->
             btnSend.isEnabled = !processing
         }
@@ -98,15 +100,7 @@ class AIChatActivity : AppCompatActivity() {
             }
         }
 
-        viewModel.deepLink.observe(this) { link ->
-            if (!link.isNullOrEmpty()) {
-                try {
-                    startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(link)))
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-        }
+
     }
 
     private fun sendMessage(text: String) {
@@ -126,4 +120,25 @@ class AIChatActivity : AppCompatActivity() {
             .setNegativeButton("Hủy", null)
             .show()
     }
+
+    /**
+     * Lấy tên đầy đủ từ Firestore collection "users" rồi mới gọi loadHistory.
+     * Đảm bảo lời chào luôn hiển thị đúng tên người dùng.
+     */
+    private fun loadHistoryWithUserName(uid: String) {
+        FirebaseFirestore.getInstance()
+            .collection("users")
+            .document(uid)
+            .get()
+            .addOnSuccessListener { doc ->
+                val fullName = doc.getString("fullName")?.trim() ?: ""
+                viewModel.loadHistory(uid, fullName)
+            }
+            .addOnFailureListener {
+                // Nếu lỗi Firestore, fallback về tên Firebase Auth hoặc chuỗi rỗng
+                val fallbackName = auth.currentUser?.displayName?.trim() ?: ""
+                viewModel.loadHistory(uid, fallbackName)
+            }
+    }
 }
+

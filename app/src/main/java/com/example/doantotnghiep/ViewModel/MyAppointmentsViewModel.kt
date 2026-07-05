@@ -56,7 +56,7 @@ class MyAppointmentsViewModel(
     private val _roomRentedNotice = MutableLiveData<RoomRentedNotice?>()
     val roomRentedNotice: LiveData<RoomRentedNotice?> = _roomRentedNotice
 
-    // ─── Initialization ───────────────────────────────────────────────────────
+    //
 
     fun initializeAppointmentsScreen() {
         val uid = getCurrentUserId() ?: run { _errorMessage.value = "Chưa đăng nhập"; return }
@@ -133,8 +133,9 @@ class MyAppointmentsViewModel(
     fun resetActionResult() { _actionResult.value = null }
     fun resetErrorMessage() { _errorMessage.value = "" }
 
-    // ─── Landlord actions ─────────────────────────────────────────────────────
+    //
 
+    // CHủ trọ chốt lịch hẹn
     fun confirmAppointment(apptId: String, tenantId: String, roomTitle: String, date: String, time: String) {
         _isLoading.value = true
         repository.confirmAppointment(apptId, tenantId, roomTitle, date, time,
@@ -143,6 +144,7 @@ class MyAppointmentsViewModel(
         )
     }
 
+    // Người chủ chốt lịch hẹn
     fun rejectAppointment(apptId: String, tenantId: String, roomTitle: String, reason: String) {
         _isLoading.value = true
         repository.rejectAppointment(apptId, tenantId, roomTitle, reason,
@@ -168,6 +170,7 @@ class MyAppointmentsViewModel(
         )
     }
 
+    // Khách không đến xem
     fun markAsNoShow(apptId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         _isLoading.value = true
         repository.markAsNoShow(apptId,
@@ -185,7 +188,7 @@ class MyAppointmentsViewModel(
         )
     }
 
-    // ─── Tenant actions ───────────────────────────────────────────────────────
+    //
 
     fun markAsLandlordNoShow(apptId: String, onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         _isLoading.value = true
@@ -195,6 +198,7 @@ class MyAppointmentsViewModel(
         )
     }
 
+    // Người đặt lịch hẹn bấm xác nhận đi xem
     fun tenantConfirmAppointment(apptId: String, landlordId: String, roomTitle: String) {
         _isLoading.value = true
         repository.tenantConfirmAppointment(apptId, landlordId, roomTitle,
@@ -203,6 +207,7 @@ class MyAppointmentsViewModel(
         )
     }
 
+    // Người đặt lịch hủy lịch hẹn
     fun tenantRejectAppointment(apptId: String, landlordId: String, roomTitle: String,
         roomId: String, date: String, time: String, currentStatus: String, cancelReason: String) {
         _isLoading.value = true
@@ -212,6 +217,7 @@ class MyAppointmentsViewModel(
         )
     }
 
+    // Người đặt lịch hủy yêu cầu đặt lịch hẹn khi đang chờ chủ trọ duyệt
     fun cancelPendingAppointment(apptId: String, landlordId: String, roomTitle: String,
         onSuccess: () -> Unit, onFailure: (String) -> Unit) {
         _isLoading.value = true

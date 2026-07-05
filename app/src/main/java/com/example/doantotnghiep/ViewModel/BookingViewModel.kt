@@ -39,16 +39,19 @@ class BookingViewModel(
     private val _remainingQuota = MutableLiveData<Int>()
     val remainingQuota: LiveData<Int> = _remainingQuota
 
-    // ─── Booking wizard ───────────────────────────────────────────────────────
 
+    // Lấy số lượt đặt lịch còn lại trong ngày (để hiện cảnh báo xanh/đỏ) (loadData)
+    // Giới hạn 5 lượt đặt lịch hẹn cho 1 bài đăng trong ngày -1-
+    // Nơi xử lý logic phép trừ. Gọi hàm từ Repository để lấy "số lần đã đặt"
+    // Sau đó tính toán số lượt còn lại bằng công thức: (5 - số lần đã đặt hôm nay) và báo kết quả lại cho Activity.
     fun loadRemainingQuota(roomId: String) {
         val uid = getCurrentUserId() ?: return
         repository.checkDailyBookingQuotaForRoom(uid, roomId) { used ->
-            // Fix #9: Dùng hằng số thay vì magic number
             _remainingQuota.value = maxOf(0, AppointmentConstants.MAX_DAILY_BOOKING_QUOTA - used)
         }
     }
 
+    // Kéo thông tin căn phòng và danh sách cấu hình giờ rảnh (loadData)
     fun loadRoomForBooking(roomId: String, onResult: (Room, List<TimeSlotConfig>) -> Unit) {
         repository.fetchRoomForBooking(roomId,
             onSuccess = { room, slots -> onResult(room, slots) },
@@ -56,11 +59,13 @@ class BookingViewModel(
         )
     }
 
+    // Kích hoạt màng lọc Real-time, lấy về danh sách các giờ đã bị khóa để Activity bôi xám các nút bấm (loadData)
     fun listenBookedSlotsForRoom(roomId: String, onUpdate: (Set<String>) -> Unit) {
         bookedSlotsListener?.remove()
         bookedSlotsListener = repository.listenBookedSlotsForRoom(roomId, onUpdate)
     }
 
+    // Kéo họ tên, số điện thoại của người dùng về để tự động điền (Auto-fill) vào form Bước 3.(loadData)
     fun loadUserInfo() {
         _isLoading.value = true
         authRepository.loadUserObject(
@@ -69,6 +74,7 @@ class BookingViewModel(
         )
     }
 
+    // Nhận cái gói hồ sơ Appointment từ Activity truyền sang, bật vòng quay Loading, và mang xuống cho Repository gửi lên Firebase.
     fun submitBooking(appointment: Appointment) {
         _isLoading.value = true
         repository.submitBooking(appointment,
@@ -77,18 +83,22 @@ class BookingViewModel(
         )
     }
 
+    // Kiểm tra xem khách có đang đặt trùng phòng này không.(runPreChecks)
     fun checkExistingAppointment(tenantId: String, roomId: String, onResult: (Boolean, String?, String?, Long?) -> Unit) {
         repository.checkExistingAppointment(tenantId, roomId, onResult)
     }
 
+    // Kiểm tra xem khách có đang spam quá 3 lịch chờ duyệt không.(runPreChecks)
     fun checkTenantPendingCount(uid: String, onResult: (Int) -> Unit) {
         repository.checkTenantPendingCount(uid, onResult)
     }
 
+    //Kiểm tra xem khách có đang ôm quá 2 lịch đã chốt không (runPreChecks)
     fun checkTenantConfirmedCount(uid: String, onResult: (Int) -> Unit) {
         repository.checkTenantConfirmedCount(uid, onResult)
     }
 
+    // Kiểm tra xem khách có bị dính 3 gậy bùng kèo (No-Show) không. (runPreChecks)
     fun checkTenantNoShowCount(uid: String, onResult: (Int, Long) -> Unit) {
         repository.checkTenantNoShowCount(uid, onResult)
     }
@@ -97,7 +107,9 @@ class BookingViewModel(
         repository.loadConfirmedAppointmentsForDate(roomId, dateStr, onResult)
     }
 
+    // Tắt cờ báo thành công (Để lỡ khách bấm Back lại thì không bị văng tiếp sang trang Thành công nữa)
     fun resetBookingResult() { _bookingResult.value = false }
+    // Xóa trắng câu thông báo lỗi sau khi đã hiển thị xong Popup màu đỏ.
     fun resetErrorMessage() { _errorMessage.value = "" }
 
     override fun onCleared() {

@@ -214,9 +214,7 @@ class SearchViewModel : ViewModel() {
         )
     }
 
-    // ────────────────────────────────────────────────
     // Tìm kiếm theo vị trí bản đồ (Haversine)
-    // ────────────────────────────────────────────────
     fun searchNearby(
         lat: Double,
         lng: Double,

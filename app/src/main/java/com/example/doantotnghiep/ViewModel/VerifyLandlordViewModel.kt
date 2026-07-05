@@ -30,6 +30,8 @@ class VerifyLandlordViewModel : ViewModel() {
         class AlreadyApprovedWaiting(val hours: Long, val minutes: Long, val unlockTime: String) : VerificationState()
         object AlreadyApprovedReady : VerificationState()
         object VerificationPending : VerificationState()
+        // Hồ sơ bị escalated lên Admin nhưng đã quá 24h vẫn chưa được duyệt
+        object VerificationEscalatedExpired : VerificationState()
         class Error(val message: String) : VerificationState()
     }
 
@@ -53,6 +55,10 @@ class VerifyLandlordViewModel : ViewModel() {
     private val _verificationState = MutableLiveData<VerificationState>()
     val verificationState: LiveData<VerificationState> = _verificationState
 
+    // LiveData báo kết quả hủy hồ sơ thành công hay thất bại
+    private val _cancelResult = MutableLiveData<Boolean?>()
+    val cancelResult: LiveData<Boolean?> = _cancelResult
+
     fun loadUserInfo() {
         repository.loadCurrentUserInfo(
             onSuccess = { fullName, phone, email, address ->
@@ -67,7 +73,11 @@ class VerifyLandlordViewModel : ViewModel() {
         )
     }
 
-    // TỐI ƯU HÓA KIẾN TRÚC MVVM: Đưa toàn bộ luồng kiểm tra Firestore từ Activity vào ViewModel
+    // Xác minh danh tính -1-
+    // Kéo dữ liệu từ Server để quyết định trạng thái hồ sơ của người dùng:
+// 1. Nếu đã xác minh (isVerified = true): Kiểm tra xem có đang bị khóa chờ 24h hay không.
+// 2. Nếu chưa xác minh: Kiểm tra bảng 'verifications' xem có đơn nào đang chờ duyệt (pending) không.
+// 3. Nếu chưa từng gửi đơn: Báo trạng thái FormReady để mở form cho người dùng bắt đầu điền.
     fun checkCurrentStatus(context: Context) {
         val uid = auth.currentUser?.uid
         if (uid == null) {
@@ -102,9 +112,20 @@ class VerifyLandlordViewModel : ViewModel() {
                     .get(Source.SERVER)
                     .addOnSuccessListener { verifyDoc ->
                         val status = if (verifyDoc.exists()) verifyDoc.getString("status") else null
-                        val waitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
-                        if (status in waitingStatuses) {
-                            _verificationState.value = VerificationState.VerificationPending
+                        val escalatedStatuses = setOf("pending_admin_review", "queued_manual")
+                        val allWaitingStatuses = setOf("pending", "pending_admin_review", "queued_manual")
+                        if (status in allWaitingStatuses) {
+                            // Kiểm tra nếu hồ sơ đã được escalate lên Admin thì kiểm tra 24h
+                            val escalationDeadlineAt = verifyDoc.getLong("escalationDeadlineAt") ?: 0L
+                            val isEscalated = verifyDoc.getBoolean("escalatedToAdmin") == true
+                                    || status in escalatedStatuses
+                            val now = System.currentTimeMillis()
+                            if (isEscalated && escalationDeadlineAt > 0L && now > escalationDeadlineAt) {
+                                // Đã quá 24h Admin chưa duyệt -> cho phép người dùng hủy và nộp lại
+                                _verificationState.value = VerificationState.VerificationEscalatedExpired
+                            } else {
+                                _verificationState.value = VerificationState.VerificationPending
+                            }
                         } else {
                             if (!verifyDoc.exists()) {
                                 viewModelScopeResetCounter(context)
@@ -129,10 +150,40 @@ class VerifyLandlordViewModel : ViewModel() {
         repository.resetAutoFailureCounter(context)
     }
 
+    // Hàm hủy hồ sơ xác minh hết hạn để người dùng nộp lại từ đầu
+    fun cancelExpiredVerification(context: Context) {
+        val uid = auth.currentUser?.uid ?: return
+        _isLoading.value = true
+        repository.cancelPendingVerification(
+            uid = uid,
+            onSuccess = {
+                _isLoading.value = false
+                // Reset counter để cho phép user gửi lại bình thường
+                repository.resetAutoFailureCounter(context)
+                _cancelResult.value = true
+            },
+            onFailure = { e ->
+                _isLoading.value = false
+                _errorMessage.value = e
+                _cancelResult.value = false
+            }
+        )
+    }
+
+    fun clearCancelResult() { _cancelResult.value = null }
+
     fun clearSubmitResult() {
         _submitResult.value = null
     }
 
+    // Xác minh danh tính -2-
+    // Xử lý luồng nộp hồ sơ xác minh với các bước bảo mật:
+// 1. Check trùng lặp: Gọi Database kiểm tra Số CCCD đã tồn tại chưa.
+// 2. Chạy Auto-check: So sánh độ khớp của văn bản và hình ảnh.
+// 3. Phân nhánh kết quả:
+//    - Pass: Duyệt tự động thành công (SUCCESS_AUTO_VERIFIED).
+//    - Failed > 3 lần: Chuyển sang cho Admin duyệt (ESCALATED_TO_ADMIN).
+//    - Failed <= 3 lần: Báo lỗi và trừ đi 1 lượt thử lại trong ngày.
     fun submitVerification(
         context: Context,
         fullName: String,
@@ -256,12 +307,12 @@ class VerifyLandlordViewModel : ViewModel() {
                 val message = if (status == SubmitStatus.ESCALATED_TO_ADMIN) {
                     buildString {
                         if (!meta.autoCheckReason.isNullOrBlank()) {
-                            append("⚠️ Lý do xác thực thất bại:\n")
+                            append("Lý do xác thực thất bại:\n")
                             append(meta.autoCheckReason)
                             append("\n\n")
                         }
-                        append("📋 Hồ sơ của bạn đã được hệ thống tự động gửi đến admin để xét duyệt thủ công do xác thực sai quá 3 lần trong ngày.\n\n")
-                        append("⏳ Vui lòng chờ phản hồi từ admin trong vòng 24 giờ. Bạn sẽ nhận được thông báo khi hồ sơ được duyệt.")
+                        append("Hồ sơ của bạn đã được hệ thống tự động gửi đến admin để xét duyệt thủ công do xác thực sai quá 3 lần trong ngày.\n\n")
+                        append("Vui lòng chờ phản hồi từ admin trong vòng 24 giờ. Bạn sẽ nhận được thông báo khi hồ sơ được duyệt.")
                     }
                 } else {
                     "Thông tin trùng khớp chính xác! Tài khoản của bạn đã được xác minh thành công."

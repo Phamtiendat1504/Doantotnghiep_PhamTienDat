@@ -90,9 +90,9 @@ class SearchFragment : Fragment() {
     private var mapLat: Double = 0.0
     private var mapLng: Double = 0.0
     private var mapAddress: String = ""
-    private var mapSearchMode: String = "nearby"            // "exact_post" | "selected_posts" | "nearby"
-    private var mapPostId: String = ""                      // postId khi exact_post
-    private var mapPostIds: ArrayList<String> = arrayListOf() // postIds khi selected_posts
+    private var mapSearchMode: String = "nearby"
+    private var mapPostId: String = ""
+    private var mapPostIds: ArrayList<String> = arrayListOf()
     private var mapRadiusKm: Double = 2.0                   // bán kính khi nearby
 
     private val locationPickerLauncher = registerForActivityResult(
@@ -199,9 +199,9 @@ class SearchFragment : Fragment() {
         btnSearch.setOnClickListener { submitSearch() }
     }
 
-    // ────────────────────────────────────────────────
+
     // Price dropdown setup
-    // ────────────────────────────────────────────────
+
     private fun setupPriceDropdown() {
         val adapter = ArrayAdapter(
             requireContext(),
@@ -218,9 +218,6 @@ class SearchFragment : Fragment() {
         }
     }
 
-    // ────────────────────────────────────────────────
-    // Dynamic amenity row
-    // ────────────────────────────────────────────────
     private fun addAmenityRow() {
         val ctx = requireContext()
         val row = LinearLayout(ctx).apply {
@@ -275,9 +272,8 @@ class SearchFragment : Fragment() {
         layoutExtraAmenities.addView(row)
     }
 
-    // ────────────────────────────────────────────────
+
     // Map location picker setup
-    // ────────────────────────────────────────────────
     private fun setupMapLocationPicker() {
         btnPickMapLocation.setOnClickListener {
             val intent = Intent(requireContext(), LocationPickerActivity::class.java).apply {
@@ -314,7 +310,7 @@ class SearchFragment : Fragment() {
         btnPickMapLocation.text = "Chọn vị trí trên bản đồ"
     }
 
-    // ────────────────────────────────────────────────
+    //
     private fun setupAreaPickerBehavior() {
         autoArea.setOnClickListener { autoArea.showDropDown() }
         autoArea.setOnFocusChangeListener { _, hasFocus ->
@@ -516,21 +512,26 @@ class SearchFragment : Fragment() {
         clearMapSelection()
     }
 
-    // ────────────────────────────────────────────────
-    // GPS — Tìm phòng gần vị trí hiện tại
-    // ────────────────────────────────────────────────
+    // TÌm kiếm phòng trọ gần vị trí tôi -1-
+    // Cài đặt sự kiện khi người dùng bấm nút "Sử dụng vị trí của tôi"
     private fun setupMyLocationButton() {
         btnUseMyLocation.setOnClickListener {
+            // Kiểm tra xem ứng dụng đã được cấp quyền truy cập Vị trí chính xác (GPS) chưa
             val fineGranted = ContextCompat.checkSelfPermission(
                 requireContext(), Manifest.permission.ACCESS_FINE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
+            
+            // Kiểm tra xem ứng dụng đã được cấp quyền truy cập Vị trí tương đối (Wifi/Mạng) chưa
             val coarseGranted = ContextCompat.checkSelfPermission(
                 requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION
             ) == PackageManager.PERMISSION_GRANTED
 
+            // Nếu 1 trong 2 quyền vị trí đã được người dùng cho phép trước đó
             if (fineGranted || coarseGranted) {
+                // Tiến hành lấy tọa độ hiện tại và bắt đầu tìm kiếm phòng trọ
                 fetchCurrentLocationAndSearch()
             } else {
+                // Nếu chưa được cấp quyền, hiển thị hộp thoại (popup) hệ thống để xin người dùng cấp quyền vị trí
                 locationPermLauncher.launch(
                     arrayOf(
                         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -541,26 +542,43 @@ class SearchFragment : Fragment() {
         }
     }
 
+    // TÌm kiếm phòng trọ gần vị trí của tôi -2-
+    // Hàm xử lý việc lấy tọa độ GPS hiện tại của thiết bị
     private fun fetchCurrentLocationAndSearch() {
+        // Kiểm tra an toàn một lần nữa xem quyền vị trí đã thực sự được cấp chưa (bắt buộc bởi Android)
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+            ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Toast.makeText(requireContext(), "Chưa được cấp quyền vị trí", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        // Hiển thị hộp thoại (Dialog) chờ để người dùng biết app đang xử lý lấy vị trí
         val loadingDialog = AlertDialog.Builder(requireContext())
             .setMessage("Đang lấy vị trí của bạn...")
-            .setCancelable(false)
+            .setCancelable(false) // Không cho phép tắt dialog bằng cách bấm ra ngoài
             .create()
         loadingDialog.show()
 
+        // Khởi tạo FusedLocationProviderClient - API lấy vị trí tối ưu nhất của Google (kết hợp GPS, Wifi, Mạng di động)
         val client = LocationServices.getFusedLocationProviderClient(requireActivity())
         val cts = com.google.android.gms.tasks.CancellationTokenSource()
+        
+        // Bắt đầu yêu cầu lấy vị trí hiện tại với độ chính xác cao nhất (PRIORITY_HIGH_ACCURACY)
         client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, cts.token)
             .addOnSuccessListener { location ->
+                // Khi lấy vị trí thành công, tắt hộp thoại chờ
                 loadingDialog.dismiss()
                 if (location != null) {
+                    // Nếu có tọa độ, mở Dialog cho phép người dùng chọn bán kính tìm kiếm (km)
                     showRadiusPickerDialog(location.latitude, location.longitude)
                 } else {
-                    // Fallback: thử lastLocation
+                    // Cơ chế phòng hờ (Fallback): Nếu không lấy được vị trí tức thời, thử lấy vị trí gần nhất từng được lưu (lastLocation)
                     client.lastLocation.addOnSuccessListener { last ->
                         if (last != null) {
                             showRadiusPickerDialog(last.latitude, last.longitude)
                         } else {
+                            // Nếu vẫn thất bại, báo lỗi yêu cầu bật GPS
                             Toast.makeText(
                                 requireContext(),
                                 "Không lấy được vị trí. Hãy bật GPS và thử lại.",
@@ -571,47 +589,66 @@ class SearchFragment : Fragment() {
                 }
             }
             .addOnFailureListener {
+                // Nếu có lỗi hệ thống xảy ra trong quá trình lấy vị trí, tắt hộp thoại và báo lỗi
                 loadingDialog.dismiss()
                 Toast.makeText(requireContext(), "Lỗi lấy vị trí: ${it.message}", Toast.LENGTH_SHORT).show()
             }
     }
 
+    // Tìm kiếm phòng trọ gần vị trí của tôi -3-
+    // Hàm hiển thị hộp thoại (Dialog) cho phép người dùng chọn bán kính tìm kiếm quanh tọa độ GPS
     private fun showRadiusPickerDialog(lat: Double, lng: Double) {
+        // Nạp giao diện (layout) của hộp thoại chọn bán kính từ file XML (dialog_radius_picker)
         val dialogView = LayoutInflater.from(requireContext())
             .inflate(R.layout.dialog_radius_picker, null)
 
-        val slider    = dialogView.findViewById<Slider>(R.id.sliderRadius)
-        val tvValue   = dialogView.findViewById<android.widget.TextView>(R.id.tvRadiusValue)
-        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnRadiusCancel)
-        val btnSearch = dialogView.findViewById<MaterialButton>(R.id.btnRadiusSearch)
+        // Ánh xạ các thành phần UI trong giao diện hộp thoại
+        val slider    = dialogView.findViewById<Slider>(R.id.sliderRadius) // Thanh trượt chọn khoảng cách
+        val tvValue   = dialogView.findViewById<android.widget.TextView>(R.id.tvRadiusValue) // Text hiển thị khoảng cách
+        val btnCancel = dialogView.findViewById<MaterialButton>(R.id.btnRadiusCancel) // Nút hủy
+        val btnSearch = dialogView.findViewById<MaterialButton>(R.id.btnRadiusSearch) // Nút tìm kiếm
 
+        // Hàm nội bộ (Local function) dùng để định dạng hiển thị khoảng cách (ví dụ: 1.0 -> 1 km, 1.5 -> 1.5 km)
         fun formatRadius(km: Float): String =
             if (km == kotlin.math.floor(km.toDouble()).toFloat()) "${km.toInt()} km" else "$km km"
 
+        // Khởi tạo giá trị văn bản hiển thị ban đầu bằng với giá trị mặc định của thanh trượt
         tvValue.text = formatRadius(slider.value)
 
+        // Bắt sự kiện khi người dùng kéo thanh trượt thì cập nhật lại văn bản hiển thị khoảng cách tương ứng
         slider.addOnChangeListener { _, value, _ ->
             tvValue.text = formatRadius(value)
         }
 
+        // Tạo hộp thoại (Dialog) với giao diện vừa nạp và bo góc (RoundedDialogStyle)
         val dialog = AlertDialog.Builder(requireContext(), R.style.RoundedDialogStyle)
             .setView(dialogView)
             .create()
 
+        // Xử lý khi bấm nút "Hủy": Đóng hộp thoại
         btnCancel.setOnClickListener { dialog.dismiss() }
 
+        // Xử lý khi bấm nút "Tìm kiếm"
         btnSearch.setOnClickListener {
+            // Lấy giá trị bán kính (đơn vị km) từ thanh trượt
             val radiusKm = slider.value.toDouble()
+            
+            // Đóng hộp thoại
             dialog.dismiss()
+            
+            // Khởi tạo Intent để chuyển sang màn hình bản đồ (LocationPickerActivity)
             val intent = Intent(requireContext(), LocationPickerActivity::class.java).apply {
-                putExtra(LocationPickerActivity.EXTRA_IS_STRICT, false)
-                putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, lat)
-                putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, lng)
-                putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS_KM, radiusKm)
+                putExtra(LocationPickerActivity.EXTRA_IS_STRICT, false) // Không yêu cầu địa chỉ tuyệt đối
+                putExtra(LocationPickerActivity.EXTRA_INITIAL_LAT, lat) // Gửi kèm Vĩ độ (GPS của người dùng)
+                putExtra(LocationPickerActivity.EXTRA_INITIAL_LNG, lng) // Gửi kèm Kinh độ (GPS của người dùng)
+                putExtra(LocationPickerActivity.EXTRA_INITIAL_RADIUS_KM, radiusKm) // Gửi kèm Bán kính tìm kiếm đã chọn
             }
+            
+            // Mở màn hình bản đồ thông qua launcher (để hứng kết quả trả về sau này nếu cần)
             locationPickerLauncher.launch(intent)
         }
 
+        // Hiển thị hộp thoại lên màn hình
         dialog.show()
     }
 

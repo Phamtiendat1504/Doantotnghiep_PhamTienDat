@@ -131,6 +131,7 @@ class BookingActivity : AppCompatActivity() {
     private lateinit var calendarAdapter: CalendarAdapter
     private lateinit var slotAdapter: GroupedSlotAdapter
 
+    //-1-//
     // HÀM KHỞI TẠO (VÒNG ĐỜI ACTIVITY)
     // Chạy đầu tiên khi mở màn hình. Nhận dữ liệu truyền từ màn hình trước (Intent) và gọi các hàm cài đặt giao diện ban đầu.
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -152,6 +153,7 @@ class BookingActivity : AppCompatActivity() {
         loadData() // Tải dữ liệu các ngày, giờ còn trống từ trên mạng về để hiện ra cho khách chọn.
     }
 
+    //-2-//
     //View binding
     // HÀM ÁNH XẠ GIAO DIỆN (LIÊN KẾT CODE VỚI XML)
     // Dùng findViewById để lấy các nút bấm, textview trên giao diện và gắn sự kiện (click) cho chúng.
@@ -288,12 +290,13 @@ class BookingActivity : AppCompatActivity() {
         updateStepUI()
     }
 
-    // ─── Pre-checks ───────────────────────────────────────────────────────────
+    //-3-//
     // HÀM KIỂM TRA ĐIỀU KIỆN TRƯỚC KHI ĐẶT LỊCH
     // Kiểm tra xem người dùng có phải chủ phòng không, có đang bị cấm đặt lịch do "bùng kèo" quá nhiều không, hoặc đã đặt lịch phòng này chưa.
     private fun runPreChecks() {
         val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
+        // Nếu là chủ bài đăng thì không được đặt chính bài đăng này
         if (uid == landlordId) {
             AlertDialog.Builder(this)
                 .setTitle("Không thể đặt lịch")
@@ -303,6 +306,7 @@ class BookingActivity : AppCompatActivity() {
             return
         }
 
+        // Kiểm tra đè lịch: người thuê đang có lịch hẹn đang chờ xác nhận, đã được xác nhận, không được đặt lịch này
         viewModel.checkExistingAppointment(uid, roomId) { exists, status, _, _ ->
             if (exists && status != null) {
                 val label = when (status) {
@@ -323,6 +327,7 @@ class BookingActivity : AppCompatActivity() {
                 return@checkExistingAppointment
             }
 
+            // Kiểm tra xem là người thuê đã được xác nhận nhiều lịch hẹn rồi mà chưa hoàn tất đi xem
             viewModel.checkTenantConfirmedCount(uid) { confirmedCount ->
                 if (confirmedCount >= 2) {
                     AlertDialog.Builder(this)
@@ -337,6 +342,8 @@ class BookingActivity : AppCompatActivity() {
                     return@checkTenantConfirmedCount
                 }
 
+                // Kiểm tra người thuê đặt nhiều hơn 3 lịch hẹn cho các phòng khác nhau nhưng mà chưa được duyệt lịch hẹn
+                // Đang ở trạng thái chờ người cho thuê duyệt nên không được thêm lịch hẹn
                 viewModel.checkTenantPendingCount(uid) { pendingCount ->
                     if (pendingCount >= 3) {
                         AlertDialog.Builder(this)
@@ -351,21 +358,20 @@ class BookingActivity : AppCompatActivity() {
                         return@checkTenantPendingCount
                     }
 
-                    viewModel.checkTenantNoShowCount(uid) { noShowCount, lastNoShowAt ->
+                    // Kiểm tra người thuê không đến xem phòng bị chủ trọ bấm "Khách không đến":
+                    // Nếu >= 2 lần trong ngày -> Cảnh báo trên màn hình, sang ngày mới tự reset về 0.
+                    // Nếu >= 3 lần trong ngày -> Khóa chức năng đặt lịch, sang ngày mới tự động mở lại và reset về 0.
+                    viewModel.checkTenantNoShowCount(uid) { noShowCount, _ ->
                         if (noShowCount >= 3) {
-                            val now = System.currentTimeMillis()
-                            val unbanTime = lastNoShowAt + 24 * 3_600_000L // 24 giờ
-                            if (now < unbanTime) {
-                                val sdf = SimpleDateFormat("HH:mm dd/MM/yyyy", Locale("vi", "VN"))
-                                val unlockStr = sdf.format(Date(unbanTime))
-                                AlertDialog.Builder(this)
-                                    .setTitle("Tài khoản bị tạm khóa")
-                                    .setMessage("Bạn đã bùng kèo $noShowCount lần. Tài khoản bị tạm khóa đặt lịch đến $unlockStr.")
-                                    .setPositiveButton("Đóng") { _, _ -> finish() }
-                                    .setCancelable(false).show()
-                            }
-                            // Nếu now >= unbanTime, nghĩa là đã qua 24h, code lọt qua đây và cho phép đặt lịch tiếp
+                            // Tài khoản đang bị khóa trong ngày hôm nay, phải sang ngày mới để mở lại
+                            // (Nếu đã sang ngày mới, Repository đã tự reset count về 0, code sẽ không vào đây)
+                            AlertDialog.Builder(this)
+                                .setTitle("Tài khoản bị tạm khóa hôm nay")
+                                .setMessage("Bạn đã bị ghi nhận không đến xem phòng $noShowCount lần trong hôm nay. Chức năng đặt lịch hẹn sẽ tự động mở lại vào ngày mai.")
+                                .setPositiveButton("Đã hiểu") { _, _ -> finish() }
+                                .setCancelable(false).show()
                         } else if (noShowCount >= 2) {
+                            // Cảnh báo lần 2, sang ngày mới sẽ tự reset về 0
                             tvNoShowWarning.visibility = View.VISIBLE
                         }
                     }
@@ -374,12 +380,13 @@ class BookingActivity : AppCompatActivity() {
         }
     }
 
-    // ─── Load data ────────────────────────────────────────────────────────────
-    // HÀM TẢI DỮ LIỆU BAN ĐẦU
-    // Gọi ViewModel để tải lượt đặt lịch còn lại, thông tin phòng, khung giờ khả dụng và lắng nghe các lịch đã được đặt.
+    //-4-//
+    // Giới hạn 5 lượt đặt lịch hẹn cho 1 bài đăng trong ngày -1-
+    // khi mở màn hình, làm nhiệm vụ phát lệnh gọi hàm loadRemainingQuota() của ViewModel để bắt đầu đếm số lượt.
     private fun loadData() {
         progressBar.visibility = View.VISIBLE
-        viewModel.loadRemainingQuota(roomId)
+        viewModel.loadRemainingQuota(roomId)//Tải số lượt đặt lịch còn lại cho bài đăng đấy trong ngày
+        //Tải thông tin phòng và tính số ngày bài đăng còn hiệu lực
         viewModel.loadRoomForBooking(roomId) { room, slots ->
             progressBar.visibility = View.GONE
             timeSlots = slots
@@ -393,6 +400,7 @@ class BookingActivity : AppCompatActivity() {
                 tvRangeInfo.text = "Phạm vi đặt: Từ hôm nay đến ${sdf.format(Date(postExpiryDate - 86_400_000L))}"
             }
 
+            //Load thông tin người thuê để nắm bắt rõ và để sau đó tự động fill thông tin
             viewModel.listenBookedSlotsForRoom(roomId) { booked ->
                 bookedSlotKeys = booked
                 dailyBookingCounts = computeDailyCounts(booked)
@@ -405,6 +413,7 @@ class BookingActivity : AppCompatActivity() {
         }
     }
 
+    //-5-//
     private fun computeDailyCounts(keys: Set<String>): Map<String, Int> {
         val counts = mutableMapOf<String, Int>()
         for (key in keys) {
@@ -415,10 +424,11 @@ class BookingActivity : AppCompatActivity() {
         return counts
     }
 
-    // ─── Observers ────────────────────────────────────────────────────────────
-    // HÀM LẮNG NGHE SỰ KIỆN TỪ VIEWMODEL
-    // Bất cứ khi nào ViewModel xử lý xong dữ liệu (tải xong user, báo lỗi, đặt lịch thành công...), View sẽ nhận được tín hiệu ở đây và cập nhật UI.
+    //-6-//
+    // Giới hạn 5 lượt đặt lịch hẹn cho 1 bài đăng trong ngày -2-
+    // Lắng nghe kết quả trả về từ ViewModel để hiển thị số lượt còn lại lên giao diện (đổi màu đỏ cảnh báo nếu hết lượt).
     private fun setupObservers() {
+        // Tự động điền họ tên, sdt, giới tính sau khi lấy thông tin người dùng
         viewModel.userData.observe(this) { user ->
             user ?: return@observe
             edtFullName.setText(user.fullName)
@@ -429,27 +439,30 @@ class BookingActivity : AppCompatActivity() {
                 else  -> rbOther.isChecked = true
             }
         }
+        // Khóa 2 nút bấm tiếp theo và xác nhận tránh việc bấm liên tục
         viewModel.isLoading.observe(this) { loading ->
             progressBar.visibility = if (loading) View.VISIBLE else View.GONE
             btnNextStep.isEnabled = !loading
             btnConfirmBooking.isEnabled = !loading
         }
         // BƯỚC 3: LẮNG NGHE KẾT QUẢ (NHẬN BIÊN NHẬN)
-        // Sau khi Firebase đẩy lên thành công, biến bookingResult của ViewModel sẽ chuyển thành 'true'
-        // Màn hình BookingActivity đang "nghe lén" (observe) biến này sẽ lập tức nhảy sang Bước 5 (Màn hình thành công)
+        // Nếu đặt lịch thành công sẽ chuyển sang bước 5 là hiển thị màn hình đặt lịch thành công
         viewModel.bookingResult.observe(this) { success ->
             if (success == true) { viewModel.resetBookingResult(); goToStep(5) }
         }
+        // Mạng lỗi hủy và out màn hình
         viewModel.errorMessage.observe(this) { error ->
             if (!error.isNullOrEmpty()) {
                 viewModel.resetErrorMessage()
                 MessageUtils.showErrorDialog(this, "Lỗi", error)
             }
         }
+        // Kiểm tra và thông báo giới hạn đặt lịch 1 phòng cho 1 người trong 1 ngày
         viewModel.remainingQuota.observe(this) { remaining ->
             val tvBookingQuota = findViewById<TextView>(R.id.tvBookingQuota)
             tvBookingQuota.visibility = View.VISIBLE
-            tvBookingQuota.text = "Bạn còn $remaining/5 lượt đặt lịch phòng này trong hôm nay"
+            val maxQuota = com.example.doantotnghiep.Utils.AppointmentConstants.MAX_DAILY_BOOKING_QUOTA
+            tvBookingQuota.text = "Bạn có $remaining/$maxQuota lượt đặt lịch phòng này trong ngày hôm nay"
             if (remaining <= 0) {
                 tvBookingQuota.setTextColor(android.graphics.Color.parseColor("#D32F2F"))
                 tvBookingQuota.setBackgroundColor(android.graphics.Color.parseColor("#FFEBEE"))
@@ -460,7 +473,7 @@ class BookingActivity : AppCompatActivity() {
         }
     }
 
-    // ─── Calendar ─────────────────────────────────────────────────────────────
+    //-7-//
     // HÀM VẼ LỊCH (BƯỚC 1)
     // Tính toán số ngày trong tháng, kiểm tra ngày nào đã qua, ngày nào trống, ngày nào kín lịch để vẽ lên màn hình dạng lưới (Grid).
     private fun renderCalendar() {
@@ -506,6 +519,7 @@ class BookingActivity : AppCompatActivity() {
         calendarAdapter.submitList(days)
     }
 
+    //-8-//
     private fun selectCalendarDay(day: CalendarDay) {
         selectedDateStr     = day.dateStr
         selectedDateDisplay = day.displayStr
@@ -513,6 +527,7 @@ class BookingActivity : AppCompatActivity() {
         calendarAdapter.selectDate(day.dateStr)
     }
 
+    //-9-//
     // HÀM HIỂN THỊ DANH SÁCH LỊCH ĐÃ ĐẶT (BOTTOM SHEET)
     // Khi bấm vào một ngày đã có người đặt, hiện bảng kéo từ dưới lên cho người dùng xem các khung giờ nào đã bị xí chỗ để tránh chọn trùng.
     private fun showOccupiedBottomSheet(day: CalendarDay, count: Int) {
@@ -605,8 +620,10 @@ class BookingActivity : AppCompatActivity() {
         sheet.show()
     }
 
-    // ─── Time slots ───────────────────────────────────────────────────────────
+
+    //-10-//
     // HÀM VẼ DANH SÁCH KHUNG GIỜ (BƯỚC 2)
+    // Bôi xám khung giờ đặt
     // Dựa vào ngày đã chọn ở Bước 1, sinh ra các mốc giờ cách nhau 30 phút. Bôi xám các giờ đã qua hoặc đã bị khách khác đặt.
     private fun renderTimeSlots() {
         if (selectedDateStr.isEmpty()) return
@@ -630,7 +647,7 @@ class BookingActivity : AppCompatActivity() {
             val isPastSlot = selectedDateStr == todayStr && run {
                 val (h, m) = timeStr.split(":").map { it.toInt() }
                 val nowCal  = Calendar.getInstance()
-                h * 60 + m <= nowCal.get(Calendar.HOUR_OF_DAY) * 60 + nowCal.get(Calendar.MINUTE) + 120
+                h * 60 + m <= nowCal.get(Calendar.HOUR_OF_DAY) * 60 + nowCal.get(Calendar.MINUTE)
             }
             TimeSlotItem(
                 time = timeStr,
@@ -661,6 +678,7 @@ class BookingActivity : AppCompatActivity() {
         }
     }
 
+    //-11-//
     private fun buildGroupedItems(slots: List<TimeSlotItem>): List<GroupedSlotItem> {
         val result = mutableListOf<GroupedSlotItem>()
         var lastGroup = ""
@@ -677,13 +695,15 @@ class BookingActivity : AppCompatActivity() {
         return result
     }
 
-    // ─── Step navigation ──────────────────────────────────────────────────────
-    // HÀM KIỂM TRA ĐIỀU KIỆN QUA BƯỚC 2
-    // Đảm bảo người dùng đã chọn 1 ngày hợp lệ ở Bước 1 thì mới cho phép đi tiếp.
+
+    //-12-//
+    // Giới hạn 5 lượt đặt lịch hẹn cho 1 bài đăng trong ngày -3-
+    //
     private fun validateStep1() {
         val remaining = viewModel.remainingQuota.value ?: 0
         if (remaining <= 0) {
-            MessageUtils.showErrorDialog(this, "Hết lượt đặt lịch", "Bạn đã hết 5/5 lượt đặt lịch cho phòng này hôm nay. Vui lòng thử lại vào ngày mai.")
+            val maxQuota = com.example.doantotnghiep.Utils.AppointmentConstants.MAX_DAILY_BOOKING_QUOTA
+            MessageUtils.showErrorDialog(this, "Hết lượt đặt lịch", "Bạn đã hết $maxQuota/$maxQuota lượt đặt lịch cho phòng này hôm nay. Vui lòng thử lại vào ngày mai.")
             return
         }
         if (selectedDateStr.isEmpty()) {
@@ -751,6 +771,7 @@ class BookingActivity : AppCompatActivity() {
         updateStepUI()
     }
 
+    //-13-//
     // HÀM CẬP NHẬT GIAO DIỆN THANH TIẾN ĐỘ
     // Đổi màu các hình tròn (1,2,3,4) ở trên cùng màn hình để người dùng biết mình đang ở bước nào trong tiến trình.
     private fun updateStepUI() {
@@ -784,7 +805,8 @@ class BookingActivity : AppCompatActivity() {
         }
     }
 
-    // ─── Step 4 summary ───────────────────────────────────────────────────────
+
+    //-14-//
     // HÀM ĐỔ DỮ LIỆU RA MÀN HÌNH TỔNG KẾT (BƯỚC 4)
     // Lấy tất cả thông tin đã gom nhặt được ở các Bước 1, 2, 3 để hiển thị lên một bảng tóm tắt cho người dùng xem lại trước khi chốt.
     private fun populateSummary() {
@@ -805,7 +827,7 @@ class BookingActivity : AppCompatActivity() {
         tvSummaryNoteValue.text = if (note.isEmpty()) "(không có)" else note
     }
 
-    // ─── Submit ───────────────────────────────────────────────────────────────
+
     private fun showConfirmDialog() {
         AlertDialog.Builder(this)
             .setTitle("Xác nhận đặt lịch")
@@ -815,6 +837,7 @@ class BookingActivity : AppCompatActivity() {
             .show()
     }
 
+    //-15//
     // BƯỚC 1: ĐÓNG GÓI DỮ LIỆU ĐỂ GỬI ĐI
     // Hàm này sẽ gom toàn bộ thông tin ngày, giờ, thông tin người thuê, chủ trọ thành đối tượng Appointment
     private fun submitBooking() {
@@ -848,7 +871,7 @@ class BookingActivity : AppCompatActivity() {
             statusHistory = listOf(
                 StatusChange("", "pending", "tenant", uid, "Người thuê đặt lịch", now)
             ),
-            landlordConfirmDeadline = now + 48 * 3_600_000L,
+            landlordConfirmDeadline = appointmentTimestampMs, // Hạn duyệt = đúng giờ hẹn
             tenantConfirmDeadline   = appointmentTimestampMs - 3_600_000L,
             note             = edtNote.text.toString().trim(),
             hasUnreadUpdate  = true,
@@ -860,10 +883,9 @@ class BookingActivity : AppCompatActivity() {
         viewModel.submitBooking(appointment)
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Inner data classes
-    // ═════════════════════════════════════════════════════════════════════════
 
+    // Inner data classes
+    // Khuôn dữ liệu
     data class CalendarDay(
         val day: Int,
         val dateStr: String,
@@ -893,10 +915,8 @@ class BookingActivity : AppCompatActivity() {
         data class Slot(val item: TimeSlotItem) : GroupedSlotItem()
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Calendar Adapter — 4-color rendering
-    // ═════════════════════════════════════════════════════════════════════════
 
+    // Hàm vẽ lịch hiển thị
     inner class CalendarAdapter(private val onDayClick: (CalendarDay) -> Unit) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
@@ -960,10 +980,7 @@ class BookingActivity : AppCompatActivity() {
         }
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Grouped Slot Adapter — section headers + 4-column grid
-    // ═════════════════════════════════════════════════════════════════════════
-
+    // Hàm vẽ khung giờ hiển thị
     inner class GroupedSlotAdapter(private val onSlotClick: (TimeSlotItem) -> Unit) :
         RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 

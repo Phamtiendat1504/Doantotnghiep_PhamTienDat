@@ -549,7 +549,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sau khi gửi: Chủ trọ có 48h để xác nhận. Bạn sẽ nhận thông báo khi có cập nhật."
+                    android:text="Sau khi gửi: Lịch hẹn sẽ tự động hủy nếu chủ trọ không xác nhận trước giờ hẹn. Bạn sẽ nhận thông báo khi có cập nhật."
                     android:textSize="11sp"
                     android:textColor="@color/text_secondary"
                     android:gravity="center"
@@ -688,7 +688,7 @@
                 <TextView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Chủ trọ có 48h để xác nhận. Bạn sẽ nhận thông báo khi có cập nhật."
+                    android:text="Lịch hẹn sẽ tự động hủy nếu chủ trọ không xác nhận trước giờ hẹn. Bạn sẽ nhận thông báo khi có cập nhật."
                     android:textSize="11sp"
                     android:textColor="@color/text_secondary"
                     android:gravity="center"

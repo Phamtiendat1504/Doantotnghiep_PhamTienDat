@@ -460,6 +460,76 @@
             android:layout_marginTop="@dimen/padding_medium"
             android:visibility="gone" />
 
+        <!-- Card hiển thị khi hồ sơ escalated đã quá 24h Admin chưa duyệt -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardExpiredVerification"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="@dimen/spacing_14"
+            android:layout_marginEnd="@dimen/spacing_14"
+            android:layout_marginBottom="@dimen/padding_large"
+            android:visibility="gone"
+            app:cardCornerRadius="@dimen/spacing_14"
+            app:cardElevation="@dimen/elevation_3"
+            app:cardBackgroundColor="@color/bg_white">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="@dimen/padding_large">
+
+                <!-- Icon + tiêu đề -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:layout_marginBottom="@dimen/padding_medium">
+
+                    <ImageView
+                        android:layout_width="@dimen/dimen_36dp"
+                        android:layout_height="@dimen/dimen_36dp"
+                        android:src="@drawable/ic_info"
+                        app:tint="@color/warning" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hồ sơ chưa được xử lý"
+                        android:textSize="@dimen/text_size_15"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_primary"
+                        android:layout_marginStart="@dimen/padding_medium" />
+
+                </LinearLayout>
+
+                <!-- Nội dung giải thích -->
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/tvExpiredDescription"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Hồ sơ xác minh của bạn đã chờ hơn 24 giờ nhưng chưa được admin xử lý (do hệ thống quá tải hoặc ảnh cần chụp lại).\n\nBạn có thể hủy hồ sơ cũ và gửi lại ngay."
+                    android:textSize="@dimen/text_size_13"
+                    android:textColor="@color/text_secondary"
+                    android:lineSpacingExtra="@dimen/elevation_4"
+                    android:layout_marginBottom="@dimen/padding_large" />
+
+                <!-- Nút hủy hồ sơ -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCancelAndResubmit"
+                    android:layout_width="match_parent"
+                    android:layout_height="@dimen/dimen_52dp"
+                    android:text="Hủy hồ sơ &amp; Nộp lại"
+                    android:textSize="@dimen/text_size_15"
+                    android:textAllCaps="false"
+                    app:backgroundTint="@color/warning"
+                    app:cornerRadius="@dimen/spacing_14" />
+
+            </LinearLayout>
+
+        </com.google.android.material.card.MaterialCardView>
+
     </LinearLayout>
 
 </ScrollView>

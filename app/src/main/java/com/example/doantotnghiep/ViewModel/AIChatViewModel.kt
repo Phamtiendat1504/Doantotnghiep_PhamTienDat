@@ -44,8 +44,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
     private val _error = MutableLiveData<String?>()
     val error: LiveData<String?> = _error
 
-    private val _deepLink = MutableLiveData<String?>()
-    val deepLink: LiveData<String?> = _deepLink
+
 
     private val displayMessages = mutableListOf<AIMessage>()
 
@@ -60,8 +59,10 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
     private val CACHE_TTL_MS = 5 * 60 * 1000L
 
     // --- Chat history ---
+    private var cachedUserName: String = ""
 
-    fun loadHistory(uid: String) {                              // Fix #9: loadContext() removed
+    fun loadHistory(uid: String, userName: String = "") {       // Fix #9: loadContext() removed
+        cachedUserName = userName
         _isLoading.value = true
         aiChatRepository.loadConversationHistory(uid,
             onSuccess = { docs ->
@@ -75,7 +76,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
                         displayMessages.add(AIMessage(role, content, timestamp, rooms))
                     }
                 } else {
-                    addGreeting()
+                    addGreeting(userName)
                 }
                 _messages.value = displayMessages.toList()
                 geminiService.restoreHistory(displayMessages.toList())
@@ -88,7 +89,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
         )
     }
 
-    // --- Send message ---
+    // Send message
 
     fun sendMessage(text: String, uid: String) {
         if (_isProcessing.value == true) return
@@ -154,7 +155,6 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
             displayMessages.add(AIMessage("typing", "...", System.currentTimeMillis()))
             _messages.value = displayMessages.toList()
 
-            // Fix #2: coroutine instead of raw Thread + Handler
             viewModelScope.launch {
                 val latLng: Pair<Double, Double>? =
                     if (params.addressQuery == cachedGeoAddress &&
@@ -167,11 +167,11 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
                 if (latLng == null) {
                     removeTypingIndicator()
                     val t = System.currentTimeMillis()
-                    val msg = "⚠️ Không tìm được vị trí cho địa chỉ bạn nhập.\n" +
-                        "Vui lòng kiểm tra lại hoặc thử nhập thêm tên quận/phố " +
+                    val msg = "Không tìm được vị trí cho địa chỉ bạn nhập.\n" +
+                        "Vui lòng kiểm tra lại hoặc thử nhập thêm tên phường/xã " +
                         "(ví dụ: \"ngõ 6 Cầu Giấy\")."
                     displayMessages.add(AIMessage("model", msg, t,
-                        quickReplies = listOf("🔍 Tìm lại", "Đổi khu vực")))
+                        quickReplies = listOf("Tìm lại", "Đổi khu vực")))
                     _messages.value = displayMessages.toList()
                 } else {
                     cachedGeoAddress = params.addressQuery
@@ -214,7 +214,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
                     else -> ""
                 }
                 val priceStr = buildPriceStr(params.minPrice, params.maxPrice)
-                val quickReplies = listOf("🔍 Tìm lại", "Đổi khu vực", "Đổi mức giá")
+                val quickReplies = listOf("Tìm lại", "Đổi khu vực", "Đổi mức giá")
 
                 if (primary.isEmpty() && related.isEmpty()) {
                     val t = System.currentTimeMillis()
@@ -248,7 +248,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
                 val t = System.currentTimeMillis()
                 displayMessages.add(AIMessage("model",
                     "Có lỗi khi tìm kiếm phòng. Vui lòng thử lại sau.",
-                    t, quickReplies = listOf("🔍 Tìm lại")))
+                    t, quickReplies = listOf("Tìm lại")))
                 _messages.value = displayMessages.toList()
                 Log.e("AIChatViewModel", "Room search failed: $errMsg")
             }
@@ -293,7 +293,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
         cachedRoomDocs = null
         cacheTimestampMs = 0L
         geminiService.clearHistory()
-        addGreeting()
+        addGreeting(cachedUserName)
         _messages.value = displayMessages.toList()
         _isLoading.value = false
     }
@@ -303,10 +303,45 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
     fun resolveQuickReplyAction(displayText: String): String =
         QUICK_REPLY_ACTIONS[displayText] ?: displayText
 
-    private fun addGreeting() {
+    /**
+     * Cập nhật lại lời chào với tên đầy đủ.
+     * - Nếu tin nhắn đầu tiên là lời chào: cập nhật nội dung.
+     * - Nếu có lịch sử cũ (không có lời chào đầu): chèn thêm lời chào vào đầu.
+     */
+    fun updateGreetingName(fullName: String) {
+        cachedUserName = fullName
+        val greetingText = if (fullName.isNotBlank()) {
+            "Xin chào $fullName! Mình là Trợ lý hỗ trợ tìm kiếm phòng trọ từ Tìm trọ 24/7.\nBạn cần tìm phòng khu vực nào hay cần mình tư vấn điều gì không?"
+        } else {
+            "Xin chào! Mình là Trợ lý hỗ trợ tìm kiếm phòng trọ từ Tìm trọ 24/7.\nBạn cần tìm phòng khu vực nào hay cần mình tư vấn điều gì không?"
+        }
+
+        if (displayMessages.isEmpty()) return
+
+        val firstMsg = displayMessages[0]
+        if (firstMsg.role == "model" && firstMsg.content.startsWith("Xin chào")) {
+            // Cập nhật lời chào hiện có
+            displayMessages[0] = firstMsg.copy(content = greetingText)
+        } else {
+            // Có lịch sử cũ nhưng không có lời chào → chèn vào đầu danh sách
+            displayMessages.add(0, AIMessage(
+                role = "model",
+                content = greetingText,
+                timestamp = (displayMessages.firstOrNull()?.timestamp ?: System.currentTimeMillis()) - 1
+            ))
+        }
+        _messages.value = displayMessages.toList()
+    }
+
+    private fun addGreeting(userName: String = "") {
+        val greeting = if (userName.isNotBlank()) {
+            "Xin chào $userName! Mình là Trợ lý hỗ trợ tìm kiếm phòng trọ từ Tìm trọ 24/7.\nBạn cần tìm phòng khu vực nào hay cần mình tư vấn điều gì không?"
+        } else {
+            "Xin chào! Mình là Trợ lý hỗ trợ tìm kiếm phòng trọ từ Tìm trọ 24/7.\nBạn cần tìm phòng khu vực nào hay cần mình tư vấn điều gì không?"
+        }
         displayMessages.add(AIMessage(
             role = "model",
-            content = "Xin chào! Mình là Trợ lý hỗ trợ tìm kiếm phòng trọ từ Tìm trọ 24/7.\nBạn cần tìm phòng khu vực nào hay cần mình tư vấn điều gì không?",
+            content = greeting,
             timestamp = System.currentTimeMillis()
         ))
     }
@@ -364,8 +399,8 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
 
     private fun randomFoundResults(count: Int, districtStr: String, priceStr: String): String =
         listOf(
-            "Mình tìm được **$count phòng** phù hợp$districtStr$priceStr! 🏠",
-            "Có **$count phòng** đang trống$districtStr$priceStr, bạn xem thử nhé! 👇"
+            "Mình tìm được **$count phòng** phù hợp$districtStr$priceStr! ",
+            "Có **$count phòng** đang trống$districtStr$priceStr, bạn xem thử nhé! "
         ).random()
 
     private fun randomRelatedResults(count: Int): String =
@@ -375,7 +410,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
         ).random()
 
     private fun randomFoundGeoResults(count: Int, radius: String, priceStr: String): String =
-        "Tìm được **$count phòng** trong bán kính **$radius**$priceStr! 📍"
+        "Tìm được **$count phòng** trong bán kính **$radius**$priceStr! Bạn xem thử nhé"
 
     private fun randomNoGeoResults(radius: String, priceStr: String): String =
         "Không tìm thấy phòng nào trong bán kính **$radius**$priceStr. Bạn thử mở rộng bán kính nhé!"
@@ -400,7 +435,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
 
                 val geoResult = geoSearchRoomsUseCase(docs, lat, lng, radiusKm, params)
                 val priceStr = buildPriceStr(params.minPrice, params.maxPrice)
-                val quickReplies = listOf("🔍 Tìm lại", "Đổi bán kính", "Đổi mức giá")
+                val quickReplies = listOf("Tìm lại", "Đổi bán kính", "Đổi mức giá")
                 val t = System.currentTimeMillis()
 
                 when {
@@ -424,7 +459,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
                 val t = System.currentTimeMillis()
                 displayMessages.add(AIMessage("model",
                     "Có lỗi khi tìm kiếm quanh địa chỉ: $errMsg\nVui lòng thử lại sau.",
-                    t, quickReplies = listOf("🔍 Tìm lại")))
+                    t, quickReplies = listOf("Tìm lại")))
                 _messages.value = displayMessages.toList()
                 Log.e("AIChatViewModel", "Geo search failed: $errMsg")
             }
@@ -433,7 +468,7 @@ class AIChatViewModel(application: Application) : AndroidViewModel(application) 
 
     companion object {
         private val QUICK_REPLY_ACTIONS = mapOf(
-            "🔍 Tìm lại" to "Tìm lại những phòng như vậy cho mình",
+            "Tìm lại" to "Tìm lại những phòng như vậy cho mình",
             "Đổi khu vực" to "Tôi muốn tìm phòng ở khu vực khác",
             "Đổi mức giá" to "Tôi muốn thay đổi mức giá",
             "Đổi bán kính" to "Tôi muốn mở rộng bán kính tìm kiếm"

@@ -70,5 +70,6 @@ data class Room(
     val maxDailyAppointments: Int = 10,
     val appointmentNotice: String = "",
     val totalAppointments: Int = 0,
-    val activeAppointments: Int = 0
+    val activeAppointments: Int = 0,
+    val noShowReportCount: Int = 0  // Số lần khách báo cáo chủ trọ không đến điểm hẹn (cộng dồn theo từng phòng)
 )

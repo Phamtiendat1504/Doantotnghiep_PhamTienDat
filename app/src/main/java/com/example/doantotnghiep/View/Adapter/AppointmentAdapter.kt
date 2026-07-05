@@ -188,7 +188,7 @@ class AppointmentAdapter(
                 "rejected" -> if (item.rejectReason.isNotEmpty()) "Lý do: ${item.rejectReason}" else ""
                 "cancelled_by_tenant", "cancelled_by_system" ->
                     if (item.cancelReason.isNotEmpty()) "Lý do: ${item.cancelReason}" else ""
-                "expired_pending" -> "Chủ trọ không xác nhận trong 48h"
+                "expired_pending" -> "Chủ trọ không xác nhận trước giờ hẹn, lịch đã tự hủy"
                 "completed_viewed" -> "Liên hệ chủ trọ nếu muốn thuê"
                 "viewed_not_rented" -> "Khách đã xem nhưng không thuê. Phòng vẫn còn trống."
                 "landlord_no_show" -> "Bạn đã báo cáo chủ trọ không đến đúng giờ hẹn."

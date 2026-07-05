@@ -7,9 +7,9 @@ import kotlin.math.sqrt
 
 object GeoUtils {
 
-    private const val EARTH_RADIUS_KM = 6371.0
+    private const val EARTH_RADIUS_KM = 6371.0// Bán kính thực tế trái đất
     // 1 độ vĩ tuyến ≈ 111.32 km
-    private const val KM_PER_LAT_DEGREE = 111.32
+    private const val KM_PER_LAT_DEGREE = 111.32//vĩ độ
 
     fun haversineKm(lat1: Double, lng1: Double, lat2: Double, lng2: Double): Double {
         val dLat = Math.toRadians(lat2 - lat1)

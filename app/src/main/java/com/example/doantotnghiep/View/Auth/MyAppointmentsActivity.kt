@@ -157,7 +157,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
         hasConflict = hasConflict
     )
 
-    // ─── Observers ────────────────────────────────────────────────────────────
+    //
 
     private fun setupObservers() {
         viewModel.appointmentAccess.observe(this) { access ->
@@ -266,7 +266,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
         }
     }
 
-    // ─── AppointmentActionListener ────────────────────────────────────────────
+    
 
     override fun onConfirmLandlord(item: AppointmentItem) {
         androidx.appcompat.app.AlertDialog.Builder(this)
@@ -277,6 +277,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Hủy", null).show()
     }
 
+    // Nhập lý do từ chối từ phái người chủ khi lịch hẹn trạng thái chờ duyệt
     override fun onRejectLandlord(item: AppointmentItem) {
         val input = EditText(this).apply { hint = "Lý do từ chối (bắt buộc)"; setPadding(48, 32, 48, 32) }
         androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Từ chối lịch hẹn").setView(input)
@@ -300,9 +301,10 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Đóng", null).show()
     }
 
+    // Xác nhận khách đã đến xem
     override fun onMarkAsViewed(item: AppointmentItem) {
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Khách đã đến xem?")
+            .setTitle("Khách đã đến xem")
             .setMessage("Xác nhận khách ${item.tenantName} đã đến xem phòng. Slot sẽ được mở lại. Nếu khách quyết định thuê, bạn có thể chọn 'Xác nhận cho thuê' sau đó.")
             .setPositiveButton("Khách đã đến") { _, _ ->
                 viewModel.markAsViewed(item.id,
@@ -312,9 +314,10 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Hủy", null).show()
     }
 
+    // Xác nhận khách không đến
     override fun onMarkAsNoShow(item: AppointmentItem) {
         androidx.appcompat.app.AlertDialog.Builder(this)
-            .setTitle("Khách không đến?")
+            .setTitle("Khách không đến")
             .setMessage("Xác nhận khách ${item.tenantName} đã không đến xem phòng. Slot sẽ được mở lại.")
             .setPositiveButton("Khách không đến") { _, _ ->
                 viewModel.markAsNoShow(item.id,
@@ -346,6 +349,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Hủy", null).show()
     }
 
+    // Khách bấm xác nhận xem phòng khi chủ bài đăng duyệt lịch hẹn
     override fun onTenantConfirm(item: AppointmentItem) {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Xác nhận sẽ đến")
@@ -356,6 +360,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Hủy", null).show()
     }
 
+    // Khách hủy lịch hẹn khi trạng thái lịch hẹn sẽ xác nhận
     override fun onTenantCancel(item: AppointmentItem) {
         val input = EditText(this).apply { hint = "Lý do hủy (VD: Bận đột xuất)"; setPadding(48, 32, 48, 32) }
         androidx.appcompat.app.AlertDialog.Builder(this).setTitle("Hủy lịch hẹn")
@@ -368,6 +373,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Đóng", null).show()
     }
 
+    // Khách hủy lịch hẹn khi trạng thái lịch hẹn đang chờ duyệt
     override fun onCancelPending(item: AppointmentItem) {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Hủy yêu cầu đặt lịch")
@@ -380,6 +386,7 @@ class MyAppointmentsActivity : AppCompatActivity(), AppointmentActionListener {
             }.setNegativeButton("Đóng", null).show()
     }
 
+    // Chủ trọ không đến
     override fun onMarkAsLandlordNoShow(item: AppointmentItem) {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle("Chủ trọ không đến?")

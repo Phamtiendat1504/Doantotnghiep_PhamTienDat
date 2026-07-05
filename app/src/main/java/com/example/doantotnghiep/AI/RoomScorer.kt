@@ -20,24 +20,28 @@ object RoomScorer {
     fun score(doc: DocumentSnapshot, params: SearchParams): Int {
         val docPrice = doc.getLong("price") ?: 0L
 
-        // Fix #5: independent single-sided checks (previously only excluded when BOTH min AND max given)
+        // --- Lọc cứng giá (loại ngay nếu không khớp) ---
         if (params.maxPrice != null && docPrice > params.maxPrice) return -1
         if (params.minPrice != null && docPrice < params.minPrice) return -1
 
+        // --- Lọc cứng tiện ích ---
         val docAmenities = buildAmenityList(doc)
         for (amenity in params.amenities) {
             if (!docAmenities.contains(amenity)) return -1
         }
 
+        // --- Lọc cứng diện tích ---
         val docArea = (doc.getLong("area") ?: 0L).toInt()
         if (params.minArea != null && docArea < params.minArea) return -1
         if (params.maxArea != null && docArea > params.maxArea) return -1
 
+        // --- Lọc cứng loại phòng ---
         if (params.roomType != null) {
             val docType = doc.getString("roomType") ?: ""
             if (!docType.contains(params.roomType, ignoreCase = true)) return -1
         }
 
+        // --- Lọc cứng giới tính ---
         if (params.genderPrefer != null) {
             // Tương thích cả 2 tên field: genderPrefer (Room.kt) và genderPreference (dữ liệu cũ)
             val docGender = doc.getString("genderPrefer")
@@ -51,31 +55,37 @@ object RoomScorer {
                 !docGender.contains(params.genderPrefer, ignoreCase = true)) return -1
         }
 
+        // --- Lọc cứng giá điện ---
         if (params.maxElectricPrice != null) {
             val docElec = doc.getLong("electricPrice") ?: 0L
             if (docElec > 0 && docElec > params.maxElectricPrice) return -1
         }
 
+        // --- Lọc cứng giá nước ---
         if (params.maxWaterPrice != null) {
             val docWater = doc.getLong("waterPrice") ?: 0L
             if (docWater > 0 && docWater > params.maxWaterPrice) return -1
         }
 
+        // --- Lọc cứng giá wifi ---
         if (params.maxWifiPrice != null) {
             val docWifi = doc.getLong("wifiPrice") ?: 0L
             if (docWifi > 0 && docWifi > params.maxWifiPrice) return -1
         }
 
+        // --- Lọc cứng tiền cọc (số tháng) ---
         if (params.maxDepositMonths != null) {
             val docDep = (doc.getLong("depositMonths") ?: 0L).toInt()
             if (docDep > params.maxDepositMonths) return -1
         }
 
+        // --- Lọc cứng tiền cọc (số tiền) ---
         if (params.maxDepositAmount != null) {
             val docDepAmt = doc.getLong("depositAmount") ?: 0L
             if (docDepAmt > 0 && docDepAmt > params.maxDepositAmount) return -1
         }
 
+        // --- Lọc cứng chính sách thú cưng ---
         if (params.petAllowed != null) {
             val docPet = doc.getString("pet") ?: ""
             val docPetAllowed = docPet.contains("được", ignoreCase = true)
@@ -93,23 +103,65 @@ object RoomScorer {
             }
         }
 
+        // --- Lọc cứng giờ giấc tự do ---
         if (params.freeTime != null) {
             val docCurfew = doc.getString("curfew") ?: ""
-            // "Tùy chọn", "Tự do", "Không giới nghiêm", "Không chung chủ" đều được coi là free time
             val docFree = docCurfew.contains("tự do", ignoreCase = true) ||
                 docCurfew.contains("không chung chủ", ignoreCase = true) ||
                 docCurfew.contains("tùy chọn", ignoreCase = true) ||
                 docCurfew.contains("tùy ý", ignoreCase = true) ||
                 docCurfew.isEmpty()
             if (params.freeTime == true && !docFree) return -1
-            // Nếu freeTime=false, vẫn để qua (không loại phòng có giờ giấc cụ thể)
         }
 
+        // --- Lọc cứng giờ đóng cửa muộn nhất ---
+        // Ví dụ: maxCurfewHour=23 có nghĩa là phòng phải đóng cửa từ 23h trở đi (hoặc không giới nghiêm)
+        if (params.maxCurfewHour != null) {
+            val docCurfew = doc.getString("curfew") ?: ""
+            val docCurfewTime = doc.getString("curfewTime") ?: ""
+            // Nếu là tự do / không giới nghiêm thì luôn đạt
+            val docFree = docCurfew.contains("tự do", ignoreCase = true) ||
+                docCurfew.contains("tùy chọn", ignoreCase = true) ||
+                docCurfew.contains("tùy ý", ignoreCase = true) ||
+                docCurfew.isEmpty()
+            if (!docFree) {
+                // Cố gắng parse giờ từ curfewTime (định dạng "HH:mm" hoặc "HH")
+                val parsedHour = parseCurfewHour(docCurfewTime)
+                if (parsedHour != null && parsedHour < params.maxCurfewHour) return -1
+            }
+        }
+
+        // --- Lọc cứng số người ở ---
         if (params.maxPeopleCount != null) {
             val docPeople = (doc.getLong("peopleCount") ?: 0L).toInt()
             if (docPeople > 0 && docPeople < params.maxPeopleCount) return -1
         }
 
+        // --- Lọc cứng số phòng còn trống ---
+        if (params.minAvailableRooms != null) {
+            val docRoomCount = (doc.getLong("roomCount") ?: 0L).toInt()
+            val docRentedCount = (doc.getLong("rentedCount") ?: 0L).toInt()
+            val availableRooms = docRoomCount - docRentedCount
+            // Chỉ lọc nếu có ghi số lượng phòng (roomCount > 0)
+            if (docRoomCount > 0 && availableRooms < params.minAvailableRooms) return -1
+        }
+
+        // --- Lọc cứng phí gửi xe máy ---
+        if (params.maxMotorbikeFee != null) {
+            val docMotorbikeFee = doc.getLong("motorbikeFee") ?: 0L
+            if (docMotorbikeFee > 0 && docMotorbikeFee > params.maxMotorbikeFee) return -1
+        }
+
+        // --- Lọc cứng phí gửi xe đạp/xe điện ---
+        if (params.maxBikeFee != null) {
+            val docEBikeFee = doc.getLong("eBikeFee") ?: 0L
+            val docBicycleFee = doc.getLong("bicycleFee") ?: 0L
+            // Lấy phí thấp nhất trong các loại xe đạp/xe điện để so sánh
+            val lowestBikeFee = listOf(docEBikeFee, docBicycleFee).filter { it > 0 }.minOrNull()
+            if (lowestBikeFee != null && lowestBikeFee > params.maxBikeFee) return -1
+        }
+
+        // --- Lọc cứng theo ngày đăng bài (N ngày gần nhất) ---
         if (params.daysAgo != null) {
             val docCreated = doc.getLong("createdAt") ?: 0L
             val diffMs = System.currentTimeMillis() - docCreated
@@ -117,10 +169,12 @@ object RoomScorer {
             if (diffDays > params.daysAgo) return -1
         }
 
+        // --- Lọc cứng theo ngày đăng cụ thể ---
         if (params.specificDate != null) {
             val docCreated = doc.getLong("createdAt") ?: 0L
             if (!isSameDay(docCreated, params.specificDate)) return -1
         }
+
 
         val docAddress = (doc.getString("address") ?: "").lowercase()
         var s = 0
@@ -170,18 +224,40 @@ object RoomScorer {
         return list
     }
 
+
+    private fun parseCurfewHour(curfewTime: String): Int? {
+        if (curfewTime.isBlank()) return null
+        return try {
+            val cleaned = curfewTime.trim()
+            when {
+                // Định dạng HH:mm (24h)
+                cleaned.matches(Regex("""^\d{1,2}:\d{2}$""")) ->
+                    cleaned.split(":")[0].toInt()
+                // Định dạng HH (24h)
+                cleaned.matches(Regex("""^\d{1,2}$""")) ->
+                    cleaned.toInt()
+                // Định dạng "23h" hoặc "23h00"
+                cleaned.matches(Regex("""^\d{1,2}h(\d{2})?$""", RegexOption.IGNORE_CASE)) ->
+                    cleaned.replace(Regex("[hH].*"), "").toInt()
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     private fun isSameDay(createdAtMs: Long, dateStr: String): Boolean {
         return try {
             val sdf = java.text.SimpleDateFormat("d/M/yyyy", java.util.Locale("vi"))
             sdf.timeZone = java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh")
-            
+
             val targetDate = sdf.parse(dateStr) ?: return false
             val calTarget = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh"))
             calTarget.time = targetDate
-            
+
             val calCreated = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("Asia/Ho_Chi_Minh"))
             calCreated.timeInMillis = createdAtMs
-            
+
             calTarget.get(java.util.Calendar.YEAR) == calCreated.get(java.util.Calendar.YEAR) &&
             calTarget.get(java.util.Calendar.DAY_OF_YEAR) == calCreated.get(java.util.Calendar.DAY_OF_YEAR)
         } catch (e: Exception) {

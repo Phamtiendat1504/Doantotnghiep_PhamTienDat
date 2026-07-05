@@ -50,11 +50,12 @@ import kotlin.math.sqrt
 class CccdCameraActivity : AppCompatActivity() {
 
     companion object {
-        const val EXTRA_TARGET_SIDE = "extra_target_side"
-        const val EXTRA_OUTPUT_URI = "extra_output_uri"
-        const val SIDE_FRONT = "front"
-        const val SIDE_BACK = "back"
+        const val EXTRA_TARGET_SIDE = "extra_target_side"// Key để nhận biết Activity gọi mở mặt trước hay mặt sau
+        const val EXTRA_OUTPUT_URI = "extra_output_uri"// Key để trả về đường dẫn ảnh sau khi chụp xong
+        const val SIDE_FRONT = "front"// Cờ hiệu: Đang chụp mặt trước
+        const val SIDE_BACK = "back"// Cờ hiệu: Đang chụp mặt sau
 
+        // Tập hợp các từ khóa đặc trưng chỉ xuất hiện ở MẶT TRƯỚC CCCD
         private val FRONT_KEYWORDS = listOf(
             "CAN CUOC",
             "CAN CUOC CONG DAN",
@@ -65,35 +66,43 @@ class CccdCameraActivity : AppCompatActivity() {
             "GIOI TINH",
             "QUOC TICH"
         )
+        // Tập hợp các từ khóa đặc trưng chỉ xuất hiện ở MẶT SAU CCCD
         private val BACK_KEYWORDS = listOf(
             "DAC DIEM NHAN DANG",
             "NGAY CAP",
             "NOI CAP",
             "CO GIA TRI DEN"
         )
+        // Các từ khóa bắt buộc phải có ở phần viền trên (Header) của mặt trước để chống cắt xén thẻ
         private val FRONT_HEADER_KEYWORDS = listOf(
             "CAN CUOC",
             "CAN CUOC CONG DAN",
             "SOCIALIST REPUBLIC OF VIET NAM",
             "IDENTITY CARD"
         )
-        private const val MIN_MEAN_LUMA = 30.0
-        private const val MAX_MEAN_LUMA = 230.0
-        private const val MAX_DARK_RATIO = 0.70
-        private const val MAX_BRIGHT_RATIO = 0.45
-        private const val MIN_CONTRAST_STD = 15.0
-        private const val MIN_SHARPNESS = 7.0
-        private const val MIN_TEXT_BLOCKS_FRONT = 4
-        private const val MIN_TEXT_BLOCKS_BACK = 2
-        private const val MIN_TEXT_CHARS_FRONT = 60
-        private const val MIN_TEXT_CHARS_BACK = 35
-        private const val MIN_TEXT_SPREAD_X_FRONT = 0.55
-        private const val MIN_TEXT_SPREAD_X_BACK = 0.55
-        private const val MIN_TEXT_SPREAD_Y = 0.38
-        private const val MIN_TEXT_COVERAGE = 0.20
-        private const val AUTO_CAPTURE_MIN_STABLE_FRAMES = 3
-        private const val AUTO_CAPTURE_ANALYZE_INTERVAL_MS = 700L
-        private const val AUTO_CAPTURE_REARM_DELAY_MS = 1200L
+        // 3. CÁC NGƯỠNG KIỂM ĐỊNH CHẤT LƯỢNG ẢNH BẰNG PIXEL
+        private const val MIN_MEAN_LUMA = 30.0// Độ sáng tối thiểu (Dưới mức này là ảnh quá tối)
+        private const val MAX_MEAN_LUMA = 230.0// Độ sáng tối đa (Trên mức này là ảnh lóa sáng, cháy sáng)
+        private const val MAX_DARK_RATIO = 0.70// Tỷ lệ vùng tối tối đa cho phép (70%)
+        private const val MAX_BRIGHT_RATIO = 0.45 // Tỷ lệ vùng lóa sáng tối đa cho phép (45%)
+        private const val MIN_CONTRAST_STD = 15.0// Độ tương phản tối thiểu (Chống ảnh bị bệt màu)
+        private const val MIN_SHARPNESS = 7.0// Độ nét tối thiểu (Chống ảnh bị mờ do rung tay)
+
+        // Giới hạn số lượng khối chữ và ký tự tối thiểu đọc được để xác nhận không chụp thiếu góc
+        private const val MIN_TEXT_BLOCKS_FRONT = 4// Mặt trước phải đọc được ít nhất 4 khối chữ
+        private const val MIN_TEXT_BLOCKS_BACK = 2// Mặt sau phải đọc được ít nhất 2 khối chữ
+        private const val MIN_TEXT_CHARS_FRONT = 60// Mặt trước phải có ít nhất 60 ký tự
+        private const val MIN_TEXT_CHARS_BACK = 35// Mặt sau phải có ít nhất 35 ký tự
+
+        // Độ phân tán của chữ trên ảnh (Spread / Coverage) để ép người dùng chụp thẻ to rõ, chiếm phần lớn khung hình
+        private const val MIN_TEXT_SPREAD_X_FRONT = 0.55// Chiều ngang chữ dàn trải ít nhất 55% khung mặt trước
+        private const val MIN_TEXT_SPREAD_X_BACK = 0.55// Chiều ngang chữ dàn trải ít nhất 55% khung mặt sau
+        private const val MIN_TEXT_SPREAD_Y = 0.38// Chiều dọc chữ dàn trải ít nhất 38%
+        private const val MIN_TEXT_COVERAGE = 0.20// Vùng diện tích có chữ chiếm ít nhất 20% khung hình
+
+        private const val AUTO_CAPTURE_MIN_STABLE_FRAMES = 3// Số nhịp khung hình ổn định liên tiếp cần đạt để kích hoạt lệnh tự động chụp (3 nhịp)
+        private const val AUTO_CAPTURE_ANALYZE_INTERVAL_MS = 700L// Khoảng thời gian nghỉ (Delay) giữa mỗi lần AI phân tích khung hình (Tránh quá tải CPU máy) (700 mili-giây)
+        private const val AUTO_CAPTURE_REARM_DELAY_MS = 1200L// Thời gian khóa (Delay) sau khi chụp lỗi trước khi cho phép máy bắt đầu quét lại (1.2 giây)
     }
 
     private lateinit var previewView: PreviewView
@@ -442,6 +451,12 @@ class CccdCameraActivity : AppCompatActivity() {
             }
     }
 
+    // Hàm phân tích ngữ nghĩa hình ảnh (Semantic Analysis) chống giả mạo / chụp ẩu:
+// 1. Quét OCR lấy Text.
+// 2. Chống nhầm lẫn: Bắt lỗi nếu app yêu cầu Mặt trước mà user chụp Mặt sau (và ngược lại).
+// 3. Chống cắt xén (Boundary Check): Quét từ khóa viền trên và viền dưới để đảm bảo thẻ lấy trọn vẹn.
+// 4. Chống lộn ngược/xoay dọc (Orientation Check): Bắt lỗi nếu thẻ bị cầm dọc hoặc lộn đầu chữ.
+// 5. Chống chụp thiếu: Kiểm tra mật độ chữ (Coverage) để đảm bảo thẻ chiếm phần lớn bức ảnh.
     private fun validateCccdFromFrame(bitmap: Bitmap, onDone: (Boolean, String) -> Unit) {
         val inputImage = InputImage.fromBitmap(bitmap, 0)
         textRecognizer.process(inputImage)
@@ -571,6 +586,11 @@ class CccdCameraActivity : AppCompatActivity() {
         return null
     }
 
+
+    // Phân tích hình ảnh ở mức độ Pixel (Pixel-level Analysis) với hiệu năng cao:
+// 1. Thuật toán Lấy mẫu (Sampling): Thay vì quét vài triệu pixel gây giật lag máy, thuật toán tính toán bước nhảy (step) để chỉ lấy khoảng 24.000 pixel ngẫu nhiên, giúp chạy cực nhanh.
+// 2. Tính Độ Sáng (Luma): Áp dụng công thức (0.299*R + 0.587*G + 0.114*B) để tìm ra vùng tối/chói.
+// 3. Tính Độ Sắc Nét (Sharpness): Tính toán sự chênh lệch (đạo hàm bậc 1) giữa pixel liền kề (trên-dưới, trái-phải) để phát hiện viền nét của chữ, nếu viền bị nhòe tức là ảnh bị mờ.
     private fun analyzeImageQuality(bitmap: Bitmap): ImageQualityMetrics {
         val width = bitmap.width
         val height = bitmap.height
@@ -834,6 +854,8 @@ class CccdCameraActivity : AppCompatActivity() {
         return mrzY < 0.40f
     }
 
+    // Hàm chuẩn hóa dữ liệu: Xóa sạch toàn bộ dấu tiếng Việt và viết hoa toàn bộ chuỗi.
+// Mục đích: Tránh việc AI (OCR) đọc sai dấu do chói sáng/mờ, giúp tỷ lệ so sánh khớp từ khóa cao hơn.
     private fun normalizeNoAccentUpper(text: String): String {
         val normalized = Normalizer.normalize(text, Normalizer.Form.NFD)
             .replace("\\p{M}+".toRegex(), "")
